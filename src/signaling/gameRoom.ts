@@ -16,6 +16,7 @@ import {
   type GameConfig,
 } from "../game/matchmonsters/engine.js";
 import type { Move, MonsterState, PlayerState } from "../game/matchmonsters/types.js";
+import { FATIGUE_AFTER } from "../game/matchmonsters/types.js";
 
 /** Minimal view of a protoo peer, so rooms are testable without a live socket. */
 export interface PeerLike {
@@ -122,6 +123,8 @@ export class GameRoom {
       turnPasses: s.turnPasses,
       /** Sudden-death damage the next player to start a turn will take (0 = not yet). */
       fatigueNext: fatigueDamage(s.turnPasses + 1),
+      /** Turns until sudden death begins (0 once it has). */
+      suddenDeathIn: Math.max(0, FATIGUE_AFTER - s.turnPasses),
       phase: s.phase,
       winner: s.winner,
       moveNumber: s.moveNumber,
@@ -144,6 +147,7 @@ function serializePlayer(p: PlayerState) {
     shield: p.shield,
     dots: p.dots,
     berries: p.berries,
+    slow: p.slow,
     monsters: p.monsters.map(serializeMonster),
   };
 }
@@ -156,6 +160,7 @@ function serializeMonster(m: MonsterState) {
     charge: m.charge,
     chargeCost: effectiveCost(m.def, m.evolution),
     evolution: m.evolution,
+    sealed: m.sealed,
     ability: abilityView(m.def, m.evolution),
   };
 }

@@ -66,6 +66,25 @@ describe("GameRoom", () => {
     expect(() => room.handleRequest("p0", "mm:move", {})).toThrow(/from and to/);
   });
 
+  it("tells the opponent when a player disconnects and rejoins", () => {
+    const room = new GameRoom(roomConfig());
+    const a = new FakePeer("p0");
+    const b1 = new FakePeer("p1");
+    room.join(a);
+    room.join(b1);
+    expect(a.notifications.at(-1)).toEqual({ method: "mm:peerStatus", data: { seat: 1, connected: true } });
+
+    // Page reload: the new connection joins before the old socket's close lands.
+    const b2 = new FakePeer("p1");
+    room.join(b2);
+    room.leave(b1); // stale close — must be ignored
+    expect(room.connectedCount()).toBe(2);
+
+    room.leave(b2);
+    expect(a.notifications.at(-1)).toEqual({ method: "mm:peerStatus", data: { seat: 1, connected: false } });
+    expect(room.connectedCount()).toBe(1);
+  });
+
   it("rejects an unknown method", () => {
     const room = new GameRoom(roomConfig());
     expect(() => room.handleRequest("p0", "bogus", {})).toThrow(/unknown method/);

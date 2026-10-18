@@ -2,299 +2,354 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f1117" />
     <title>Match Monsters</title>
     <style>
       :root {
-        --bg: #11131a;
-        --panel: #1b1e28;
-        --panel2: #232734;
+        --bg: #0f1117;
+        --bg2: #151927;
+        --panel: #1a1f2e;
+        --panel2: #222839;
         --ink: #eef1f7;
-        --muted: #99a1b3;
-        --line: #333a4d;
-        --accent: #7c5cff;
-        --fire: #ff5a3c;
+        --muted: #8f98ad;
+        --line: #2c3347;
+        --accent: #8b6cff;
+        --accent2: #b39dff;
+        --good: #4fd17a;
+        --bad: #ff5d5d;
+        --fire: #ff6b3d;
         --water: #3aa0ff;
-        --earth: #c08a4a;
+        --earth: #c79153;
         --nature: #4ccb6b;
         --light: #ffd23c;
-        --good: #4ccb6b;
+        --radius: 14px;
       }
-      * { box-sizing: border-box; }
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
       html, body { margin: 0; }
       body {
-        background: var(--bg);
+        background: radial-gradient(1200px 600px at 50% -10%, #1f2440 0%, var(--bg) 60%) fixed, var(--bg);
         color: var(--ink);
         font: 15px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        overflow-x: hidden;
         min-height: 100vh;
-        padding: 16px;
-        display: flex;
-        justify-content: center;
       }
-      main { width: 100%; max-width: 560px; }
-      h1 { font-size: 22px; margin: 4px 0 2px; letter-spacing: 0.2px; }
-      .sub { color: var(--muted); margin: 0 0 16px; font-size: 13px; }
-      .card {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 16px;
-        margin-bottom: 14px;
-      }
-      label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 6px; }
-      input[type="text"] {
-        width: 100%;
-        background: var(--panel2);
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        color: var(--ink);
-        padding: 11px 12px;
-        font-size: 15px;
-      }
+      body.in-game { overflow: hidden; height: 100vh; height: 100dvh; }
       button {
-        background: var(--accent);
-        color: white;
-        border: 0;
-        border-radius: 10px;
-        padding: 12px 16px;
-        font-size: 15px;
-        font-weight: 600;
-        cursor: pointer;
-        width: 100%;
+        font: inherit; font-weight: 700; color: #fff; border: 0; border-radius: 12px;
+        padding: 12px 16px; background: var(--accent); cursor: pointer;
+        transition: transform 0.08s ease, opacity 0.15s ease, background 0.15s ease;
       }
-      button:disabled { opacity: 0.5; cursor: default; }
-      .pick-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-        gap: 8px;
-        margin-top: 4px;
-      }
-      .mon {
-        background: var(--panel2);
-        border: 2px solid var(--line);
-        border-radius: 10px;
-        padding: 8px;
-        cursor: pointer;
-        text-align: center;
-        user-select: none;
-      }
-      .mon.sel { border-color: var(--accent); }
-      .mon.dim { opacity: 0.45; }
-      .mon .emoji { font-size: 22px; }
-      .mon .art { display: flex; justify-content: center; }
-      .mon .art svg { border-radius: 50%; }
-      .mon .n { font-size: 12px; font-weight: 600; margin-top: 4px; }
-      .mon .s { font-size: 11px; color: var(--muted); }
-      .status { color: var(--muted); font-size: 13px; min-height: 18px; margin-top: 10px; }
-      .actions { margin-top: 16px; }
+      button:active { transform: scale(0.97); }
+      button:disabled { opacity: 0.45; cursor: default; transform: none; }
       button.ghost { background: var(--panel2); border: 1px solid var(--line); color: var(--ink); }
-      .or { text-align: center; color: var(--muted); font-size: 12px; margin: 12px 0 10px; }
-      .join-row { display: flex; gap: 8px; margin-top: 8px; }
-      .join-row input {
-        flex: 1; text-transform: uppercase; letter-spacing: 2px; font-weight: 700;
-        background: var(--panel2); border: 1px solid var(--line); border-radius: 10px;
-        color: var(--ink); padding: 11px 12px; font-size: 15px;
+      button.small { padding: 8px 12px; font-size: 13px; border-radius: 10px; }
+      input[type="text"] {
+        font: inherit; width: 100%; min-width: 0; color: var(--ink); background: var(--panel2);
+        border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; outline: none;
       }
-      .join-row button { width: auto; padding: 11px 18px; }
-      .invite {
-        margin-top: 14px; padding: 14px; border-radius: 12px;
-        background: rgba(124, 92, 255, 0.12); border: 1px solid var(--accent); text-align: center;
-      }
-      .code-big {
-        font-size: 34px; font-weight: 800; letter-spacing: 6px; margin: 6px 0 10px;
-        color: #c9bcff; font-variant-numeric: tabular-nums;
-      }
-      .invite button { width: auto; padding: 9px 16px; }
-      .muted { color: var(--muted); font-size: 12px; }
-      #inviteWait { margin-top: 10px; }
-      .turn-banner {
-        text-align: center;
-        font-weight: 700;
-        padding: 8px;
-        border-radius: 10px;
-        margin-bottom: 12px;
-      }
-      .turn-you { background: rgba(124, 92, 255, 0.18); color: #c9bcff; }
-      .turn-them { background: var(--panel2); color: var(--muted); }
-      .teams { display: flex; gap: 10px; margin-bottom: 12px; }
-      .team { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
-      .team h3 { margin: 0 0 8px; font-size: 13px; }
-      .hp { margin-bottom: 8px; }
-      .hp .hd { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px; }
-      .hp .bar { height: 7px; background: #0d0f15; border-radius: 4px; overflow: hidden; }
-      .hp .fill { height: 100%; background: var(--good); transition: width 0.3s ease; }
-      .hp.dead { opacity: 0.4; }
-      .phealth { margin-bottom: 10px; }
-      .phealth .hd { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
-      .bar.big { height: 11px; }
-      .fill.hpfill { background: linear-gradient(90deg, #4ccb6b, #8be27f); }
-      .shield-badge { color: #7fd0ff; font-weight: 700; }
-      .burns { font-size: 11px; color: var(--fire); margin-top: 4px; }
-      .mrow { margin-top: 8px; padding: 6px; border-radius: 8px; background: var(--panel2); }
-      .mrow.ready { box-shadow: 0 0 0 1px var(--accent) inset; }
-      .mtop { display: flex; align-items: center; gap: 8px; }
-      .mart svg { border-radius: 50%; display: block; }
-      .mmeta { flex: 1; min-width: 0; }
-      .mhd { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px; }
-      .mcost { color: var(--muted); font-variant-numeric: tabular-nums; }
-      .mrow.ready .mcost { color: #c9bcff; font-weight: 700; }
-      .fill.chg { background: #5a617a; }
-      .mrow.ready .fill.chg { background: linear-gradient(90deg, var(--accent), #a98bff); }
-      .ability { font-size: 11px; color: var(--muted); margin-top: 3px; }
-      .float-heal { color: var(--good) !important; }
-      .float-shield { color: #7fd0ff !important; }
-      .float-burn { color: #ff9a3c !important; }
-      .float-poison { color: #8be27f !important; }
-      .float-berry { color: #ff7aa6 !important; }
-      .berries-line { font-size: 12px; color: #ff9ec0; margin-top: 4px; }
-      .evo-badge { color: #c9bcff; font-weight: 700; font-size: 11px; margin-left: 4px; }
-      button.evo {
-        width: 100%; margin-top: 6px; padding: 6px; font-size: 12px;
-        background: linear-gradient(90deg, var(--accent), #a98bff); border: 0;
-      }
-      #board {
-        display: grid;
-        gap: 5px;
-        touch-action: manipulation;
-      }
-      .tile {
-        aspect-ratio: 1;
-        border-radius: 9px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: min(6vw, 26px);
-        cursor: pointer;
-        border: 2px solid transparent;
-        user-select: none;
-      }
-      .tile.sel { border-color: white; transform: scale(0.94); }
-      .tile.fire { background: rgba(255, 90, 60, 0.22); }
-      .tile.water { background: rgba(58, 160, 255, 0.22); }
-      .tile.earth { background: rgba(192, 138, 74, 0.22); }
-      .tile.nature { background: rgba(76, 203, 107, 0.22); }
-      .tile.light { background: rgba(255, 210, 60, 0.22); }
-      .tile.berry { background: rgba(255, 90, 140, 0.26); box-shadow: 0 0 0 1px rgba(255,120,160,0.5) inset; }
-      .tile.swapin { animation: swapin 180ms ease; }
-      .tile.pop { animation: pop 360ms ease forwards; z-index: 2; }
-      @keyframes swapin { 0% { transform: scale(0.8); } 100% { transform: scale(1); } }
-      @keyframes pop {
-        0% { transform: scale(1); }
-        35% { transform: scale(1.28); filter: brightness(1.7); }
-        100% { transform: scale(0.1); opacity: 0.15; }
-      }
-      .team { position: relative; }
-      .dmg-float {
-        position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
-        font-weight: 800; font-size: 20px; color: #ff6a4d; text-shadow: 0 1px 4px #000;
-        pointer-events: none; animation: floatUp 950ms ease forwards; z-index: 5;
-      }
-      @keyframes floatUp {
-        0% { opacity: 0; transform: translate(-50%, 8px); }
-        20% { opacity: 1; }
-        100% { opacity: 0; transform: translate(-50%, -26px); }
-      }
+      input[type="text"]:focus { border-color: var(--accent); }
       .hidden { display: none !important; }
-      .toast {
-        position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
-        background: var(--panel2); border: 1px solid var(--line); color: var(--ink);
-        padding: 10px 16px; border-radius: 10px; font-size: 14px; opacity: 0; transition: opacity 0.2s;
-        pointer-events: none; max-width: 90vw; text-align: center;
+      .muted { color: var(--muted); }
+      .ell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+
+      /* ---------------------------------------------------------------- lobby */
+      #lobby { max-width: 980px; margin: 0 auto; padding: 18px 16px 190px; }
+      .brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+      .brand h1 { font-size: 26px; margin: 0; letter-spacing: 0.2px; }
+      .brand .tag { color: var(--accent2); font-weight: 700; font-size: 13px; }
+      .intro { color: var(--muted); margin: 6px 0 16px; font-size: 14px; max-width: 640px; }
+      .name-row { max-width: 360px; margin-bottom: 18px; }
+      .el-group { margin: 18px 0 8px; }
+      .el-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+      .el-head .el-title { font-weight: 800; font-size: 16px; }
+      .el-head .el-arch { font-weight: 700; font-size: 13px; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--el) 22%, transparent); color: var(--el); }
+      .el-head .el-blurb { color: var(--muted); font-size: 13px; }
+      .pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+      .pcard {
+        position: relative; background: linear-gradient(180deg, var(--panel), var(--bg2));
+        border: 2px solid var(--line); border-radius: var(--radius); padding: 10px; cursor: pointer;
+        user-select: none; display: flex; flex-direction: column; gap: 4px; min-width: 0;
+        transition: border-color 0.15s ease, transform 0.1s ease;
       }
-      .toast.show { opacity: 1; }
-      .end { text-align: center; }
-      .end .big { font-size: 26px; font-weight: 800; margin: 6px 0; }
+      .pcard:active { transform: scale(0.98); }
+      .pcard.sel { border-color: var(--el); box-shadow: 0 0 0 3px color-mix(in srgb, var(--el) 25%, transparent); }
+      .pcard.dim { opacity: 0.5; }
+      .pcard .pick-no { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 50%; background: var(--el); color: #111; font-size: 12px; font-weight: 800; display: grid; place-items: center; }
+      .pcard .art { display: flex; justify-content: center; }
+      .pcard .pname { font-weight: 800; text-align: center; }
+      .pcard .pmove { color: var(--el); font-weight: 700; font-size: 13px; }
+      .pcard .pdesc { color: var(--muted); font-size: 12px; line-height: 1.35; }
+      .pcard .ppass { color: var(--accent2); font-size: 12px; line-height: 1.35; }
+      .pcard .pcost { position: absolute; top: 8px; left: 8px; font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 999px; background: rgba(0,0,0,0.35); color: var(--el); }
+
+      .dock {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+        background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px);
+        border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+      }
+      .dock-inner { max-width: 980px; margin: 0 auto; display: grid; gap: 10px; }
+      .team-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+      .slot { width: 44px; height: 44px; border-radius: 50%; border: 2px dashed var(--line); display: grid; place-items: center; flex: none; color: var(--muted); font-weight: 800; }
+      .slot svg { display: block; }
+      .team-label { flex: 1; min-width: 0; font-size: 13px; }
+      .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .join-row { display: flex; gap: 8px; }
+      .join-row input { text-transform: uppercase; letter-spacing: 3px; font-weight: 800; }
+      .join-row button { flex: none; }
+      .invite { background: color-mix(in srgb, var(--accent) 14%, var(--panel)); border: 1px solid var(--accent); border-radius: var(--radius); padding: 12px; text-align: center; }
+      .code-big { font-size: 34px; font-weight: 900; letter-spacing: 8px; color: var(--accent2); margin: 2px 0 8px; }
+      .status { color: var(--muted); font-size: 13px; min-height: 18px; }
+      @media (min-width: 760px) {
+        .dock-inner { grid-template-columns: 1.2fr 1fr 1fr; align-items: center; }
+        .actions { grid-column: 2; }
+        .join-row { grid-column: 3; }
+        .invite, .dock .status { grid-column: 1 / -1; }
+      }
+
+      /* ---------------------------------------------------------------- game */
+      #game {
+        height: 100vh; height: 100dvh; max-width: 560px; margin: 0 auto;
+        display: flex; flex-direction: column; gap: 8px;
+        padding: calc(8px + env(safe-area-inset-top)) 12px calc(8px + env(safe-area-inset-bottom));
+      }
+      .strip {
+        flex: none; background: linear-gradient(180deg, var(--panel), var(--bg2));
+        border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; position: relative;
+      }
+      .s-fx { position: absolute; inset: 0; pointer-events: none; }
+      .strip.active { border-color: color-mix(in srgb, var(--accent) 70%, var(--line)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent), 0 6px 24px -10px var(--accent); }
+      .s-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+      .s-name { font-weight: 800; flex: 1; min-width: 0; }
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); flex: none; }
+      .dot.off { background: var(--bad); }
+      .chips { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+      .chip { font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 999px; background: var(--panel2); white-space: nowrap; }
+      .chip.shield { color: #7fd0ff; }
+      .chip.dot-fx { color: #ff9a3c; }
+      .chip.berry { color: #ff8db4; }
+      .chip.slow { color: #9bf6ff; }
+      .hp { margin: 7px 0 8px; display: flex; align-items: center; gap: 8px; }
+      .hp .bar { flex: 1; height: 12px; border-radius: 999px; background: #0b0e16; overflow: hidden; position: relative; }
+      .hp .fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #39c466, #8be27f); transition: width 0.45s ease; }
+      .hp .fill.low { background: linear-gradient(90deg, #ff5d5d, #ff9a6b); }
+      .hp .shieldfill { position: absolute; inset: 0 auto 0 0; background: repeating-linear-gradient(45deg, rgba(127,208,255,0.55) 0 4px, rgba(127,208,255,0.25) 4px 8px); border-radius: 999px; transition: width 0.45s ease; }
+      .hp .num { font-weight: 800; font-size: 13px; font-variant-numeric: tabular-nums; min-width: 52px; text-align: right; }
+      .mons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .mchip {
+        display: flex; align-items: center; gap: 8px; min-width: 0; padding: 6px; border-radius: 12px;
+        background: var(--panel2); cursor: pointer; position: relative; border: 1px solid transparent;
+      }
+      .mchip.ready { border-color: color-mix(in srgb, var(--el) 70%, transparent); box-shadow: 0 0 14px -4px var(--el); }
+      .ring { --p: 0%; flex: none; width: 46px; height: 46px; border-radius: 50%; padding: 3px; background: conic-gradient(var(--el) var(--p), rgba(255,255,255,0.08) 0); }
+      .ring .art { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; }
+      .ring .art svg { display: block; width: 40px; height: 40px; }
+      .mtext { min-width: 0; flex: 1; }
+      .mname { font-weight: 800; font-size: 13px; }
+      .mmove { font-size: 11px; color: var(--el); font-weight: 700; }
+      .mcharge { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+      .mchip .badge { position: absolute; top: -6px; right: -4px; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 999px; background: var(--accent); color: #fff; }
+      .mchip .sealed { position: absolute; bottom: -6px; right: -4px; font-size: 10px; font-weight: 900; padding: 1px 6px; border-radius: 999px; background: #3a2f55; color: #d8c8ff; }
+
+      .banner { flex: none; text-align: center; font-weight: 800; padding: 8px 10px; border-radius: 12px; font-size: 14px; }
+      .banner.you { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent2); }
+      .banner.them { background: var(--panel); color: var(--muted); }
+      .banner .sd { display: block; font-size: 11px; color: #ff9a6b; margin-top: 2px; }
+
+      .board-wrap { flex: 1 1 auto; min-height: 120px; position: relative; display: flex; align-items: center; justify-content: center; }
+      .board { display: grid; gap: 4px; touch-action: manipulation; }
+      .tile {
+        position: relative; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+        cursor: pointer; user-select: none; font-size: var(--glyph, 24px); line-height: 1;
+        box-shadow: inset 0 -3px 0 rgba(0,0,0,0.25), inset 0 2px 0 rgba(255,255,255,0.08);
+        transition: transform 0.12s ease;
+      }
+      .tile.fire { background: linear-gradient(160deg, #6b2a1d, #3d1710); }
+      .tile.water { background: linear-gradient(160deg, #1d4a7a, #102a47); }
+      .tile.earth { background: linear-gradient(160deg, #5c4326, #36270f); }
+      .tile.nature { background: linear-gradient(160deg, #1f5a32, #11331c); }
+      .tile.light { background: linear-gradient(160deg, #6b5a1a, #3d330d); }
+      .tile.berry { background: linear-gradient(160deg, #6e2443, #3f1326); box-shadow: inset 0 0 0 2px rgba(255,120,170,0.55); }
+      .tile.stone { background: linear-gradient(160deg, #4a4d57, #2a2c33); box-shadow: inset 0 -3px 0 rgba(0,0,0,0.4), inset 0 0 0 2px rgba(0,0,0,0.25); filter: saturate(0.6); cursor: not-allowed; }
+      .tile.sel { transform: scale(0.9); box-shadow: 0 0 0 3px #fff, 0 0 18px rgba(255,255,255,0.5); }
+      .tile.iced::after {
+        content: "❄"; position: absolute; inset: 0; border-radius: 10px; display: grid; place-items: start end;
+        padding: 2px 4px; font-size: 11px; color: #e6f7ff;
+        background: linear-gradient(160deg, rgba(190,235,255,0.55), rgba(120,190,255,0.25));
+        box-shadow: inset 0 0 0 2px rgba(210,240,255,0.8);
+      }
+      .tile.swapin { animation: swapin 180ms ease; }
+      .tile.pop { animation: pop 340ms ease forwards; z-index: 2; }
+      @keyframes swapin { 0% { transform: scale(0.75); } 100% { transform: scale(1); } }
+      @keyframes pop { 0% { transform: scale(1); } 35% { transform: scale(1.3); filter: brightness(1.8); } 100% { transform: scale(0.1); opacity: 0.1; } }
+
+      .callout {
+        position: absolute; left: 50%; top: 8px; transform: translate(-50%, -6px); z-index: 6;
+        background: color-mix(in srgb, var(--el, var(--accent)) 30%, #10131c); border: 1px solid var(--el, var(--accent));
+        color: #fff; font-weight: 800; padding: 8px 14px; border-radius: 999px; font-size: 14px;
+        white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.18s ease, transform 0.18s ease;
+        max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis;
+      }
+      .callout.show { opacity: 1; transform: translate(-50%, 0); }
+
+      .float {
+        position: absolute; left: 50%; top: 4px; transform: translateX(-50%); z-index: 8;
+        font-weight: 900; font-size: 20px; text-shadow: 0 2px 6px #000; pointer-events: none;
+        animation: floatUp 1s ease forwards; white-space: nowrap;
+      }
+      .float.attack { color: #ff6a4d; }
+      .float.heal { color: var(--good); }
+      .float.shield { color: #7fd0ff; }
+      .float.burn { color: #ff9a3c; }
+      .float.poison { color: #8be27f; }
+      .float.fatigue { color: #ff9a6b; }
+      @keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, 8px); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -28px); } }
+
+      .peer-warn { flex: none; text-align: center; font-size: 12px; font-weight: 700; color: #ffcf8a; background: #3a2a14; border-radius: 10px; padding: 6px; }
+
+      /* idle bob for creature art */
+      .bob svg { animation: bob 2.6s ease-in-out infinite; transform-origin: 50% 80%; }
+      .bob:nth-child(2n) svg { animation-delay: -1.3s; }
+      @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px) scale(1.02); } }
+      @media (prefers-reduced-motion: reduce) { .bob svg, .float { animation: none; } }
+
+      /* ---------------------------------------------------------------- sheet / overlays */
+      .scrim { position: fixed; inset: 0; background: rgba(5, 7, 12, 0.6); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
+      .sheet {
+        width: 100%; max-width: 480px; background: var(--panel); border: 1px solid var(--line);
+        border-radius: 20px 20px 0 0; padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+        animation: sheetUp 0.22s ease; max-height: 85vh; overflow: auto;
+      }
+      @media (min-width: 600px) { .scrim { align-items: center; } .sheet { border-radius: 20px; } }
+      @keyframes sheetUp { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+      .sheet .s-art { display: flex; justify-content: center; margin-bottom: 6px; }
+      .sheet h2 { margin: 0; text-align: center; font-size: 22px; }
+      .sheet .s-sub { text-align: center; color: var(--el); font-weight: 700; font-size: 13px; margin-bottom: 12px; }
+      .sheet .s-move { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+      .sheet .s-move b { color: var(--el); font-size: 17px; }
+      .sheet .s-desc { color: var(--ink); margin: 6px 0; }
+      .sheet .s-pass { color: var(--accent2); font-size: 14px; margin: 6px 0; }
+      .sheet .s-meta { color: var(--muted); font-size: 13px; margin: 6px 0 14px; }
+      .sheet .s-actions { display: grid; gap: 8px; }
+
+      .end-card { width: min(92vw, 380px); background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 24px; text-align: center; margin: auto; }
+      .end-card .big { font-size: 30px; font-weight: 900; margin: 4px 0 6px; }
+      .end-card p { color: var(--muted); margin: 0 0 16px; }
+
+      .toast {
+        position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translate(-50%, 10px);
+        background: var(--panel2); border: 1px solid var(--line); color: var(--ink); padding: 10px 16px;
+        border-radius: 12px; font-size: 14px; font-weight: 700; opacity: 0; pointer-events: none;
+        transition: opacity 0.18s ease, transform 0.18s ease; z-index: 60; max-width: 92vw; text-align: center;
+      }
+      .toast.show { opacity: 1; transform: translate(-50%, 0); }
     </style>
   </head>
   <body>
-    <main>
-      <h1>Match Monsters</h1>
-      <p class="sub">Pick two monsters. Match their element to charge them — a charged monster unleashes its ability. Drop your rival to 0 HP to win.</p>
+    <!-- ============================================================ LOBBY -->
+    <section id="lobby">
+      <div class="brand"><h1>Match Monsters</h1><span class="tag">Plotomon</span></div>
+      <p class="intro">
+        Pick two monsters. Match their element to charge them — a charged monster unleashes its move.
+        Grab 🍓 berries to evolve. Drop your rival to 0 HP to win.
+      </p>
+      <div class="name-row"><input id="name" type="text" placeholder="Your name" maxlength="20" autocomplete="nickname" /></div>
+      <div id="picker"></div>
+    </section>
 
-      <!-- Lobby -->
-      <section id="lobby" class="card">
-        <label for="name">Your name</label>
-        <input id="name" type="text" placeholder="Player" maxlength="20" />
-        <label style="margin-top: 14px">Pick two monsters</label>
-        <div id="picker" class="pick-grid"></div>
-
+    <div id="dock" class="dock">
+      <div class="dock-inner">
+        <div class="team-row">
+          <div class="slot" id="slot0">1</div>
+          <div class="slot" id="slot1">2</div>
+          <div class="team-label ell" id="teamLabel">Pick two monsters</div>
+        </div>
         <div class="actions">
           <button id="play" disabled>Quick Play</button>
-          <div class="or">or play a friend</div>
-          <button id="create" class="ghost" disabled>Create private room</button>
-          <div class="join-row">
-            <input id="code" type="text" placeholder="CODE" maxlength="8" autocapitalize="characters" />
-            <button id="join" class="ghost" disabled>Join</button>
-          </div>
+          <button id="create" class="ghost" disabled>Invite a friend</button>
         </div>
-
+        <div class="join-row">
+          <input id="code" type="text" placeholder="CODE" maxlength="8" autocapitalize="characters" autocomplete="off" />
+          <button id="join" class="ghost" disabled>Join</button>
+        </div>
         <div id="invite" class="invite hidden">
-          <div class="muted">Share this with your friend:</div>
+          <div class="muted">Send this to your friend</div>
           <div class="code-big" id="codeBig"></div>
-          <button id="copyLink" class="ghost">Copy invite link</button>
-          <div class="muted" id="inviteWait">Waiting for them to join…</div>
+          <button id="copyLink" class="small">Copy invite link</button>
+          <div class="muted" style="margin-top: 8px">Waiting for them to join…</div>
         </div>
-
         <div id="lobbyStatus" class="status"></div>
-      </section>
+      </div>
+    </div>
 
-      <!-- Game -->
-      <section id="game" class="card hidden">
-        <div id="turnBanner" class="turn-banner"></div>
-        <div class="teams">
-          <div class="team" id="teamMe"><h3 id="meName">You</h3><div id="meTeam"></div></div>
-          <div class="team" id="teamFoe"><h3 id="foeName">Opponent</h3><div id="foeTeam"></div></div>
-        </div>
-        <div id="board"></div>
-        <div id="gameStatus" class="status"></div>
-      </section>
+    <!-- ============================================================ GAME -->
+    <section id="game" class="hidden">
+      <div class="strip" id="foeStrip"><div class="s-body"></div><div class="s-fx"></div></div>
+      <div id="peerWarn" class="peer-warn hidden">Your rival disconnected — waiting for them to come back…</div>
+      <div id="turnBanner" class="banner"></div>
+      <div class="board-wrap" id="boardWrap">
+        <div id="board" class="board"></div>
+        <div id="callout" class="callout"></div>
+      </div>
+      <div class="strip" id="meStrip"><div class="s-body"></div><div class="s-fx"></div></div>
+    </section>
 
-      <!-- End -->
-      <section id="end" class="card hidden end">
-        <div class="big" id="endTitle"></div>
-        <div style="margin-top: 12px"><button id="again">Play again</button></div>
-      </section>
-    </main>
-
+    <div id="sheet" class="scrim hidden"></div>
+    <div id="end" class="scrim hidden"></div>
     <div id="toast" class="toast"></div>
 
     <script src="/play/plotomon.js"></script>
     <script>
-      // Same-origin WebSocket: ws:// locally, wss:// behind HTTPS hosting.
-      const WS_BASE = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
-      const EMOJI = { fire: "🔥", water: "💧", earth: "🪨", nature: "🌿", light: "✨", berry: "🍓" };
+      const $ = (id) => document.getElementById(id);
+      const EMOJI = { fire: "🔥", water: "💧", earth: "⛰️", nature: "🌿", light: "✨", berry: "🍓", stone: "🪨" };
+      const EL_LABEL = { fire: "Fire", water: "Water", earth: "Earth", nature: "Nature", light: "Light" };
+      const ORDER = ["fire", "water", "earth", "nature", "light"];
       const MAX_EVOLUTION = 3;
       const BERRIES_TO_EVOLVE = 4;
-      const art = (id, size) => {
-        try { return window.PLOTOMON ? PLOTOMON.svg(id, size) : ""; } catch (e) { return ""; }
-      };
 
-      const $ = (id) => document.getElementById(id);
-      const peerId = crypto.randomUUID();
+      // Session storage is a convenience (resume after reload); never required.
+      const store = {
+        get(k) { try { return JSON.parse(sessionStorage.getItem(k)); } catch { return null; } },
+        set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch {} },
+        del(k) { try { sessionStorage.removeItem(k); } catch {} },
+      };
+      const newId = () =>
+        (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
+      const peerId = store.get("mm.peer") || (() => { const id = newId(); store.set("mm.peer", id); return id; })();
+      const WS_BASE = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
+
       let roster = [];
       let picks = [];
       let lobbySock = null;
       let gameSock = null;
-      let mySeat = 0;
+      let room = null; // { roomId, seat }
       let state = null;
       let selected = null;
+      let animating = false;
+      let leaving = false;
+      let reconnectTries = 0;
 
-      function toast(msg) {
+      const art = (id, size) => { try { return window.PLOTOMON ? PLOTOMON.svg(id, size) : ""; } catch { return ""; } };
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+      function toast(msg, ms = 1800) {
         const t = $("toast");
         t.textContent = msg;
         t.classList.add("show");
         clearTimeout(toast._t);
-        toast._t = setTimeout(() => t.classList.remove("show"), 1800);
+        toast._t = setTimeout(() => t.classList.remove("show"), ms);
       }
 
-      /* ---- protoo client over one socket ---- */
+      /* ------------------------------------------------------------ protoo client */
       function connect(roomId) {
-        const sock = new WebSocket(`${WS_BASE}/?roomId=${roomId}&peerId=${peerId}`, "protoo");
+        const sock = new WebSocket(`${WS_BASE}/?roomId=${encodeURIComponent(roomId)}&peerId=${encodeURIComponent(peerId)}`, "protoo");
         const pending = new Map();
         let nextId = 1;
         sock._handlers = {};
         sock.request = (method, data = {}) =>
           new Promise((resolve, reject) => {
+            if (sock.readyState !== WebSocket.OPEN) return reject(new Error("not connected"));
             const id = nextId++;
             pending.set(id, { resolve, reject });
             sock.send(JSON.stringify({ request: true, id, method, data }));
@@ -312,41 +367,80 @@
             sock._handlers[msg.method]?.(msg.data);
           }
         });
+        sock.addEventListener("close", () => {
+          for (const p of pending.values()) p.reject(new Error("connection closed"));
+          pending.clear();
+        });
         return sock;
       }
       const waitOpen = (sock) =>
         new Promise((res, rej) => {
-          sock.addEventListener("open", () => res());
-          sock.addEventListener("error", () => rej(new Error("connection failed")));
+          sock.addEventListener("open", () => res(), { once: true });
+          sock.addEventListener("error", () => rej(new Error("connection failed")), { once: true });
+          sock.addEventListener("close", () => rej(new Error("connection closed")), { once: true });
         });
 
-      /* ---- lobby ---- */
+      /* ------------------------------------------------------------ lobby */
       async function loadRoster() {
         roster = await (await fetch("/play/monsters")).json();
         const picker = $("picker");
         picker.innerHTML = "";
-        for (const mon of roster) {
-          const el = document.createElement("div");
-          el.className = "mon";
-          el.dataset.id = mon.id;
-          el.innerHTML = `<div class="art">${art(mon.id, 60)}</div>
-            <div class="n">${mon.name}</div>
-            <div class="s">${mon.ability.description}</div>
-            <div class="s">⚡ charge ${mon.chargeCost}</div>`;
-          el.addEventListener("click", () => togglePick(mon.id));
-          picker.appendChild(el);
+        for (const el of ORDER) {
+          const mons = roster.filter((m) => m.element === el);
+          if (!mons.length) continue;
+          const arch = mons[0].archetype || { title: "", blurb: "" };
+          const group = document.createElement("div");
+          group.className = "el-group";
+          group.style.setProperty("--el", `var(--${el})`);
+          group.innerHTML =
+            `<div class="el-head"><span class="el-title">${EMOJI[el]} ${EL_LABEL[el]}</span>` +
+            `<span class="el-arch">${esc(arch.title)}</span><span class="el-blurb">${esc(arch.blurb)}</span></div>` +
+            `<div class="pick-grid"></div>`;
+          const grid = group.querySelector(".pick-grid");
+          for (const mon of mons) {
+            const card = document.createElement("div");
+            card.className = "pcard";
+            card.dataset.id = mon.id;
+            card.style.setProperty("--el", `var(--${el})`);
+            card.innerHTML =
+              `<span class="pcost">⚡${mon.chargeCost}</span>` +
+              `<div class="art bob">${art(mon.id, 64)}</div>` +
+              `<div class="pname">${esc(mon.name)}</div>` +
+              `<div class="pmove">${esc(mon.ability.name)}</div>` +
+              `<div class="pdesc">${esc(mon.ability.description)}</div>` +
+              (mon.ability.passive ? `<div class="ppass">✦ ${esc(mon.ability.passive)}</div>` : "");
+            card.addEventListener("click", () => togglePick(mon.id));
+            grid.appendChild(card);
+          }
+          picker.appendChild(group);
         }
+        renderPicks();
       }
+
       function togglePick(id) {
         const i = picks.indexOf(id);
         if (i >= 0) picks.splice(i, 1);
         else if (picks.length < 2) picks.push(id);
-        else return toast("Two monsters max — tap one to deselect");
-        for (const el of document.querySelectorAll(".mon")) {
-          const sel = picks.includes(el.dataset.id);
-          el.classList.toggle("sel", sel);
-          el.classList.toggle("dim", picks.length === 2 && !sel);
+        else { picks.shift(); picks.push(id); }
+        renderPicks();
+      }
+
+      function renderPicks() {
+        for (const card of document.querySelectorAll(".pcard")) {
+          const idx = picks.indexOf(card.dataset.id);
+          card.classList.toggle("sel", idx >= 0);
+          card.classList.toggle("dim", picks.length === 2 && idx < 0);
+          card.querySelector(".pick-no")?.remove();
+          if (idx >= 0) card.insertAdjacentHTML("beforeend", `<span class="pick-no">${idx + 1}</span>`);
         }
+        for (let i = 0; i < 2; i++) {
+          const slot = $("slot" + i);
+          const id = picks[i];
+          slot.innerHTML = id ? art(id, 40) : String(i + 1);
+          slot.style.borderStyle = id ? "solid" : "dashed";
+        }
+        const names = picks.map((id) => roster.find((m) => m.id === id)?.name).filter(Boolean);
+        $("teamLabel").textContent = names.length === 2 ? names.join(" + ") : names.length ? `${names[0]} + pick one more` : "Pick two monsters";
         refreshButtons();
       }
 
@@ -357,16 +451,8 @@
         $("join").disabled = !ready || $("code").value.trim().length < 4;
       }
 
-      function displayName() {
-        return $("name").value.trim() || "Player";
-      }
-      const payload = (extra = {}) => ({
-        gameId: "match_monsters",
-        mode: "casual",
-        displayName: displayName(),
-        monsters: picks,
-        ...extra,
-      });
+      const displayName = () => $("name").value.trim() || "Player";
+      const payload = (extra = {}) => ({ gameId: "match_monsters", mode: "casual", displayName: displayName(), monsters: picks, ...extra });
 
       async function ensureLobby() {
         if (lobbySock && lobbySock.readyState === WebSocket.OPEN) return lobbySock;
@@ -376,307 +462,399 @@
         return lobbySock;
       }
 
-      async function quickPlay() {
-        setBusy(true);
-        $("lobbyStatus").textContent = "Connecting…";
-        try {
-          const sock = await ensureLobby();
-          const res = await sock.request("mm:enqueue", payload());
-          $("lobbyStatus").textContent = res.queued
-            ? "Waiting for an opponent… (or use a private room below)"
-            : "Matched! Starting…";
-        } catch (e) {
-          $("lobbyStatus").textContent = "Error: " + e.message;
-          setBusy(false);
-        }
-      }
-
-      async function createRoom() {
-        setBusy(true);
-        $("lobbyStatus").textContent = "Creating room…";
-        try {
-          const sock = await ensureLobby();
-          const res = await sock.request("mm:createRoom", payload());
-          const link = `${location.origin}/play?room=${res.code}`;
-          $("codeBig").textContent = res.code;
-          $("invite").classList.remove("hidden");
-          $("copyLink").onclick = async () => {
-            try { await navigator.clipboard.writeText(link); toast("Invite link copied"); }
-            catch { toast(link); }
-          };
-          $("lobbyStatus").textContent = "";
-        } catch (e) {
-          $("lobbyStatus").textContent = "Error: " + e.message;
-          setBusy(false);
-        }
-      }
-
-      async function joinRoom() {
-        const code = $("code").value.trim().toUpperCase();
-        if (code.length < 4) return toast("Enter the room code");
-        setBusy(true);
-        $("lobbyStatus").textContent = "Joining " + code + "…";
-        try {
-          const sock = await ensureLobby();
-          await sock.request("mm:joinRoom", payload({ code }));
-          $("lobbyStatus").textContent = "Joined! Starting…";
-        } catch (e) {
-          $("lobbyStatus").textContent = "Error: " + e.message;
-          setBusy(false);
-        }
-      }
-
       function setBusy(b) {
         for (const id of ["play", "create", "join"]) $(id).disabled = b;
         if (!b) refreshButtons();
       }
 
-      /* ---- game ---- */
-      let started = false;
-      async function startGame(matched) {
-        if (started) return;
-        started = true;
-        mySeat = matched.seat;
-        try { lobbySock?.close(); } catch {}
-        gameSock = connect(matched.roomId);
-        await waitOpen(gameSock);
-        gameSock.on("mm:moveResult", (d) => animate(d));
-        gameSock.on("mm:gameOver", (d) => setTimeout(() => showEnd(d.winner === mySeat), 750));
-        gameSock.on("mm:evolved", (d) => {
-          if (d.by === mySeat) toast("✨ Evolved!");
-          refresh();
+      async function lobbyAction(label, fn) {
+        store.set("mm.name", displayName());
+        setBusy(true);
+        $("lobbyStatus").textContent = label;
+        try { await fn(await ensureLobby()); }
+        catch (e) { $("lobbyStatus").textContent = "Error: " + e.message; setBusy(false); }
+      }
+
+      const quickPlay = () =>
+        lobbyAction("Finding an opponent…", async (sock) => {
+          const res = await sock.request("mm:enqueue", payload());
+          $("lobbyStatus").textContent = res.queued ? "Waiting for an opponent… (or invite a friend)" : "Matched! Starting…";
         });
-        $("lobby").classList.add("hidden");
-        $("end").classList.add("hidden");
-        $("game").classList.remove("hidden");
+
+      const createRoom = () =>
+        lobbyAction("Creating room…", async (sock) => {
+          const res = await sock.request("mm:createRoom", payload());
+          const link = `${location.origin}/play?room=${res.code}`;
+          $("codeBig").textContent = res.code;
+          $("invite").classList.remove("hidden");
+          $("copyLink").onclick = async () => {
+            try {
+              if (navigator.share) await navigator.share({ title: "Match Monsters", text: "Battle me in Match Monsters!", url: link });
+              else { await navigator.clipboard.writeText(link); toast("Invite link copied"); }
+            } catch { toast(link, 4000); }
+          };
+          $("lobbyStatus").textContent = "";
+        });
+
+      const joinRoom = () => {
+        const code = $("code").value.trim().toUpperCase();
+        if (code.length < 4) return toast("Enter the room code");
+        return lobbyAction(`Joining ${code}…`, async (sock) => {
+          await sock.request("mm:joinRoom", payload({ code }));
+          $("lobbyStatus").textContent = "Joined! Starting…";
+        });
+      };
+
+      /* ------------------------------------------------------------ game lifecycle */
+      async function startGame(matched) {
+        if (room) return;
+        room = { roomId: matched.roomId, seat: matched.seat };
+        store.set("mm.room", room);
+        try { lobbySock?.close(); } catch {}
+        lobbySock = null;
+        await openGame();
+      }
+
+      async function openGame() {
+        leaving = false;
+        gameSock = connect(room.roomId);
+        await waitOpen(gameSock);
+        reconnectTries = 0;
+        gameSock.on("mm:moveResult", (d) => animate(d));
+        gameSock.on("mm:gameOver", (d) => setTimeout(() => showEnd(d.winner === room.seat), 900));
+        gameSock.on("mm:evolved", (d) => { if (d.by === room.seat) toast("✨ Evolved!"); refresh(); });
+        gameSock.on("mm:peerStatus", (d) => { if (d.seat !== room.seat) $("peerWarn").classList.toggle("hidden", d.connected); });
+        gameSock.addEventListener("close", onGameClose);
+        showScreen("game");
         await refresh();
+        if (state && state.phase === "finished") showEnd(state.winner === room.seat);
+      }
+
+      function onGameClose(ev) {
+        if (leaving || !room || !state) return;
+        if (state.phase === "finished") return;
+        if (ev && ev.code === 4004) {
+          // The server restarted (e.g. woke from sleep) and the room is gone.
+          toast("That game ended — the server restarted", 4000);
+          return leaveGame();
+        }
+        // Phones drop sockets on lock/background; quietly try to come back.
+        if (reconnectTries++ < 8) {
+          toast("Reconnecting…");
+          setTimeout(() => openGame().catch(onGameClose), 1200 * reconnectTries);
+        } else {
+          toast("Lost connection to the game", 4000);
+        }
+      }
+
+      async function resumeIfAny() {
+        const saved = store.get("mm.room");
+        if (!saved) return false;
+        room = saved;
+        try {
+          await openGame();
+          return true;
+        } catch {
+          store.del("mm.room");
+          room = null;
+          showScreen("lobby");
+          return false;
+        }
+      }
+
+      function leaveGame() {
+        leaving = true;
+        try { gameSock?.close(); } catch {}
+        gameSock = null;
+        room = null;
+        state = null;
+        selected = null;
+        store.del("mm.room");
+        $("end").classList.add("hidden");
+        $("invite").classList.add("hidden");
+        $("lobbyStatus").textContent = "";
+        $("code").value = "";
+        showScreen("lobby");
+        setBusy(false);
+      }
+
+      function showScreen(which) {
+        const game = which === "game";
+        $("lobby").classList.toggle("hidden", game);
+        $("dock").classList.toggle("hidden", game);
+        $("game").classList.toggle("hidden", !game);
+        document.body.classList.toggle("in-game", game);
+        if (game) requestAnimationFrame(sizeBoard);
       }
 
       async function refresh() {
+        if (!gameSock) return;
         state = await gameSock.request("mm:getState", {});
-        render();
+        renderGame();
       }
 
-      function myTurn() { return state && state.phase === "awaiting-move" && state.turn === mySeat; }
+      const myTurn = () => state && room && state.phase === "awaiting-move" && state.turn === room.seat;
 
-      function render() {
-        const me = state.players[mySeat];
-        const foe = state.players[mySeat === 0 ? 1 : 0];
-        $("meName").textContent = me.displayName + " (you)";
-        $("foeName").textContent = foe.displayName;
-        renderPlayer($("meTeam"), me, true);
-        renderPlayer($("foeTeam"), foe, false);
+      /* ------------------------------------------------------------ rendering */
+      function renderGame() {
+        if (!state) return;
+        const me = state.players[room.seat];
+        const foe = state.players[room.seat === 0 ? 1 : 0];
+        renderStrip($("meStrip"), me, true, state.connected ? state.connected[room.seat] : true);
+        renderStrip($("foeStrip"), foe, false, state.connected ? state.connected[room.seat === 0 ? 1 : 0] : true);
+        $("meStrip").classList.toggle("active", myTurn());
+        $("foeStrip").classList.toggle("active", !myTurn() && state.phase === "awaiting-move");
+        if (state.connected) $("peerWarn").classList.toggle("hidden", state.connected[room.seat === 0 ? 1 : 0]);
 
-        const banner = $("turnBanner");
         const ml = state.movesLeft ?? 2;
-        banner.textContent = myTurn()
-          ? `Your turn — ${ml} move${ml === 1 ? "" : "s"} left`
-          : `${foe.displayName}'s turn…`;
-        banner.className = "turn-banner " + (myTurn() ? "turn-you" : "turn-them");
+        let sd = "";
+        if (state.fatigueNext > 0) sd = `<span class="sd">☠ Sudden death — ${state.fatigueNext} damage at turn start</span>`;
+        else if (state.suddenDeathIn > 0 && state.suddenDeathIn <= 4) sd = `<span class="sd">Sudden death in ${state.suddenDeathIn} turn${state.suddenDeathIn === 1 ? "" : "s"}</span>`;
+        const banner = $("turnBanner");
+        banner.className = "banner " + (myTurn() ? "you" : "them");
+        banner.innerHTML = (myTurn() ? `Your turn · ${ml} move${ml === 1 ? "" : "s"}` : `${esc(foe.displayName)}'s turn…`) + sd;
+        renderBoard();
+      }
 
+      function renderStrip(container, p, isMe, connected) {
+        const hpPct = Math.max(0, Math.round((p.hp / p.maxHp) * 100));
+        const shieldPct = Math.min(100, Math.round(((p.shield || 0) / p.maxHp) * 100));
+        const dots = p.dots || [];
+        const dotTotal = dots.reduce((s, d) => s + d.amount, 0);
+        const chips = [];
+        if (p.shield > 0) chips.push(`<span class="chip shield">🛡 ${p.shield}</span>`);
+        if (dotTotal > 0) {
+          const icon = dots.some((d) => d.kind === "poison") ? (dots.some((d) => d.kind !== "poison") ? "🔥☠" : "☠") : "🔥";
+          chips.push(`<span class="chip dot-fx">${icon} ${dotTotal}/t</span>`);
+        }
+        if (p.slow > 0) chips.push(`<span class="chip slow">🐌 −${p.slow}</span>`);
+        chips.push(`<span class="chip berry">🍓 ${p.berries || 0}/${BERRIES_TO_EVOLVE}</span>`);
+        const canEvolve = isMe && myTurn() && (p.berries || 0) >= BERRIES_TO_EVOLVE;
+
+        const body = container.querySelector(".s-body");
+        body.innerHTML =
+          `<div class="s-top"><span class="dot ${connected ? "" : "off"}"></span>` +
+          `<span class="s-name ell">${esc(p.displayName)}${isMe ? " (you)" : ""}</span>` +
+          `<span class="chips">${chips.join("")}</span></div>` +
+          `<div class="hp"><div class="bar"><div class="fill ${hpPct <= 30 ? "low" : ""}" style="width:${hpPct}%"></div>` +
+          `<div class="shieldfill" style="width:${shieldPct}%"></div></div>` +
+          `<span class="num">❤ ${p.hp}/${p.maxHp}</span></div>` +
+          `<div class="mons"></div>`;
+        const mons = body.querySelector(".mons");
+        for (const mon of p.monsters) {
+          const cost = mon.chargeCost;
+          const pct = Math.min(100, Math.round((mon.charge / cost) * 100));
+          const ready = mon.charge >= cost;
+          const evo = mon.evolution || 0;
+          const chip = document.createElement("div");
+          chip.className = "mchip" + (ready ? " ready" : "");
+          chip.style.setProperty("--el", `var(--${mon.element})`);
+          chip.innerHTML =
+            `<div class="ring" style="--p:${pct}%"><div class="art bob">${art(mon.id, 40)}</div></div>` +
+            `<div class="mtext"><div class="mname ell">${esc(mon.name)}${evo ? " " + "★".repeat(evo) : ""}</div>` +
+            `<div class="mmove ell">${esc(mon.ability.name)}</div>` +
+            `<div class="mcharge">${ready ? "READY" : `⚡ ${Math.min(mon.charge, cost)}/${cost}`}</div></div>` +
+            (canEvolve && evo < MAX_EVOLUTION ? `<span class="badge">EVOLVE</span>` : "") +
+            (mon.sealed > 0 ? `<span class="sealed">🔒 ${mon.sealed}</span>` : "");
+          chip.addEventListener("click", () => openSheet(mon, isMe, canEvolve && evo < MAX_EVOLUTION));
+          mons.appendChild(chip);
+        }
+      }
+
+      function renderBoard() {
         const board = state.board;
+        const ice = state.ice || [];
         const w = board[0].length;
         const grid = $("board");
         grid.style.gridTemplateColumns = `repeat(${w}, 1fr)`;
         grid.innerHTML = "";
         board.forEach((row, y) => {
-          row.forEach((el, x) => {
+          row.forEach((gem, x) => {
             const t = document.createElement("div");
-            t.className = `tile ${el}`;
+            t.className = `tile ${gem || ""}`;
+            if ((ice[y]?.[x] ?? 0) > 0) t.classList.add("iced");
             t.dataset.x = x;
             t.dataset.y = y;
-            t.textContent = EMOJI[el] || "";
+            t.textContent = EMOJI[gem] || "";
             if (selected && selected.x === x && selected.y === y) t.classList.add("sel");
             t.addEventListener("click", () => onTile(x, y));
             grid.appendChild(t);
           });
         });
+        sizeBoard();
       }
 
-      function renderPlayer(container, p, isMe) {
-        container.innerHTML = "";
-        const hpPct = Math.max(0, Math.round((p.hp / p.maxHp) * 100));
-        const dots = p.dots || [];
-        const dotTotal = dots.reduce((s, d) => s + d.amount, 0);
-        const hasPoison = dots.some((d) => d.kind === "poison");
-        const hasBurn = dots.some((d) => d.kind !== "poison");
-        const dotIcon = hasPoison && hasBurn ? "🔥☠️" : hasPoison ? "☠️" : "🔥";
-        const dotWord = hasPoison && !hasBurn ? "poisoned" : "burning";
-        const health = document.createElement("div");
-        health.className = "phealth";
-        health.innerHTML =
-          `<div class="hd"><span>❤️ ${p.hp}/${p.maxHp}</span>` +
-          (p.shield > 0 ? `<span class="shield-badge">🛡️ ${p.shield}</span>` : "") +
-          `</div><div class="bar big"><div class="fill hpfill" style="width:${hpPct}%"></div></div>` +
-          (dotTotal > 0 ? `<div class="burns">${dotIcon} ${dotWord} ${dotTotal}/turn</div>` : "") +
-          `<div class="berries-line">🍓 berries ${p.berries || 0}/${BERRIES_TO_EVOLVE}</div>`;
-        container.appendChild(health);
+      /** Fit the square board into whatever space the strips leave. */
+      function sizeBoard() {
+        const wrap = $("boardWrap");
+        const grid = $("board");
+        if (!wrap || !state) return;
+        const size = Math.max(120, Math.floor(Math.min(wrap.clientWidth, wrap.clientHeight)));
+        grid.style.width = size + "px";
+        grid.style.height = size + "px";
+        const cols = state.board[0].length;
+        grid.style.setProperty("--glyph", Math.max(14, Math.floor((size / cols) * 0.5)) + "px");
+      }
+      window.addEventListener("resize", sizeBoard);
+      if (window.ResizeObserver) new ResizeObserver(sizeBoard).observe(document.getElementById("boardWrap"));
 
-        const canEvolve = isMe && myTurn() && (p.berries || 0) >= BERRIES_TO_EVOLVE;
-        for (const mon of p.monsters) {
-          const cost = mon.chargeCost;
-          const shown = Math.min(mon.charge, cost);
-          const pct = Math.min(100, Math.round((mon.charge / cost) * 100));
-          const ready = mon.charge >= cost;
-          const evo = mon.evolution || 0;
-          const stars = evo > 0 ? `<span class="evo-badge">${"★".repeat(evo)} Lv${evo}</span>` : "";
-          const showEvo = canEvolve && evo < MAX_EVOLUTION;
-          const row = document.createElement("div");
-          row.className = "mrow" + (ready ? " ready" : "");
-          row.innerHTML =
-            `<div class="mtop"><span class="mart">${art(mon.id, 34)}</span>` +
-            `<div class="mmeta"><div class="mhd"><span>${mon.name}${stars}</span>` +
-            `<span class="mcost">${ready ? "READY" : shown + "/" + cost}</span></div>` +
-            `<div class="bar"><div class="fill chg" style="width:${pct}%"></div></div></div></div>` +
-            `<div class="ability">${mon.ability.description}</div>` +
-            (showEvo ? `<button class="evo" data-mid="${mon.id}">Evolve 🍓${BERRIES_TO_EVOLVE}</button>` : "");
-          const btn = () => row.querySelector(".evo");
-          container.appendChild(row);
-          if (showEvo) btn().addEventListener("click", () => onEvolve(mon.id));
-        }
+      /* ------------------------------------------------------------ monster sheet */
+      function openSheet(mon, isMine, canEvolve) {
+        const sheet = $("sheet");
+        const evo = mon.evolution || 0;
+        sheet.innerHTML =
+          `<div class="sheet" style="--el: var(--${mon.element})">` +
+          `<div class="s-art bob">${art(mon.id, 120)}</div>` +
+          `<h2>${esc(mon.name)}${evo ? " " + "★".repeat(evo) : ""}</h2>` +
+          `<div class="s-sub">${EMOJI[mon.element]} ${EL_LABEL[mon.element]}${evo ? ` · Evolution ${evo}/${MAX_EVOLUTION}` : ""}</div>` +
+          `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">⚡ ${mon.chargeCost} charge</span></div>` +
+          `<div class="s-desc">${esc(mon.ability.description)}</div>` +
+          (mon.ability.passive ? `<div class="s-pass">✦ ${esc(mon.ability.passive)}</div>` : "") +
+          `<div class="s-meta">Charge ${Math.min(mon.charge, mon.chargeCost)}/${mon.chargeCost}` +
+          (mon.sealed > 0 ? ` · 🔒 sealed for ${mon.sealed} turn${mon.sealed === 1 ? "" : "s"}` : "") +
+          (evo < MAX_EVOLUTION ? ` · Evolving: +20% power, −1 charge cost` : " · Fully evolved") + `</div>` +
+          `<div class="s-actions">` +
+          (isMine && canEvolve ? `<button id="sheetEvolve">Evolve · 🍓${BERRIES_TO_EVOLVE}</button>` : "") +
+          `<button class="ghost" id="sheetClose">Close</button></div></div>`;
+        sheet.classList.remove("hidden");
+        const close = () => sheet.classList.add("hidden");
+        $("sheetClose").onclick = close;
+        sheet.onclick = (e) => { if (e.target === sheet) close(); };
+        const evoBtn = $("sheetEvolve");
+        if (evoBtn) evoBtn.onclick = async () => { close(); await onEvolve(mon.id); };
       }
 
       async function onEvolve(monsterId) {
         if (animating) return;
-        try {
-          await gameSock.request("mm:evolve", { monsterId });
-          await refresh();
-        } catch (e) {
-          toast(e.message);
-        }
+        try { await gameSock.request("mm:evolve", { monsterId }); await refresh(); }
+        catch (e) { toast(e.message); }
       }
 
+      /* ------------------------------------------------------------ input */
       async function onTile(x, y) {
-        if (animating) return;
+        if (animating || !state) return;
         if (!myTurn()) return toast("Not your turn");
-        if (!selected) { selected = { x, y }; return render(); }
-        if (selected.x === x && selected.y === y) { selected = null; return render(); }
+        const gem = state.board[y][x];
+        if (gem === "stone") return toast("🪨 Stone can't be moved — match next to it to break it");
+        if ((state.ice?.[y]?.[x] ?? 0) > 0) return toast("❄ That tile is frozen");
+        if (!selected) { selected = { x, y }; return renderBoard(); }
+        if (selected.x === x && selected.y === y) { selected = null; return renderBoard(); }
         const adjacent = Math.abs(selected.x - x) + Math.abs(selected.y - y) === 1;
-        if (!adjacent) { selected = { x, y }; return render(); }
+        if (!adjacent) { selected = { x, y }; return renderBoard(); }
         const from = selected;
         selected = null;
-        render();
-        try {
-          // On success the server broadcasts mm:moveResult to both players, which
-          // drives the animation for everyone. We only react here if it's illegal.
-          await gameSock.request("mm:move", { from, to: { x, y } });
-        } catch (e) {
-          toast(e.message);
+        renderBoard();
+        try { await gameSock.request("mm:move", { from, to: { x, y } }); }
+        catch (e) { toast(e.message === "swap does not create a match" ? "No match there" : e.message); }
+      }
+
+      /* ------------------------------------------------------------ animation */
+      const tileAt = (x, y) => $("board").querySelector(`[data-x="${x}"][data-y="${y}"]`);
+
+      async function playSteps(steps) {
+        for (const step of steps || []) {
+          if (step.board) { state.board = step.board; renderBoard(); }
+          for (const c of step.cleared) tileAt(c.x, c.y)?.classList.add("pop");
+          await sleep(330);
         }
       }
 
-      /* ---- move animation: swap -> match flash -> settle -> damage ---- */
-      let animating = false;
-      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-      const tileAt = (x, y) => $("board").querySelector(`[data-x="${x}"][data-y="${y}"]`);
+      async function showCallout(cast) {
+        const el = $("callout");
+        el.style.setProperty("--el", `var(--${cast.element})`);
+        const who = cast.by === room.seat ? "" : "Rival's ";
+        el.textContent = `${EMOJI[cast.element]} ${who}${cast.monsterName} · ${cast.moveName}`;
+        el.classList.add("show");
+        await sleep(cast.via === "followUp" ? 450 : 700);
+        el.classList.remove("show");
+        await sleep(120);
+      }
 
       async function animate(data) {
         animating = true;
         try {
           selected = null;
-          // 1) show the swap happen on the board as it currently stands
           const { from, to } = data.move;
-          swapLocal(from, to);
-          render();
+          const g = state.board;
+          const t = g[from.y][from.x]; g[from.y][from.x] = g[to.y][to.x]; g[to.y][to.x] = t;
+          renderBoard();
           tileAt(from.x, from.y)?.classList.add("swapin");
           tileAt(to.x, to.y)?.classList.add("swapin");
           await sleep(160);
-          // 2) play EVERY cascade step: show that step's board, flash its matches
-          for (const step of data.cascades || []) {
-            if (step.board) {
-              state.board = step.board;
-              render();
-            }
-            for (const c of step.cleared) tileAt(c.x, c.y)?.classList.add("pop");
-            await sleep(340);
-          }
-          // 3) settle to the final board + float the ability effects
+          await playSteps(data.cascades);
+          for (const cast of (data.casts || []).slice(0, 6)) await showCallout(cast);
+          await playSteps(data.effectSteps);
           state.board = data.board;
-          render();
-          showAbilityFloats(data.abilities);
-          if (data.by === mySeat && data.berriesGained > 0) toast(`🍓 +${data.berriesGained} berries`);
-          if (data.extraTurn && data.by === mySeat) toast("💥 Match-4 — extra move!");
+          state.ice = data.ice;
+          renderBoard();
+          showFloats(data.abilities);
+          if (data.by === room.seat && data.berriesGained > 0) toast(`🍓 +${data.berriesGained} berr${data.berriesGained === 1 ? "y" : "ies"}`);
+          if (data.extraTurn && data.by === room.seat) toast("💥 Match-4 — extra move!");
           if (data.reshuffled) toast("🔀 No moves left — board reshuffled");
-          // 4) sync authoritative HP / turn / phase from the server
           await refresh();
-        } catch (e) {
-          try { await refresh(); } catch (_) {}
+        } catch {
+          try { await refresh(); } catch {}
         } finally {
-          animating = false; // never leave the board locked
+          animating = false;
         }
       }
 
-      function swapLocal(a, b) {
-        const g = state.board;
-        const t = g[a.y][a.x];
-        g[a.y][a.x] = g[b.y][b.x];
-        g[b.y][b.x] = t;
-      }
-
-      function showAbilityFloats(abilities) {
+      function showFloats(abilities) {
         if (!abilities || !abilities.length) return;
-        // Aggregate by (player, kind) so a big turn doesn't spam numbers.
-        const agg = {}; // key: `${seat}|${kind}` -> amount
+        const agg = {};
         for (const a of abilities) {
-          const kind = a.type.replace("-tick", ""); // attack|heal|shield|burn|poison
+          const kind = a.type.replace("-tick", "");
           const key = a.targetPlayer + "|" + kind;
           agg[key] = (agg[key] || 0) + a.amount;
         }
-        let offset = 0;
+        const offsets = { 0: 0, 1: 0 };
         for (const key of Object.keys(agg)) {
           const [seatStr, kind] = key.split("|");
-          const card = Number(seatStr) === mySeat ? $("teamMe") : $("teamFoe");
-          const amt = agg[key];
+          const seat = Number(seatStr);
+          const strip = seat === room.seat ? $("meStrip") : $("foeStrip");
+          const icon = { shield: "🛡", burn: "🔥", poison: "☠", heal: "✚", fatigue: "☠" }[kind] || "";
+          const sign = kind === "heal" || kind === "shield" ? "+" : "−";
           const f = document.createElement("div");
-          const sign = kind === "attack" || kind === "burn" || kind === "poison" ? "-" : "+";
-          const icon = kind === "shield" ? "🛡️" : kind === "burn" ? "🔥" : kind === "poison" ? "☠️" : kind === "heal" ? "✚" : "";
-          f.className = "dmg-float" + (kind !== "attack" ? " float-" + kind : "");
-          f.textContent = `${icon}${sign}${amt}`.trim();
-          f.style.top = 6 + offset + "px";
-          card.appendChild(f);
-          offset += 22;
-          setTimeout(() => f.remove(), 1000);
+          f.className = `float ${kind}`;
+          f.textContent = `${icon}${sign}${agg[key]}`;
+          f.style.top = 4 + offsets[seat] + "px";
+          offsets[seat] += 24;
+          strip.querySelector(".s-fx").appendChild(f);
+          setTimeout(() => f.remove(), 1050);
         }
       }
 
       function showEnd(won) {
-        $("game").classList.add("hidden");
-        $("end").classList.remove("hidden");
-        $("endTitle").textContent = won ? "🏆 You win!" : "💀 You lost";
+        store.del("mm.room");
+        const end = $("end");
+        end.innerHTML =
+          `<div class="end-card"><div style="font-size:48px">${won ? "🏆" : "💀"}</div>` +
+          `<div class="big">${won ? "Victory!" : "Defeat"}</div>` +
+          `<p>${won ? "Your monsters carried the day." : "Your rival takes this one."}</p>` +
+          `<button id="again" style="width:100%">Back to lobby</button></div>`;
+        end.classList.remove("hidden");
+        $("again").onclick = leaveGame;
       }
 
+      /* ------------------------------------------------------------ boot */
       $("play").addEventListener("click", quickPlay);
       $("create").addEventListener("click", createRoom);
       $("join").addEventListener("click", joinRoom);
       $("code").addEventListener("input", refreshButtons);
-      $("code").addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && !$("join").disabled) joinRoom();
-      });
+      $("code").addEventListener("keydown", (e) => { if (e.key === "Enter" && !$("join").disabled) joinRoom(); });
+      $("name").value = store.get("mm.name") || "";
 
-      $("again").addEventListener("click", () => {
-        try { gameSock?.close(); } catch {}
-        try { lobbySock?.close(); } catch {}
-        lobbySock = null;
-        state = null; selected = null; picks = []; started = false;
-        $("end").classList.add("hidden");
-        $("lobby").classList.remove("hidden");
-        $("invite").classList.add("hidden");
-        $("lobbyStatus").textContent = "";
-        $("code").value = "";
-        for (const el of document.querySelectorAll(".mon")) el.classList.remove("sel", "dim");
-        refreshButtons();
-      });
-
-      // If opened via an invite link (/play?room=CODE), prefill the code box.
       const invited = new URLSearchParams(location.search).get("room");
       if (invited) {
         $("code").value = invited.toUpperCase();
         $("lobbyStatus").textContent = `Invited to room ${invited.toUpperCase()} — pick two monsters, then Join.`;
       }
 
-      loadRoster()
-        .then(refreshButtons)
-        .catch((e) => ($("lobbyStatus").textContent = "Failed to load roster: " + e.message));
+      (async () => {
+        const resumed = await resumeIfAny();
+        try { await loadRoster(); } catch (e) { $("lobbyStatus").textContent = "Failed to load monsters: " + e.message; }
+        if (!resumed) showScreen("lobby");
+      })();
     </script>
   </body>
 </html>

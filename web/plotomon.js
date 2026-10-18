@@ -268,12 +268,16 @@
     prism_owl: "light", dawn_sprite: "light", lumen_stag: "light", halo_moth: "light",
   };
 
+  // Gradient ids must be unique per <svg> instance: a reference to an id that
+  // lives in a hidden (display:none) subtree renders as no fill.
+  let uid = 0;
+
   function svg(id, size) {
     const el = ELEM[id] || "light";
     const p = PAL[el];
     const draw = B[id] || bublob;
     const sz = size || 72;
-    const gid = "g" + id;
+    const gid = "pm-" + id + "-" + uid++;
     return (
       `<svg viewBox="0 0 120 120" width="${sz}" height="${sz}" xmlns="http://www.w3.org/2000/svg" class="plotomon">` +
       `<defs><radialGradient id="${gid}" cx="50%" cy="40%" r="70%">` +

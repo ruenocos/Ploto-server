@@ -556,11 +556,11 @@ export function effectiveCost(def: Monster, evolution: number): number {
 export function describeEffects(effects: readonly Effect[], element: Element): string {
   const parts = effects.map((e) => {
     switch (e.kind) {
-      case "damage": return `Deal ${e.amount} damage`;
-      case "heal": return `Heal ${e.amount} HP`;
-      case "shield": return `Gain a ${e.amount} shield`;
-      case "drain": return `Steal ${e.amount} HP`;
-      case "dot": return `${e.dot === "burn" ? "Burn" : "Poison"} ${e.amount}/turn for ${e.turns} turns`;
+      case "damage": return `deal ${e.amount} damage`;
+      case "heal": return `heal ${e.amount} HP`;
+      case "shield": return `gain a ${e.amount} shield`;
+      case "drain": return `steal ${e.amount} HP`;
+      case "dot": return `${e.dot} ${e.amount}/turn for ${e.turns} turns`;
       case "match":
         return { row: "match a random row", col: "match a random column", area: "match a 3×3 area", square: "match a 2×2 area" }[e.shape];
       case "freeze": return `freeze ${e.count} tiles`;

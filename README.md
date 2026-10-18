@@ -44,41 +44,54 @@ No Plato servers involved — this is a standalone, self-hosted game.
 
 ```bash
 npm install
-npm run dev        # status+web on :8080, signaling on :8443
+npm run dev        # web, status and WebSocket all on :8080
 ```
 
 Then both of you open **`http://<the-host's-LAN-ip>:8080/play`** (the host can
-use `http://localhost:8080/play`). Each picks two monsters, then either:
+use `http://localhost:8080/play`), or deploy it (see [`docs/DEPLOY.md`](docs/DEPLOY.md)).
+Each picks two monsters, then either **Quick Play** (matched with anyone
+queuing) or **Invite a friend** (a 4-character code + a share link,
+`/play?room=CODE`, that pre-fills the code for them). No accounts.
 
-- **Quick Play** — matched with anyone else queuing, or
-- **Create private room** — get a 4-character code + a one-click invite link
-  (`/play?room=CODE`). Send it to your friend; when they open it the code is
-  pre-filled, they pick monsters and hit **Join** and you're both dropped into
-  the same match. No queue, no accounts.
+### How a match plays
 
-In the match: tap a tile then an adjacent one to swap. Matching tiles **charges**
-your monsters of that element; when a monster hits its charge cost it **fires its
-ability** — attack, heal, shield, burn, or poison — at the rival. You also get
-**2 moves per turn**, and clearing a line of **4+** grants an extra move. 🍓
-**Berry** tiles appear on the board — match them to collect berries, and spend
-**4** to **evolve** one of your monsters (its ability gets stronger, up to Lv3).
-Each player has one HP pool; drop your rival to 0 to win. Works on phones on the
-same Wi-Fi. 20 monsters across five elements in the picker.
+- Tap a tile, then a neighbour, to swap. A swap must make a match.
+- You get **2 moves per turn** (the opening player gets 1 on their first turn).
+  A line of **4+** grants an extra move.
+- Matching tiles **charges** your monsters of that element. At its charge cost a
+  monster **fires its move** — damage plus a twist (see below).
+- 🍓 **Berries** appear on the board; collect **4** to **evolve** a monster
+  (+20% power, −1 charge cost, up to ★★★).
+- 🪨 **Stone** tiles can't move and crumble when a neighbour is matched;
+  ❄ **frozen** tiles can't be swapped until the ice melts.
+- One HP pool each (80). Shields cap at 30. After 14 turns **sudden death**
+  deals growing damage each turn, so every match ends.
 
-(Want it reachable off-LAN? Put it behind any TLS reverse proxy / tunnel and the
-same `/play` page works.)
+### Element archetypes
+
+| Element | Archetype | Plays like |
+| ------- | --------- | ---------- |
+| 🔥 Fire | Destroyer | big hits, burns, blasts that match a row/column/area (the tiles charge you) |
+| 💧 Water | Controller | freeze tiles, drain rival charge, make the rival lose a move |
+| ⛰️ Earth | Fortress | turn tiles to stone, quakes, big shields and heals |
+| 🌿 Nature | Sustain | poison, life-steal, seal a rival monster's charge, overgrowth |
+| ✨ Light | Tempo | burst, extra moves, cleansing, charging its partner |
+
+20 monsters, each with its own move; some have passives (Scorchpaw goes
+**berserk** at low HP, Lumoth **follows up** whenever its partner hits).
 
 ## Run it
 
 ```bash
 npm install
-npm test          # 31 tests: engine, board, matchmaking, protoo, end-to-end
+npm test          # engine, board, matchmaking, protoo, rooms, end-to-end
 npm run typecheck
-npm run dev       # status on :8080, signaling on :8443
+npm run dev       # everything on :8080
+npm run sim       # balance simulator (N=600 SEED=777)
 ```
 
-Environment variables: `PLOTO_HOST`, `PLOTO_STATUS_PORT`, `PLOTO_SIGNALING_PORT`,
-`PLOTO_DOWNTIME` (`1` for maintenance), `PLOTO_MAINTENANCE_REASON`.
+Environment variables: `PORT` / `PLOTO_PORT`, `PLOTO_HOST`, `PLOTO_DOWNTIME`
+(`1` for maintenance), `PLOTO_MAINTENANCE_REASON`.
 
 ## Getting a game bundle (the dumper)
 
@@ -108,17 +121,20 @@ cleanest source is your own device's app cache while the service is up.
 ## The Match Monsters engine
 
 `src/game/matchmonsters` is a self-contained, server-authoritative match-3
-battler built from the public rules: each player has one HP pool and fields two
-monsters. Matching tiles of a monster's element adds **charge**; when a monster
-reaches its **charge cost** it fires its **ability** — `attack` (damage),
-`heal` (restore HP), `shield` (soak incoming damage), or `burn` (damage each
-turn, ignoring shields). Reduce the opponent to 0 HP to win. All randomness runs
-through a seeded PRNG, so a match is fully reproducible from `(seed, moves)` —
-which is how the engine is unit-tested and how matches can be replayed.
+battler built from the public rules. A monster's move is a list of **effects**
+(`damage`, `heal`, `shield`, `drain`, `dot`, `match`, `freeze`, `petrify`,
+`convert`, `sap`, `slow`, `seal`, `haste`, `cleanse`, `empower`) applied in
+order, plus optional passives (`berserk`, `followUp`). Display text is generated
+from the effects, so `monsters.ts` is the single source of truth for numbers.
+All randomness runs through a seeded PRNG, so a match is fully reproducible from
+`(seed, moves)` — which is how the engine is unit-tested and replayed.
 
-The monster roster in `monsters.ts` (abilities + charge costs) is our own set so
-the game is playable now; the real roster/art/tuning slot in from the game bundle
-later.
+Balance is checked with `npm run sim`: a greedy bot plays hundreds of matches
+and reports length, first-player edge and win share per element (last run: 100%
+of matches finish, median 44 moves, first player 53%, every element 0.48–0.53).
+
+The roster and art are our own, so the game is playable now; the real
+roster/tuning can slot in from the game bundle later.
 
 ## Scope & intent
 

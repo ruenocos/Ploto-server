@@ -25,6 +25,7 @@
         --light: #ffd23c;
         --radius: 14px;
       }
+      @property --p { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
       * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
       html, body { margin: 0; }
       body {
@@ -132,7 +133,8 @@
       .chip.slow { color: #9bf6ff; }
       .hp { margin: 7px 0 8px; display: flex; align-items: center; gap: 8px; }
       .hp .bar { flex: 1; height: 12px; border-radius: 999px; background: #0b0e16; overflow: hidden; position: relative; }
-      .hp .fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #39c466, #8be27f); transition: width 0.45s ease; }
+      .hp .ghost { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: #ffd9c7; transition: width 0.6s cubic-bezier(0.3, 0, 0.2, 1) 0.3s; }
+      .hp .fill { position: relative; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #39c466, #8be27f); transition: width 0.25s ease; }
       .hp .fill.low { background: linear-gradient(90deg, #ff5d5d, #ff9a6b); }
       .hp .shieldfill { position: absolute; inset: 0 auto 0 0; background: repeating-linear-gradient(45deg, rgba(127,208,255,0.55) 0 4px, rgba(127,208,255,0.25) 4px 8px); border-radius: 999px; transition: width 0.45s ease; }
       .hp .num { font-weight: 800; font-size: 13px; font-variant-numeric: tabular-nums; min-width: 52px; text-align: right; }
@@ -142,7 +144,9 @@
         background: var(--panel2); cursor: pointer; position: relative; border: 1px solid transparent;
       }
       .mchip.ready { border-color: color-mix(in srgb, var(--el) 70%, transparent); box-shadow: 0 0 14px -4px var(--el); }
-      .ring { --p: 0%; flex: none; width: 46px; height: 46px; border-radius: 50%; padding: 3px; background: conic-gradient(var(--el) var(--p), rgba(255,255,255,0.08) 0); }
+      .ring { --p: 0%; flex: none; width: 46px; height: 46px; border-radius: 50%; padding: 3px; background: conic-gradient(var(--el) var(--p), rgba(255,255,255,0.08) 0); transition: --p 0.25s ease; }
+      .mchip.ready .ring { animation: readyPulse 1.2s ease-in-out infinite; }
+      @keyframes readyPulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--el) 70%, transparent); } 50% { box-shadow: 0 0 0 5px transparent; } }
       .ring .art { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; }
       .ring .art svg { display: block; width: 40px; height: 40px; }
       .mtext { min-width: 0; flex: 1; }
@@ -152,10 +156,17 @@
       .mchip .badge { position: absolute; top: -6px; right: -4px; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 999px; background: var(--accent); color: #fff; }
       .mchip .sealed { position: absolute; bottom: -6px; right: -4px; font-size: 10px; font-weight: 900; padding: 1px 6px; border-radius: 999px; background: #3a2f55; color: #d8c8ff; }
 
-      .banner { flex: none; text-align: center; font-weight: 800; padding: 8px 10px; border-radius: 12px; font-size: 14px; }
+      .banner { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-weight: 800; padding: 8px 12px; border-radius: 12px; font-size: 14px; position: relative; transition: background 0.25s ease, color 0.25s ease; }
+      .banner .round { font-size: 12px; min-width: 58px; }
+      .banner .who { flex: 1; text-align: center; }
+      .banner .pips { display: flex; gap: 6px; min-width: 58px; justify-content: flex-end; }
+      .pip { width: 11px; height: 11px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; }
+      .pip.used { background: transparent; box-shadow: inset 0 0 0 2px currentColor; opacity: 0.4; }
+      .pip.new { animation: pipIn 0.55s cubic-bezier(0.2, 1.8, 0.4, 1); }
+      @keyframes pipIn { 0% { transform: scale(0); } 60% { transform: scale(1.7); } 100% { transform: scale(1); } }
       .banner.you { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent2); }
       .banner.them { background: var(--panel); color: var(--muted); }
-      .banner .sd { display: block; font-size: 11px; color: #ff9a6b; margin-top: 2px; }
+      .banner .sd { flex-basis: 100%; text-align: center; font-size: 11px; color: #ff9a6b; }
       .banner .round { opacity: 0.75; font-weight: 700; }
       .mchip .info { position: absolute; top: 4px; right: 7px; font-size: 12px; color: var(--muted); }
 
@@ -163,43 +174,74 @@
       .board { display: grid; gap: 4px; touch-action: manipulation; border-radius: 10px; }
       .board.falling { overflow: hidden; } /* new tiles enter from above the board */
       .tile {
+        --el: #8a8f9c;
         position: relative; border-radius: 10px; display: flex; align-items: center; justify-content: center;
-        cursor: pointer; user-select: none; font-size: var(--glyph, 24px); line-height: 1;
-        box-shadow: inset 0 -3px 0 rgba(0,0,0,0.25), inset 0 2px 0 rgba(255,255,255,0.08);
+        cursor: pointer; user-select: none;
+        background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--el) 24%, #171c2b) 0%, #10141f 80%);
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05), inset 0 -2px 0 rgba(0,0,0,0.3);
         transition: transform 0.12s ease;
       }
-      .tile.fire { background: linear-gradient(160deg, #6b2a1d, #3d1710); }
-      .tile.water { background: linear-gradient(160deg, #1d4a7a, #102a47); }
-      .tile.earth { background: linear-gradient(160deg, #5c4326, #36270f); }
-      .tile.nature { background: linear-gradient(160deg, #1f5a32, #11331c); }
-      .tile.light { background: linear-gradient(160deg, #6b5a1a, #3d330d); }
-      .tile.berry { background: linear-gradient(160deg, #6e2443, #3f1326); box-shadow: inset 0 0 0 2px rgba(255,120,170,0.55); }
-      .tile.stone { background: linear-gradient(160deg, #4a4d57, #2a2c33); box-shadow: inset 0 -3px 0 rgba(0,0,0,0.4), inset 0 0 0 2px rgba(0,0,0,0.25); filter: saturate(0.6); cursor: not-allowed; }
-      .tile.sel { transform: scale(0.9); box-shadow: 0 0 0 3px #fff, 0 0 18px rgba(255,255,255,0.5); }
+      .tile .gem { width: 84%; height: 84%; display: block; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.45)); }
+      .tile.fire { --el: var(--fire); }
+      .tile.water { --el: var(--water); }
+      .tile.earth { --el: var(--earth); }
+      .tile.nature { --el: var(--nature); }
+      .tile.light { --el: var(--light); }
+      .tile.berry { --el: #ff5c9a; }
+      .tile.stone { --el: #6d717c; cursor: not-allowed; }
+      .tile.sel { transform: scale(0.92); box-shadow: 0 0 0 3px #fff, 0 0 18px rgba(255,255,255,0.45); }
+      .tile.sel .gem { animation: gemWiggle 0.45s ease-in-out infinite alternate; }
+      @keyframes gemWiggle { from { transform: rotate(-6deg) scale(1.04); } to { transform: rotate(6deg) scale(1.04); } }
       .tile.iced::after {
-        content: "❄"; position: absolute; inset: 0; border-radius: 10px; display: grid; place-items: start end;
-        padding: 2px 4px; font-size: 11px; color: #e6f7ff;
-        background: linear-gradient(160deg, rgba(190,235,255,0.55), rgba(120,190,255,0.25));
-        box-shadow: inset 0 0 0 2px rgba(210,240,255,0.8);
+        content: ""; position: absolute; inset: 0; border-radius: 10px;
+        background: linear-gradient(150deg, rgba(225,245,255,0.6), rgba(140,200,255,0.18) 55%, rgba(225,245,255,0.45));
+        box-shadow: inset 0 0 0 2px rgba(215,242,255,0.85), inset 0 0 12px rgba(200,235,255,0.6);
       }
+      .tile.iced.fresh::after { animation: frostIn 520ms ease-out; }
+      @keyframes frostIn { 0% { opacity: 0; transform: scale(1.25); } 60% { opacity: 1; } 100% { transform: scale(1); } }
+      .tile.stone.fresh .gem { animation: stoneIn 520ms cubic-bezier(0.2, 1.5, 0.4, 1); }
+      @keyframes stoneIn { 0% { transform: scale(1.5) translateY(-20%); opacity: 0; filter: brightness(2); } 100% { transform: none; opacity: 1; } }
       .tile.swapin { animation: swapin 180ms ease; }
-      .tile.pop { animation: pop 340ms ease forwards; z-index: 2; }
+      .tile.pop .gem { animation: pop 300ms ease forwards; }
       @keyframes swapin { 0% { transform: scale(0.75); } 100% { transform: scale(1); } }
-      @keyframes pop { 0% { transform: scale(1); } 35% { transform: scale(1.3); filter: brightness(1.8); } 100% { transform: scale(0.1); opacity: 0.1; } }
+      @keyframes pop { 0% { transform: scale(1); } 35% { transform: scale(1.35); filter: brightness(2.2); } 100% { transform: scale(0); opacity: 0; } }
+      .board.shuffling .gem { animation: shuffleIn 560ms cubic-bezier(0.2, 1.4, 0.4, 1) both; animation-delay: var(--d, 0ms); }
+      @keyframes shuffleIn { from { transform: rotate(-200deg) scale(0); opacity: 0; } to { transform: none; opacity: 1; } }
 
-      .callout {
-        position: absolute; left: 50%; top: 8px; transform: translate(-50%, -6px); z-index: 6;
-        background: color-mix(in srgb, var(--el, var(--accent)) 30%, #10131c); border: 1px solid var(--el, var(--accent));
-        color: #fff; font-weight: 800; padding: 8px 14px; border-radius: 999px; font-size: 14px;
-        white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.18s ease, transform 0.18s ease;
-        max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis;
+      /* cast moment: the move takes the stage over a dimmed board */
+      .board { transition: filter 0.2s ease; }
+      .board-wrap.casting .board { filter: brightness(0.45) saturate(0.7); }
+      .cast { position: absolute; inset: 0; display: none; place-items: center; pointer-events: none; z-index: 7; }
+      .cast.show { display: grid; }
+      .cast-inner { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+      .cast-art {
+        width: 132px; height: 132px; border-radius: 50%; display: grid; place-items: center;
+        background: radial-gradient(circle, color-mix(in srgb, var(--el) 60%, transparent) 0%, color-mix(in srgb, var(--el) 18%, transparent) 50%, transparent 70%);
       }
-      .callout.show { opacity: 1; transform: translate(-50%, 0); }
+      .cast-art svg { width: 112px; height: 112px; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.6)); }
+      .cast-name {
+        font-weight: 900; font-size: 18px; color: #fff; padding: 5px 16px; border-radius: 999px; white-space: nowrap;
+        background: color-mix(in srgb, var(--el) 30%, #0d1018); border: 1px solid var(--el);
+        box-shadow: 0 0 24px -4px var(--el);
+      }
+      .combo {
+        position: absolute; left: 50%; top: 50%; z-index: 8; pointer-events: none; white-space: nowrap;
+        font-weight: 900; font-size: 40px; color: #fff; letter-spacing: 1px;
+        text-shadow: 0 0 18px var(--accent), 0 3px 0 rgba(0,0,0,0.6);
+      }
+
+      /* effects layer: motes, shards and orbs fly over everything but sheets */
+      #fx { position: fixed; inset: 0; pointer-events: none; z-index: 30; overflow: hidden; }
+      .mote, .orb, .shard { position: fixed; left: 0; top: 0; border-radius: 50%; will-change: transform, opacity; }
+      .mote { width: 12px; height: 12px; margin: -6px 0 0 -6px; background: radial-gradient(circle, #fff 0 22%, var(--c) 55%, transparent 72%); box-shadow: 0 0 10px 2px var(--c); }
+      .orb { width: 22px; height: 22px; margin: -11px 0 0 -11px; background: radial-gradient(circle, #fff 0 25%, var(--c) 55%, transparent 72%); box-shadow: 0 0 18px 6px var(--c); }
+      .shard { width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 2px; background: var(--c); box-shadow: 0 0 6px var(--c); }
+      .flash { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(ellipse at 50% 40%, var(--c), transparent 75%); opacity: 0; }
 
       .float {
         position: absolute; left: 50%; top: 4px; transform: translateX(-50%); z-index: 8;
-        font-weight: 900; font-size: 20px; text-shadow: 0 2px 6px #000; pointer-events: none;
-        animation: floatUp 1s ease forwards; white-space: nowrap;
+        font-weight: 900; font-size: 24px; text-shadow: 0 2px 6px #000, 0 0 12px currentColor; pointer-events: none;
+        animation: floatUp 1.05s cubic-bezier(0.2, 0.8, 0.3, 1) forwards; white-space: nowrap;
       }
       .float.attack { color: #ff6a4d; }
       .float.heal { color: var(--good); }
@@ -207,7 +249,8 @@
       .float.burn { color: #ff9a3c; }
       .float.poison { color: #8be27f; }
       .float.fatigue { color: #ff9a6b; }
-      @keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, 8px); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -28px); } }
+      .float.small { font-size: 16px; }
+      @keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, 6px) scale(1.8); } 18% { opacity: 1; transform: translate(-50%, 0) scale(1); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -30px) scale(0.9); } }
 
       .debug-bar { flex: none; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; }
       .debug-bar button { padding: 6px 10px; font-size: 12px; }
@@ -217,7 +260,11 @@
       .bob svg { animation: bob 2.6s ease-in-out infinite; transform-origin: 50% 80%; }
       .bob:nth-child(2n) svg { animation-delay: -1.3s; }
       @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px) scale(1.02); } }
-      @media (prefers-reduced-motion: reduce) { .bob svg, .float { animation: none; } }
+      @media (prefers-reduced-motion: reduce) {
+        .bob svg, .tile.sel .gem, .mchip.ready .ring, .board.shuffling .gem { animation: none; }
+        .float { animation: fadeOnly 1s ease forwards; }
+        @keyframes fadeOnly { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+      }
 
       /* ---------------------------------------------------------------- sheet / overlays */
       .scrim { position: fixed; inset: 0; background: rgba(5, 7, 12, 0.6); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
@@ -261,6 +308,55 @@
     </style>
   </head>
   <body>
+    <!-- Gem art: one symbol per tile type, each a distinct silhouette (readable without colour). -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="gg-fire" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffd25a"/><stop offset="0.45" stop-color="#ff7a2e"/><stop offset="1" stop-color="#e2321f"/></linearGradient>
+        <linearGradient id="gg-water" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#9fe0ff"/><stop offset="0.5" stop-color="#3aa0ff"/><stop offset="1" stop-color="#1d56c9"/></linearGradient>
+        <linearGradient id="gg-earth" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3c88a"/><stop offset="0.5" stop-color="#c88a45"/><stop offset="1" stop-color="#7d4f22"/></linearGradient>
+        <linearGradient id="gg-nature" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#1f8a3c"/><stop offset="0.55" stop-color="#4ccb6b"/><stop offset="1" stop-color="#b6f28a"/></linearGradient>
+        <linearGradient id="gg-light" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff6c2"/><stop offset="0.5" stop-color="#ffd23c"/><stop offset="1" stop-color="#e09a12"/></linearGradient>
+        <radialGradient id="gg-berry" cx="0.38" cy="0.38" r="0.7"><stop offset="0" stop-color="#ffb3d1"/><stop offset="0.45" stop-color="#ff4f8f"/><stop offset="1" stop-color="#a3124a"/></radialGradient>
+        <linearGradient id="gg-stone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b9bcc6"/><stop offset="0.5" stop-color="#7c808c"/><stop offset="1" stop-color="#4a4d57"/></linearGradient>
+
+        <symbol id="gem-fire" viewBox="0 0 100 100">
+          <path d="M50 5C61 24 84 37 81 63C79 83 65 95 50 95C35 95 21 83 19 63C17 46 29 38 33 25C38 37 43 42 46 44C43 30 45 17 50 5Z" fill="url(#gg-fire)" stroke="rgba(60,10,0,0.45)" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M50 50C58 60 65 68 63 79C61 88 39 88 37 79C35 68 43 60 50 50Z" fill="#ffe38f"/>
+          <path d="M40 30C36 38 31 44 31 54" stroke="rgba(255,255,255,0.55)" stroke-width="4" fill="none" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="gem-water" viewBox="0 0 100 100">
+          <path d="M50 5C64 29 82 47 82 65C82 83 68 95 50 95C32 95 18 83 18 65C18 47 36 29 50 5Z" fill="url(#gg-water)" stroke="rgba(0,20,60,0.45)" stroke-width="3" stroke-linejoin="round"/>
+          <ellipse cx="38" cy="58" rx="7" ry="13" fill="rgba(255,255,255,0.6)" transform="rotate(20 38 58)"/>
+          <circle cx="62" cy="76" r="4" fill="rgba(255,255,255,0.35)"/>
+        </symbol>
+        <symbol id="gem-earth" viewBox="0 0 100 100">
+          <polygon points="50,6 89,28 89,72 50,94 11,72 11,28" fill="url(#gg-earth)" stroke="rgba(50,25,0,0.5)" stroke-width="3" stroke-linejoin="round"/>
+          <polygon points="50,25 71,37 71,63 50,75 29,63 29,37" fill="rgba(255,230,190,0.28)"/>
+          <path d="M50 6V25M89 28L71 37M89 72L71 63M50 94V75M11 72L29 63M11 28L29 37" stroke="rgba(60,30,0,0.35)" stroke-width="2"/>
+          <polygon points="50,25 71,37 50,48 29,37" fill="rgba(255,255,255,0.35)"/>
+        </symbol>
+        <symbol id="gem-nature" viewBox="0 0 100 100">
+          <path d="M16 84C12 45 40 13 87 11C89 54 62 87 16 84Z" fill="url(#gg-nature)" stroke="rgba(0,40,10,0.5)" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M20 80C38 60 56 42 80 18M40 60L36 44M52 48L50 32M44 56L60 58M56 44L72 44" stroke="rgba(10,70,25,0.55)" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path d="M30 60C32 44 44 30 60 24" stroke="rgba(255,255,255,0.4)" stroke-width="4" fill="none" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="gem-light" viewBox="0 0 100 100">
+          <polygon points="50,4 62,36 96,37 69,58 79,92 50,72 21,92 31,58 4,37 38,36" fill="url(#gg-light)" stroke="rgba(90,55,0,0.5)" stroke-width="3" stroke-linejoin="round"/>
+          <polygon points="50,24 57,42 50,52 43,42" fill="rgba(255,255,255,0.65)"/>
+        </symbol>
+        <symbol id="gem-berry" viewBox="0 0 100 100">
+          <circle cx="50" cy="60" r="33" fill="url(#gg-berry)" stroke="rgba(70,0,25,0.5)" stroke-width="3"/>
+          <g fill="rgba(255,230,160,0.85)"><circle cx="38" cy="56" r="2.6"/><circle cx="52" cy="50" r="2.6"/><circle cx="64" cy="60" r="2.6"/><circle cx="44" cy="70" r="2.6"/><circle cx="58" cy="76" r="2.6"/><circle cx="66" cy="44" r="2.2"/></g>
+          <path d="M50 28C44 16 32 14 26 18C34 22 42 26 50 28ZM50 28C56 14 70 12 76 18C68 22 58 26 50 28Z" fill="#4ccb6b" stroke="rgba(0,50,10,0.5)" stroke-width="2"/>
+          <ellipse cx="38" cy="46" rx="6" ry="9" fill="rgba(255,255,255,0.45)" transform="rotate(-30 38 46)"/>
+        </symbol>
+        <symbol id="gem-stone" viewBox="0 0 100 100">
+          <polygon points="22,28 46,12 76,18 91,46 83,79 53,91 22,82 9,55" fill="url(#gg-stone)" stroke="rgba(0,0,0,0.5)" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M46 12L52 38L40 54L50 72M52 38L74 46M40 54L22 58" stroke="rgba(20,20,25,0.55)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <polygon points="22,28 46,12 52,38 30,40" fill="rgba(255,255,255,0.2)"/>
+        </symbol>
+      </defs>
+    </svg>
     <!-- ============================================================ LOBBY -->
     <section id="lobby">
       <div class="brand"><h1>Match Monsters</h1><span class="tag">Plotomon</span></div>
@@ -305,7 +401,7 @@
       <div id="turnBanner" class="banner"></div>
       <div class="board-wrap" id="boardWrap">
         <div id="board" class="board"></div>
-        <div id="callout" class="callout"></div>
+        <div id="cast" class="cast"></div>
       </div>
       <div id="debugBar" class="debug-bar hidden">
         <span class="muted">🛠 Practice</span>
@@ -318,6 +414,7 @@
     <div id="sheet" class="scrim hidden"></div>
     <div id="end" class="scrim hidden"></div>
     <div id="toast" class="toast"></div>
+    <div id="fx" aria-hidden="true"></div>
 
     <script src="/play/plotomon.js"></script>
     <script>
@@ -326,6 +423,7 @@
       const EL_LABEL = { fire: "Fire", water: "Water", earth: "Earth", nature: "Nature", light: "Light" };
       const ORDER = ["fire", "water", "earth", "nature", "light"];
       const MAX_EVOLUTION = 3;
+      const MOVES_PER_TURN = 2;
       const BERRIES_TO_EVOLVE = 4;
 
       // Session storage is a convenience (resume after reload); never required.
@@ -351,6 +449,8 @@
       let reconnectTries = 0;
       let rivalOnline = true;
       let endInfo = null; // { won, mine, theirs } while the end screen is up
+      let popPip = false; // animate a bonus move pip on the next render
+      let disp = null; // HP/charge as shown mid-animation (catches up to state as events land)
 
       const art = (id, size) => { try { return window.PLOTOMON ? PLOTOMON.svg(id, size) : ""; } catch { return ""; } };
       const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -555,7 +655,12 @@
         const live = (fn) => (d) => { if (sock === gameSock) fn(d); };
         sock.on("mm:moveResult", live((d) => animate(d)));
         sock.on("mm:gameOver", live((d) => setTimeout(() => showEnd(d.winner === room.seat), 900)));
-        sock.on("mm:evolved", live((d) => { if (d.by === room.seat) toast("✨ Evolved!"); refresh(); }));
+        sock.on("mm:evolved", live(async (d) => {
+          await refresh();
+          const idx = state.players[d.by].monsters.findIndex((m) => m.id === d.monsterId);
+          const chip = stripOf(d.by).querySelectorAll(".mchip")[idx];
+          if (chip) evolveFx(chip);
+        }));
         sock.on("mm:peerStatus", live((d) => {
           if (d.seat === room.seat) return;
           rivalOnline = d.connected;
@@ -669,9 +774,21 @@
         }
         const banner = $("turnBanner");
         banner.className = "banner " + (myTurn() ? "you" : "them");
+        // Moves as pips: filled = left this turn; a bonus move pops in.
+        const slots = Math.max(MOVES_PER_TURN, ml);
+        let pips = "";
+        for (let i = 0; i < slots; i++) {
+          const isNew = popPip && i === ml - 1;
+          pips += `<span class="pip${i < ml ? "" : " used"}${isNew ? " new" : ""}"></span>`;
+        }
         banner.innerHTML =
-          `<span class="round">Round ${round}</span> · ` +
-          (myTurn() ? `Your turn · ${ml} move${ml === 1 ? "" : "s"}` : `${esc(foe.displayName)}'s turn…`) + sd;
+          `<span class="round">Round ${round}</span>` +
+          `<span class="who ell">${myTurn() ? "Your turn" : esc(foe.displayName)}</span>` +
+          `<span class="pips" aria-label="${ml} move${ml === 1 ? "" : "s"} left">${pips}</span>` + sd;
+        if (popPip) {
+          popPip = false;
+          floatText(banner, "+1 move", "var(--accent2)");
+        }
         renderBoard();
       }
 
@@ -687,7 +804,7 @@
           chips.push(`<span class="chip dot-fx">${icon} ${dotTotal}/t</span>`);
         }
         if (p.slow > 0) chips.push(`<span class="chip slow">🐌 −${p.slow}</span>`);
-        chips.push(`<span class="chip berry">🍓 ${p.berries || 0}/${BERRIES_TO_EVOLVE}</span>`);
+        chips.push(`<span class="chip berry" data-berry>🍓 <b>${p.berries || 0}</b>/${BERRIES_TO_EVOLVE}</span>`);
         const canEvolve = isMe && myTurn() && (p.berries || 0) >= BERRIES_TO_EVOLVE;
 
         const body = container.querySelector(".s-body");
@@ -695,7 +812,8 @@
           `<div class="s-top"><span class="dot ${connected ? "" : "off"}"></span>` +
           `<span class="s-name ell">${esc(p.displayName)}${isMe ? " (you)" : ""}</span>` +
           `<span class="chips">${chips.join("")}</span></div>` +
-          `<div class="hp"><div class="bar"><div class="fill ${hpPct <= 30 ? "low" : ""}" style="width:${hpPct}%"></div>` +
+          `<div class="hp"><div class="bar"><div class="ghost" style="width:${hpPct}%"></div>` +
+          `<div class="fill ${hpPct <= 30 ? "low" : ""}" style="width:${hpPct}%"></div>` +
           `<div class="shieldfill" style="width:${shieldPct}%"></div></div>` +
           `<span class="num">❤ ${p.hp}/${p.maxHp}</span></div>` +
           `<div class="mons"></div>`;
@@ -735,7 +853,7 @@
             if ((ice[y]?.[x] ?? 0) > 0) t.classList.add("iced");
             t.dataset.x = x;
             t.dataset.y = y;
-            t.textContent = EMOJI[gem] || "";
+            if (gem) t.innerHTML = `<svg class="gem" viewBox="0 0 100 100"><use href="#gem-${gem}"/></svg>`;
             if (selected && selected.x === x && selected.y === y) t.classList.add("sel");
             t.addEventListener("click", () => onTile(x, y));
             grid.appendChild(t);
@@ -814,23 +932,186 @@
         catch (e) { toast(e.message); }
       }
 
-      /* ------------------------------------------------------------ animation */
+      /* ------------------------------------------------------------ animation
+       * Motion language: matched tiles burst into motes that fly into the
+       * monster they charge; a firing monster lunges and takes the stage over a
+       * dimmed board; its effect travels as an orb to the target, which flashes,
+       * shakes (scaled to damage) and drains its HP bar in two stages.
+       */
+      const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const COLOR = { fire: "#ff6b3d", water: "#3aa0ff", earth: "#e0a35e", nature: "#4ccb6b", light: "#ffd23c", berry: "#ff5c9a", stone: "#9aa0ad" };
       const tileAt = (x, y) => $("board").querySelector(`[data-x="${x}"][data-y="${y}"]`);
+      const stripOf = (seat) => (seat === room.seat ? $("meStrip") : $("foeStrip"));
+      const centerOf = (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+      const chipOf = (seat, monsterId) => {
+        const idx = state.players[seat].monsters.findIndex((m) => m.id === monsterId);
+        return idx < 0 ? null : { idx, el: stripOf(seat).querySelectorAll(".mchip")[idx] };
+      };
 
-      async function playSteps(steps) {
+      /** Something small flying along an arc from a to b; resolves on arrival. */
+      function fly(cls, from, to, color, { delay = 0, dur = 520, arc = 60 } = {}) {
+        if (reduceMotion) return sleep(delay);
+        const el = document.createElement("div");
+        el.className = cls;
+        el.style.setProperty("--c", color);
+        el.style.transform = `translate(${from.x}px, ${from.y}px)`;
+        el.style.opacity = "0";
+        $("fx").appendChild(el);
+        const dx = to.x - from.x, dy = to.y - from.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const bend = (Math.random() < 0.5 ? -1 : 1) * arc * (0.6 + Math.random() * 0.6);
+        const mx = from.x + dx / 2 + (-dy / len) * bend, my = from.y + dy / 2 + (dx / len) * bend;
+        const anim = el.animate(
+          [
+            { transform: `translate(${from.x}px, ${from.y}px) scale(0.4)`, opacity: 0 },
+            { transform: `translate(${from.x}px, ${from.y - 6}px) scale(1.15)`, opacity: 1, offset: 0.12 },
+            { transform: `translate(${mx}px, ${my}px) scale(1)`, opacity: 1, offset: 0.55 },
+            { transform: `translate(${to.x}px, ${to.y}px) scale(0.55)`, opacity: 0.9 },
+          ],
+          { duration: dur, delay, easing: "cubic-bezier(0.45, 0, 0.7, 1)", fill: "forwards" },
+        );
+        return anim.finished.catch(() => {}).then(() => el.remove());
+      }
+
+      /** A little burst of shards (popped tiles, evolutions). */
+      function burst(at, color, count = 5, spread = 34) {
+        if (reduceMotion) return;
+        for (let i = 0; i < count; i++) {
+          const el = document.createElement("div");
+          el.className = "shard";
+          el.style.setProperty("--c", color);
+          $("fx").appendChild(el);
+          const ang = (Math.PI * 2 * i) / count + Math.random() * 0.8;
+          const d = spread * (0.6 + Math.random() * 0.6);
+          el.animate(
+            [
+              { transform: `translate(${at.x}px, ${at.y}px) rotate(0deg) scale(1)`, opacity: 1 },
+              { transform: `translate(${at.x + Math.cos(ang) * d}px, ${at.y + Math.sin(ang) * d}px) rotate(${180 + Math.random() * 180}deg) scale(0.2)`, opacity: 0 },
+            ],
+            { duration: 380 + Math.random() * 140, easing: "cubic-bezier(0.2, 0.7, 0.4, 1)", fill: "forwards" },
+          ).finished.catch(() => {}).then(() => el.remove());
+        }
+      }
+
+      const bump = (el, scale = 1.15, dur = 240) =>
+        !reduceMotion && el && el.animate([{ transform: "scale(1)" }, { transform: `scale(${scale})` }, { transform: "scale(1)" }], { duration: dur, easing: "ease-out" });
+
+      /** Floating label over an element (pip bonus, etc.). */
+      function floatText(host, text, color) {
+        const f = document.createElement("div");
+        f.className = "float small";
+        f.style.color = color;
+        f.style.top = "-6px";
+        f.textContent = text;
+        host.appendChild(f);
+        setTimeout(() => f.remove(), 1100);
+      }
+
+      /* ---- what the strips show while a move plays out ---- */
+      function makeDisp() {
+        return state.players.map((p) => ({
+          hp: p.hp, maxHp: p.maxHp, shield: p.shield || 0, berries: p.berries || 0,
+          charge: p.monsters.map((m) => m.charge), cost: p.monsters.map((m) => m.chargeCost),
+          sealed: p.monsters.map((m) => m.sealed > 0), elements: p.monsters.map((m) => m.element),
+        }));
+      }
+
+      function drawHp(seat, healed) {
+        const d = disp[seat];
+        const strip = stripOf(seat);
+        const fill = strip.querySelector(".hp .fill"), ghost = strip.querySelector(".hp .ghost");
+        const shield = strip.querySelector(".hp .shieldfill"), num = strip.querySelector(".hp .num");
+        const pct = Math.max(0, (d.hp / d.maxHp) * 100);
+        if (healed && ghost) { ghost.style.transition = "none"; ghost.style.width = pct + "%"; void ghost.offsetWidth; ghost.style.transition = ""; }
+        if (fill) { fill.style.width = pct + "%"; fill.classList.toggle("low", pct <= 30); }
+        if (ghost && !healed) ghost.style.width = pct + "%";
+        if (shield) shield.style.width = Math.min(100, (d.shield / d.maxHp) * 100) + "%";
+        if (num) num.textContent = `❤ ${d.hp}/${d.maxHp}`;
+      }
+
+      function drawCharge(seat, i, gulp) {
+        const d = disp[seat];
+        const chip = stripOf(seat).querySelectorAll(".mchip")[i];
+        if (!chip) return;
+        const cost = d.cost[i], c = d.charge[i];
+        const ready = c >= cost;
+        const ring = chip.querySelector(".ring");
+        ring.style.setProperty("--p", Math.min(100, Math.round((c / cost) * 100)) + "%");
+        chip.querySelector(".mcharge").textContent = ready ? "READY" : `⚡ ${Math.min(c, cost)}/${cost}`;
+        chip.classList.toggle("ready", ready);
+        if (gulp) bump(ring, 1.14, 200);
+      }
+
+      /** Where a cleared tile's energy goes for `seat`: charge rings and the berry stash. */
+      function chargeTargets(seat) {
+        const strip = stripOf(seat);
+        const chips = strip.querySelectorAll(".mchip");
+        const berryChip = strip.querySelector("[data-berry]");
+        const d = disp[seat];
+        return (gem) => {
+          if (gem === "berry" && berryChip) {
+            return [{ pos: centerOf(berryChip), arrive: () => { d.berries++; const b = berryChip.querySelector("b"); if (b) b.textContent = d.berries; bump(berryChip, 1.25); } }];
+          }
+          const out = [];
+          d.elements.forEach((el, i) => {
+            if (el !== gem || d.sealed[i] || !chips[i]) return;
+            out.push({ pos: centerOf(chips[i].querySelector(".ring")), arrive: () => { d.charge[i]++; drawCharge(seat, i, true); } });
+          });
+          return out;
+        };
+      }
+
+      function showCombo(n) {
+        if (reduceMotion) return;
+        const el = document.createElement("div");
+        el.className = "combo";
+        el.textContent = `×${n}`;
+        $("boardWrap").appendChild(el);
+        el.animate(
+          [
+            { transform: "translate(-50%, -50%) scale(0.3)", opacity: 0 },
+            { transform: "translate(-50%, -50%) scale(1.25)", opacity: 1, offset: 0.3 },
+            { transform: "translate(-50%, -60%) scale(1)", opacity: 1, offset: 0.7 },
+            { transform: "translate(-50%, -75%) scale(0.95)", opacity: 0 },
+          ],
+          { duration: 700, easing: "ease-out", fill: "forwards" },
+        ).finished.catch(() => {}).then(() => el.remove());
+      }
+
+      /** Play cascade steps: pop + shards, motes to the mover's monsters, then gravity. */
+      async function playSteps(steps, { mover = null, combo = false } = {}) {
+        const arrivals = [];
+        let n = 0;
         for (const step of steps || []) {
+          n++;
           if (step.board) { state.board = step.board; renderBoard(); }
-          for (const c of step.cleared) tileAt(c.x, c.y)?.classList.add("pop");
-          await sleep(300);
+          if (combo && n >= 2) showCombo(n);
+          const targetsFor = mover == null ? null : chargeTargets(mover);
+          const shards = step.cleared.length > 12 ? 2 : 5;
+          let k = 0;
+          for (const c of step.cleared) {
+            const tile = tileAt(c.x, c.y);
+            if (!tile) continue;
+            tile.classList.add("pop");
+            const at = centerOf(tile);
+            const color = COLOR[c.element] || "#fff";
+            burst(at, color, shards);
+            if (!targetsFor) continue;
+            for (const t of targetsFor(c.element)) {
+              arrivals.push(fly("mote", at, t.pos, color, { delay: 40 + k++ * 28 }).then(t.arrive));
+            }
+          }
+          await sleep(260);
           if (step.after) {
             state.board = step.after;
             renderBoard();
             $("board").classList.add("falling");
             const dur = applyFall(step.cleared);
-            await sleep(dur + 40);
+            await sleep(dur + 30);
             $("board").classList.remove("falling");
           }
         }
+        await Promise.all(arrivals);
       }
 
       /**
@@ -878,21 +1159,154 @@
         return dur;
       }
 
-      async function showCallout(cast) {
-        const el = $("callout");
+      /** The cast moment: big art + move name over a dimmed board. */
+      async function showCastCard(cast) {
+        const el = $("cast");
         el.style.setProperty("--el", `var(--${cast.element})`);
-        const who = cast.by === room.seat ? "" : "Rival's ";
-        el.textContent = `${EMOJI[cast.element]} ${who}${cast.monsterName} · ${cast.moveName}`;
+        el.innerHTML = `<div class="cast-inner"><div class="cast-art">${art(cast.monsterId, 112)}</div><div class="cast-name">${esc(cast.moveName)}</div></div>`;
         el.classList.add("show");
-        await sleep(cast.via === "followUp" ? 450 : 700);
+        $("boardWrap").classList.add("casting");
+        const inner = el.firstElementChild;
+        const from = cast.by === room.seat ? 40 : -40; // rises from your side, drops from theirs
+        inner.animate(
+          reduceMotion
+            ? [{ opacity: 0 }, { opacity: 1 }]
+            : [
+                { opacity: 0, transform: `translateY(${from}px) scale(0.6)` },
+                { opacity: 1, transform: "translateY(0) scale(1.08)", offset: 0.65 },
+                { opacity: 1, transform: "translateY(0) scale(1)" },
+              ],
+          { duration: 340, easing: "cubic-bezier(0.2, 0.9, 0.3, 1)", fill: "forwards" },
+        );
+        await sleep(640);
+        inner.animate([{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(1.12)" }], { duration: 170, easing: "ease-in", fill: "forwards" });
+        $("boardWrap").classList.remove("casting");
+        await sleep(150);
         el.classList.remove("show");
-        await sleep(120);
+        el.innerHTML = "";
+      }
+
+      /** How many numeric events a cast produces (to pair events with their cast). */
+      const eventCount = (kinds) => kinds.reduce((n, k) => n + (k === "drain" ? 2 : ["damage", "heal", "shield", "dot"].includes(k) ? 1 : 0), 0);
+
+      const EVENT_STYLE = {
+        attack: { color: null, icon: "", sign: "−" },
+        heal: { color: "#4fd17a", icon: "✚", sign: "+" },
+        shield: { color: "#7fd0ff", icon: "🛡", sign: "+" },
+        burn: { color: "#ff9a3c", icon: "🔥", sign: "", suffix: "/t" },
+        poison: { color: "#8be27f", icon: "☠", sign: "", suffix: "/t" },
+        "burn-tick": { color: "#ff9a3c", icon: "🔥", sign: "−" },
+        "poison-tick": { color: "#8be27f", icon: "☠", sign: "−" },
+        fatigue: { color: "#ff9a6b", icon: "☠", sign: "−" },
+      };
+
+      /** Land one numeric event: travel (if it has a source), update HP, react. */
+      async function impact(a, sourceEl, offset) {
+        const style = EVENT_STYLE[a.type] || EVENT_STYLE.attack;
+        const color = style.color || COLOR[a.element] || "#ff6a4d";
+        const strip = stripOf(a.targetPlayer);
+        const bar = strip.querySelector(".hp .bar") || strip;
+        if (sourceEl) await fly("orb", centerOf(sourceEl), centerOf(bar), color, { dur: 300, arc: 30 });
+
+        const d = disp[a.targetPlayer];
+        let healed = false, hurt = 0;
+        if (a.type === "attack") { const ab = Math.min(d.shield, a.amount); d.shield -= ab; hurt = a.amount - ab; d.hp = Math.max(0, d.hp - hurt); }
+        else if (a.type === "heal") { d.hp = Math.min(d.maxHp, d.hp + a.amount); healed = true; }
+        else if (a.type === "shield") { d.shield += a.amount; }
+        else if (a.type.endsWith("-tick") || a.type === "fatigue") { hurt = a.amount; d.hp = Math.max(0, d.hp - hurt); }
+        drawHp(a.targetPlayer, healed);
+
+        // Flash in the effect's colour; real damage also shakes, scaled to the hit.
+        const flash = document.createElement("div");
+        flash.className = "flash";
+        flash.style.setProperty("--c", color);
+        strip.querySelector(".s-fx").appendChild(flash);
+        flash.animate([{ opacity: 0 }, { opacity: hurt ? 0.55 : 0.35 }, { opacity: 0 }], { duration: 360, easing: "ease-out" })
+          .finished.catch(() => {}).then(() => flash.remove());
+        if (hurt && !reduceMotion) {
+          const amp = Math.min(9, 2 + hurt / 3);
+          strip.animate(
+            [0, -amp, amp, -amp * 0.6, amp * 0.4, 0].map((x) => ({ transform: `translateX(${x}px)` })),
+            { duration: 340, easing: "ease-out" },
+          );
+        }
+        if (a.type === "shield" || a.type === "heal") bump(bar, 1.06, 260);
+
+        const f = document.createElement("div");
+        f.className = `float ${a.type.replace("-tick", "")}`;
+        f.textContent = `${style.icon}${style.sign}${a.amount}${style.suffix || ""}`;
+        f.style.top = 4 + (offset || 0) * 22 + "px";
+        strip.querySelector(".s-fx").appendChild(f);
+        setTimeout(() => f.remove(), 1100);
+      }
+
+      /** One monster firing: lunge, cast card, spend its charge, land its effects. */
+      async function playCast(cast, events) {
+        const chip = chipOf(cast.by, cast.monsterId);
+        const minor = cast.via === "followUp";
+        if (chip && chip.el && !reduceMotion) {
+          const dir = cast.by === room.seat ? -1 : 1;
+          chip.el.animate(
+            [{ transform: "none" }, { transform: `translateY(${dir * 10}px) scale(1.08)`, offset: 0.4 }, { transform: "none" }],
+            { duration: 360, easing: "cubic-bezier(0.3, 1.5, 0.5, 1)" },
+          );
+        }
+        if (!minor) {
+          if (chip) { const d = disp[cast.by]; d.charge[chip.idx] = Math.max(0, d.charge[chip.idx] - d.cost[chip.idx]); drawCharge(cast.by, chip.idx); }
+          await showCastCard(cast);
+        } else {
+          await sleep(160);
+        }
+        const source = chip && chip.el ? chip.el.querySelector(".ring") : null;
+        for (let i = 0; i < events.length; i++) {
+          await impact(events[i], source, i);
+          if (i < events.length - 1) await sleep(90);
+        }
+      }
+
+      async function playCasts(data) {
+        const abilities = data.abilities || [];
+        let i = 0;
+        for (const cast of data.casts || []) {
+          const mine = [];
+          const want = eventCount(cast.kinds || []);
+          while (i < abilities.length && mine.length < want && abilities[i].monsterId === cast.monsterId) mine.push(abilities[i++]);
+          await playCast(cast, mine);
+        }
+        return abilities.slice(i); // burns/poison ticks and sudden death land at the turn change
+      }
+
+      function evolveFx(chip) {
+        bump(chip, 1.12, 420);
+        if (!reduceMotion) chip.animate([{ filter: "brightness(1)" }, { filter: "brightness(2)" }, { filter: "brightness(1)" }], { duration: 520 });
+        const at = centerOf(chip.querySelector(".ring") || chip);
+        burst(at, "#ffd23c", 12, 46);
+        burst(at, "#fff6c2", 6, 28);
+      }
+
+      /** Tiles that just turned to stone or iced get their own entrance. */
+      function markFresh(prevBoard, prevIce) {
+        state.board.forEach((row, y) => row.forEach((gem, x) => {
+          const wasStone = prevBoard?.[y]?.[x] === "stone";
+          const wasIced = (prevIce?.[y]?.[x] ?? 0) > 0;
+          const isIced = (state.ice?.[y]?.[x] ?? 0) > 0;
+          if ((gem === "stone" && !wasStone) || (isIced && !wasIced)) tileAt(x, y)?.classList.add("fresh");
+        }));
+      }
+
+      async function shuffleBoard() {
+        const board = $("board");
+        for (const t of board.children) t.style.setProperty("--d", Math.floor(Math.random() * 220) + "ms");
+        board.classList.add("shuffling");
+        await sleep(reduceMotion ? 0 : 800);
+        board.classList.remove("shuffling");
       }
 
       async function animate(data) {
         animating = true;
         try {
           selected = null;
+          disp = makeDisp();
           const { from, to } = data.move;
           const g = state.board;
           const t = g[from.y][from.x]; g[from.y][from.x] = g[to.y][to.x]; g[to.y][to.x] = t;
@@ -900,46 +1314,25 @@
           tileAt(from.x, from.y)?.classList.add("swapin");
           tileAt(to.x, to.y)?.classList.add("swapin");
           await sleep(160);
-          await playSteps(data.cascades);
-          for (const cast of (data.casts || []).slice(0, 6)) await showCallout(cast);
-          await playSteps(data.effectSteps);
+          await playSteps(data.cascades, { mover: data.by, combo: true });
+          const leftovers = await playCasts(data);
+          await playSteps(data.effectSteps, { mover: data.by });
+          const prevBoard = state.board, prevIce = state.ice;
           state.board = data.board;
           state.ice = data.ice;
           renderBoard();
-          showFloats(data.abilities);
-          if (data.by === room.seat && data.berriesGained > 0) toast(`🍓 +${data.berriesGained} berr${data.berriesGained === 1 ? "y" : "ies"}`);
-          if (data.extraTurn && data.by === room.seat) toast("💥 Match-4 — extra move!");
-          if (data.reshuffled) toast("🔀 No moves left — board reshuffled");
+          markFresh(prevBoard, prevIce);
+          if (data.reshuffled) { toast("🔀 Board reshuffled"); await shuffleBoard(); }
+          for (let i = 0; i < leftovers.length; i++) await impact(leftovers[i], null, i);
+          const hasted = (data.casts || []).some((c) => (c.kinds || []).includes("haste"));
+          popPip = !data.finished && data.nextTurn === data.by && (data.extraTurn || hasted);
+          if ((data.abilities || []).length) await sleep(450); // let the HP ghost catch up
           await refresh();
         } catch {
           try { await refresh(); } catch {}
         } finally {
+          disp = null;
           animating = false;
-        }
-      }
-
-      function showFloats(abilities) {
-        if (!abilities || !abilities.length) return;
-        const agg = {};
-        for (const a of abilities) {
-          const kind = a.type.replace("-tick", "");
-          const key = a.targetPlayer + "|" + kind;
-          agg[key] = (agg[key] || 0) + a.amount;
-        }
-        const offsets = { 0: 0, 1: 0 };
-        for (const key of Object.keys(agg)) {
-          const [seatStr, kind] = key.split("|");
-          const seat = Number(seatStr);
-          const strip = seat === room.seat ? $("meStrip") : $("foeStrip");
-          const icon = { shield: "🛡", burn: "🔥", poison: "☠", heal: "✚", fatigue: "☠" }[kind] || "";
-          const sign = kind === "heal" || kind === "shield" ? "+" : "−";
-          const f = document.createElement("div");
-          f.className = `float ${kind}`;
-          f.textContent = `${icon}${sign}${agg[key]}`;
-          f.style.top = 4 + offsets[seat] + "px";
-          offsets[seat] += 24;
-          strip.querySelector(".s-fx").appendChild(f);
-          setTimeout(() => f.remove(), 1050);
         }
       }
 

@@ -185,7 +185,8 @@ export class GameRoom {
       this.broadcast("mm:gameOver", { winner: result.winner, matchId: this.game.state.matchId });
     }
     const steps = result.cascades.length + result.effectSteps.length;
-    this.lastAnimMs = steps * BOT_PER_STEP_MS + result.casts.length * 500;
+    // Cast cards run ~1.1s each and every number lands with its own beat.
+    this.lastAnimMs = steps * BOT_PER_STEP_MS + result.casts.length * 1100 + result.abilities.length * 400;
     this.scheduleBot();
   }
 

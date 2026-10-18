@@ -811,7 +811,7 @@
         selected = null;
         renderBoard();
         try { await gameSock.request("mm:move", { from, to: { x, y } }); }
-        catch (e) { toast(e.message === "swap does not create a match" ? "No match there" : e.message); }
+        catch (e) { toast(e.message); }
       }
 
       /* ------------------------------------------------------------ animation */

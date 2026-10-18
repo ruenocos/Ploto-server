@@ -150,11 +150,9 @@ export class MatchMonstersGame {
       if (!isMovable(s.board, c.x, c.y, s.ice)) return reject("that tile is frozen");
     }
 
+    // Any swap is legal. One that makes no match just repositions the tiles
+    // (setting up a later move) and still costs a move.
     swap(s.board, from, to);
-    if (findMatches(s.board).length === 0) {
-      swap(s.board, from, to);
-      return reject("swap does not create a match");
-    }
 
     // Resolve the swap's cascades: these charge monsters and collect berries.
     const cascades: CascadeStep[] = [];

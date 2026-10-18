@@ -103,12 +103,12 @@ describe("game rules", () => {
 });
 
 describe("validation", () => {
-  it("rejects moves out of turn, non-adjacent, and non-matching", () => {
+  it("rejects moves out of turn, non-adjacent, or off the board, leaving the board alone", () => {
     const g = newGame(fireMon("a", [dmg(14)]));
+    const before = g.state.board.grid.map((r) => r.slice());
     expect(g.applyMove(1, FIRE_SWAP).ok).toBe(false);
     expect(g.applyMove(0, { type: "swap", from: { x: 0, y: 0 }, to: { x: 4, y: 4 } }).ok).toBe(false);
-    const before = g.state.board.grid.map((r) => r.slice());
-    expect(g.applyMove(0, { type: "swap", from: { x: 0, y: 0 }, to: { x: 1, y: 0 } }).ok).toBe(false);
+    expect(g.applyMove(0, { type: "swap", from: { x: 4, y: 0 }, to: { x: 5, y: 0 } }).ok).toBe(false);
     expect(g.state.board.grid).toEqual(before);
   });
 });
@@ -478,5 +478,29 @@ describe("bot", () => {
     }
     g.state.players[g.state.turn].berries = 4;
     expect(chooseEvolution(g, g.state.turn)).not.toBeNull();
+  });
+});
+
+describe("free swaps", () => {
+  it("a swap that makes no match still moves the tiles and costs a move", () => {
+    const g = newGame(fireMon("a", [dmg(10)]));
+    // Find an adjacent swap on the fixed layout that doesn't line anything up.
+    let move: { type: "swap"; from: { x: number; y: number }; to: { x: number; y: number } } | null = null;
+    for (let y = 0; y < 5 && !move; y++) for (let x = 0; x < 4 && !move; x++) {
+      const b = { ...g.state.board, grid: g.state.board.grid.map((r) => r.slice()) };
+      const t = b.grid[y]![x]!; b.grid[y]![x] = b.grid[y]![x + 1]!; b.grid[y]![x + 1] = t;
+      if (t !== b.grid[y]![x] && findMatches(b).length === 0) move = { type: "swap", from: { x, y }, to: { x: x + 1, y } };
+    }
+    expect(move).not.toBeNull();
+    const before = g.state.board.grid.map((r) => r.slice());
+    const r = g.applyMove(0, move!);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.cascades).toHaveLength(0);
+    expect(g.state.board.grid[move!.from.y]![move!.from.x]).toBe(before[move!.to.y]![move!.to.x]);
+    expect(g.state.board.grid[move!.to.y]![move!.to.x]).toBe(before[move!.from.y]![move!.from.x]);
+    expect(g.state.movesLeft).toBe(1);
+    expect(g.state.players[0].monsters[0]!.charge).toBe(0);
+    expect(g.state.players[1].hp).toBe(STARTING_HP);
   });
 });

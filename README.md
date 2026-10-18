@@ -61,7 +61,8 @@ the same teams, and the loser goes first.
 
 ### How a match plays
 
-- Tap a tile, then a neighbour, to swap. A swap must make a match.
+- Tap a tile, then a neighbour, to swap. Any swap is allowed: one that makes no
+  match just moves the tile (handy for setting up a combo) and still uses a move.
 - You get **2 moves per turn** (the opening player gets 1 on their first turn).
   A line of **4+** grants an extra move.
 - Matching tiles **charges** your monsters of that element. At its charge cost a

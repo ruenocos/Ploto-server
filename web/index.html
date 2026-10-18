@@ -82,7 +82,7 @@
         --b: var(--c-accent); --b-hi: var(--c-accent-hi); --b-lo: var(--c-accent-lo);
         font: 700 var(--fs-s)/1 var(--f-label); text-transform: uppercase; color: #fff;
         border: var(--px) solid var(--c-ink); background: var(--b); cursor: pointer;
-        padding: 12px 16px 14px; position: relative;
+        padding: 12px 12px 14px; position: relative; white-space: nowrap;
         box-shadow: inset 0 var(--px) 0 var(--b-hi), inset 0 calc(var(--px) * -2) 0 var(--b-lo);
         text-shadow: var(--px) var(--px) 0 var(--b-lo);
       }
@@ -151,14 +151,16 @@
       .el-head .el-title { font: 700 var(--fs-l)/1 var(--f-label); color: var(--c-cream); display: flex; align-items: center; gap: 6px; }
       .el-head .el-arch { font: 700 var(--fs-xs)/1 var(--f-label); text-transform: uppercase; padding: 4px 6px; background: var(--el); color: var(--c-ink); }
       .el-head .el-blurb { color: var(--c-mute); font-size: var(--fs-s); }
-      .pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-      .pcard { position: relative; padding: 10px; cursor: pointer; user-select: none; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+      .pick-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; max-width: 640px; } /* four monsters per element: one row each */
+      .pcard { position: relative; padding: 8px 4px 10px; cursor: pointer; user-select: none; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; color: inherit; font: inherit; text-transform: none; text-shadow: none; }
+      .pcard:focus-visible { outline: var(--px) solid var(--c-cream); outline-offset: var(--px); }
       .pcard:active { transform: translateY(var(--px)); }
       .pcard.sel { border-color: var(--el); background: color-mix(in srgb, var(--el) 16%, var(--c-panel)); box-shadow: inset 0 0 0 var(--px) var(--el), inset 0 calc(var(--px) * -3) 0 rgba(10, 12, 20, 0.45); }
-      .pcard.dim { opacity: 0.55; }
-      .pcard .pick-no { position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; background: var(--el); color: var(--c-ink); font: 700 var(--fs-xs)/1 var(--f-label); display: grid; place-items: center; }
+      .pcard.dim { opacity: 0.7; }
+      .pcard .pname.long { font-size: clamp(8px, 2.2vw, var(--fs-xs)); }
+      .pcard .pick-no { position: absolute; top: 5px; right: 5px; width: 18px; height: 18px; background: var(--el); color: var(--c-ink); font: 700 var(--fs-xs)/1 var(--f-label); display: grid; place-items: center; }
       .pcard .art { display: flex; justify-content: center; padding: 4px 0; }
-      .pcard .pname { font: 700 var(--fs-m)/1.1 var(--f-label); text-align: center; color: var(--c-cream); }
+      .pcard .pname { font: 700 clamp(9px, 2.5vw, var(--fs-xs))/1.1 var(--f-label); text-align: center; color: var(--c-cream); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .pcard .pmove { color: var(--el); font-weight: 700; font-size: var(--fs-s); }
       .pcard .pdesc { color: var(--c-mute); font-size: var(--fs-s); line-height: 1.3; }
       .pcard .ppass { color: var(--c-accent-hi); font-size: var(--fs-s); line-height: 1.3; }
@@ -782,23 +784,51 @@
             `<div class="pick-grid"></div>`;
           const grid = group.querySelector(".pick-grid");
           for (const mon of mons) {
-            const card = document.createElement("div");
+            // Cards show just the monster; its move, passive and evolutions live in the detail sheet.
+            const card = document.createElement("button");
+            card.type = "button";
             card.className = "pcard";
             card.dataset.id = mon.id;
             card.style.setProperty("--el", `var(--${el})`);
-            card.innerHTML =
-              `<span class="pcost">⚡${mon.chargeCost}</span>` +
-              `<div class="art bob">${art(mon.id, 64)}</div>` +
-              `<div class="pname">${esc(mon.name)}</div>` +
-              `<div class="pmove">${esc(mon.ability.name)}</div>` +
-              `<div class="pdesc">${esc(mon.ability.description)}</div>` +
-              (mon.ability.passive ? `<div class="ppass">✦ ${esc(mon.ability.passive)}</div>` : "");
-            card.addEventListener("click", () => togglePick(mon.id));
+            card.setAttribute("aria-label", `${mon.name}, details`);
+            card.innerHTML = `<div class="art bob">${art(mon.id, 64)}</div><div class="pname${mon.name.length >= 9 ? " long" : ""}">${esc(mon.name)}</div>`;
+            card.addEventListener("click", () => openPickSheet(mon));
             grid.appendChild(card);
           }
           picker.appendChild(group);
         }
         renderPicks();
+      }
+
+      /** A monster's details from the lobby, with Select / Remove / Swap and Close. */
+      function openPickSheet(mon) {
+        const sheet = $("sheet");
+        const i = picks.indexOf(mon.id);
+        const full = picks.length === 2;
+        const oldest = full ? roster.find((m) => m.id === picks[0]) : null;
+        const label = i >= 0 ? "Remove from team" : full ? `Swap for ${oldest?.name ?? "first pick"}` : "Select";
+        const arch = mon.archetype?.title;
+        sheet.innerHTML =
+          `<div class="sheet" style="--el: var(--${mon.element})">` +
+          `<div class="s-art bob">${stageArt(mon.id, 0, 3)}</div>` +
+          `<h2>${esc(mon.name)}</h2>` +
+          `<div class="s-sub">${gemIcon(mon.element, 16)} ${EL_LABEL[mon.element]}${arch ? ` · ${esc(arch)}` : ""}</div>` +
+          (pxMon(mon.id)
+            ? `<div class="evo-line" aria-label="Evolution line">` +
+              [0, 1, 2].map((st) => `<div class="evo-st${st === 0 ? " cur" : ""}">${stageArt(mon.id, st, window.innerWidth >= 400 ? 2 : 1)}<span>${st ? "★".repeat(st) : "Base"}</span></div>`)
+                .join(`<span class="arrow">›</span>`) + `</div>`
+            : "") +
+          `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">⚡ ${mon.chargeCost} charge</span></div>` +
+          `<div class="s-desc">${esc(mon.ability.description)}</div>` +
+          (mon.ability.passive ? `<div class="s-pass">✦ ${esc(mon.ability.passive)}</div>` : "") +
+          `<div class="s-actions"><button id="pickSelect" class="${i >= 0 ? "ghost" : ""}">${esc(label)}</button>` +
+          `<button class="ghost" id="sheetClose">Close</button></div></div>`;
+        sheet.classList.remove("hidden");
+        const close = () => sheet.classList.add("hidden");
+        $("sheetClose").onclick = close;
+        sheet.onclick = (e) => { if (e.target === sheet) close(); };
+        $("pickSelect").onclick = () => { togglePick(mon.id); close(); };
+        $("pickSelect").focus();
       }
 
       function togglePick(id) {

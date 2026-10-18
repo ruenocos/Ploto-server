@@ -26,7 +26,9 @@ import type {
   Board,
   CascadeStep,
   CastEvent,
+  Cell,
   Effect,
+  EffectEvent,
   EffectKind,
   Element,
   GameState,
@@ -196,6 +198,7 @@ export class MatchMonstersGame {
 
     let finished = defender.hp <= 0;
     let nextTurn: 0 | 1 = by;
+    let iceLanded: Cell[] = [];
     const extraTurn = !finished && tally.bigMatch;
 
     if (!finished) {
@@ -210,7 +213,7 @@ export class MatchMonstersGame {
         s.movesLeft = Math.max(1, MOVES_PER_TURN - incoming.slow);
         incoming.slow = 0;
         meltIce(s.ice);
-        this.landFreezes();
+        iceLanded = this.landFreezes();
         tickDots(incoming, nextTurn, ctx.abilities);
         s.turnPasses += 1;
         const fatigue = fatigueDamage(s.turnPasses);
@@ -238,6 +241,7 @@ export class MatchMonstersGame {
       reshuffle(s.board, this.boardOpts, this.rng);
       s.ice = emptyIce(s.board);
       reshuffled = true;
+      iceLanded = [];
     }
 
     if (finished) {
@@ -263,6 +267,7 @@ export class MatchMonstersGame {
       winner: s.winner,
       board: cloneGrid(s.board),
       ice: s.ice.map((row) => row.slice()),
+      iceLanded,
       reshuffled,
     };
   }
@@ -323,7 +328,7 @@ export class MatchMonstersGame {
       ? Array.from({ length: berserk.hits }, () => ({ kind: "damage" as const, amount: berserk.amount }))
       : scaledEffects(def, mon.evolution);
 
-    ctx.casts.push({
+    const cast: CastEvent = {
       by: ctx.by,
       monsterId: def.id,
       monsterName: def.name,
@@ -331,12 +336,16 @@ export class MatchMonstersGame {
       moveName: raging ? `${def.ability.name} (Berserk)` : def.ability.name,
       kinds: effects.map((e) => e.kind),
       ...(raging ? { via: "berserk" as const } : {}),
-    });
+      effects: [],
+    };
+    ctx.casts.push(cast);
 
     let dealtDamage = false;
     for (const e of effects) {
       if (ctx.defender.hp <= 0) break;
-      if (this.applyEffect(e, mon, ctx)) dealtDamage = true;
+      const event = this.applyEffect(e, mon, ctx);
+      cast.effects.push(event);
+      if ((event.kind === "damage" || event.kind === "drain") && event.amount > 0) dealtDamage = true;
     }
 
     // Partner follow-up strikes (a follow-up never triggers another).
@@ -344,6 +353,7 @@ export class MatchMonstersGame {
       for (const partner of attacker.monsters) {
         const extra = scaledPassive(partner.def, partner.evolution)?.followUp;
         if (partner === mon || !extra) continue;
+        this.hit(ctx, partner.def, extra);
         ctx.casts.push({
           by: ctx.by,
           monsterId: partner.def.id,
@@ -352,47 +362,52 @@ export class MatchMonstersGame {
           moveName: "Follow-up",
           kinds: ["damage"],
           via: "followUp",
+          effects: [{ kind: "damage", target: ctx.foeIdx, amount: extra }],
         });
-        this.hit(ctx, partner.def, extra);
       }
     }
   }
 
-  /** Apply one effect; returns true if it damaged the rival. */
-  private applyEffect(e: Effect, mon: MonsterState, ctx: FireContext): boolean {
+  /**
+   * Apply one effect and report what it did. The switch is exhaustive and must
+   * return an event for every kind, so new effects can't skip their animation.
+   */
+  private applyEffect(e: Effect, mon: MonsterState, ctx: FireContext): EffectEvent {
     const def = mon.def;
-    const { attacker, defender, by } = ctx;
+    const { attacker, defender, by, foeIdx } = ctx;
     const b = this.state.board;
     switch (e.kind) {
       case "damage":
-        return this.hit(ctx, def, e.amount);
+        this.hit(ctx, def, e.amount);
+        return { kind: "damage", target: foeIdx, amount: e.amount };
       case "heal":
         this.heal(ctx, def, e.amount);
-        return false;
+        return { kind: "heal", target: by, amount: e.amount };
       case "shield": {
-        const gained = Math.min(e.amount, MAX_SHIELD - attacker.shield);
+        const gained = Math.max(0, Math.min(e.amount, MAX_SHIELD - attacker.shield));
         if (gained > 0) {
           attacker.shield += gained;
           ctx.abilities.push(evt(def, "shield", gained, by));
         }
-        return false;
+        return { kind: "shield", target: by, amount: gained };
       }
-      case "drain": {
-        const hit = this.hit(ctx, def, e.amount);
+      case "drain":
+        this.hit(ctx, def, e.amount);
         this.heal(ctx, def, e.amount);
-        return hit;
-      }
+        return { kind: "drain", target: foeIdx, amount: e.amount };
       case "dot":
         defender.dots.push({ amount: e.amount, turns: e.turns, kind: e.dot, element: def.element });
-        ctx.abilities.push(evt(def, e.dot, e.amount, ctx.foeIdx));
-        return false;
-      case "match":
-        this.matchRegion(this.shapeCells(e.shape, e.size ?? defaultShapeSize(e.shape)), ctx);
-        return false;
+        ctx.abilities.push(evt(def, e.dot, e.amount, foeIdx));
+        return { kind: "dot", target: foeIdx, dot: e.dot, amount: e.amount, turns: e.turns };
+      case "match": {
+        const cells = this.shapeCells(e.shape, e.size ?? defaultShapeSize(e.shape));
+        const step = this.matchRegion(cells, ctx);
+        return { kind: "match", shape: e.shape, cells, step };
+      }
       case "freeze":
         // Lands when the turn passes, so it never blocks the caster's own moves.
         this.state.pendingFreeze.push({ count: e.count, turns: e.turns });
-        return false;
+        return { kind: "freeze", target: foeIdx, count: e.count, turns: e.turns };
       case "petrify": {
         // Stone the rival's element tiles (live moves first) to starve their charge.
         const mine = new Set(attacker.monsters.map((m) => m.def.element));
@@ -404,7 +419,7 @@ export class MatchMonstersGame {
           (x, y) => isElement(gem(x, y)),
         ]);
         for (const c of picks) b.grid[c.y]![c.x] = "stone";
-        return false;
+        return { kind: "petrify", cells: picks };
       }
       case "convert": {
         // Turn tiles into the caster's element, skipping any that would match
@@ -414,36 +429,53 @@ export class MatchMonstersGame {
           const t = b.grid[y]![x]!;
           return isElement(t) && t !== target;
         });
-        let done = 0;
+        const converted: Cell[] = [];
         for (const c of this.pick(pool, pool.length)) {
-          if (done >= e.count) break;
+          if (converted.length >= e.count) break;
           const before = b.grid[c.y]![c.x]!;
           b.grid[c.y]![c.x] = target;
           if (findMatches(b).length > 0) b.grid[c.y]![c.x] = before;
-          else done++;
+          else converted.push(c);
         }
-        return false;
+        return { kind: "convert", cells: converted, element: target };
       }
-      case "sap":
-        for (const m of defender.monsters) m.charge = Math.max(0, m.charge - e.count);
-        return false;
-      case "slow":
+      case "sap": {
+        const drained: Record<string, number> = {};
+        for (const m of defender.monsters) {
+          const lost = Math.min(m.charge, e.count);
+          m.charge -= lost;
+          if (lost > 0) drained[m.def.id] = lost;
+        }
+        return { kind: "sap", target: foeIdx, drained };
+      }
+      case "slow": {
+        const before = defender.slow;
         defender.slow = Math.min(MOVES_PER_TURN - 1, defender.slow + e.count);
-        return false;
+        return { kind: "slow", target: foeIdx, count: defender.slow - before };
+      }
       case "seal": {
         const target = this.pick(defender.monsters, 1)[0];
         if (target) target.sealed = Math.max(target.sealed, e.turns);
-        return false;
+        return { kind: "seal", target: foeIdx, monsterId: target?.def.id ?? null, turns: e.turns };
       }
       case "haste":
         ctx.haste += e.count;
-        return false;
-      case "cleanse":
+        return { kind: "haste", count: e.count };
+      case "cleanse": {
+        const removed = attacker.dots.length;
         attacker.dots = [];
-        return false;
-      case "empower":
-        for (const m of attacker.monsters) if (m !== mon && m.sealed === 0) m.charge += e.count;
-        return false;
+        return { kind: "cleanse", removed };
+      }
+      case "empower": {
+        const boosted: string[] = [];
+        for (const m of attacker.monsters) {
+          if (m !== mon && m.sealed === 0) {
+            m.charge += e.count;
+            boosted.push(m.def.id);
+          }
+        }
+        return { kind: "empower", monsterIds: boosted, count: e.count };
+      }
     }
   }
 
@@ -482,10 +514,10 @@ export class MatchMonstersGame {
    * Clear a region as if it were matched by the caster: element tiles charge the
    * caster's monsters, berries go to their stash. Recorded for animation.
    */
-  private matchRegion(cells: { x: number; y: number }[], ctx: FireContext): void {
+  private matchRegion(cells: { x: number; y: number }[], ctx: FireContext): number {
     const b = this.state.board;
     const present = cells.filter((c) => b.grid[c.y]![c.x] != null);
-    if (present.length === 0) return;
+    if (present.length === 0) return -1;
     const counts: Partial<Record<Element, number>> = {};
     for (const c of present) {
       const t = b.grid[c.y]![c.x]!;
@@ -498,6 +530,7 @@ export class MatchMonstersGame {
     this.breakIce(present);
     collapseAndRefill(b, present, this.palette, this.rng);
     ctx.effectSteps.push({ cleared: clearedInfo, countsByElement: counts, board: before, after: cloneGrid(b) });
+    return ctx.effectSteps.length - 1;
   }
 
   private breakIce(cells: readonly { x: number; y: number }[]): void {
@@ -512,8 +545,9 @@ export class MatchMonstersGame {
   }
 
   /** Ice the incoming player's best tiles with every freeze cast last turn. */
-  private landFreezes(): void {
+  private landFreezes(): Cell[] {
     const s = this.state;
+    const landed: Cell[] = [];
     for (const f of s.pendingFreeze) {
       const free = (x: number, y: number) => s.board.grid[y]![x] !== "stone" && s.ice[y]![x] === 0;
       // Walk every free cell, live ones first, until `count` are iced — skipping
@@ -522,11 +556,14 @@ export class MatchMonstersGame {
       for (const c of this.pickTargets(Infinity, [free])) {
         if (placed >= f.count) break;
         s.ice[c.y]![c.x] = f.turns;
-        if (hasAnyMove(s.board, s.ice)) placed++;
-        else s.ice[c.y]![c.x] = 0;
+        if (hasAnyMove(s.board, s.ice)) {
+          placed++;
+          landed.push(c);
+        } else s.ice[c.y]![c.x] = 0;
       }
     }
     s.pendingFreeze = [];
+    return landed;
   }
 
   /**

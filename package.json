@@ -10,13 +10,14 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node --disable-warning=ExperimentalWarning dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.web.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "dump": "tsx src/tools/bundleDumper/cli.ts",
     "sim": "npm run build && node scripts/balance-sim.mjs",
-    "tiers": "npm run build && node scripts/monster-tiers.mjs"
+    "tiers": "npm run build && node scripts/monster-tiers.mjs",
+    "lab": "node scripts/lab-report.mjs"
   },
   "dependencies": {
     "fastify": "^5.1.0",

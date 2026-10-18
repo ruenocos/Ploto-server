@@ -53,6 +53,12 @@ Each picks two monsters, then either **Quick Play** (matched with anyone
 queuing) or **Invite a friend** (a 4-character code + a share link,
 `/play?room=CODE`, that pre-fills the code for them). No accounts.
 
+**Accounts & friends.** Claim a username (no password: the server hands back a
+secret key that stays in the browser's localStorage; copy it from your profile to
+sign in on another device). Then add friends by username, chat with them, and
+tap **⚔️ Invite** to start a match without sharing codes. Your profile shows your
+record and recent matches.
+
 **Solo?** Tap **🤖 Practice vs bot**. The bot picks a random team and plays a
 greedy (occasionally sloppy) game. Practice games add debug shortcuts under
 the board: **+4 🍓** (evolve right away) and **⚡ Charge up** (both your
@@ -62,7 +68,8 @@ the same teams, and the loser goes first.
 ### How a match plays
 
 - Tap a tile, then a neighbour, to swap. Any swap is allowed: one that makes no
-  match just moves the tile (handy for setting up a combo) and still uses a move.
+  match just moves the tile (handy for setting up a combo) and still uses a move,
+  so the board can never lock you in.
 - You get **2 moves per turn** (the opening player gets 1 on their first turn).
   A line of **4+** grants an extra move.
 - Matching tiles **charges** your monsters of that element. At its charge cost a
@@ -98,11 +105,18 @@ npm test          # engine, board, matchmaking, protoo, rooms, end-to-end
 npm run typecheck
 npm run dev       # everything on :8080
 npm run sim       # balance simulator (N=600 SEED=777)
-npm run tiers     # per-monster win rates + what evolving each is worth
+npm run tiers     # per-monster win rates + what evolving each is worth (bot sim)
+npm run lab       # the same from real matches (LAB_URL=… LAB_KEY=…)
 ```
 
-Environment variables: `PORT` / `PLOTO_PORT`, `PLOTO_HOST`, `PLOTO_DOWNTIME`
-(`1` for maintenance), `PLOTO_MAINTENANCE_REASON`.
+Environment variables: `PORT` / `PLOTO_PORT`, `PLOTO_HOST`, `PLOTO_DATA_DIR`
+(where the SQLite file `postgres.db` with accounts and match history lives,
+default `./data`), `STATS_KEY` (opens the Monster Lab stats API),
+`PLOTO_DOWNTIME` (`1` for maintenance), `PLOTO_MAINTENANCE_REASON`.
+
+Deploying: a Helm chart for Kubernetes (Gateway API + cert-manager
+`letsencrypt-prod`) lives in [`deploy/helm/ploto`](deploy/helm/ploto); see
+[`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## Getting a game bundle (the dumper)
 
@@ -139,6 +153,17 @@ order, plus optional passives (`berserk`, `followUp`). Display text is generated
 from the effects, so `monsters.ts` is the single source of truth for numbers.
 All randomness runs through a seeded PRNG, so a match is fully reproducible from
 `(seed, moves)` — which is how the engine is unit-tested and replayed.
+
+**Animations are typed.** Each cast reports an ordered list of effect events
+(which tiles turned to stone, how much charge was drained, which monster got
+sealed…). `web/animators.js` has an `animate()` for every effect kind and every
+board action (swap, cascade, reshuffle, ice landing, turn-start ticks), and is
+type-checked against the engine's types, so `npm run typecheck` fails if a new
+effect has no animation.
+
+**Match history** records every finished match (monsters, evolutions, winner,
+length, mode). The Monster Lab API (`/api/monster-lab`, gated by `STATS_KEY`)
+serves per-monster, matchup and team win rates from it for tuning.
 
 Balance is checked with `npm run sim` (match length, first-player edge, win
 share per element) and `npm run tiers` (per-monster win rate, and what going

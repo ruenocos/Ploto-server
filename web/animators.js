@@ -1,0 +1,366 @@
+// @ts-check
+/**
+ * Animators: one `animate()` for every effect a move can have, and one for
+ * every board action (swapping, cascades, reshuffles, ice landing, turn ticks).
+ *
+ * This file is type-checked against the server's own types (`npm run typecheck`
+ * runs tsconfig.web.json). EFFECTS is typed as a full map over EffectKind, so
+ * adding an effect to the engine without an animation here fails the build.
+ *
+ * Animators only use the primitives in `Fx` (provided by index.html), and
+ * resolve when their animation has finished.
+ */
+
+/** @typedef {import("../src/game/matchmonsters/types.js").EffectKind} EffectKind */
+/** @typedef {import("../src/game/matchmonsters/types.js").EffectEvent} EffectEvent */
+/** @typedef {import("../src/game/matchmonsters/types.js").CastEvent} CastEvent */
+/** @typedef {import("../src/game/matchmonsters/types.js").CascadeStep} CascadeStep */
+/** @typedef {import("../src/game/matchmonsters/types.js").MoveResult} MoveResult */
+/** @typedef {import("../src/game/matchmonsters/types.js").AbilityEvent} AbilityEvent */
+/** @typedef {import("../src/game/matchmonsters/types.js").Cell} Cell */
+/** @typedef {import("../src/game/matchmonsters/types.js").Gem} Gem */
+/**
+ * @template {EffectKind} K
+ * @typedef {import("../src/game/matchmonsters/types.js").EffectEventFor<K>} EventFor
+ */
+
+/** @typedef {{ x: number, y: number }} Pt */
+/** @typedef {"attack" | "heal" | "shield" | "burn" | "poison" | "burn-tick" | "poison-tick" | "fatigue"} LandKind */
+
+/**
+ * The drawing primitives index.html hands to every animator.
+ * @typedef {object} Fx
+ * @property {(ms: number) => Promise<void>} sleep
+ * @property {boolean} reduceMotion
+ * @property {Record<string, string>} COLOR  colour per element / berry / stone
+ * @property {(x: number, y: number) => HTMLElement | null} tileAt
+ * @property {(el: Element) => Pt} centerOf
+ * @property {(seat: 0 | 1) => HTMLElement} stripOf
+ * @property {(seat: 0 | 1, monsterId: string) => HTMLElement | null} ringOf   a monster's charge ring
+ * @property {(seat: 0 | 1) => HTMLElement} hpBarOf
+ * @property {() => HTMLElement} board
+ * @property {() => HTMLElement} banner
+ * @property {(cls: "mote" | "orb", from: Pt, to: Pt, color: string, opts?: { delay?: number, dur?: number, arc?: number }) => Promise<void>} fly
+ * @property {(at: Pt, color: string, count?: number, spread?: number) => void} burst
+ * @property {(el: Element | null, scale?: number, dur?: number) => void} bump
+ * @property {(host: HTMLElement, text: string, color: string) => void} floatText
+ * @property {(seat: 0 | 1, kind: LandKind, amount: number, color?: string) => void} land   apply + show a number on a player
+ * @property {(seat: 0 | 1, monsterId: string, delta: number) => void} charge   move a monster's shown charge
+ * @property {(x: number, y: number, gem: Gem, cls?: string) => void} setTile   change one tile (with an entrance class)
+ * @property {(step: CascadeStep, opts: { mover: 0 | 1 | null, combo?: number }) => Promise<void>} playStep
+ * @property {() => Promise<void>} shuffle
+ */
+
+/**
+ * Context for one effect of one cast.
+ * @typedef {object} CastCtx
+ * @property {Fx} fx
+ * @property {CastEvent} cast
+ * @property {MoveResult} data
+ * @property {HTMLElement | null} source  the caster's charge ring
+ * @property {Set<number>} playedSteps  effectSteps already animated
+ */
+
+/**
+ * @template {EffectKind} K
+ * @typedef {{ animate(e: EventFor<K>, ctx: CastCtx): Promise<void> }} EffectAnimator
+ */
+
+const other = (/** @type {0 | 1} */ seat) => /** @type {0 | 1} */ (seat === 0 ? 1 : 0);
+
+/** Send an orb from the caster to a player's HP bar (skipped if there's no source). */
+async function orbTo(/** @type {CastCtx} */ ctx, /** @type {0 | 1} */ seat, /** @type {string} */ color, dur = 300) {
+  const { fx, source } = ctx;
+  if (source) await fx.fly("orb", fx.centerOf(source), fx.centerOf(fx.hpBarOf(seat)), color, { dur, arc: 30 });
+}
+
+/** Motes from the caster to each cell, then `onArrive` per cell. */
+async function motesToCells(/** @type {CastCtx} */ ctx, /** @type {readonly Cell[]} */ cells, /** @type {string} */ color, /** @type {(c: Cell) => void} */ onArrive) {
+  const { fx, source } = ctx;
+  await Promise.all(
+    cells.map((c, i) => {
+      const tile = fx.tileAt(c.x, c.y);
+      if (!tile || !source) return fx.sleep(i * 60).then(() => onArrive(c));
+      return fx.fly("mote", fx.centerOf(source), fx.centerOf(tile), color, { delay: i * 70, dur: 420 }).then(() => onArrive(c));
+    }),
+  );
+}
+
+/** @type {{ [K in EffectKind]: EffectAnimator<K> }} */
+const EFFECTS = {
+  damage: {
+    async animate(e, ctx) {
+      const color = ctx.fx.COLOR[ctx.cast.element] ?? "#ff6a4d";
+      await orbTo(ctx, e.target, color);
+      ctx.fx.land(e.target, "attack", e.amount, color);
+      await ctx.fx.sleep(90);
+    },
+  },
+
+  heal: {
+    async animate(e, ctx) {
+      await orbTo(ctx, e.target, "#4fd17a");
+      ctx.fx.land(e.target, "heal", e.amount);
+      await ctx.fx.sleep(90);
+    },
+  },
+
+  shield: {
+    async animate(e, ctx) {
+      const { fx } = ctx;
+      await orbTo(ctx, e.target, "#7fd0ff");
+      if (e.amount > 0) fx.land(e.target, "shield", e.amount);
+      else fx.floatText(fx.stripOf(e.target), "🛡 max", "#7fd0ff");
+      await fx.sleep(90);
+    },
+  },
+
+  // Life steal: the hit travels out, then the stolen life flows back.
+  drain: {
+    async animate(e, ctx) {
+      const { fx } = ctx;
+      const color = fx.COLOR[ctx.cast.element] ?? "#ff6a4d";
+      await orbTo(ctx, e.target, color);
+      fx.land(e.target, "attack", e.amount, color);
+      const caster = other(e.target);
+      await fx.fly("orb", fx.centerOf(fx.hpBarOf(e.target)), fx.centerOf(fx.hpBarOf(caster)), "#4fd17a", { dur: 380, arc: 50 });
+      fx.land(caster, "heal", e.amount);
+      await fx.sleep(90);
+    },
+  },
+
+  dot: {
+    async animate(e, ctx) {
+      const color = e.dot === "burn" ? "#ff9a3c" : "#8be27f";
+      await orbTo(ctx, e.target, color);
+      ctx.fx.land(e.target, e.dot, e.amount, color);
+      await ctx.fx.sleep(90);
+    },
+  },
+
+  // Blast: the region lights up in a sweep, then clears like a match (and charges you).
+  match: {
+    async animate(e, ctx) {
+      const { fx, data, cast } = ctx;
+      const color = fx.COLOR[cast.element] ?? "#fff";
+      e.cells.forEach((c, i) => {
+        const t = fx.tileAt(c.x, c.y);
+        if (!t) return;
+        t.style.setProperty("--zap", color);
+        t.style.setProperty("--zd", `${i * 22}ms`);
+        t.classList.add("zap");
+      });
+      await fx.sleep(fx.reduceMotion ? 120 : 260 + e.cells.length * 22);
+      const step = data.effectSteps[e.step];
+      if (step && !ctx.playedSteps.has(e.step)) {
+        ctx.playedSteps.add(e.step);
+        await fx.playStep(step, { mover: cast.by });
+      }
+    },
+  },
+
+  // Freezes land on the rival's turn: show the cold gathering over the board.
+  freeze: {
+    async animate(e, ctx) {
+      const { fx, source } = ctx;
+      const board = fx.board();
+      const r = board.getBoundingClientRect();
+      if (source && !fx.reduceMotion) {
+        const flights = [];
+        for (let i = 0; i < Math.min(8, e.count * 2); i++) {
+          const to = { x: r.left + r.width * (0.15 + Math.random() * 0.7), y: r.top + r.height * (0.15 + Math.random() * 0.7) };
+          flights.push(fx.fly("mote", fx.centerOf(source), to, "#bfe9ff", { delay: i * 40, dur: 460, arc: 80 }));
+        }
+        await Promise.all(flights);
+      }
+      board.animate([{ filter: "none" }, { filter: "brightness(1.25) saturate(0.4) hue-rotate(160deg)" }, { filter: "none" }], { duration: 420 });
+      fx.floatText(fx.stripOf(e.target), `❄ ${e.count} next turn`, "#bfe9ff");
+      await fx.sleep(300);
+    },
+  },
+
+  petrify: {
+    async animate(e, ctx) {
+      const { fx } = ctx;
+      await motesToCells(ctx, e.cells, fx.COLOR.earth ?? "#e0a35e", (c) => {
+        fx.setTile(c.x, c.y, "stone", "fresh");
+        const t = fx.tileAt(c.x, c.y);
+        if (t) fx.burst(fx.centerOf(t), "#9aa0ad", 6, 26);
+      });
+      await fx.sleep(250);
+    },
+  },
+
+  convert: {
+    async animate(e, ctx) {
+      const { fx } = ctx;
+      const color = fx.COLOR[e.element] ?? "#fff";
+      await motesToCells(ctx, e.cells, color, (c) => fx.setTile(c.x, c.y, e.element, "converted"));
+      await fx.sleep(300);
+    },
+  },
+
+  // Charge leaks out of the rival's rings and streams to the caster.
+  sap: {
+    async animate(e, ctx) {
+      const { fx, source, cast } = ctx;
+      const flights = Object.entries(e.drained).map(([monsterId, n]) => {
+        const ring = fx.ringOf(e.target, monsterId);
+        fx.charge(e.target, monsterId, -n);
+        if (!ring) return Promise.resolve();
+        fx.burst(fx.centerOf(ring), fx.COLOR[cast.element] ?? "#3aa0ff", 6, 22);
+        return source ? fx.fly("mote", fx.centerOf(ring), fx.centerOf(source), fx.COLOR[cast.element] ?? "#3aa0ff", { dur: 460 }) : Promise.resolve();
+      });
+      if (!flights.length) fx.floatText(fx.stripOf(e.target), "no charge to drain", "#8f98ad");
+      await Promise.all(flights);
+      await fx.sleep(120);
+    },
+  },
+
+  slow: {
+    async animate(e, ctx) {
+      const { fx } = ctx;
+      const strip = fx.stripOf(e.target);
+      await orbTo(ctx, e.target, fx.COLOR.water ?? "#3aa0ff");
+      if (!fx.reduceMotion) strip.animate([{ transform: "none" }, { transform: "scaleY(0.94) translateY(3px)" }, { transform: "none" }], { duration: 380, easing: "ease-out" });
+      fx.floatText(strip, e.count > 0 ? `🐌 −${e.count} move next turn` : "🐌 already slowed", "#9bf6ff");
+      await fx.sleep(320);
+    },
+  },
+
+  // A lock slams onto the sealed monster.
+  seal: {
+    async animate(e, ctx) {
+      const { fx } = ctx;
+      const ring = e.monsterId ? fx.ringOf(e.target, e.monsterId) : null;
+      const chip = ring?.closest(".mchip");
+      if (ring && ctx.source) await fx.fly("orb", fx.centerOf(ctx.source), fx.centerOf(ring), "#b39dff", { dur: 320 });
+      if (chip instanceof HTMLElement) {
+        const stamp = document.createElement("div");
+        stamp.className = "stamp";
+        stamp.textContent = "🔒";
+        chip.appendChild(stamp);
+        stamp.animate(
+          fx.reduceMotion ? [{ opacity: 0 }, { opacity: 1 }] : [{ transform: "translate(-50%, -50%) scale(2.6)", opacity: 0 }, { transform: "translate(-50%, -50%) scale(0.9)", opacity: 1, offset: 0.6 }, { transform: "translate(-50%, -50%) scale(1)", opacity: 1 }],
+          { duration: 360, easing: "cubic-bezier(0.3, 0, 0.3, 1)", fill: "forwards" },
+        );
+        if (!fx.reduceMotion) chip.animate([{ transform: "none" }, { transform: "translateY(2px) scale(0.97)" }, { transform: "none" }], { duration: 260, delay: 220 });
+        chip.animate([{ filter: "none" }, { filter: "grayscale(0.8) brightness(0.8)" }], { duration: 400, fill: "forwards" });
+        fx.floatText(chip, `sealed ${e.turns}`, "#b39dff");
+        await fx.sleep(650);
+        stamp.remove();
+      } else {
+        await fx.sleep(200);
+      }
+    },
+  },
+
+  haste: {
+    async animate(_e, ctx) {
+      const { fx } = ctx;
+      const banner = fx.banner();
+      const r = banner.getBoundingClientRect();
+      fx.burst({ x: r.right - 34, y: r.top + r.height / 2 }, "#ffd23c", 10, 30);
+      fx.bump(banner, 1.04, 300);
+      await fx.sleep(320); // the bonus pip itself pops in when the turn re-renders
+    },
+  },
+
+  cleanse: {
+    async animate(e, ctx) {
+      const { fx, cast } = ctx;
+      const strip = fx.stripOf(cast.by);
+      const r = strip.getBoundingClientRect();
+      for (let i = 0; i < 5; i++) fx.burst({ x: r.left + (r.width * (i + 0.5)) / 5, y: r.top + r.height * 0.35 }, "#fff6c2", 5, 22);
+      if (e.removed > 0) fx.floatText(strip, "✨ cleansed", "#fff6c2");
+      await fx.sleep(360);
+    },
+  },
+
+  // Motes stream from the caster into its partner's ring.
+  empower: {
+    async animate(e, ctx) {
+      const { fx, source, cast } = ctx;
+      await Promise.all(
+        e.monsterIds.map((id) => {
+          const ring = fx.ringOf(cast.by, id);
+          if (!ring || !source) {
+            fx.charge(cast.by, id, e.count);
+            return Promise.resolve();
+          }
+          const color = fx.COLOR[cast.element] ?? "#ffd23c";
+          return Promise.all(
+            Array.from({ length: Math.min(6, e.count) }, (_, i) =>
+              fx.fly("mote", fx.centerOf(source), fx.centerOf(ring), color, { delay: i * 60, dur: 420 }),
+            ),
+          ).then(() => fx.charge(cast.by, id, e.count));
+        }),
+      );
+      await fx.sleep(120);
+    },
+  },
+};
+
+/**
+ * Board actions, i.e. everything that isn't a move's effect.
+ * @typedef {object} BoardAnimators
+ * @property {{ animate(data: MoveResult, fx: Fx): Promise<void> }} swap  the player's own swap (match or not)
+ * @property {{ animate(steps: readonly CascadeStep[], opts: { mover: 0 | 1 | null, combo?: boolean }, fx: Fx): Promise<void> }} cascade  matches clearing and tiles falling
+ * @property {{ animate(fx: Fx): Promise<void> }} reshuffle
+ * @property {{ animate(cells: readonly Cell[], fx: Fx): Promise<void> }} iceLanded  freezes landing as the turn passes
+ * @property {{ animate(events: readonly AbilityEvent[], fx: Fx): Promise<void> }} turnStart  burns, poison and sudden death
+ */
+
+/** @type {BoardAnimators} */
+const BOARD = {
+  swap: {
+    async animate(data, fx) {
+      const { from, to } = data.move;
+      for (const c of [from, to]) fx.tileAt(c.x, c.y)?.classList.add("swapin");
+      // A swap that matched nothing gets a little settle so it doesn't feel ignored.
+      if (data.cascades.length === 0) {
+        for (const c of [from, to]) fx.bump(fx.tileAt(c.x, c.y), 1.08, 260);
+      }
+      await fx.sleep(160);
+    },
+  },
+
+  cascade: {
+    async animate(steps, opts, fx) {
+      let n = 0;
+      for (const step of steps) {
+        n++;
+        await fx.playStep(step, { mover: opts.mover, ...(opts.combo && n >= 2 ? { combo: n } : {}) });
+      }
+    },
+  },
+
+  reshuffle: {
+    async animate(fx) {
+      await fx.shuffle();
+    },
+  },
+
+  iceLanded: {
+    async animate(cells, fx) {
+      cells.forEach((c, i) => {
+        const t = fx.tileAt(c.x, c.y);
+        if (!t) return;
+        t.classList.add("fresh");
+        setTimeout(() => fx.burst(fx.centerOf(t), "#bfe9ff", 5, 20), i * 50);
+      });
+      if (cells.length) await fx.sleep(400);
+    },
+  },
+
+  turnStart: {
+    async animate(events, fx) {
+      for (const a of events) {
+        fx.land(a.targetPlayer, a.type, a.amount);
+        await fx.sleep(260);
+      }
+    },
+  },
+};
+
+/** @type {any} */ (window).MM_ANIMATORS = { effects: EFFECTS, board: BOARD };

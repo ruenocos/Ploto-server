@@ -1,0 +1,9 @@
+apiVersion: v2
+name: ploto
+description: Match Monsters (Ploto) game server — web client, WebSockets and a SQLite file, behind Gateway API with cert-manager TLS.
+type: application
+version: 0.1.0
+appVersion: "latest"
+home: https://github.com/ruenocos/Ploto-server
+sources:
+  - https://github.com/ruenocos/Ploto-server

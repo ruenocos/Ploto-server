@@ -5,22 +5,30 @@
  */
 import type { FastifyInstance } from "fastify";
 import type { ServerConfig } from "./config/env.js";
+import { registerApi } from "./api/routes.js";
+import { createServices, type Services } from "./services.js";
 import { buildStatusServer } from "./status/server.js";
 import { SignalingServer } from "./signaling/server.js";
 
 export interface RunningServer {
   readonly app: FastifyInstance;
   readonly signaling: SignalingServer;
+  readonly services: Services;
   readonly port: number;
   close(): Promise<void>;
 }
 
 /** Build everything, attach signaling, and start listening on `config.port`. */
 export async function startServer(config: ServerConfig): Promise<RunningServer> {
+  const services = await createServices({
+    dataDir: config.dataDir,
+    statsKey: config.statsKey,
+  });
   const app = buildStatusServer(config);
+  registerApi(app, services);
   // Materialise the underlying http.Server before attaching the WS server.
   await app.ready();
-  const signaling = new SignalingServer(app.server);
+  const signaling = new SignalingServer(app.server, services);
   await app.listen({ host: config.host, port: config.port });
 
   const addr = app.server.address();
@@ -29,10 +37,12 @@ export async function startServer(config: ServerConfig): Promise<RunningServer> 
   return {
     app,
     signaling,
+    services,
     port,
     async close() {
       await signaling.close();
       await app.close();
+      await services.db.close();
     },
   };
 }

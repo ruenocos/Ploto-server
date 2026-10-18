@@ -60,7 +60,40 @@
       .brand h1 { font-size: 26px; margin: 0; letter-spacing: 0.2px; }
       .brand .tag { color: var(--accent2); font-weight: 700; font-size: 13px; }
       .intro { color: var(--muted); margin: 6px 0 16px; font-size: 14px; max-width: 640px; }
-      .name-row { max-width: 360px; margin-bottom: 18px; }
+      .acct { max-width: 520px; margin-bottom: 18px; display: grid; gap: 6px; }
+      .acct-guest, .acct-user, .row-input { display: flex; gap: 8px; }
+      .acct-guest button, .row-input button { flex: none; }
+      .acct-hint { font-size: 12px; }
+      .acct-hint a, .sheet a { color: var(--accent2); }
+      .badge-n { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 6px; border-radius: 999px; background: var(--bad); color: #fff; font-size: 11px; font-weight: 900; }
+      .sheet h3 { font-size: 12px; color: var(--muted); margin: 16px 0 6px; text-transform: uppercase; letter-spacing: 0.6px; }
+      .frow { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); min-width: 0; }
+      .frow .fname { flex: 1; min-width: 0; font-weight: 800; }
+      .frow button { flex: none; }
+      .frow .muted { font-size: 12px; }
+      .empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
+      .chat-head { display: flex; align-items: center; gap: 8px; }
+      .chat-head b { font-size: 17px; }
+      .chat-log { height: 46vh; overflow: auto; display: flex; flex-direction: column; gap: 6px; padding: 10px 0; }
+      .bubble { max-width: 80%; padding: 8px 12px; border-radius: 16px 16px 16px 4px; background: var(--panel2); align-self: flex-start; overflow-wrap: anywhere; white-space: pre-wrap; animation: bubbleIn 0.2s ease; }
+      .bubble.mine { align-self: flex-end; border-radius: 16px 16px 4px 16px; background: color-mix(in srgb, var(--accent) 45%, var(--panel2)); }
+      .bubble time { display: block; font-size: 10px; color: var(--muted); margin-top: 2px; }
+      @keyframes bubbleIn { from { transform: translateY(6px) scale(0.96); opacity: 0; } }
+      .match-row { font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--line); display: flex; gap: 8px; }
+      .match-row .res { font-weight: 900; width: 18px; }
+      .match-row .res.w { color: var(--good); }
+      .match-row .res.l { color: var(--bad); }
+      .invite-card {
+        position: fixed; left: 50%; top: calc(10px + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 50;
+        width: min(94vw, 420px); background: var(--panel); border: 1px solid var(--accent); border-radius: 16px; padding: 12px;
+        box-shadow: 0 14px 40px -10px rgba(0, 0, 0, 0.7), 0 0 30px -12px var(--accent); animation: dropIn 0.32s cubic-bezier(0.2, 1.3, 0.4, 1);
+      }
+      @keyframes dropIn { from { transform: translate(-50%, -30px); opacity: 0; } }
+      .invite-card .ic-top { display: flex; align-items: center; gap: 10px; }
+      .invite-card .ic-team { display: flex; flex: none; }
+      .invite-card .ic-team svg { width: 40px; height: 40px; }
+      .invite-card .ic-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+      .invite-card .ic-timer { height: 3px; background: var(--accent); border-radius: 3px; margin-top: 10px; transform-origin: left; }
       .el-group { margin: 18px 0 8px; }
       .el-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
       .el-head .el-title { font-weight: 800; font-size: 16px; }
@@ -177,17 +210,19 @@
         --el: #8a8f9c;
         position: relative; border-radius: 10px; display: flex; align-items: center; justify-content: center;
         cursor: pointer; user-select: none;
-        background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--el) 24%, #171c2b) 0%, #10141f 80%);
-        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05), inset 0 -2px 0 rgba(0,0,0,0.3);
+        background: rgba(255, 255, 255, 0.035);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
         transition: transform 0.12s ease;
       }
-      .tile .gem { width: 84%; height: 84%; display: block; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.45)); }
-      .tile.fire { --el: var(--fire); }
-      .tile.water { --el: var(--water); }
-      .tile.earth { --el: var(--earth); }
-      .tile.nature { --el: var(--nature); }
-      .tile.light { --el: var(--light); }
-      .tile.berry { --el: #ff5c9a; }
+      .tile .gem { width: 88%; height: 88%; display: block; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.45)); }
+      /* gem colours: one hue per element (--el also tints effects) */
+      .tile.fire { --el: #ff5a36; --gc: #e8452c; }
+      .tile.water { --el: #2fb0f0; --gc: #2b9fe0; }
+      .tile.earth { --el: #c98a46; --gc: #b97636; }
+      .tile.nature { --el: #5ccf3c; --gc: #4fb935; }
+      .tile.light { --el: #ffcc33; --gc: #f0b922; }
+      .tile.berry { --el: #e8304a; }
+      .tile.berry .gem { width: 82%; height: 82%; }
       .tile.stone { --el: #6d717c; cursor: not-allowed; }
       .tile.sel { transform: scale(0.92); box-shadow: 0 0 0 3px #fff, 0 0 18px rgba(255,255,255,0.45); }
       .tile.sel .gem { animation: gemWiggle 0.45s ease-in-out infinite alternate; }
@@ -205,6 +240,12 @@
       .tile.pop .gem { animation: pop 300ms ease forwards; }
       @keyframes swapin { 0% { transform: scale(0.75); } 100% { transform: scale(1); } }
       @keyframes pop { 0% { transform: scale(1); } 35% { transform: scale(1.35); filter: brightness(2.2); } 100% { transform: scale(0); opacity: 0; } }
+      /* blast sweep: the region lights up in the caster's colour before it clears */
+      .tile.zap { animation: zap 280ms ease-out both; animation-delay: var(--zd, 0ms); }
+      @keyframes zap { 0% { box-shadow: inset 0 0 0 0 transparent; } 40% { box-shadow: inset 0 0 0 3px #fff, 0 0 18px 4px var(--zap); filter: brightness(1.8); } 100% { box-shadow: inset 0 0 0 2px var(--zap), 0 0 10px 2px var(--zap); } }
+      .tile.converted .gem { animation: flipIn 460ms cubic-bezier(0.2, 1.2, 0.4, 1); }
+      @keyframes flipIn { 0% { transform: rotateY(90deg) scale(0.7); filter: brightness(2); } 100% { transform: none; } }
+      .stamp { position: absolute; left: 50%; top: 50%; z-index: 5; font-size: 30px; pointer-events: none; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6)); }
       .board.shuffling .gem { animation: shuffleIn 560ms cubic-bezier(0.2, 1.4, 0.4, 1) both; animation-delay: var(--d, 0ms); }
       @keyframes shuffleIn { from { transform: rotate(-200deg) scale(0); opacity: 0; } to { transform: none; opacity: 1; } }
 
@@ -308,52 +349,72 @@
     </style>
   </head>
   <body>
-    <!-- Gem art: one symbol per tile type, each a distinct silhouette (readable without colour). -->
+    <!--
+      Gem art. Every element shares one faceted octagon (#gem-base), coloured by
+      the tile's --gc and stamped with an embossed icon, so the board reads by
+      colour first and icon second. Berries and stones are deliberately not gems.
+    -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
       <defs>
-        <linearGradient id="gg-fire" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffd25a"/><stop offset="0.45" stop-color="#ff7a2e"/><stop offset="1" stop-color="#e2321f"/></linearGradient>
-        <linearGradient id="gg-water" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#9fe0ff"/><stop offset="0.5" stop-color="#3aa0ff"/><stop offset="1" stop-color="#1d56c9"/></linearGradient>
-        <linearGradient id="gg-earth" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3c88a"/><stop offset="0.5" stop-color="#c88a45"/><stop offset="1" stop-color="#7d4f22"/></linearGradient>
-        <linearGradient id="gg-nature" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#1f8a3c"/><stop offset="0.55" stop-color="#4ccb6b"/><stop offset="1" stop-color="#b6f28a"/></linearGradient>
-        <linearGradient id="gg-light" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff6c2"/><stop offset="0.5" stop-color="#ffd23c"/><stop offset="1" stop-color="#e09a12"/></linearGradient>
-        <radialGradient id="gg-berry" cx="0.38" cy="0.38" r="0.7"><stop offset="0" stop-color="#ffb3d1"/><stop offset="0.45" stop-color="#ff4f8f"/><stop offset="1" stop-color="#a3124a"/></radialGradient>
-        <linearGradient id="gg-stone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b9bcc6"/><stop offset="0.5" stop-color="#7c808c"/><stop offset="1" stop-color="#4a4d57"/></linearGradient>
+        <radialGradient id="gg-berry" cx="0.35" cy="0.32" r="0.75"><stop offset="0" stop-color="#ff9aa8"/><stop offset="0.45" stop-color="#e8304a"/><stop offset="1" stop-color="#8f0f24"/></radialGradient>
+        <linearGradient id="gg-stone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a9adb8"/><stop offset="0.55" stop-color="#737783"/><stop offset="1" stop-color="#474a54"/></linearGradient>
 
+        <symbol id="gem-base" viewBox="0 0 100 100">
+          <polygon points="31,5 69,5 95,31 95,69 69,95 31,95 5,69 5,31" style="fill: var(--gc)" stroke="rgba(0,0,0,0.5)" stroke-width="3" stroke-linejoin="round"/>
+          <polygon points="31,5 69,5 63,19 37,19" fill="rgba(255,255,255,0.40)"/>
+          <polygon points="69,5 95,31 81,37 63,19" fill="rgba(255,255,255,0.22)"/>
+          <polygon points="95,31 95,69 81,63 81,37" fill="rgba(0,0,0,0.06)"/>
+          <polygon points="95,69 69,95 63,81 81,63" fill="rgba(0,0,0,0.22)"/>
+          <polygon points="69,95 31,95 37,81 63,81" fill="rgba(0,0,0,0.34)"/>
+          <polygon points="31,95 5,69 19,63 37,81" fill="rgba(0,0,0,0.22)"/>
+          <polygon points="5,69 5,31 19,37 19,63" fill="rgba(255,255,255,0.08)"/>
+          <polygon points="5,31 31,5 37,19 19,37" fill="rgba(255,255,255,0.30)"/>
+          <polygon points="37,19 63,19 81,37 81,63 63,81 37,81 19,63 19,37" style="fill: var(--gc)"/>
+          <polygon points="37,19 63,19 81,37 81,63 63,81 37,81 19,63 19,37" fill="rgba(255,255,255,0.10)"/>
+          <polygon points="37,19 54,19 19,54 19,37" fill="rgba(255,255,255,0.16)"/>
+        </symbol>
         <symbol id="gem-fire" viewBox="0 0 100 100">
-          <path d="M50 5C61 24 84 37 81 63C79 83 65 95 50 95C35 95 21 83 19 63C17 46 29 38 33 25C38 37 43 42 46 44C43 30 45 17 50 5Z" fill="url(#gg-fire)" stroke="rgba(60,10,0,0.45)" stroke-width="3" stroke-linejoin="round"/>
-          <path d="M50 50C58 60 65 68 63 79C61 88 39 88 37 79C35 68 43 60 50 50Z" fill="#ffe38f"/>
-          <path d="M40 30C36 38 31 44 31 54" stroke="rgba(255,255,255,0.55)" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <use href="#gem-base"/>
+          <g transform="translate(1.6 2.2)" fill="rgba(0,0,0,0.28)" stroke="rgba(0,0,0,0.28)" stroke-width="0"><path d="M50 29C56 38 63 42 62 52C61 61 56 67 50 67C44 67 39 61 38 53C37 46 42 43 44 37C47 43 49 44 50 46C49 40 49 35 50 29Z"/></g>
+          <g fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.55)" stroke-width="0"><path d="M50 29C56 38 63 42 62 52C61 61 56 67 50 67C44 67 39 61 38 53C37 46 42 43 44 37C47 43 49 44 50 46C49 40 49 35 50 29Z"/></g>
         </symbol>
         <symbol id="gem-water" viewBox="0 0 100 100">
-          <path d="M50 5C64 29 82 47 82 65C82 83 68 95 50 95C32 95 18 83 18 65C18 47 36 29 50 5Z" fill="url(#gg-water)" stroke="rgba(0,20,60,0.45)" stroke-width="3" stroke-linejoin="round"/>
-          <ellipse cx="38" cy="58" rx="7" ry="13" fill="rgba(255,255,255,0.6)" transform="rotate(20 38 58)"/>
-          <circle cx="62" cy="76" r="4" fill="rgba(255,255,255,0.35)"/>
+          <use href="#gem-base"/>
+          <g transform="translate(1.6 2.2)" fill="rgba(0,0,0,0.28)" stroke="rgba(0,0,0,0.28)" stroke-width="0"><path d="M50 29C56.5 39 63 46 63 54C63 61.5 57.5 67 50 67C42.5 67 37 61.5 37 54C37 46 43.5 39 50 29Z"/></g>
+          <g fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.55)" stroke-width="0"><path d="M50 29C56.5 39 63 46 63 54C63 61.5 57.5 67 50 67C42.5 67 37 61.5 37 54C37 46 43.5 39 50 29Z"/></g>
         </symbol>
         <symbol id="gem-earth" viewBox="0 0 100 100">
-          <polygon points="50,6 89,28 89,72 50,94 11,72 11,28" fill="url(#gg-earth)" stroke="rgba(50,25,0,0.5)" stroke-width="3" stroke-linejoin="round"/>
-          <polygon points="50,25 71,37 71,63 50,75 29,63 29,37" fill="rgba(255,230,190,0.28)"/>
-          <path d="M50 6V25M89 28L71 37M89 72L71 63M50 94V75M11 72L29 63M11 28L29 37" stroke="rgba(60,30,0,0.35)" stroke-width="2"/>
-          <polygon points="50,25 71,37 50,48 29,37" fill="rgba(255,255,255,0.35)"/>
+          <use href="#gem-base"/>
+          <g transform="translate(1.6 2.2)" fill="rgba(0,0,0,0.28)" stroke="rgba(0,0,0,0.28)" stroke-width="0"><path d="M33 64L45 41L51.5 52L57 44L67 64Z"/></g>
+          <g fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.55)" stroke-width="0"><path d="M33 64L45 41L51.5 52L57 44L67 64Z"/></g>
         </symbol>
         <symbol id="gem-nature" viewBox="0 0 100 100">
-          <path d="M16 84C12 45 40 13 87 11C89 54 62 87 16 84Z" fill="url(#gg-nature)" stroke="rgba(0,40,10,0.5)" stroke-width="3" stroke-linejoin="round"/>
-          <path d="M20 80C38 60 56 42 80 18M40 60L36 44M52 48L50 32M44 56L60 58M56 44L72 44" stroke="rgba(10,70,25,0.55)" stroke-width="3" fill="none" stroke-linecap="round"/>
-          <path d="M30 60C32 44 44 30 60 24" stroke="rgba(255,255,255,0.4)" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <use href="#gem-base"/>
+          <g transform="translate(1.6 2.2)" fill="rgba(0,0,0,0.28)" stroke="rgba(0,0,0,0.28)" stroke-width="0"><path d="M35 65C33 49 44 36 65 34C66 51 55 64 35 65Z"/></g>
+          <g fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.55)" stroke-width="0"><path d="M35 65C33 49 44 36 65 34C66 51 55 64 35 65Z"/></g>
         </symbol>
         <symbol id="gem-light" viewBox="0 0 100 100">
-          <polygon points="50,4 62,36 96,37 69,58 79,92 50,72 21,92 31,58 4,37 38,36" fill="url(#gg-light)" stroke="rgba(90,55,0,0.5)" stroke-width="3" stroke-linejoin="round"/>
-          <polygon points="50,24 57,42 50,52 43,42" fill="rgba(255,255,255,0.65)"/>
+          <use href="#gem-base"/>
+          <g transform="translate(1.6 2.2)" fill="rgba(0,0,0,0.28)" stroke="rgba(0,0,0,0.28)" stroke-width="0"><circle cx="50" cy="48" r="8"/><g stroke-width="4" stroke-linecap="round"><path d="M50 30V34M50 62V66M32 48H36M64 48H68M37.3 35.3L40.1 38.1M59.9 57.9L62.7 60.7M37.3 60.7L40.1 57.9M59.9 38.1L62.7 35.3"/></g></g>
+          <g fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.55)" stroke-width="0"><circle cx="50" cy="48" r="8"/><g stroke-width="4" stroke-linecap="round"><path d="M50 30V34M50 62V66M32 48H36M64 48H68M37.3 35.3L40.1 38.1M59.9 57.9L62.7 60.7M37.3 60.7L40.1 57.9M59.9 38.1L62.7 35.3"/></g></g>
         </symbol>
+
+        <!-- Berries: a currant cluster on a stem, nothing like a gem. -->
         <symbol id="gem-berry" viewBox="0 0 100 100">
-          <circle cx="50" cy="60" r="33" fill="url(#gg-berry)" stroke="rgba(70,0,25,0.5)" stroke-width="3"/>
-          <g fill="rgba(255,230,160,0.85)"><circle cx="38" cy="56" r="2.6"/><circle cx="52" cy="50" r="2.6"/><circle cx="64" cy="60" r="2.6"/><circle cx="44" cy="70" r="2.6"/><circle cx="58" cy="76" r="2.6"/><circle cx="66" cy="44" r="2.2"/></g>
-          <path d="M50 28C44 16 32 14 26 18C34 22 42 26 50 28ZM50 28C56 14 70 12 76 18C68 22 58 26 50 28Z" fill="#4ccb6b" stroke="rgba(0,50,10,0.5)" stroke-width="2"/>
-          <ellipse cx="38" cy="46" rx="6" ry="9" fill="rgba(255,255,255,0.45)" transform="rotate(-30 38 46)"/>
+          <path d="M52 34C54 24 60 16 70 10" stroke="#5a3a1c" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M64 15C72 6 86 8 90 14C82 20 72 20 64 15Z" fill="#4ccb6b" stroke="rgba(0,50,10,0.5)" stroke-width="2"/>
+          <g stroke="rgba(80,0,15,0.55)" stroke-width="2.5" fill="url(#gg-berry)">
+            <circle cx="50" cy="42" r="11"/><circle cx="36" cy="55" r="11"/><circle cx="62" cy="55" r="11"/>
+            <circle cx="28" cy="72" r="11"/><circle cx="49" cy="70" r="11"/><circle cx="70" cy="72" r="11"/><circle cx="40" cy="86" r="10"/><circle cx="60" cy="87" r="10"/>
+          </g>
+          <g fill="rgba(255,255,255,0.7)"><circle cx="46" cy="38" r="3"/><circle cx="32" cy="51" r="3"/><circle cx="58" cy="51" r="3"/><circle cx="24" cy="68" r="3"/><circle cx="45" cy="66" r="3"/><circle cx="66" cy="68" r="3"/><circle cx="36" cy="82" r="2.6"/><circle cx="56" cy="83" r="2.6"/></g>
         </symbol>
+
+        <!-- Stone: a rough boulder, flat grey, clearly a blocker. -->
         <symbol id="gem-stone" viewBox="0 0 100 100">
-          <polygon points="22,28 46,12 76,18 91,46 83,79 53,91 22,82 9,55" fill="url(#gg-stone)" stroke="rgba(0,0,0,0.5)" stroke-width="3" stroke-linejoin="round"/>
-          <path d="M46 12L52 38L40 54L50 72M52 38L74 46M40 54L22 58" stroke="rgba(20,20,25,0.55)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          <polygon points="22,28 46,12 52,38 30,40" fill="rgba(255,255,255,0.2)"/>
+          <polygon points="20,32 44,14 74,18 92,44 86,78 56,92 22,84 8,58" fill="url(#gg-stone)" stroke="rgba(0,0,0,0.55)" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M44 14L50 40L38 56L48 74M50 40L74 48M38 56L20 60" stroke="rgba(20,20,25,0.5)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <polygon points="20,32 44,14 50,40 28,42" fill="rgba(255,255,255,0.18)"/>
         </symbol>
       </defs>
     </svg>
@@ -364,7 +425,17 @@
         Pick two monsters. Match their element to charge them — a charged monster unleashes its move.
         Grab 🍓 berries to evolve. Drop your rival to 0 HP to win.
       </p>
-      <div class="name-row"><input id="name" type="text" placeholder="Your name" maxlength="20" autocomplete="nickname" /></div>
+      <div id="acct" class="acct">
+        <div id="acctGuest" class="acct-guest">
+          <input id="name" type="text" placeholder="Pick a username" maxlength="16" autocomplete="nickname" />
+          <button id="claim" class="small">Claim</button>
+        </div>
+        <div id="acctUser" class="acct-user hidden">
+          <button id="profileBtn" class="ghost small">@<span id="acctName"></span></button>
+          <button id="friendsBtn" class="ghost small">👥 Friends<span id="friendsBadge" class="badge-n hidden"></span></button>
+        </div>
+        <div id="acctHint" class="acct-hint muted">Claim a name to add friends and keep your record. No password needed. <a href="#" id="useKey">Have a key?</a></div>
+      </div>
       <div id="picker"></div>
     </section>
 
@@ -414,9 +485,11 @@
     <div id="sheet" class="scrim hidden"></div>
     <div id="end" class="scrim hidden"></div>
     <div id="toast" class="toast"></div>
+    <div id="inviteCard" class="invite-card hidden"></div>
     <div id="fx" aria-hidden="true"></div>
 
     <script src="/play/plotomon.js"></script>
+    <script src="/play/animators.js"></script>
     <script>
       const $ = (id) => document.getElementById(id);
       const EMOJI = { fire: "🔥", water: "💧", earth: "⛰️", nature: "🌿", light: "✨", berry: "🍓", stone: "🪨" };
@@ -450,6 +523,7 @@
       let rivalOnline = true;
       let endInfo = null; // { won, mine, theirs } while the end screen is up
       let popPip = false; // animate a bonus move pip on the next render
+      let animQueue = Promise.resolve(); // move animations, played in order
       let disp = null; // HP/charge as shown mid-animation (catches up to state as events land)
 
       const art = (id, size) => { try { return window.PLOTOMON ? PLOTOMON.svg(id, size) : ""; } catch { return ""; } };
@@ -575,14 +649,40 @@
         $("join").disabled = !ready || $("code").value.trim().length < 4;
       }
 
-      const displayName = () => $("name").value.trim() || "Player";
+      const displayName = () => (account ? account.username : $("name").value.trim() || "Player");
       const payload = (extra = {}) => ({ gameId: "match_monsters", mode: "casual", displayName: displayName(), monsters: picks, ...extra });
 
+      // The lobby socket stays open all session: matchmaking, plus friends'
+      // messages, presence and invites once signed in.
+      let lobbyOpening = null;
+      let lobbyRetry = 0;
       async function ensureLobby() {
-        if (lobbySock && lobbySock.readyState === WebSocket.OPEN) return lobbySock;
-        lobbySock = connect("lobby");
-        await waitOpen(lobbySock);
-        lobbySock.on("mm:matched", (d) => startGame(d));
+        if (!lobbySock || lobbySock.readyState > WebSocket.OPEN) {
+          if (!lobbyOpening) {
+            lobbyOpening = (async () => {
+              const sock = connect("lobby");
+              await waitOpen(sock);
+              lobbySock = sock;
+              lobbyRetry = 0;
+              sock.on("mm:matched", (d) => startGame(d));
+              sock.on("social:changed", onSocialChanged);
+              sock.on("social:message", onMessage);
+              sock.on("social:presence", onPresence);
+              sock.on("social:invite", onInvite);
+              sock.on("social:inviteGone", onInviteGone);
+              sock.addEventListener("close", () => {
+                if (lobbySock !== sock) return;
+                lobbySock = null;
+                if (account) setTimeout(() => connectLobby().catch(() => {}), Math.min(15000, 1000 * 2 ** lobbyRetry++));
+              });
+            })().finally(() => { lobbyOpening = null; });
+          }
+          await lobbyOpening;
+        }
+        if (account && lobbySock._authed !== account.id) {
+          await lobbySock.request("mm:auth", { key: local.get("mm.key") });
+          lobbySock._authed = account.id;
+        }
         return lobbySock;
       }
 
@@ -640,8 +740,9 @@
         if (room) return;
         room = { roomId: matched.roomId, seat: matched.seat };
         store.set("mm.room", room);
-        try { lobbySock?.close(); } catch {}
-        lobbySock = null;
+        myInvite = null;
+        $("inviteCard").classList.add("hidden");
+        if (panel) closePanel();
         await openGame();
       }
 
@@ -653,8 +754,12 @@
         reconnectTries = 0;
         // Ignore stragglers from a socket we've already moved on from (e.g. after a rematch).
         const live = (fn) => (d) => { if (sock === gameSock) fn(d); };
-        sock.on("mm:moveResult", live((d) => animate(d)));
-        sock.on("mm:gameOver", live((d) => setTimeout(() => showEnd(d.winner === room.seat), 900)));
+        // Moves animate strictly one after another, even if results arrive faster.
+        const stillHere = () => sock === gameSock;
+        sock.on("mm:moveResult", live((d) => { animQueue = animQueue.then(() => stillHere() && animate(d)); }));
+        sock.on("mm:gameOver", live((d) => {
+          animQueue = animQueue.then(() => sleep(500)).then(() => { if (stillHere()) showEnd(d.winner === room.seat); });
+        }));
         sock.on("mm:evolved", live(async (d) => {
           await refresh();
           const idx = state.players[d.by].monsters.findIndex((m) => m.id === d.monsterId);
@@ -939,7 +1044,7 @@
        * shakes (scaled to damage) and drains its HP bar in two stages.
        */
       const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const COLOR = { fire: "#ff6b3d", water: "#3aa0ff", earth: "#e0a35e", nature: "#4ccb6b", light: "#ffd23c", berry: "#ff5c9a", stone: "#9aa0ad" };
+      const COLOR = { fire: "#ff5a36", water: "#2fb0f0", earth: "#c98a46", nature: "#5ccf3c", light: "#ffcc33", berry: "#e8304a", stone: "#9aa0ad" };
       const tileAt = (x, y) => $("board").querySelector(`[data-x="${x}"][data-y="${y}"]`);
       const stripOf = (seat) => (seat === room.seat ? $("meStrip") : $("foeStrip"));
       const centerOf = (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
@@ -1044,6 +1149,7 @@
 
       /** Where a cleared tile's energy goes for `seat`: charge rings and the berry stash. */
       function chargeTargets(seat) {
+        if (!disp) return () => [];
         const strip = stripOf(seat);
         const chips = strip.querySelectorAll(".mchip");
         const berryChip = strip.querySelector("[data-berry]");
@@ -1078,40 +1184,38 @@
         ).finished.catch(() => {}).then(() => el.remove());
       }
 
-      /** Play cascade steps: pop + shards, motes to the mover's monsters, then gravity. */
-      async function playSteps(steps, { mover = null, combo = false } = {}) {
-        const arrivals = [];
-        let n = 0;
-        for (const step of steps || []) {
-          n++;
-          if (step.board) { state.board = step.board; renderBoard(); }
-          if (combo && n >= 2) showCombo(n);
-          const targetsFor = mover == null ? null : chargeTargets(mover);
-          const shards = step.cleared.length > 12 ? 2 : 5;
-          let k = 0;
-          for (const c of step.cleared) {
-            const tile = tileAt(c.x, c.y);
-            if (!tile) continue;
-            tile.classList.add("pop");
-            const at = centerOf(tile);
-            const color = COLOR[c.element] || "#fff";
-            burst(at, color, shards);
-            if (!targetsFor) continue;
-            for (const t of targetsFor(c.element)) {
-              arrivals.push(fly("mote", at, t.pos, color, { delay: 40 + k++ * 28 }).then(t.arrive));
-            }
-          }
-          await sleep(260);
-          if (step.after) {
-            state.board = step.after;
-            renderBoard();
-            $("board").classList.add("falling");
-            const dur = applyFall(step.cleared);
-            await sleep(dur + 30);
-            $("board").classList.remove("falling");
+      /** Charge motes still in the air; flushed before casts and at the end of a move. */
+      let inflight = [];
+      const settle = async () => { const all = inflight; inflight = []; await Promise.all(all); };
+
+      /** One cascade step: pop + shards, motes to the mover's monsters, then gravity. */
+      async function playStep(step, { mover = null, combo = 0 } = {}) {
+        if (step.board) { state.board = step.board; renderBoard(); }
+        if (combo >= 2) showCombo(combo);
+        const targetsFor = mover == null ? null : chargeTargets(mover);
+        const shards = step.cleared.length > 12 ? 2 : 5;
+        let k = 0;
+        for (const c of step.cleared) {
+          const tile = tileAt(c.x, c.y);
+          if (!tile) continue;
+          tile.classList.add("pop");
+          const at = centerOf(tile);
+          const color = COLOR[c.element] || "#fff";
+          burst(at, color, shards);
+          if (!targetsFor) continue;
+          for (const t of targetsFor(c.element)) {
+            inflight.push(fly("mote", at, t.pos, color, { delay: 40 + k++ * 28 }).then(t.arrive));
           }
         }
-        await Promise.all(arrivals);
+        await sleep(260);
+        if (step.after) {
+          state.board = step.after;
+          renderBoard();
+          $("board").classList.add("falling");
+          const dur = applyFall(step.cleared);
+          await sleep(dur + 30);
+          $("board").classList.remove("falling");
+        }
       }
 
       /**
@@ -1186,9 +1290,6 @@
         el.innerHTML = "";
       }
 
-      /** How many numeric events a cast produces (to pair events with their cast). */
-      const eventCount = (kinds) => kinds.reduce((n, k) => n + (k === "drain" ? 2 : ["damage", "heal", "shield", "dot"].includes(k) ? 1 : 0), 0);
-
       const EVENT_STYLE = {
         attack: { color: null, icon: "", sign: "−" },
         heal: { color: "#4fd17a", icon: "✚", sign: "+" },
@@ -1200,23 +1301,20 @@
         fatigue: { color: "#ff9a6b", icon: "☠", sign: "−" },
       };
 
-      /** Land one numeric event: travel (if it has a source), update HP, react. */
-      async function impact(a, sourceEl, offset) {
-        const style = EVENT_STYLE[a.type] || EVENT_STYLE.attack;
-        const color = style.color || COLOR[a.element] || "#ff6a4d";
-        const strip = stripOf(a.targetPlayer);
-        const bar = strip.querySelector(".hp .bar") || strip;
-        if (sourceEl) await fly("orb", centerOf(sourceEl), centerOf(bar), color, { dur: 300, arc: 30 });
-
-        const d = disp[a.targetPlayer];
-        let healed = false, hurt = 0;
-        if (a.type === "attack") { const ab = Math.min(d.shield, a.amount); d.shield -= ab; hurt = a.amount - ab; d.hp = Math.max(0, d.hp - hurt); }
-        else if (a.type === "heal") { d.hp = Math.min(d.maxHp, d.hp + a.amount); healed = true; }
-        else if (a.type === "shield") { d.shield += a.amount; }
-        else if (a.type.endsWith("-tick") || a.type === "fatigue") { hurt = a.amount; d.hp = Math.max(0, d.hp - hurt); }
-        drawHp(a.targetPlayer, healed);
-
-        // Flash in the effect's colour; real damage also shakes, scaled to the hit.
+      /** Apply a number to a player's shown HP/shield and react: flash, shake (scaled to the hit), float. */
+      function land(seat, kind, amount, colorOverride) {
+        const style = EVENT_STYLE[kind] || EVENT_STYLE.attack;
+        const color = colorOverride || style.color || "#ff6a4d";
+        const strip = stripOf(seat);
+        const d = disp && disp[seat];
+        let hurt = 0, healed = false;
+        if (d) {
+          if (kind === "attack") { const ab = Math.min(d.shield, amount); d.shield -= ab; hurt = amount - ab; d.hp = Math.max(0, d.hp - hurt); }
+          else if (kind === "heal") { d.hp = Math.min(d.maxHp, d.hp + amount); healed = true; }
+          else if (kind === "shield") { d.shield += amount; }
+          else if (kind.endsWith("-tick") || kind === "fatigue") { hurt = amount; d.hp = Math.max(0, d.hp - hurt); }
+          drawHp(seat, healed);
+        }
         const flash = document.createElement("div");
         flash.className = "flash";
         flash.style.setProperty("--c", color);
@@ -1225,25 +1323,54 @@
           .finished.catch(() => {}).then(() => flash.remove());
         if (hurt && !reduceMotion) {
           const amp = Math.min(9, 2 + hurt / 3);
-          strip.animate(
-            [0, -amp, amp, -amp * 0.6, amp * 0.4, 0].map((x) => ({ transform: `translateX(${x}px)` })),
-            { duration: 340, easing: "ease-out" },
-          );
+          strip.animate([0, -amp, amp, -amp * 0.6, amp * 0.4, 0].map((x) => ({ transform: `translateX(${x}px)` })), { duration: 340, easing: "ease-out" });
         }
-        if (a.type === "shield" || a.type === "heal") bump(bar, 1.06, 260);
-
+        if (kind === "shield" || kind === "heal") bump(strip.querySelector(".hp .bar"), 1.06, 260);
         const f = document.createElement("div");
-        f.className = `float ${a.type.replace("-tick", "")}`;
-        f.textContent = `${style.icon}${style.sign}${a.amount}${style.suffix || ""}`;
-        f.style.top = 4 + (offset || 0) * 22 + "px";
+        f.className = `float ${kind.replace("-tick", "")}`;
+        f.textContent = `${style.icon}${style.sign}${amount}${style.suffix || ""}`;
         strip.querySelector(".s-fx").appendChild(f);
         setTimeout(() => f.remove(), 1100);
       }
 
-      /** One monster firing: lunge, cast card, spend its charge, land its effects. */
-      async function playCast(cast, events) {
+      const ringOf = (seat, monsterId) => chipOf(seat, monsterId)?.el?.querySelector(".ring") ?? null;
+
+      /** Move a monster's shown charge (sap, empower). */
+      function chargeBy(seat, monsterId, delta) {
+        const c = chipOf(seat, monsterId);
+        if (!c || !disp) return;
+        const d = disp[seat];
+        d.charge[c.idx] = Math.max(0, d.charge[c.idx] + delta);
+        drawCharge(seat, c.idx, true);
+      }
+
+      /** Change one tile in place, with an optional entrance class. */
+      function setTile(x, y, gem, cls) {
+        if (state.board[y]) state.board[y][x] = gem;
+        const t = tileAt(x, y);
+        if (!t) return;
+        const iced = t.classList.contains("iced");
+        t.className = `tile ${gem}${iced ? " iced" : ""}${cls ? " " + cls : ""}`;
+        t.innerHTML = `<svg class="gem" viewBox="0 0 100 100"><use href="#gem-${gem}"/></svg>`;
+      }
+
+      /** Primitives handed to every animator in web/animators.js (see its `Fx` type). */
+      const fx = {
+        sleep, reduceMotion, COLOR, tileAt, centerOf, stripOf, ringOf,
+        hpBarOf: (seat) => stripOf(seat).querySelector(".hp .bar") || stripOf(seat),
+        board: () => $("board"),
+        banner: () => $("turnBanner"),
+        fly, burst,
+        bump: (el, scale, dur) => { bump(el, scale, dur); },
+        floatText, land, setTile, playStep,
+        charge: chargeBy,
+        shuffle: () => shuffleBoard(),
+      };
+      const animators = () => window.MM_ANIMATORS;
+
+      /** A monster stepping up: lunge, spend its charge, and (unless it's a follow-up) the cast card. */
+      async function castIntro(cast) {
         const chip = chipOf(cast.by, cast.monsterId);
-        const minor = cast.via === "followUp";
         if (chip && chip.el && !reduceMotion) {
           const dir = cast.by === room.seat ? -1 : 1;
           chip.el.animate(
@@ -1251,29 +1378,9 @@
             { duration: 360, easing: "cubic-bezier(0.3, 1.5, 0.5, 1)" },
           );
         }
-        if (!minor) {
-          if (chip) { const d = disp[cast.by]; d.charge[chip.idx] = Math.max(0, d.charge[chip.idx] - d.cost[chip.idx]); drawCharge(cast.by, chip.idx); }
-          await showCastCard(cast);
-        } else {
-          await sleep(160);
-        }
-        const source = chip && chip.el ? chip.el.querySelector(".ring") : null;
-        for (let i = 0; i < events.length; i++) {
-          await impact(events[i], source, i);
-          if (i < events.length - 1) await sleep(90);
-        }
-      }
-
-      async function playCasts(data) {
-        const abilities = data.abilities || [];
-        let i = 0;
-        for (const cast of data.casts || []) {
-          const mine = [];
-          const want = eventCount(cast.kinds || []);
-          while (i < abilities.length && mine.length < want && abilities[i].monsterId === cast.monsterId) mine.push(abilities[i++]);
-          await playCast(cast, mine);
-        }
-        return abilities.slice(i); // burns/poison ticks and sudden death land at the turn change
+        if (cast.via === "followUp") return sleep(160);
+        if (chip && disp) { const d = disp[cast.by]; d.charge[chip.idx] = Math.max(0, d.charge[chip.idx] - d.cost[chip.idx]); drawCharge(cast.by, chip.idx); }
+        await showCastCard(cast);
       }
 
       function evolveFx(chip) {
@@ -1304,6 +1411,7 @@
 
       async function animate(data) {
         animating = true;
+        const A = animators();
         try {
           selected = null;
           disp = makeDisp();
@@ -1311,26 +1419,41 @@
           const g = state.board;
           const t = g[from.y][from.x]; g[from.y][from.x] = g[to.y][to.x]; g[to.y][to.x] = t;
           renderBoard();
-          tileAt(from.x, from.y)?.classList.add("swapin");
-          tileAt(to.x, to.y)?.classList.add("swapin");
-          await sleep(160);
-          await playSteps(data.cascades, { mover: data.by, combo: true });
-          const leftovers = await playCasts(data);
-          await playSteps(data.effectSteps, { mover: data.by });
+          await A.board.swap.animate(data, fx);
+          await A.board.cascade.animate(data.cascades, { mover: data.by, combo: true }, fx);
+          await settle();
+
+          // Each cast: intro, then every effect through its animator, in order.
+          const playedSteps = new Set();
+          for (const cast of data.casts || []) {
+            await castIntro(cast);
+            const ctx = { fx, cast, data, source: ringOf(cast.by, cast.monsterId), playedSteps };
+            for (const e of cast.effects || []) await A.effects[e.kind]?.animate(e, ctx);
+            await settle();
+          }
+          // Whatever the blasts lined up afterwards clears on its own (no charge).
+          const rest = (data.effectSteps || []).filter((_, i) => !playedSteps.has(i));
+          await A.board.cascade.animate(rest, { mover: null }, fx);
+
           const prevBoard = state.board, prevIce = state.ice;
           state.board = data.board;
           state.ice = data.ice;
           renderBoard();
           markFresh(prevBoard, prevIce);
-          if (data.reshuffled) { toast("🔀 Board reshuffled"); await shuffleBoard(); }
-          for (let i = 0; i < leftovers.length; i++) await impact(leftovers[i], null, i);
+          if (data.reshuffled) { toast("🔀 Board reshuffled"); await A.board.reshuffle.animate(fx); }
+          else await A.board.iceLanded.animate(data.iceLanded || [], fx);
+          const ticks = (data.abilities || []).filter((a) => a.type.endsWith("-tick") || a.type === "fatigue");
+          await A.board.turnStart.animate(ticks, fx);
+
           const hasted = (data.casts || []).some((c) => (c.kinds || []).includes("haste"));
           popPip = !data.finished && data.nextTurn === data.by && (data.extraTurn || hasted);
-          if ((data.abilities || []).length) await sleep(450); // let the HP ghost catch up
+          if ((data.casts || []).length || ticks.length) await sleep(450); // let the HP ghost catch up
           await refresh();
-        } catch {
+        } catch (err) {
+          console.error(err);
           try { await refresh(); } catch {}
         } finally {
+          inflight = [];
           disp = null;
           animating = false;
         }
@@ -1400,6 +1523,391 @@
         }
       }
 
+      /* ------------------------------------------------------------ accounts & friends
+       * Anonymous accounts: claiming a name returns a secret key, kept in
+       * localStorage. That key is the login (there's no password).
+       */
+      const local = {
+        get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+        set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+        del(k) { try { localStorage.removeItem(k); } catch {} },
+      };
+      let account = local.get("mm.account"); // { id, username }
+      let friendsData = { friends: [], incoming: [], outgoing: [] };
+      let panel = null; // "friends" | "chat" | "profile" | "key"
+      let chatWith = null;
+      let myInvite = null; // { inviteId, friendId, name }
+      const incomingInvites = new Map();
+
+      async function api(method, path, body) {
+        const key = local.get("mm.key");
+        const res = await fetch(path, {
+          method,
+          headers: { ...(body !== undefined ? { "content-type": "application/json" } : {}), ...(key ? { authorization: `Bearer ${key}` } : {}) },
+          ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw Object.assign(new Error(data.error || `HTTP ${res.status}`), { status: res.status });
+        return data;
+      }
+
+      function setAccount(a) {
+        account = a;
+        if (a) local.set("mm.account", a); else local.del("mm.account");
+        renderAccount();
+      }
+
+      function renderAccount() {
+        $("acctGuest").classList.toggle("hidden", !!account);
+        $("acctUser").classList.toggle("hidden", !account);
+        $("acctHint").classList.toggle("hidden", !!account);
+        if (account) $("acctName").textContent = account.username;
+        updateBadge();
+      }
+
+      function updateBadge() {
+        const n = friendsData.incoming.length + friendsData.friends.reduce((s, f) => s + (f.unread || 0), 0) + incomingInvites.size;
+        const b = $("friendsBadge");
+        b.textContent = n;
+        b.classList.toggle("hidden", n === 0);
+      }
+
+      async function claimName() {
+        try {
+          const res = await api("POST", "/api/accounts", { username: $("name").value });
+          local.set("mm.key", res.key);
+          setAccount({ id: res.id, username: res.username });
+          toast(`Welcome, ${res.username}! You're signed in on this device.`, 2600);
+          await connectLobby();
+        } catch (e) { toast(e.message, 2600); }
+      }
+
+      async function signInWithKey(key) {
+        const before = local.get("mm.key");
+        local.set("mm.key", key.trim());
+        try {
+          const me = await api("GET", "/api/me");
+          setAccount({ id: me.id, username: me.username });
+          if (lobbySock) lobbySock._authed = null;
+          await connectLobby();
+          toast(`Signed in as ${me.username}`);
+          return true;
+        } catch (e) {
+          if (before) local.set("mm.key", before); else local.del("mm.key");
+          toast(e.status === 401 ? "That key doesn't match an account" : e.message);
+          return false;
+        }
+      }
+
+      async function restoreAccount() {
+        if (!local.get("mm.key")) return setAccount(null);
+        try {
+          const me = await api("GET", "/api/me");
+          setAccount({ id: me.id, username: me.username });
+        } catch (e) {
+          // 401: the key no longer exists (e.g. the server's data was reset).
+          if (e.status === 401) { local.del("mm.key"); setAccount(null); toast("Your account wasn't found — claim a name again", 3000); }
+          else renderAccount();
+        }
+        if (account) connectLobby().catch(() => {});
+      }
+
+      async function connectLobby() {
+        await ensureLobby();
+        await loadFriends();
+      }
+
+      async function loadFriends() {
+        if (!account) return;
+        try { friendsData = await api("GET", "/api/friends"); } catch { return; }
+        updateBadge();
+        if (panel === "friends") renderFriends();
+      }
+
+      /* ---- panels (reuse the bottom sheet) ---- */
+      function showPanel(name, html) {
+        panel = name;
+        const sheet = $("sheet");
+        sheet.innerHTML = `<div class="sheet">${html}</div>`;
+        sheet.classList.remove("hidden");
+        sheet.onclick = (e) => { if (e.target === sheet) closePanel(); };
+        return sheet.firstElementChild;
+      }
+      function closePanel() {
+        $("sheet").classList.add("hidden");
+        panel = null;
+        chatWith = null;
+      }
+
+      const frow = (inner) => `<div class="frow">${inner}</div>`;
+      function renderFriends() {
+        const f = friendsData;
+        const invites = [...incomingInvites.values()];
+        const el = showPanel("friends",
+          `<h2>Friends</h2><div class="s-sub" style="--el: var(--accent2)">You're @${esc(account.username)}</div>` +
+          `<div class="row-input"><input id="addFriend" type="text" placeholder="Add a friend by username" maxlength="16" autocomplete="off" /><button id="addFriendBtn" class="small">Add</button></div>` +
+          (invites.length ? `<h3>Battle invites</h3>` + invites.map((i) => frow(
+            `<span class="fname ell">⚔️ ${esc(i.from.username)}</span><button class="small ghost" data-act="declineInv" data-id="${i.inviteId}">Decline</button><button class="small" data-act="acceptInv" data-id="${i.inviteId}">Accept</button>`)).join("") : "") +
+          (f.incoming.length || f.outgoing.length ? `<h3>Requests</h3>` : "") +
+          f.incoming.map((a) => frow(
+            `<span class="fname ell">${esc(a.username)}</span><button class="small ghost" data-act="remove" data-id="${a.id}">Decline</button><button class="small" data-act="accept" data-id="${a.id}">Accept</button>`)).join("") +
+          f.outgoing.map((a) => frow(
+            `<span class="fname ell">${esc(a.username)} <span class="muted">· pending</span></span><button class="small ghost" data-act="remove" data-id="${a.id}">Cancel</button>`)).join("") +
+          `<h3>Friends · ${f.friends.length}</h3>` +
+          (f.friends.length ? f.friends.map((a) => frow(
+            `<span class="dot ${a.online ? "" : "off"}"></span><span class="fname ell">${esc(a.username)}${a.unread ? `<span class="badge-n">${a.unread}</span>` : ""}</span>` +
+            `<button class="small ghost" data-act="chat" data-id="${a.id}" aria-label="Message">💬</button>` +
+            `<button class="small" data-act="invite" data-id="${a.id}" ${a.online ? "" : "disabled"}>⚔️ Invite</button>`)).join("")
+            : `<div class="empty">No friends yet. Ask yours for their username and add them above.</div>`) +
+          `<div class="s-actions" style="margin-top:16px"><button class="ghost" data-act="close">Close</button></div>`);
+        const add = async () => {
+          const name = el.querySelector("#addFriend").value.trim();
+          if (!name) return;
+          try {
+            const r = await api("POST", "/api/friends", { username: name });
+            toast(r.status === "accepted" ? `You and ${r.friend.username} are now friends` : `Request sent to ${r.friend.username}`);
+            await loadFriends();
+          } catch (e) { toast(e.message); }
+        };
+        el.querySelector("#addFriendBtn").onclick = add;
+        el.querySelector("#addFriend").onkeydown = (e) => { if (e.key === "Enter") add(); };
+        el.onclick = async (e) => {
+          const btn = e.target.closest("[data-act]");
+          if (!btn) return;
+          const id = btn.dataset.id;
+          try {
+            if (btn.dataset.act === "close") return closePanel();
+            if (btn.dataset.act === "accept") { await api("POST", `/api/friends/${id}/accept`); await loadFriends(); }
+            if (btn.dataset.act === "remove") { await api("DELETE", `/api/friends/${id}`); await loadFriends(); }
+            if (btn.dataset.act === "chat") return openChat(id);
+            if (btn.dataset.act === "invite") return sendInvite(id);
+            if (btn.dataset.act === "acceptInv") return acceptInvite(id);
+            if (btn.dataset.act === "declineInv") { declineInvite(id); renderFriends(); }
+          } catch (err) { toast(err.message); }
+        };
+      }
+
+      /* ---- DMs ---- */
+      const timeOf = (iso) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      function appendMessage(m) {
+        const log = $("chatLog");
+        if (!log) return;
+        const b = document.createElement("div");
+        b.className = "bubble" + (m.from === account.id ? " mine" : "");
+        b.innerHTML = `${esc(m.body)}<time>${timeOf(m.at)}</time>`;
+        log.appendChild(b);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      async function openChat(id) {
+        const f = friendsData.friends.find((x) => x.id === id);
+        if (!f) return;
+        const el = showPanel("chat",
+          `<div class="chat-head"><button class="ghost small" data-act="back" aria-label="Back">‹</button><b class="ell">${esc(f.username)}</b>` +
+          `<span class="dot ${f.online ? "" : "off"}" id="chatDot"></span><span style="flex:1"></span>` +
+          `<button class="ghost small" data-act="invite" ${f.online ? "" : "disabled"}>⚔️</button><button class="ghost small" data-act="unfriend">Unfriend</button></div>` +
+          `<div id="chatLog" class="chat-log"><div class="empty">Loading…</div></div>` +
+          `<div class="row-input"><input id="chatInput" type="text" placeholder="Message ${esc(f.username)}" maxlength="500" autocomplete="off" /><button id="chatSend" class="small">Send</button></div>`);
+        chatWith = id;
+        const send = async () => {
+          const input = el.querySelector("#chatInput");
+          const body = input.value.trim();
+          if (!body) return;
+          input.value = "";
+          try { appendMessage(await api("POST", `/api/messages/${id}`, { body })); }
+          catch (e) { input.value = body; toast(e.message); }
+        };
+        el.querySelector("#chatSend").onclick = send;
+        el.querySelector("#chatInput").onkeydown = (e) => { if (e.key === "Enter") send(); };
+        el.onclick = async (e) => {
+          const btn = e.target.closest("[data-act]");
+          if (!btn) return;
+          if (btn.dataset.act === "back") return renderFriends();
+          if (btn.dataset.act === "invite") return sendInvite(id);
+          if (btn.dataset.act === "unfriend") {
+            if (!confirm(`Remove ${f.username} from your friends?`)) return;
+            await api("DELETE", `/api/friends/${id}`).catch((err) => toast(err.message));
+            await loadFriends();
+            renderFriends();
+          }
+        };
+        try {
+          const msgs = await api("GET", `/api/messages/${id}`);
+          if (chatWith !== id) return;
+          $("chatLog").innerHTML = msgs.length ? "" : `<div class="empty">Say hi 👋</div>`;
+          for (const m of msgs) appendMessage(m);
+          f.unread = 0;
+          updateBadge();
+        } catch (e) { toast(e.message); }
+        el.querySelector("#chatInput").focus();
+      }
+
+      /* ---- live updates from the lobby socket ---- */
+      function onSocialChanged(d) {
+        if (d.reason === "request") toast(`👥 ${d.from} wants to be friends`, 2600);
+        if (d.reason === "accepted" && d.from) toast(`👥 ${d.from} is now your friend`, 2600);
+        loadFriends();
+      }
+
+      function onMessage(m) {
+        if (chatWith === m.from) {
+          $("chatLog")?.querySelector(".empty")?.remove();
+          appendMessage(m);
+          api("GET", `/api/messages/${m.from}?before=1`).catch(() => {}); // marks it read
+          return;
+        }
+        const f = friendsData.friends.find((x) => x.id === m.from);
+        if (f) f.unread = (f.unread || 0) + 1;
+        updateBadge();
+        if (panel === "friends") renderFriends();
+        toast(`💬 ${m.fromUsername}: ${m.body.length > 48 ? m.body.slice(0, 47) + "…" : m.body}`, 3000);
+      }
+
+      function onPresence(d) {
+        const f = friendsData.friends.find((x) => x.id === d.id);
+        if (!f) return;
+        f.online = d.online;
+        if (panel === "friends") renderFriends();
+        if (chatWith === d.id) $("chatDot")?.classList.toggle("off", !d.online);
+      }
+
+      /* ---- invites ---- */
+      async function sendInvite(friendId) {
+        const f = friendsData.friends.find((x) => x.id === friendId);
+        if (picks.length < 2) { closePanel(); return toast("Pick your two monsters first, then invite", 2600); }
+        try {
+          const sock = await ensureLobby();
+          const res = await sock.request("mm:invite", payload({ friendId }));
+          myInvite = { inviteId: res.inviteId, friendId, name: f ? f.username : "your friend" };
+          closePanel();
+          $("lobbyStatus").innerHTML = `Invite sent to ${esc(myInvite.name)} — waiting… <a href="#" id="cancelInvite">Cancel</a>`;
+          $("cancelInvite").onclick = (e) => {
+            e.preventDefault();
+            sock.request("mm:cancelInvite", { inviteId: res.inviteId }).catch(() => {});
+          };
+        } catch (e) { toast(e.message); }
+      }
+
+      function onInvite(inv) {
+        incomingInvites.set(inv.inviteId, inv);
+        updateBadge();
+        if (panel === "friends") renderFriends();
+        if (room) return toast(`⚔️ ${inv.from.username} challenged you — finish this game first`, 3000);
+        showInviteCard(inv);
+      }
+
+      function showInviteCard(inv) {
+        const card = $("inviteCard");
+        const [m0, m1] = inv.monsters || [];
+        card.innerHTML =
+          `<div class="ic-top"><div class="ic-team">${art(m0, 40)}${art(m1, 40)}</div>` +
+          `<div class="ell"><b>${esc(inv.from.username)}</b> challenges you!<div class="muted" style="font-size:12px">${picks.length === 2 ? "Accept to battle with your current team" : "Pick two monsters, then accept"}</div></div></div>` +
+          `<div class="ic-actions"><button class="ghost" data-ic="decline">Decline</button><button data-ic="accept">Accept ⚔️</button></div><div class="ic-timer"></div>`;
+        card.dataset.invite = inv.inviteId;
+        card.classList.remove("hidden");
+        card.querySelector(".ic-timer").animate([{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }], { duration: inv.expiresInMs || 90000, fill: "forwards" });
+        card.onclick = (e) => {
+          const btn = e.target.closest("[data-ic]");
+          if (!btn) return;
+          if (btn.dataset.ic === "accept") acceptInvite(inv.inviteId);
+          else declineInvite(inv.inviteId);
+        };
+      }
+
+      async function acceptInvite(inviteId) {
+        if (picks.length < 2) { closePanel(); return toast("Pick your two monsters first, then tap Accept", 2600); }
+        try {
+          const sock = await ensureLobby();
+          const res = await sock.request("mm:acceptInvite", payload({ inviteId }));
+          incomingInvites.delete(inviteId);
+          closePanel();
+          $("inviteCard").classList.add("hidden");
+          await startGame(res);
+        } catch (e) {
+          toast(e.message);
+          incomingInvites.delete(inviteId);
+          $("inviteCard").classList.add("hidden");
+          updateBadge();
+        }
+      }
+
+      function declineInvite(inviteId) {
+        incomingInvites.delete(inviteId);
+        updateBadge();
+        if ($("inviteCard").dataset.invite === inviteId) $("inviteCard").classList.add("hidden");
+        lobbySock?.request("mm:declineInvite", { inviteId }).catch(() => {});
+      }
+
+      function onInviteGone(d) {
+        if (myInvite && myInvite.inviteId === d.inviteId) {
+          const name = myInvite.name;
+          myInvite = null;
+          $("lobbyStatus").textContent = "";
+          if (d.reason === "declined") toast(`${name} declined`);
+          if (d.reason === "expired") toast(`${name} didn't answer in time`);
+        }
+        if (incomingInvites.delete(d.inviteId)) {
+          updateBadge();
+          if (panel === "friends") renderFriends();
+        }
+        if ($("inviteCard").dataset.invite === d.inviteId && d.reason !== "accepted") $("inviteCard").classList.add("hidden");
+      }
+
+      /* ---- profile ---- */
+      async function openProfile() {
+        const el = showPanel("profile", `<h2>@${esc(account.username)}</h2><div class="s-sub" style="--el: var(--accent2)" id="profRecord">…</div>` +
+          `<h3>Rename</h3><div class="row-input"><input id="renameInput" type="text" maxlength="16" value="${esc(account.username)}" /><button class="small" data-act="rename">Save</button></div>` +
+          `<h3>Your key</h3><div class="muted" style="font-size:13px">This key is your login: use it to sign in on another device. Anyone who has it can play as you, so keep it to yourself.</div>` +
+          `<div class="row-input" style="margin-top:6px"><input id="keyField" type="password" readonly value="${esc(local.get("mm.key") || "")}" /><button class="small" data-act="copyKey">Copy</button></div>` +
+          `<h3>Recent matches</h3><div id="profMatches"><div class="empty">Loading…</div></div>` +
+          `<div class="s-actions" style="margin-top:16px"><button class="ghost" data-act="signout">Sign out on this device</button><button class="ghost" data-act="close">Close</button></div>`);
+        el.onclick = async (e) => {
+          const btn = e.target.closest("[data-act]");
+          if (!btn) return;
+          if (btn.dataset.act === "close") return closePanel();
+          if (btn.dataset.act === "copyKey") {
+            const key = local.get("mm.key") || "";
+            try { await navigator.clipboard.writeText(key); toast("Key copied"); }
+            catch { const f = el.querySelector("#keyField"); f.type = "text"; f.select(); toast("Select and copy your key"); }
+          }
+          if (btn.dataset.act === "rename") {
+            try {
+              const r = await api("PATCH", "/api/me", { username: el.querySelector("#renameInput").value });
+              setAccount({ id: r.id, username: r.username });
+              toast(`You're now @${r.username}`);
+              openProfile();
+            } catch (err) { toast(err.message); }
+          }
+          if (btn.dataset.act === "signout") {
+            if (!confirm("Sign out? You'll need your key to get this account back — copy it first.")) return;
+            local.del("mm.key");
+            setAccount(null);
+            friendsData = { friends: [], incoming: [], outgoing: [] };
+            try { lobbySock?.close(); } catch {}
+            closePanel();
+          }
+        };
+        try {
+          const [me, matches] = await Promise.all([api("GET", "/api/me"), api("GET", "/api/me/matches")]);
+          const losses = me.record.games - me.record.wins;
+          el.querySelector("#profRecord").textContent = `${me.record.wins} win${me.record.wins === 1 ? "" : "s"} · ${losses} loss${losses === 1 ? "" : "es"}`;
+          const name = (id) => roster.find((m) => m.id === id)?.name || id;
+          el.querySelector("#profMatches").innerHTML = matches.length
+            ? matches.slice(0, 8).map((m) =>
+                `<div class="match-row"><span class="res ${m.won ? "w" : "l"}">${m.won ? "W" : "L"}</span>` +
+                `<span class="ell">vs ${esc(m.opponent)} · ${esc(name(m.monsterA))} + ${esc(name(m.monsterB))}</span></div>`).join("")
+            : `<div class="empty">No matches yet.</div>`;
+        } catch {}
+      }
+
+      function openKeyPrompt() {
+        const el = showPanel("key", `<h2>Sign in with a key</h2><div class="muted" style="font-size:13px;margin:8px 0">Paste the key from your profile on another device.</div>` +
+          `<div class="row-input"><input id="keyInput" type="text" placeholder="mm_…" autocomplete="off" /><button class="small" id="keyGo">Sign in</button></div>` +
+          `<div class="s-actions" style="margin-top:16px"><button class="ghost" id="keyClose">Close</button></div>`);
+        el.querySelector("#keyClose").onclick = closePanel;
+        el.querySelector("#keyGo").onclick = async () => { if (await signInWithKey(el.querySelector("#keyInput").value)) closePanel(); };
+      }
+
       /* ------------------------------------------------------------ boot */
       $("play").addEventListener("click", quickPlay);
       $("create").addEventListener("click", createRoom);
@@ -1417,6 +1925,12 @@
       $("code").addEventListener("input", refreshButtons);
       $("code").addEventListener("keydown", (e) => { if (e.key === "Enter" && !$("join").disabled) joinRoom(); });
       $("name").value = store.get("mm.name") || "";
+      $("claim").addEventListener("click", claimName);
+      $("name").addEventListener("keydown", (e) => { if (e.key === "Enter") claimName(); });
+      $("useKey").addEventListener("click", (e) => { e.preventDefault(); openKeyPrompt(); });
+      $("friendsBtn").addEventListener("click", () => { renderFriends(); loadFriends(); });
+      $("profileBtn").addEventListener("click", openProfile);
+      renderAccount();
 
       const invited = new URLSearchParams(location.search).get("room");
       if (invited) {
@@ -1425,6 +1939,7 @@
       }
 
       (async () => {
+        restoreAccount();
         const resumed = await resumeIfAny();
         try { await loadRoster(); } catch (e) { $("lobbyStatus").textContent = "Failed to load monsters: " + e.message; }
         if (!resumed) showScreen("lobby");

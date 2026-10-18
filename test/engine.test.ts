@@ -504,3 +504,43 @@ describe("free swaps", () => {
     expect(g.state.players[1].hp).toBe(STARTING_HP);
   });
 });
+
+describe("effect events", () => {
+  it("every cast reports one event per effect, with what actually happened", () => {
+    const water: Monster = { id: "w", name: "w", element: "water", chargeCost: 99, ability: { name: "n", effects: [] } };
+    const g = newGame(
+      fireMon("a", [
+        dmg(5),
+        { kind: "heal", amount: 3 },
+        { kind: "petrify", count: 2 },
+        { kind: "sap", count: 2 },
+        { kind: "seal", turns: 1 },
+        { kind: "freeze", count: 2, turns: 1 },
+        { kind: "match", shape: "square" },
+      ]),
+      water,
+    );
+    g.state.players[1].monsters[0]!.charge = 1;
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const cast = r.casts[0]!;
+    expect(cast.effects.map((e) => e.kind)).toEqual(["damage", "heal", "petrify", "sap", "seal", "freeze", "match"]);
+    expect(cast.effects[0]).toEqual({ kind: "damage", target: 1, amount: 5 });
+    const petrify = cast.effects[2] as { cells: { x: number; y: number }[] };
+    expect(petrify.cells).toHaveLength(2);
+    expect(cast.effects[3]).toEqual({ kind: "sap", target: 1, drained: { w: 1 } });
+    expect(cast.effects[4]).toMatchObject({ kind: "seal", target: 1, turns: 1 });
+    const match = cast.effects[6] as { step: number; cells: unknown[] };
+    expect(match.cells).toHaveLength(4);
+    expect(r.effectSteps[match.step]).toBeDefined();
+    expect(r.iceLanded).toEqual([]); // still mid-turn; it lands when the turn passes
+  });
+
+  it("reports frozen cells when the freeze lands at the turn change", () => {
+    const g = newGame(fireMon("a", [{ kind: "freeze", count: 2, turns: 1 }]));
+    g.state.movesLeft = 1;
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok && r.iceLanded.length).toBe(2);
+  });
+});

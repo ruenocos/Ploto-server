@@ -11,6 +11,7 @@
  * Display text is generated from the effects (see describeEffects), so the
  * numbers here are the single source of truth. IDs are stable.
  */
+import { createHash } from "node:crypto";
 import type { Ability, Effect, Element, Monster, Passive } from "./types.js";
 
 const dmg = (amount: number): Effect => ({ kind: "damage", amount });
@@ -108,3 +109,9 @@ export function monstersByElement(element: Element): Monster[] {
 export function roster(): Monster[] {
   return Object.values(MONSTERS);
 }
+
+/**
+ * Fingerprint of the roster's numbers. Match history stores it so balance stats
+ * can be split by patch (it changes whenever any monster is retuned).
+ */
+export const BALANCE_VERSION = createHash("sha256").update(JSON.stringify(MONSTERS)).digest("hex").slice(0, 10);

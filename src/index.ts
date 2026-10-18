@@ -10,6 +10,10 @@ async function main(): Promise<void> {
 
   // eslint-disable-next-line no-console
   console.log(`Ploto up on http://${config.host}:${server.port}  —  play at /play`);
+  // eslint-disable-next-line no-console
+  console.log(`data: ${server.services.db.describe}`);
+  // eslint-disable-next-line no-console
+  console.log(`monster lab: ${config.statsKey ? "open (STATS_KEY set)" : "closed (no STATS_KEY)"}`);
 
   const shutdown = async () => {
     await server.close();

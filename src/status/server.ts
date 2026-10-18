@@ -56,6 +56,12 @@ export function buildStatusServer(config: ServerConfig): FastifyInstance {
   );
 
   // Plotomon creature art module (served to the client).
+  // Move/board animations (one animator per effect kind; see web/animators.js).
+  app.get("/play/animators.js", async (_req, reply) => {
+    reply.header("content-type", "application/javascript; charset=utf-8");
+    return loadWebFile("animators.js");
+  });
+
   app.get("/play/plotomon.js", async (_req, reply) => {
     reply.header("content-type", "application/javascript; charset=utf-8");
     return loadArtJs();
@@ -70,6 +76,16 @@ function loadArtJs(): string {
     cachedArt = readFileSync(fileURLToPath(new URL("../../web/plotomon.js", import.meta.url)), "utf8");
   }
   return cachedArt;
+}
+
+const webCache = new Map<string, string>();
+function loadWebFile(name: string): string {
+  let text = webCache.get(name);
+  if (text === undefined) {
+    text = readFileSync(fileURLToPath(new URL(`../../web/${name}`, import.meta.url)), "utf8");
+    webCache.set(name, text);
+  }
+  return text;
 }
 
 let cachedHtml: string | null = null;

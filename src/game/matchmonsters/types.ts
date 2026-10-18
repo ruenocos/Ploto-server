@@ -80,6 +80,39 @@ export type Effect =
 
 export type EffectKind = Effect["kind"];
 
+export interface Cell {
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * What one effect actually did when it resolved, in order, so clients can
+ * animate it. There is one variant per EffectKind (the engine's applyEffect
+ * must return one for every kind, and the client's animator registry is typed
+ * against this union, so adding an effect without an animation won't compile).
+ */
+export type EffectEvent =
+  | { readonly kind: "damage"; readonly target: 0 | 1; readonly amount: number }
+  | { readonly kind: "heal"; readonly target: 0 | 1; readonly amount: number }
+  | { readonly kind: "shield"; readonly target: 0 | 1; readonly amount: number }
+  | { readonly kind: "drain"; readonly target: 0 | 1; readonly amount: number }
+  | { readonly kind: "dot"; readonly target: 0 | 1; readonly dot: "burn" | "poison"; readonly amount: number; readonly turns: number }
+  /** `step` indexes the move result's effectSteps (-1 if nothing was there to clear). */
+  | { readonly kind: "match"; readonly shape: MatchShape; readonly cells: readonly Cell[]; readonly step: number }
+  /** Freezes land when the turn passes (see MoveResult.iceLanded). */
+  | { readonly kind: "freeze"; readonly target: 0 | 1; readonly count: number; readonly turns: number }
+  | { readonly kind: "petrify"; readonly cells: readonly Cell[] }
+  | { readonly kind: "convert"; readonly cells: readonly Cell[]; readonly element: Element }
+  /** Charge removed from each rival monster, by monster id. */
+  | { readonly kind: "sap"; readonly target: 0 | 1; readonly drained: Readonly<Record<string, number>> }
+  | { readonly kind: "slow"; readonly target: 0 | 1; readonly count: number }
+  | { readonly kind: "seal"; readonly target: 0 | 1; readonly monsterId: string | null; readonly turns: number }
+  | { readonly kind: "haste"; readonly count: number }
+  | { readonly kind: "cleanse"; readonly removed: number }
+  | { readonly kind: "empower"; readonly monsterIds: readonly string[]; readonly count: number };
+
+export type EffectEventFor<K extends EffectKind> = Extract<EffectEvent, { kind: K }>;
+
 export interface Ability {
   /** Move name shown to players, e.g. "Eruption". */
   readonly name: string;
@@ -199,6 +232,8 @@ export interface CastEvent {
   readonly kinds: EffectKind[];
   /** Fired via a passive (follow-up) or berserk form. */
   readonly via?: "followUp" | "berserk";
+  /** What each effect did, in order. */
+  readonly effects: EffectEvent[];
 }
 
 export interface MoveResult {
@@ -226,6 +261,8 @@ export interface MoveResult {
   readonly board: Tile[][];
   /** Ice on the board after this move resolves. */
   readonly ice: number[][];
+  /** Cells that froze as the turn passed (freezes cast during the turn landing). */
+  readonly iceLanded: Cell[];
   /** The board was reshuffled because it had no valid moves. */
   readonly reshuffled: boolean;
 }

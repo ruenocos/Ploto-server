@@ -1,0 +1,14 @@
+Match Monsters is deploying to https://{{ .Values.hostname }}/play
+{{- if and .Values.gateway.create .Values.tls.enabled }}
+
+TLS: cert-manager (ClusterIssuer "{{ .Values.tls.clusterIssuer }}") will issue the
+certificate into Secret "{{ include "ploto.tlsSecret" . }}". Watch it with:
+  kubectl -n {{ .Release.Namespace }} get certificate,gateway,httproute
+{{- end }}
+
+Point DNS for {{ .Values.hostname }} at the Gateway's address:
+  kubectl -n {{ .Release.Namespace }} get gateway {{ if .Values.gateway.create }}{{ include "ploto.fullname" . }}{{ else }}{{ .Values.gateway.existing.name }}{{ end }} -o jsonpath='{.status.addresses[*].value}'
+{{- if not (or .Values.statsKey.value .Values.statsKey.existingSecret) }}
+
+The Monster Lab stats API is closed (no statsKey set).
+{{- end }}

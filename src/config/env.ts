@@ -6,6 +6,10 @@ export interface ServerConfig {
   /** Value served by the status endpoint: 0 = up, 1 = in maintenance. */
   readonly downtime: 0 | 1;
   readonly maintenanceReason: string;
+  /** Directory for the database file (postgres.db); unset = in memory (tests). */
+  readonly dataDir?: string | undefined;
+  /** Gate for the monster-lab stats API; the API stays closed when unset. */
+  readonly statsKey?: string | undefined;
 }
 
 function intEnv(name: string, fallback: number): number {
@@ -22,5 +26,7 @@ export function loadConfig(): ServerConfig {
     port: intEnv("PLOTO_PORT", intEnv("PORT", 8080)),
     downtime: process.env.PLOTO_DOWNTIME === "1" ? 1 : 0,
     maintenanceReason: process.env.PLOTO_MAINTENANCE_REASON ?? "",
+    dataDir: process.env.PLOTO_DATA_DIR || "./data",
+    statsKey: process.env.STATS_KEY || undefined,
   };
 }

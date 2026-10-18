@@ -1,0 +1,86 @@
+# Public hostname players open (https://<hostname>/play).
+hostname: play.example.com
+
+image:
+  repository: ghcr.io/ruenocos/ploto-server
+  tag: latest
+  pullPolicy: Always
+imagePullSecrets: []
+
+# Opens the Monster Lab stats API (/api/monster-lab). Either put the key here
+# (the chart stores it in a Secret) or reference a Secret you manage yourself.
+# Leave both empty to keep the lab closed.
+statsKey:
+  value: ""
+  existingSecret: ""
+  secretKey: STATS_KEY
+
+# Accounts, friends, DMs and match history live in one SQLite file
+# (/app/data/postgres.db). Keep it on a volume so it survives restarts.
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClass: ""
+  accessModes: [ReadWriteOnce]
+  existingClaim: ""
+
+gateway:
+  # Create a Gateway for this app. It's annotated for cert-manager, which then
+  # issues the TLS certificate for `hostname` automatically.
+  create: true
+  className: ""        # your GatewayClass: cilium, istio, eg (Envoy Gateway), nginx, …
+  annotations: {}
+  # Or set create: false and attach the routes to a Gateway you already run
+  # (TLS is then that Gateway's job).
+  existing:
+    name: ""
+    namespace: ""
+    httpsSectionName: https
+    httpSectionName: http
+
+tls:
+  enabled: true
+  # cert-manager ClusterIssuer (needs an HTTP-01 `gatewayHTTPRoute` solver or DNS-01).
+  clusterIssuer: letsencrypt-prod
+  secretName: ""       # defaults to <release>-ploto-tls
+
+route:
+  # Redirect plain http:// to https:// (ACME challenges still get through:
+  # cert-manager's exact-path route wins over this prefix route).
+  httpsRedirect: true
+  # Some gateways time out long requests; WebSockets live for a whole match.
+  # e.g. { request: "0s" } to disable, if your implementation supports it.
+  timeouts: {}
+
+service:
+  type: ClusterIP
+  port: 80
+
+# Matches live in memory and SQLite has a single writer, so this runs as one
+# replica with a Recreate rollout (the volume is ReadWriteOnce).
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    memory: 512Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+extraEnv: []
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

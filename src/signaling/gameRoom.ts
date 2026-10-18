@@ -18,6 +18,7 @@ import {
 import { chooseEvolution, chooseMove } from "../game/matchmonsters/bot.js";
 import type { Move, MoveResult, MonsterState, PlayerState } from "../game/matchmonsters/types.js";
 import { BERRIES_TO_EVOLVE, FATIGUE_AFTER } from "../game/matchmonsters/types.js";
+import type { MatchMode, MatchRecord } from "../stats/history.js";
 
 /** Minimal view of a protoo peer, so rooms are testable without a live socket. */
 export interface PeerLike {
@@ -28,6 +29,12 @@ export interface PeerLike {
 export interface RoomOptions {
   /** Seat played by the built-in practice bot. Practice rooms also allow debug actions. */
   readonly botSeat?: 0 | 1;
+  /** How the match came about, for match history. */
+  readonly mode?: MatchMode;
+  /** Signed-in account per seat (null = guest or bot), for match history. */
+  readonly accounts?: readonly [string | null, string | null];
+  /** Called once when the match ends. */
+  readonly onFinished?: (room: GameRoom) => void;
 }
 
 /** Bot pacing: wait for the client's animations, then "think" a moment. */
@@ -39,7 +46,9 @@ const BOT_SLOPPINESS = 0.25;
 export class GameRoom {
   readonly game: MatchMonstersGame;
   readonly options: RoomOptions;
+  readonly createdAt = new Date();
   private readonly config: GameConfig;
+  private reported = false;
   private botTimer: ReturnType<typeof setTimeout> | null = null;
   /** How long the last move's animation runs on clients, roughly. */
   private lastAnimMs = 0;
@@ -100,6 +109,33 @@ export class GameRoom {
     this.peers[seat === 0 ? 1 : 0]?.notify("mm:peerStatus", { seat, connected: true });
     this.scheduleBot();
     return true;
+  }
+
+  /** This match as a history row (call once it's finished). */
+  toRecord(): MatchRecord {
+    const s = this.game.state;
+    const player = (i: 0 | 1) => {
+      const p = s.players[i];
+      const [a, b] = p.monsters as unknown as [MonsterState, MonsterState];
+      return {
+        accountId: this.options.accounts?.[i] ?? null,
+        isBot: this.options.botSeat === i,
+        displayName: p.displayName,
+        monsters: [a.def.id, b.def.id] as const,
+        evolutions: [a.evolution, b.evolution] as const,
+        finalHp: p.hp,
+      };
+    };
+    return {
+      mode: this.options.mode ?? "quick",
+      vsBot: this.options.botSeat !== undefined,
+      firstTurn: this.config.firstTurn ?? 0,
+      winner: s.winner,
+      moves: s.moveNumber,
+      turns: s.turnPasses,
+      startedAt: this.createdAt,
+      players: [player(0), player(1)],
+    };
   }
 
   /** Stop any pending bot move (the room is being dropped). */
@@ -183,6 +219,10 @@ export class GameRoom {
     this.broadcast("mm:moveResult", result);
     if (result.finished) {
       this.broadcast("mm:gameOver", { winner: result.winner, matchId: this.game.state.matchId });
+      if (!this.reported) {
+        this.reported = true;
+        this.options.onFinished?.(this);
+      }
     }
     const steps = result.cascades.length + result.effectSteps.length;
     // Cast cards run ~1.1s each and every number lands with its own beat.
@@ -246,8 +286,8 @@ export class GameRoom {
 }
 
 function serializePlayer(p: PlayerState) {
+  // No peerId here: it's the seat credential, and the opponent sees this.
   return {
-    peerId: p.peerId,
     displayName: p.displayName,
     hp: p.hp,
     maxHp: p.maxHp,

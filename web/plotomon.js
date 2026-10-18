@@ -27,7 +27,10 @@
       ? `<path d="M${cx - dx - r} ${cy - r * 1.4} q${r} ${-r * 0.7} ${r * 2} 0" stroke="${INK}" stroke-width="2.4" fill="none" stroke-linecap="round"/>` +
         `<path d="M${cx + dx - r} ${cy - r * 1.4} q${r} ${-r * 0.7} ${r * 2} 0" stroke="${INK}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`
       : "";
-    return e(cx - dx) + e(cx + dx) + brow;
+    const cheeks =
+      `<ellipse cx="${cx - dx - r * 0.7}" cy="${cy + r * 1.8}" rx="${r * 0.8}" ry="${r * 0.52}" fill="#ff7a9c" opacity="0.4"/>` +
+      `<ellipse cx="${cx + dx + r * 0.7}" cy="${cy + r * 1.8}" rx="${r * 0.8}" ry="${r * 0.52}" fill="#ff7a9c" opacity="0.4"/>`;
+    return cheeks + e(cx - dx) + e(cx + dx) + brow;
   }
   const shadow = `<ellipse cx="60" cy="104" rx="30" ry="7" fill="#000" opacity="0.28"/>`;
   const gem = (x, y, r, c) =>
@@ -82,7 +85,7 @@
     const wings = `<path d="M30 70 q-18 -6 -16 12 q10 2 18 -2 z" fill="${p.dark}"/>` +
       `<path d="M90 70 q18 -6 16 12 q-10 2 -18 -2 z" fill="${p.dark}"/>`;
     const crest = f.crest
-      ? `<path d="M60 20 q-8 -12 2 -14 q2 8 10 6 q-4 8 -12 8 z" fill="${p.accent}"/>`
+      ? `<g fill="${p.accent}"><path d="M54 42 L57 20 L60 42 Z"/><path d="M60 44 L64 14 L68 44 Z"/><path d="M68 42 L73 22 L74 42 Z"/></g>`
       : "";
     const antennae = f.antennae
       ? `<path d="M50 30 q-8 -14 -14 -14" stroke="${INK}" stroke-width="2" fill="none"/><circle cx="36" cy="16" r="3" fill="${p.accent}"/>` +
@@ -138,7 +141,8 @@
       : `<path d="M60 20 q-14 6 -22 -2 q6 16 22 14 q16 2 22 -14 q-8 8 -22 2 z" fill="${p.dark}"/>` +
         `<path d="M60 18 l0 18" stroke="${p.dark}" stroke-width="3"/>`;
     const petals = f.petals
-      ? `<g fill="${p.accent}"><circle cx="46" cy="30" r="5"/><circle cx="60" cy="24" r="5"/><circle cx="74" cy="30" r="5"/></g>`
+      ? `<g fill="${p.accent}"><circle cx="60" cy="22" r="6"/><circle cx="49" cy="29" r="6"/><circle cx="71" cy="29" r="6"/>` +
+        `<circle cx="53" cy="40" r="5.5"/><circle cx="67" cy="40" r="5.5"/><circle cx="60" cy="31" r="5" fill="${p.lite}"/></g>`
       : "";
     return (
       shadow +

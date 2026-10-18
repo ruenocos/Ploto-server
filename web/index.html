@@ -333,9 +333,9 @@
       .tile.dragging { z-index: 2; }
       .tile.dragging .gem { filter: drop-shadow(0 calc(var(--px) * 2) 0 rgba(10, 12, 20, 0.6)); }
       .tile.hint { box-shadow: inset 0 0 0 var(--px) rgba(255, 244, 214, 0.55); }
-      /* the rival's turn: the board rests (but not while their move is playing on it) */
-      .board-wrap.waiting:not(.playing) .board { filter: saturate(0.45) brightness(0.7); }
-      .board-wrap.waiting:not(.playing)::after {
+      /* the rival's turn: the board stays dimmed the whole time, their moves included */
+      .board-wrap.waiting .board { filter: saturate(0.45) brightness(0.7); }
+      .board-wrap.waiting::after {
         content: attr(data-wait); position: absolute; left: 50%; top: 50%; translate: -50% -50%; pointer-events: none;
         font: 700 var(--fs-s)/1 var(--f-label); text-transform: uppercase; color: var(--c-mute); white-space: nowrap;
         background: var(--c-panel); border: var(--px) solid var(--c-ink); padding: 8px 12px; box-shadow: inset 0 var(--px) 0 var(--c-edge);
@@ -2033,7 +2033,6 @@
         animating = true;
         clearHint();
         endDrag();
-        $("boardWrap").classList.add("playing"); // the rival's move plays on an undimmed board
         const A = animators();
         try {
           selected = null;
@@ -2077,7 +2076,6 @@
           console.error(err);
           try { await refresh(); } catch {}
         } finally {
-          $("boardWrap").classList.remove("playing");
           inflight = [];
           disp = null;
           animating = false;

@@ -111,12 +111,12 @@
       .dot.off { background: var(--c-bad); }
 
       /* ---------------------------------------------------------------- lobby */
-      #lobby { max-width: 980px; margin: 0 auto; padding: 20px 16px 248px; }
+      #lobby { max-width: 980px; margin: 0 auto; padding: 18px 16px calc(var(--dock-h, 160px) + 16px); }
       .brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-      .brand h1 { font-size: var(--fs-xxl); line-height: 1; margin: 0; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
+      .brand h1 { font-size: min(var(--fs-xxl), 6.4vw); white-space: nowrap; line-height: 1; margin: 0; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
       .brand .tag { font: 700 var(--fs-xs)/1 var(--f-label); color: var(--c-accent-hi); text-transform: uppercase; }
-      .intro { color: var(--c-mute); margin: 10px 0 16px; max-width: 640px; }
-      .acct { max-width: 520px; margin-bottom: 18px; display: grid; gap: 6px; }
+      .intro { color: var(--c-mute); margin: 8px 0 14px; max-width: 640px; }
+      .acct { max-width: 520px; margin-bottom: 6px; display: grid; gap: 6px; }
       .acct-guest, .acct-user, .row-input { display: flex; gap: 8px; }
       .acct-guest button, .row-input button { flex: none; }
       .acct-hint { font-size: var(--fs-s); }
@@ -167,26 +167,26 @@
       .dock {
         position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--c-panel);
         border-top: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge);
-        padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+        padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
       }
-      .dock-inner { max-width: 980px; margin: 0 auto; display: grid; gap: 10px; }
+      .dock-inner { max-width: 980px; margin: 0 auto; display: grid; gap: 8px; }
       .team-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
-      .slot { width: 44px; height: 44px; background: var(--c-well); border: var(--px) dashed var(--c-edge); display: grid; place-items: center; flex: none; color: var(--c-mute); font: 700 var(--fs-s)/1 var(--f-label); }
+      .slot { width: 36px; height: 36px; background: var(--c-well); border: var(--px) dashed var(--c-edge); display: grid; place-items: center; flex: none; color: var(--c-mute); font: 700 var(--fs-s)/1 var(--f-label); }
       .slot svg { display: block; }
       .team-label { flex: 1; min-width: 0; font: 700 var(--fs-s)/1.2 var(--f-label); color: var(--c-cream); }
-      .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-      .actions .wide { grid-column: 1 / -1; }
+      .actions { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
+      button.ghost.on { --b: var(--c-well); --b-hi: var(--c-ink); --b-lo: var(--c-well); color: var(--c-accent-hi); }
       .join-row { display: flex; gap: 8px; }
       .join-row input { font-family: var(--f-label); text-transform: uppercase; letter-spacing: 3px; }
       .join-row button { flex: none; }
       .invite { background: color-mix(in srgb, var(--c-accent) 18%, var(--c-panel)); padding: 12px; text-align: center; }
       .code-big { font: 700 var(--fs-xxl)/1 var(--f-label); letter-spacing: 6px; color: var(--c-cream); margin: 6px 0 10px; }
-      .status { color: var(--c-mute); font-size: var(--fs-s); min-height: 18px; }
+      .status { color: var(--c-mute); font-size: var(--fs-s); }
+      .status:empty { display: none; }
       @media (min-width: 760px) {
-        .dock-inner { grid-template-columns: 1.2fr 1fr 1fr; align-items: center; }
-        .actions { grid-column: 2; }
-        .join-row { grid-column: 3; }
-        .invite, .dock .status { grid-column: 1 / -1; }
+        .dock-inner { grid-template-columns: 1fr 1.4fr; align-items: center; }
+        .join-row, .invite, .dock .status { grid-column: 1 / -1; }
+        .join-row { max-width: 520px; justify-self: end; width: 100%; }
       }
 
       /* ---------------------------------------------------------------- game */
@@ -259,7 +259,7 @@
       .rig { position: absolute; inset: 0; transform-origin: 50% 98%; }
       .rig .part { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
       .rig .part > img { position: absolute; display: block; image-rendering: pixelated; }
-      .core { position: absolute; left: calc(var(--u) * 24); width: 0; height: 0; } /* body centre: where motes and orbs aim */
+      .core { position: absolute; width: 0; height: 0; } /* body centre: where motes and orbs aim */
       .fighter.sealed .rig { filter: grayscale(0.85) brightness(0.8); }
       .fighter.fainted .stage { opacity: 0.35; filter: grayscale(1); }
       /* idle motion, per part role */
@@ -325,7 +325,14 @@
         margin-top: -22px; padding: 10px; z-index: 4; background: var(--c-well); border: var(--px) solid var(--c-ink);
         box-shadow: inset 0 var(--px) 0 var(--c-edge), inset 0 calc(var(--px) * -2) 0 rgba(10, 12, 20, 0.6);
       }
-      .board { display: grid; gap: 2px; touch-action: manipulation; }
+      .board { display: grid; gap: 2px; touch-action: manipulation; transition: filter 0.2s steps(2); }
+      /* the rival's turn: the board rests (but not while their move is playing on it) */
+      .board-wrap.waiting:not(.playing) .board { filter: saturate(0.45) brightness(0.7); }
+      .board-wrap.waiting:not(.playing)::after {
+        content: attr(data-wait); position: absolute; left: 50%; top: 50%; translate: -50% -50%; pointer-events: none;
+        font: 700 var(--fs-s)/1 var(--f-label); text-transform: uppercase; color: var(--c-mute); white-space: nowrap;
+        background: var(--c-panel); border: var(--px) solid var(--c-ink); padding: 8px 12px; box-shadow: inset 0 var(--px) 0 var(--c-edge);
+      }
       .board.falling { overflow: hidden; } /* new tiles enter from above the board */
       .tile { --el: #8a8f9c; position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: transform 0.12s steps(2); }
       .tile .gem { width: 100%; height: 100%; display: block; pointer-events: none; }
@@ -447,6 +454,18 @@
         transition: opacity 0.18s steps(3), transform 0.18s steps(3); z-index: 60; max-width: 92vw; text-align: center;
       }
       .toast.show { opacity: 1; transform: translate(-50%, 0); }
+      /* YOUR TURN: the one big call in the middle of the screen */
+      .turn-call { position: fixed; left: 50%; top: 52%; translate: -50% -50%; z-index: 35; pointer-events: none; }
+      .turn-call .tc-box {
+        text-align: center; padding: 14px 22px 16px; background: var(--c-accent); border: var(--px) solid var(--c-ink);
+        box-shadow: inset 0 var(--px) 0 var(--c-accent-hi), inset 0 calc(var(--px) * -3) 0 var(--c-accent-lo);
+        --n: var(--px);
+        clip-path: polygon(0 var(--n), var(--n) var(--n), var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n),
+          100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%,
+          var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n)));
+      }
+      .turn-call .tc-big { font: 700 var(--fs-xxl)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
+      .turn-call .tc-sub { margin-top: 6px; font: 700 var(--fs-xs)/1 var(--f-label); text-transform: uppercase; color: var(--c-gold); }
     </style>
   </head>
   <body>
@@ -518,10 +537,7 @@
     <!-- ============================================================ LOBBY -->
     <section id="lobby">
       <div class="brand"><h1>Match Monsters</h1><span class="tag">Plotomon</span></div>
-      <p class="intro">
-        Pick two monsters. Match their element to charge them — a charged monster unleashes its move.
-        Grab 🍓 berries to evolve. Drop your rival to 0 HP to win.
-      </p>
+      <p class="intro">Pick two monsters. Match their gems to charge them up. Knock out your rival.</p>
       <div id="acct" class="acct">
         <div id="acctGuest" class="acct-guest">
           <input id="name" type="text" placeholder="Pick a username" maxlength="16" autocomplete="nickname" />
@@ -531,7 +547,7 @@
           <button id="profileBtn" class="ghost small">@<span id="acctName"></span></button>
           <button id="friendsBtn" class="ghost small">👥 Friends<span id="friendsBadge" class="badge-n hidden"></span></button>
         </div>
-        <div id="acctHint" class="acct-hint muted">Claim a name to add friends and keep your record. No password needed. <a href="#" id="useKey">Have a key?</a></div>
+        <div id="acctHint" class="acct-hint muted">Keeps your record and friends. No password. <a href="#" id="useKey">Have a key?</a></div>
       </div>
       <div id="picker"></div>
     </section>
@@ -545,11 +561,13 @@
         </div>
         <div class="actions">
           <button id="play" disabled>Quick Play</button>
-          <button id="create" class="ghost" disabled>Invite a friend</button>
-          <button id="practice" class="ghost small wide" disabled>🤖 Practice vs bot</button>
+          <button id="practice" class="ghost" disabled>Bot</button>
+          <button id="friendToggle" class="ghost" aria-expanded="false" aria-controls="friendRow">Friend</button>
         </div>
-        <div class="join-row">
-          <input id="code" type="text" placeholder="CODE" maxlength="8" autocapitalize="characters" autocomplete="off" />
+        <!-- Playing a friend: make a code to share, or type theirs. Folded away until asked for. -->
+        <div id="friendRow" class="join-row hidden">
+          <button id="create" class="ghost" disabled>New code</button>
+          <input id="code" type="text" placeholder="CODE" maxlength="8" autocapitalize="characters" autocomplete="off" aria-label="Room code" />
           <button id="join" class="ghost" disabled>Join</button>
         </div>
         <div id="invite" class="invite hidden">
@@ -592,6 +610,7 @@
     <div id="sheet" class="scrim hidden"></div>
     <div id="end" class="scrim hidden"></div>
     <div id="toast" class="toast"></div>
+    <div id="turnCall" class="turn-call hidden" role="status" aria-live="assertive"></div>
     <div id="inviteCard" class="invite-card hidden"></div>
     <div id="fx" aria-hidden="true"></div>
 
@@ -654,6 +673,11 @@
       };
       const STAGE_SCALE = [1, 1.2, 1.38]; // matches art/pixel/rigkit.py
       const U = (n) => `calc(var(--u) * ${n})`;
+      /** Where motes and orbs aim on a monster: its body centre (from the art; estimated without it). */
+      const coreStyle = (id, stage) => {
+        const c = pxMon(id)?.stages[stage].core || [24, 47 - 16 * STAGE_SCALE[stage]];
+        return `left:${U(c[0])};top:${U(c[1])}`;
+      };
       /**
        * A rigged monster: every part is a full-canvas layer (so nested parts share
        * coordinates) pivoting at its joint, with its cropped image placed inside.
@@ -985,6 +1009,7 @@
 
       function leaveGame() {
         leaving = true;
+        document.title = BASE_TITLE;
         try { gameSock?.close(); } catch {}
         gameSock = null;
         room = null;
@@ -1022,6 +1047,7 @@
         if (!state) return;
         const foe = state.players[room.seat === 0 ? 1 : 0];
         for (const seat of [0, 1]) { renderHud(seat); renderSide(seat); }
+        noteTurn();
         $("debugBar").classList.toggle("hidden", state.botSeat == null);
         if (state.connected) {
           rivalOnline = state.connected[room.seat === 0 ? 1 : 0];
@@ -1058,6 +1084,39 @@
 
       const hudOf = (seat) => (seat === room.seat ? $("meHud") : $("foeHud"));
       const sideOf = (seat) => (seat === room.seat ? $("meSide") : $("foeSide"));
+
+      /*
+       * Whose turn it is should be impossible to miss. When the turn comes back to
+       * you: a YOUR TURN call in the middle of the screen, a short buzz on phones,
+       * and "Your turn" in the tab title if the page is in the background. While
+       * it's the rival's turn the board rests (dimmed, labelled).
+       */
+      let lastTurnKey = null;
+      const BASE_TITLE = document.title;
+      function noteTurn() {
+        const mine = myTurn();
+        $("boardWrap").classList.toggle("waiting", !mine && state.phase === "awaiting-move");
+        $("boardWrap").dataset.wait = state.botSeat != null ? "Bot's turn" : "Rival's turn";
+        const key = `${room.roomId}:${state.turnPasses}:${state.turn}`;
+        if (key === lastTurnKey) return;
+        lastTurnKey = key;
+        if (!mine) { document.title = BASE_TITLE; return; }
+        callTurn();
+      }
+      async function callTurn() {
+        const el = $("turnCall");
+        const n = state.movesLeft ?? MOVES_PER_TURN;
+        el.innerHTML = `<div class="tc-box"><div class="tc-big">Your turn</div><div class="tc-sub">${n} move${n === 1 ? "" : "s"}</div></div>`;
+        el.classList.remove("hidden");
+        try { navigator.vibrate?.(40); } catch {}
+        if (document.hidden) document.title = `▶ Your turn · ${BASE_TITLE}`;
+        const box = el.firstElementChild;
+        await playPreset(box, "bounceIn", { speed: "fast" });
+        await sleep(reduceMotion ? 900 : 450);
+        await playPreset(box, "fadeOut", { speed: "faster", keep: true });
+        if (box.parentElement === el) el.classList.add("hidden");
+      }
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) document.title = BASE_TITLE; });
 
       /** A player's card: name, status chips, berries and the shared HP bar. */
       function renderHud(seat) {
@@ -1111,7 +1170,9 @@
             const plat = window.PIXELART ? `<img class="platform px" src="${PIXELART.platform}" alt="" draggable="false">` : "";
             f.innerHTML =
               `<div class="stage">${plat}<div class="bounce">${rigHtml(mon.id, evo)}` +
-              `<i class="core" style="top:${U(47 - 16 * STAGE_SCALE[evo])}"></i></div></div><div class="cbadge"></div>`;
+              `</div></div><div class="cbadge"></div>`;
+            // Inside the rig, so it mirrors with the rival's sprites and moves with poses.
+            f.querySelector(".rig").insertAdjacentHTML("beforeend", `<i class="core" style="${coreStyle(mon.id, evo)}"></i>`);
             side.appendChild(f);
           }
           const cost = mon.chargeCost, c = Math.min(mon.charge, cost);
@@ -1158,6 +1219,8 @@
         }
       }
       window.addEventListener("resize", sizeArena);
+      // The lobby scrolls clear of the dock, whatever height it has (the friend row folds in and out).
+      if (window.ResizeObserver) new ResizeObserver(([e]) => document.documentElement.style.setProperty("--dock-h", e.target.offsetHeight + "px")).observe(document.getElementById("dock"));
       if (window.ResizeObserver) new ResizeObserver(sizeArena).observe(document.getElementById("arena"));
 
       function renderBoard() {
@@ -1717,6 +1780,7 @@
 
       async function animate(data) {
         animating = true;
+        $("boardWrap").classList.add("playing"); // the rival's move plays on an undimmed board
         const A = animators();
         try {
           selected = null;
@@ -1759,6 +1823,7 @@
           console.error(err);
           try { await refresh(); } catch {}
         } finally {
+          $("boardWrap").classList.remove("playing");
           inflight = [];
           disp = null;
           animating = false;
@@ -2273,8 +2338,17 @@
       $("profileBtn").addEventListener("click", openProfile);
       renderAccount();
 
+      /** Show or hide the play-a-friend row (codes), keeping the dock to two rows otherwise. */
+      function toggleFriendRow(open = $("friendRow").classList.contains("hidden")) {
+        $("friendRow").classList.toggle("hidden", !open);
+        $("friendToggle").setAttribute("aria-expanded", String(open));
+        $("friendToggle").classList.toggle("on", open);
+      }
+      $("friendToggle").addEventListener("click", () => toggleFriendRow());
+
       const invited = new URLSearchParams(location.search).get("room");
       if (invited) {
+        toggleFriendRow(true);
         $("code").value = invited.toUpperCase();
         $("lobbyStatus").textContent = `Invited to room ${invited.toUpperCase()} — pick two monsters, then Join.`;
       }

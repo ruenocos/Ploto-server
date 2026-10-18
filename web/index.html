@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>Match Monsters</title>
+    <style>
+      :root {
+        --bg: #11131a;
+        --panel: #1b1e28;
+        --panel2: #232734;
+        --ink: #eef1f7;
+        --muted: #99a1b3;
+        --line: #333a4d;
+        --accent: #7c5cff;
+        --fire: #ff5a3c;
+        --water: #3aa0ff;
+        --earth: #c08a4a;
+        --nature: #4ccb6b;
+        --light: #ffd23c;
+        --good: #4ccb6b;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        min-height: 100vh;
+        padding: 16px;
+        display: flex;
+        justify-content: center;
+      }
+      main { width: 100%; max-width: 560px; }
+      h1 { font-size: 22px; margin: 4px 0 2px; letter-spacing: 0.2px; }
+      .sub { color: var(--muted); margin: 0 0 16px; font-size: 13px; }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 14px;
+      }
+      label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+      input[type="text"] {
+        width: 100%;
+        background: var(--panel2);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        color: var(--ink);
+        padding: 11px 12px;
+        font-size: 15px;
+      }
+      button {
+        background: var(--accent);
+        color: white;
+        border: 0;
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+      }
+      button:disabled { opacity: 0.5; cursor: default; }
+      .pick-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+        gap: 8px;
+        margin-top: 4px;
+      }
+      .mon {
+        background: var(--panel2);
+        border: 2px solid var(--line);
+        border-radius: 10px;
+        padding: 8px;
+        cursor: pointer;
+        text-align: center;
+        user-select: none;
+      }
+      .mon.sel { border-color: var(--accent); }
+      .mon.dim { opacity: 0.45; }
+      .mon .emoji { font-size: 22px; }
+      .mon .n { font-size: 12px; font-weight: 600; margin-top: 2px; }
+      .mon .s { font-size: 11px; color: var(--muted); }
+      .status { color: var(--muted); font-size: 13px; min-height: 18px; margin-top: 10px; }
+      .turn-banner {
+        text-align: center;
+        font-weight: 700;
+        padding: 8px;
+        border-radius: 10px;
+        margin-bottom: 12px;
+      }
+      .turn-you { background: rgba(124, 92, 255, 0.18); color: #c9bcff; }
+      .turn-them { background: var(--panel2); color: var(--muted); }
+      .teams { display: flex; gap: 10px; margin-bottom: 12px; }
+      .team { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+      .team h3 { margin: 0 0 8px; font-size: 13px; }
+      .hp { margin-bottom: 8px; }
+      .hp .hd { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px; }
+      .hp .bar { height: 7px; background: #0d0f15; border-radius: 4px; overflow: hidden; }
+      .hp .fill { height: 100%; background: var(--good); transition: width 0.3s ease; }
+      .hp.dead { opacity: 0.4; }
+      #board {
+        display: grid;
+        gap: 5px;
+        touch-action: manipulation;
+      }
+      .tile {
+        aspect-ratio: 1;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: min(6vw, 26px);
+        cursor: pointer;
+        border: 2px solid transparent;
+        user-select: none;
+      }
+      .tile.sel { border-color: white; transform: scale(0.94); }
+      .tile.fire { background: rgba(255, 90, 60, 0.22); }
+      .tile.water { background: rgba(58, 160, 255, 0.22); }
+      .tile.earth { background: rgba(192, 138, 74, 0.22); }
+      .tile.nature { background: rgba(76, 203, 107, 0.22); }
+      .tile.light { background: rgba(255, 210, 60, 0.22); }
+      .hidden { display: none !important; }
+      .toast {
+        position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+        background: var(--panel2); border: 1px solid var(--line); color: var(--ink);
+        padding: 10px 16px; border-radius: 10px; font-size: 14px; opacity: 0; transition: opacity 0.2s;
+        pointer-events: none; max-width: 90vw; text-align: center;
+      }
+      .toast.show { opacity: 1; }
+      .end { text-align: center; }
+      .end .big { font-size: 26px; font-weight: 800; margin: 6px 0; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Match Monsters</h1>
+      <p class="sub">Pick two monsters, match 3+ of their element to attack. Last team standing wins.</p>
+
+      <!-- Lobby -->
+      <section id="lobby" class="card">
+        <label for="name">Your name</label>
+        <input id="name" type="text" placeholder="Player" maxlength="20" />
+        <label style="margin-top: 14px">Pick two monsters</label>
+        <div id="picker" class="pick-grid"></div>
+        <div style="margin-top: 14px"><button id="play" disabled>Quick Play</button></div>
+        <div id="lobbyStatus" class="status"></div>
+      </section>
+
+      <!-- Game -->
+      <section id="game" class="card hidden">
+        <div id="turnBanner" class="turn-banner"></div>
+        <div class="teams">
+          <div class="team"><h3 id="meName">You</h3><div id="meTeam"></div></div>
+          <div class="team"><h3 id="foeName">Opponent</h3><div id="foeTeam"></div></div>
+        </div>
+        <div id="board"></div>
+        <div id="gameStatus" class="status"></div>
+      </section>
+
+      <!-- End -->
+      <section id="end" class="card hidden end">
+        <div class="big" id="endTitle"></div>
+        <div style="margin-top: 12px"><button id="again">Play again</button></div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+      const SIGNALING_PORT = "__SIGNALING_PORT__";
+      const WS_BASE = `ws://${location.hostname}:${SIGNALING_PORT}`;
+      const EMOJI = { fire: "🔥", water: "💧", earth: "🪨", nature: "🌿", light: "✨" };
+
+      const $ = (id) => document.getElementById(id);
+      const peerId = crypto.randomUUID();
+      let roster = [];
+      let picks = [];
+      let lobbySock = null;
+      let gameSock = null;
+      let mySeat = 0;
+      let state = null;
+      let selected = null;
+
+      function toast(msg) {
+        const t = $("toast");
+        t.textContent = msg;
+        t.classList.add("show");
+        clearTimeout(toast._t);
+        toast._t = setTimeout(() => t.classList.remove("show"), 1800);
+      }
+
+      /* ---- protoo client over one socket ---- */
+      function connect(roomId) {
+        const sock = new WebSocket(`${WS_BASE}/?roomId=${roomId}&peerId=${peerId}`, "protoo");
+        const pending = new Map();
+        let nextId = 1;
+        sock._handlers = {};
+        sock.request = (method, data = {}) =>
+          new Promise((resolve, reject) => {
+            const id = nextId++;
+            pending.set(id, { resolve, reject });
+            sock.send(JSON.stringify({ request: true, id, method, data }));
+          });
+        sock.on = (method, fn) => { sock._handlers[method] = fn; };
+        sock.addEventListener("message", (ev) => {
+          let msg;
+          try { msg = JSON.parse(ev.data); } catch { return; }
+          if (msg.response) {
+            const p = pending.get(msg.id);
+            if (!p) return;
+            pending.delete(msg.id);
+            msg.ok ? p.resolve(msg.data) : p.reject(new Error(msg.errorReason || "error"));
+          } else if (msg.notification) {
+            sock._handlers[msg.method]?.(msg.data);
+          }
+        });
+        return sock;
+      }
+      const waitOpen = (sock) =>
+        new Promise((res, rej) => {
+          sock.addEventListener("open", () => res());
+          sock.addEventListener("error", () => rej(new Error("connection failed")));
+        });
+
+      /* ---- lobby ---- */
+      async function loadRoster() {
+        roster = await (await fetch("/play/monsters")).json();
+        const picker = $("picker");
+        picker.innerHTML = "";
+        for (const mon of roster) {
+          const el = document.createElement("div");
+          el.className = "mon";
+          el.dataset.id = mon.id;
+          el.innerHTML = `<div class="emoji">${EMOJI[mon.element]}</div>
+            <div class="n">${mon.name}</div>
+            <div class="s">${mon.maxHp} HP · ${mon.power} PWR</div>`;
+          el.addEventListener("click", () => togglePick(mon.id));
+          picker.appendChild(el);
+        }
+      }
+      function togglePick(id) {
+        const i = picks.indexOf(id);
+        if (i >= 0) picks.splice(i, 1);
+        else if (picks.length < 2) picks.push(id);
+        else return toast("Two monsters max — tap one to deselect");
+        for (const el of document.querySelectorAll(".mon")) {
+          const sel = picks.includes(el.dataset.id);
+          el.classList.toggle("sel", sel);
+          el.classList.toggle("dim", picks.length === 2 && !sel);
+        }
+        $("play").disabled = picks.length !== 2;
+      }
+
+      async function quickPlay() {
+        $("play").disabled = true;
+        const displayName = $("name").value.trim() || "Player";
+        $("lobbyStatus").textContent = "Connecting…";
+        try {
+          lobbySock = connect("lobby");
+          await waitOpen(lobbySock);
+          lobbySock.on("mm:matched", (d) => startGame(d));
+          const res = await lobbySock.request("mm:enqueue", {
+            gameId: "match_monsters",
+            mode: "casual",
+            displayName,
+            monsters: picks,
+          });
+          $("lobbyStatus").textContent = res.queued
+            ? "Waiting for an opponent… (open this page on another device and Quick Play)"
+            : "Matched! Starting…";
+        } catch (e) {
+          $("lobbyStatus").textContent = "Error: " + e.message;
+          $("play").disabled = false;
+        }
+      }
+
+      /* ---- game ---- */
+      async function startGame(matched) {
+        mySeat = matched.seat;
+        try { lobbySock?.close(); } catch {}
+        gameSock = connect(matched.roomId);
+        await waitOpen(gameSock);
+        gameSock.on("mm:moveResult", () => refresh());
+        gameSock.on("mm:gameOver", (d) => showEnd(d.winner === mySeat));
+        $("lobby").classList.add("hidden");
+        $("end").classList.add("hidden");
+        $("game").classList.remove("hidden");
+        await refresh();
+      }
+
+      async function refresh() {
+        state = await gameSock.request("mm:getState", {});
+        render();
+      }
+
+      function myTurn() { return state && state.phase === "awaiting-move" && state.turn === mySeat; }
+
+      function render() {
+        const me = state.players[mySeat];
+        const foe = state.players[mySeat === 0 ? 1 : 0];
+        $("meName").textContent = me.displayName + " (you)";
+        $("foeName").textContent = foe.displayName;
+        renderTeam($("meTeam"), me.monsters);
+        renderTeam($("foeTeam"), foe.monsters);
+
+        const banner = $("turnBanner");
+        banner.textContent = myTurn() ? "Your turn — make a match" : `${foe.displayName}'s turn…`;
+        banner.className = "turn-banner " + (myTurn() ? "turn-you" : "turn-them");
+
+        const board = state.board;
+        const w = board[0].length;
+        const grid = $("board");
+        grid.style.gridTemplateColumns = `repeat(${w}, 1fr)`;
+        grid.innerHTML = "";
+        board.forEach((row, y) => {
+          row.forEach((el, x) => {
+            const t = document.createElement("div");
+            t.className = `tile ${el}`;
+            t.textContent = EMOJI[el] || "";
+            if (selected && selected.x === x && selected.y === y) t.classList.add("sel");
+            t.addEventListener("click", () => onTile(x, y));
+            grid.appendChild(t);
+          });
+        });
+      }
+
+      function renderTeam(container, monsters) {
+        container.innerHTML = "";
+        for (const mon of monsters) {
+          const pct = Math.max(0, Math.round((mon.hp / mon.maxHp) * 100));
+          const wrap = document.createElement("div");
+          wrap.className = "hp" + (mon.hp <= 0 ? " dead" : "");
+          wrap.innerHTML = `<div class="hd"><span>${EMOJI[mon.element]} ${mon.name}</span><span>${mon.hp}/${mon.maxHp}</span></div>
+            <div class="bar"><div class="fill" style="width:${pct}%"></div></div>`;
+          container.appendChild(wrap);
+        }
+      }
+
+      async function onTile(x, y) {
+        if (!myTurn()) return toast("Not your turn");
+        if (!selected) { selected = { x, y }; return render(); }
+        if (selected.x === x && selected.y === y) { selected = null; return render(); }
+        const adjacent = Math.abs(selected.x - x) + Math.abs(selected.y - y) === 1;
+        if (!adjacent) { selected = { x, y }; return render(); }
+        const from = selected;
+        selected = null;
+        render();
+        try {
+          await gameSock.request("mm:move", { from, to: { x, y } });
+          await refresh();
+        } catch (e) {
+          toast(e.message);
+          await refresh();
+        }
+      }
+
+      function showEnd(won) {
+        $("game").classList.add("hidden");
+        $("end").classList.remove("hidden");
+        $("endTitle").textContent = won ? "🏆 You win!" : "💀 You lost";
+      }
+
+      $("play").addEventListener("click", quickPlay);
+      $("again").addEventListener("click", () => {
+        try { gameSock?.close(); } catch {}
+        state = null; selected = null; picks = [];
+        $("end").classList.add("hidden");
+        $("lobby").classList.remove("hidden");
+        $("lobbyStatus").textContent = "";
+        for (const el of document.querySelectorAll(".mon")) el.classList.remove("sel", "dim");
+        $("play").disabled = true;
+      });
+
+      loadRoster().catch((e) => ($("lobbyStatus").textContent = "Failed to load roster: " + e.message));
+    </script>
+  </body>
+</html>

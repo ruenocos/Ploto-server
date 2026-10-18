@@ -81,7 +81,32 @@ export function buildStatusServer(config: ServerConfig): FastifyInstance {
     return loadAnimateCss();
   });
 
+  // Pixel fonts (pinned @fontsource packages): Silkscreen for labels, Pixelify Sans for text.
+  app.get<{ Params: { file: string } }>("/play/fonts/:file", async (req, reply) => {
+    const m = /^(pixelify-sans|silkscreen)-latin-(400|500|600|700)-normal\.woff2$/.exec(req.params.file);
+    if (!m) return reply.code(404).send();
+    let font: Buffer;
+    try {
+      font = loadFont(`@fontsource/${m[1]}/files/${req.params.file}`);
+    } catch {
+      return reply.code(404).send();
+    }
+    reply.header("content-type", "font/woff2");
+    reply.header("cache-control", "public, max-age=604800, immutable");
+    return font;
+  });
+
   return app;
+}
+
+const fontCache = new Map<string, Buffer>();
+function loadFont(spec: string): Buffer {
+  let font = fontCache.get(spec);
+  if (!font) {
+    font = readFileSync(createRequire(import.meta.url).resolve(spec));
+    fontCache.set(spec, font);
+  }
+  return font;
 }
 
 let cachedAnimateCss: string | null = null;

@@ -45,6 +45,9 @@ const total = (/** @type {number | number[]} */ p) => (Array.isArray(p) ? p.redu
 /** Vibrate, unless a stronger pattern is still playing. Returns whether the browser accepted it. */
 function buzz(/** @type {number | number[]} */ pattern) {
   if (!settings.haptics || !("vibrate" in navigator)) return false;
+  // Browsers refuse (and log) vibration before the page's first tap, e.g. right after a reload.
+  const ua = /** @type {any} */ (navigator).userActivation;
+  if (ua && !ua.hasBeenActive) return false;
   const now = performance.now(), strength = total(pattern);
   if (now < buzzUntil && strength < buzzStrength) return false;
   let ok = false;

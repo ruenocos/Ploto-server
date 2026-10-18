@@ -14,8 +14,15 @@
  *                          `social:*` notifications (messages, presence, invites).
  *                          On a pair, both peers get an `mm:matched` notification
  *                          carrying the game roomId to reconnect to.
- *   roomId === <uuid>   -> an active game room. Requests are routed to the
- *                          corresponding GameRoom (`mm:getState`, `mm:move`).
+ *   roomId === <uuid>   -> an active room. Requests are routed to it per call:
+ *                          a DraftRoom first when the players chose Draft
+ *                          (`mm:getState`, `mm:ban`, `mm:pick`, `mm:leaveDraft`;
+ *                          notifications `mm:draftUpdate`, `mm:draftDone`,
+ *                          `mm:draftCancelled`), then the GameRoom
+ *                          (`mm:getState`, `mm:move`, …) on the same connection.
+ *                          Lobby requests take `draft: true` to draft; draft
+ *                          queues are separate, and friend rooms/invites use
+ *                          the host's choice.
  *
  * The voice/mediasoup methods (`join`, `createWebRtcTransport`, `produce`, …)
  * attach here too, on the game room connection, once the SFU is wired in.
@@ -28,6 +35,8 @@ import type { Account } from "../accounts/accounts.js";
 import type { Services } from "../services.js";
 import type { MatchMode } from "../stats/history.js";
 import { GameRoom, type RoomOptions } from "./gameRoom.js";
+import { DraftRoom } from "./draftRoom.js";
+import type { GameConfig } from "../game/matchmonsters/engine.js";
 import { Peer } from "./peer.js";
 import { monsterById, MONSTERS } from "../game/matchmonsters/monsters.js";
 import type { Monster } from "../game/matchmonsters/types.js";
@@ -38,11 +47,14 @@ const PROTOO_SUBPROTOCOL = "protoo";
 const ROOM_IDLE_MS = 10 * 60 * 1000;
 /** How long a friend invite stays open. */
 const INVITE_MS = 90 * 1000;
+/** Time per draft step in Quick Play (friend rooms and practice have no timer). */
+const QUICK_DRAFT_STEP_MS = 20 * 1000;
 
 export class SignalingServer {
   private readonly wss: WebSocketServer;
   private readonly matchmaker = new Matchmaker();
-  private readonly rooms = new Map<string, GameRoom>();
+  /** Live rooms: a DraftRoom while drafting, swapped for its GameRoom once both teams are in. */
+  private readonly rooms = new Map<string, GameRoom | DraftRoom>();
   private readonly lobbyPeers = new Map<string, Peer>();
   private readonly picks = new Map<string, [Monster, Monster]>();
   /** Private rooms waiting on a friend, keyed by their share code. */
@@ -116,15 +128,26 @@ export class SignalingServer {
       socket.close(4004, "no such room");
       return;
     }
+    // Look the room up per request: a draft room is replaced by its game room
+    // when the draft ends, on the same connections.
     const peer = new Peer(
       peerId,
       roomId,
       socket,
-      (p, method, data) =>
-        method === "mm:rematch" ? this.handleRematch(room, p) : room.handleRequest(p.id, method, data),
+      (p, method, data) => {
+        const live = this.rooms.get(roomId);
+        if (!live) throw new Error("that game has ended");
+        if (method === "mm:rematch") {
+          if (!(live instanceof GameRoom)) throw new Error("the game hasn't started yet");
+          return this.handleRematch(live, p);
+        }
+        return live.handleRequest(p.id, method, data);
+      },
       (p) => {
-        room.leave(p);
-        if (room.connectedCount() === 0) this.scheduleRoomCleanup(roomId);
+        const live = this.rooms.get(roomId);
+        if (!live) return;
+        live.leave(p);
+        if (live.connectedCount() === 0) this.scheduleRoomCleanup(roomId);
       },
     );
     if (!room.join(peer)) {
@@ -247,6 +270,7 @@ export class SignalingServer {
         const inv: Invite = {
           id: randomUUID(),
           to: friendId,
+          draft: req.draft,
           host: { peerId: peer.id, displayName: me.username, monsters: req.monsters },
           timer: setTimeout(() => this.dropInvite(inv, "expired"), INVITE_MS),
         };
@@ -255,7 +279,8 @@ export class SignalingServer {
         this.services.presence.notify(friendId, "social:invite", {
           inviteId: inv.id,
           from: { id: me.id, username: me.username },
-          monsters: req.monsters.map((m) => m.id),
+          monsters: req.draft ? [] : req.monsters.map((m) => m.id),
+          draft: req.draft,
           expiresInMs: INVITE_MS,
         });
         return { inviteId: inv.id, expiresInMs: INVITE_MS };
@@ -271,8 +296,9 @@ export class SignalingServer {
           throw new Error("they left the lobby");
         }
         const req = parseEnqueue(data);
+        if (!inv.draft && !req.picked) throw new Error("this is a blind-pick match: pick your two monsters first");
         this.dropInvite(inv, "accepted");
-        const spawned = this.spawnRoom(inv.host, { peerId: peer.id, displayName: me.username, monsters: req.monsters }, "invite");
+        const spawned = this.spawnRoom(inv.host, { peerId: peer.id, displayName: me.username, monsters: req.monsters }, "invite", inv.draft);
         return { roomId: spawned.roomId, matchId: spawned.matchId, seat: 1, firstTurn: spawned.firstTurn };
       }
 
@@ -300,19 +326,19 @@ export class SignalingServer {
         if (!match) return { queued: true, waiting: this.matchmaker.waiting(req.key) };
 
         const [a, b] = match.players;
-        const room = new GameRoom(
-          {
-            matchId: match.matchId,
-            seed: match.seed,
-            firstTurn: match.firstTurn,
-            players: [
-              { peerId: a.peerId, displayName: a.displayName, monsters: this.picksFor(a.peerId) },
-              { peerId: b.peerId, displayName: b.displayName, monsters: this.picksFor(b.peerId) },
-            ],
-          },
-          this.roomOptions("quick", a.peerId, b.peerId),
-        );
-        this.rooms.set(match.roomId, room);
+        this.openRoom({
+          roomId: match.roomId,
+          matchId: match.matchId,
+          seed: match.seed,
+          firstTurn: match.firstTurn,
+          players: [
+            { peerId: a.peerId, displayName: a.displayName, monsters: this.picksFor(a.peerId) },
+            { peerId: b.peerId, displayName: b.displayName, monsters: this.picksFor(b.peerId) },
+          ],
+          // Both tickets share the queue key, and draft queues are separate, so both drafted.
+          stepMs: req.draft ? QUICK_DRAFT_STEP_MS : undefined,
+          options: this.roomOptions("quick", a.peerId, b.peerId),
+        });
 
         this.notifyMatched(a.peerId, match.roomId, match.matchId, 0, match.firstTurn);
         this.notifyMatched(b.peerId, match.roomId, match.matchId, 1, match.firstTurn);
@@ -330,9 +356,10 @@ export class SignalingServer {
         this.pendingRooms.set(code, {
           code,
           hostPeerId: peer.id,
+          draft: req.draft,
           host: { peerId: peer.id, displayName: this.nameFor(peer, req.displayName), monsters: req.monsters },
         });
-        return { code };
+        return { code, draft: req.draft };
       }
 
       case "mm:joinRoom": {
@@ -342,13 +369,14 @@ export class SignalingServer {
         const pending = this.pendingRooms.get(code);
         if (!pending) throw new Error("room not found or expired");
         if (pending.hostPeerId === peer.id) throw new Error("cannot join your own room");
+        if (!pending.draft && !req.picked) throw new Error("this room uses blind picks: pick your two monsters first");
         this.pendingRooms.delete(code);
         const joiner = {
           peerId: peer.id,
           displayName: this.nameFor(peer, req.displayName),
           monsters: req.monsters,
         };
-        const spawned = this.spawnRoom(pending.host, joiner, "private");
+        const spawned = this.spawnRoom(pending.host, joiner, "private", pending.draft); // the host's mode
         return { roomId: spawned.roomId, matchId: spawned.matchId, seat: 1, firstTurn: spawned.firstTurn };
       }
 
@@ -358,19 +386,18 @@ export class SignalingServer {
         const roomId = randomUUID();
         const matchId = randomUUID();
         const firstTurn = (Math.random() < 0.5 ? 0 : 1) as 0 | 1;
-        const room = new GameRoom(
-          {
-            matchId,
-            seed: (Math.random() * 0xffffffff) >>> 0,
-            firstTurn,
-            players: [
-              { peerId: peer.id, displayName: this.nameFor(peer, req.displayName), monsters: req.monsters },
-              { peerId: `bot:${randomUUID()}`, displayName: "Practice Bot", monsters: randomPicks() },
-            ],
-          },
-          this.roomOptions("practice", peer.id, null, { botSeat: 1 }),
-        );
-        this.rooms.set(roomId, room);
+        this.openRoom({
+          roomId,
+          matchId,
+          seed: (Math.random() * 0xffffffff) >>> 0,
+          firstTurn,
+          players: [
+            { peerId: peer.id, displayName: this.nameFor(peer, req.displayName), monsters: req.monsters },
+            { peerId: `bot:${randomUUID()}`, displayName: "Practice Bot", monsters: randomPicks() },
+          ],
+          stepMs: req.draft ? null : undefined, // the bot drafts too; no timer
+          options: this.roomOptions("practice", peer.id, null, { botSeat: 1 }),
+        });
         this.scheduleRoomCleanup(roomId); // cancelled once the player connects
         this.notifyMatched(peer.id, roomId, matchId, 0, firstTurn);
         return { roomId, matchId, seat: 0, firstTurn };
@@ -385,28 +412,59 @@ export class SignalingServer {
     }
   }
 
-  /** Build a game room for two described players and tell both to connect. */
+  /**
+   * Open a room for two seated players: straight into the game with their
+   * blind picks, or (with `stepMs` set, null meaning no timer) a draft first,
+   * which becomes the game room once both teams are in.
+   */
+  private openRoom(setup: RoomSetup): void {
+    const { roomId, matchId, seed, firstTurn, players, stepMs, options } = setup;
+    const config = (teams: readonly [[Monster, Monster], [Monster, Monster]]): GameConfig => ({
+      matchId,
+      seed,
+      firstTurn,
+      players: [
+        { peerId: players[0].peerId, displayName: players[0].displayName, monsters: teams[0] },
+        { peerId: players[1].peerId, displayName: players[1].displayName, monsters: teams[1] },
+      ],
+    });
+    if (stepMs === undefined) {
+      this.rooms.set(roomId, new GameRoom(config([players[0].monsters, players[1].monsters]), options));
+      return;
+    }
+    const draftRoom: DraftRoom = new DraftRoom([players[0], players[1]], {
+      firstTurn,
+      stepMs,
+      ...(options.botSeat !== undefined ? { botSeat: options.botSeat } : {}),
+      onDone: (teams, peers) => {
+        const game = new GameRoom(config(teams), options);
+        this.rooms.set(roomId, game);
+        for (const p of peers) if (p) game.join(p);
+        for (const p of peers) p?.notify("mm:draftDone", {});
+      },
+      onCancel: () => {
+        if (this.rooms.get(roomId) === draftRoom) this.rooms.delete(roomId);
+      },
+    });
+    this.rooms.set(roomId, draftRoom);
+  }
+
+  /** Build a room for two described players (draft or blind) and tell both to connect. */
   private spawnRoom(
     a: PlayerDesc,
     b: PlayerDesc,
     mode: MatchMode,
+    draft = false,
   ): { roomId: string; matchId: string; firstTurn: 0 | 1 } {
     const roomId = randomUUID();
     const matchId = randomUUID();
     const seed = (Math.random() * 0xffffffff) >>> 0;
     const firstTurn = (Math.random() < 0.5 ? 0 : 1) as 0 | 1;
-    this.rooms.set(
-      roomId,
-      new GameRoom({
-        matchId,
-        seed,
-        firstTurn,
-        players: [
-          { peerId: a.peerId, displayName: a.displayName, monsters: a.monsters },
-          { peerId: b.peerId, displayName: b.displayName, monsters: b.monsters },
-        ],
-      }, this.roomOptions(mode, a.peerId, b.peerId)),
-    );
+    this.openRoom({
+      roomId, matchId, seed, firstTurn, players: [a, b],
+      stepMs: draft ? null : undefined, // friends draft at their own pace
+      options: this.roomOptions(mode, a.peerId, b.peerId),
+    });
     this.notifyMatched(a.peerId, roomId, matchId, 0, firstTurn);
     this.notifyMatched(b.peerId, roomId, matchId, 1, firstTurn);
     return { roomId, matchId, firstTurn };
@@ -451,8 +509,21 @@ interface PlayerDesc {
   readonly monsters: [Monster, Monster];
 }
 
+interface RoomSetup {
+  readonly roomId: string;
+  readonly matchId: string;
+  readonly seed: number;
+  readonly firstTurn: 0 | 1;
+  readonly players: readonly [PlayerDesc, PlayerDesc];
+  /** undefined = blind picks; a number or null = draft first (ms per step, null = no timer). */
+  readonly stepMs: number | null | undefined;
+  readonly options: RoomOptions;
+}
+
 interface Invite {
   readonly id: string;
+  /** Draft or blind: the host's choice. */
+  readonly draft: boolean;
   /** Account invited. */
   readonly to: string;
   /** The inviter, as they'll be seated. */
@@ -462,11 +533,17 @@ interface Invite {
 
 interface PendingRoom {
   readonly code: string;
+  /** Draft or blind: the host's choice. */
+  readonly draft: boolean;
   readonly hostPeerId: string;
   readonly host: PlayerDesc;
 }
 
 interface EnqueueRequest {
+  /** Draft mode (separate queues from blind picks). */
+  readonly draft: boolean;
+  /** Whether the player actually sent two monsters (blind picks need them). */
+  readonly picked: boolean;
   readonly displayName: string;
   readonly key: QueueKey;
   readonly monsters: [Monster, Monster];
@@ -479,7 +556,10 @@ function parseEnqueue(data: unknown): EnqueueRequest {
   const stake = typeof d["stake"] === "number" ? d["stake"] : 0;
   const displayName = typeof d["displayName"] === "string" ? d["displayName"] : "Player";
   const monsters = resolveMonsters(d["monsters"]);
-  return { displayName, key: { gameId, mode, stake }, monsters };
+  const picked = Array.isArray(d["monsters"]) && d["monsters"].filter((m) => typeof m === "string" && monsterById(m)).length >= 2;
+  const draft = d["draft"] === true;
+  // Drafting players only meet other drafting players.
+  return { draft, picked, displayName, key: { gameId, mode: draft ? `${mode}:draft` : mode, stake }, monsters };
 }
 
 function resolveMonsters(raw: unknown): [Monster, Monster] {

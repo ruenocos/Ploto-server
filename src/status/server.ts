@@ -14,6 +14,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import type { ServerConfig } from "../config/env.js";
 import { ARCHETYPES, roster } from "../game/matchmonsters/monsters.js";
 import { abilityView } from "../game/matchmonsters/engine.js";
+import { kitTags } from "../game/matchmonsters/draft.js";
 
 export interface StatusBody {
   downtime: 0 | 1;
@@ -54,6 +55,8 @@ export function buildStatusServer(config: ServerConfig): FastifyInstance {
       chargeCost: m.chargeCost,
       ability: abilityView(m, 0),
       archetype: ARCHETYPES[m.element],
+      /** Strong vs / weak to / combos with, derived from the kit (draft screen). */
+      tags: kitTags(m),
     })),
   );
 

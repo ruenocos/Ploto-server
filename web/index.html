@@ -466,6 +466,47 @@
       }
       .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+      /* pick mode (lobby): blind pick or draft */
+      .mode-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+      .mode-row button[aria-pressed="true"] { --b: var(--c-accent); --b-hi: var(--c-accent-hi); --b-lo: var(--c-accent-lo); color: #fff; }
+      .mode-hint { font-size: var(--fs-xs); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .dock.drafting .team-row { display: none; } /* drafting: teams are picked in the match */
+
+      /* draft screen */
+      #draft { max-width: 560px; margin: 0 auto; padding: calc(8px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
+      .dr-head { display: flex; align-items: center; gap: 8px; }
+      .dr-title { font: 700 var(--fs-l)/1 var(--f-label); color: var(--c-cream); text-transform: uppercase; }
+      .dr-status { flex: 1; min-width: 0; font: 700 var(--fs-s)/1.2 var(--f-label); color: var(--c-mute); text-align: center; }
+      .dr-status.go { color: var(--c-gold); }
+      .dr-timer { position: relative; height: calc(var(--px) * 5); background: var(--c-ink); border: var(--px) solid var(--c-ink); }
+      .dr-timer-fill { position: absolute; inset: 0 auto 0 0; width: 100%; background: var(--c-gold); box-shadow: inset 0 var(--px) 0 #fff1a8; }
+      .dr-timer-num { position: absolute; right: 4px; top: 50%; translate: 0 -50%; font: 700 10px/1 var(--f-label); color: var(--c-ink); }
+      .dr-team { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
+      .dr-team.turn { border-color: var(--c-gold); }
+      .dr-team .dr-name { flex: 1; min-width: 0; font: 700 var(--fs-s)/1.1 var(--f-label); color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .dr-slot, .dr-ban { width: 44px; height: 44px; flex: none; display: grid; place-items: center; background: var(--c-well); border: var(--px) dashed var(--c-edge); font: 700 var(--fs-s)/1 var(--f-label); color: var(--c-mute); position: relative; overflow: hidden; }
+      .dr-slot.filled { border-style: solid; border-color: var(--c-ink); }
+      .dr-ban { border-color: rgba(216, 54, 75, 0.6); }
+      .dr-ban.filled .rig-view { filter: grayscale(1) brightness(0.6); }
+      .dr-ban.filled::after { content: "✕"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--c-bad-hi); font: 700 22px/1 var(--f-label); text-shadow: var(--px) var(--px) 0 var(--c-ink); }
+      .dr-slot.next { border-color: var(--c-gold); color: var(--c-gold); }
+      .dr-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+      .dr-card { padding: 4px 2px 6px; }
+      .dr-card .pname { font-size: clamp(8px, 2.2vw, 10px); }
+      .dr-card.banned .art, .dr-card.banned .pname { opacity: 0.35; filter: grayscale(1); } /* the ✕ stays full strength */
+      .dr-card.banned::after { content: "✕"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--c-bad-hi); font: 700 28px/1 var(--f-label); text-shadow: var(--px) var(--px) 0 var(--c-ink); }
+      .dr-card.mine { border-color: var(--c-accent-hi); background: color-mix(in srgb, var(--c-accent) 22%, var(--c-panel)); }
+      .dr-card.theirs { border-color: var(--c-bad); background: color-mix(in srgb, var(--c-bad) 18%, var(--c-panel)); }
+      .dr-card.taken { opacity: 0.85; }
+      .dr-card.myban { outline: var(--px) dashed var(--c-bad-hi); outline-offset: calc(var(--px) * -4); }
+      .dr-card .dr-badge { position: absolute; top: 3px; left: 3px; font: 700 8px/1 var(--f-label); padding: 2px 3px; text-transform: uppercase; }
+      .dr-badge.counter { background: var(--c-gold); color: var(--c-ink); }
+      .dr-badge.combo { background: var(--c-good); color: var(--c-ink); }
+      .dr-badge.who { left: auto; right: 3px; background: var(--c-ink); color: var(--c-cream); }
+      .s-tags { display: grid; gap: 4px; margin: 8px 0 12px; font-size: var(--fs-s); }
+      .s-tags b { font: 700 var(--fs-xs)/1 var(--f-label); text-transform: uppercase; margin-right: 4px; }
+      .s-tags .good { color: var(--c-good-hi); } .s-tags .bad { color: var(--c-bad-hi); } .s-tags .combo { color: var(--c-gold); }
+
       /* settings */
       .brand .settings-btn { grid-column: 2; grid-row: 1; }
       .px-icon { display: block; fill: currentColor; shape-rendering: crispEdges; }
@@ -587,6 +628,11 @@
 
     <div id="dock" class="dock">
       <div class="dock-inner">
+        <div class="mode-row" role="group" aria-label="How teams are picked">
+          <button id="modeBlind" class="ghost small" aria-pressed="true">Blind pick</button>
+          <button id="modeDraft" class="ghost small" aria-pressed="false">Draft</button>
+          <span class="mode-hint muted" id="modeHint">Pick your team below</span>
+        </div>
         <div class="team-row">
           <div class="slot" id="slot0">1</div>
           <div class="slot" id="slot1">2</div>
@@ -638,6 +684,19 @@
         <button class="small ghost" data-dbg="berries">+4 🍓</button>
         <button class="small ghost" data-dbg="charge">⚡ Charge up</button>
       </div>
+    </section>
+
+    <!-- ============================================================ DRAFT -->
+    <section id="draft" class="hidden" aria-label="Draft">
+      <div class="dr-head">
+        <div class="dr-title">Draft</div>
+        <div id="drStatus" class="dr-status" role="status" aria-live="polite"></div>
+        <button id="drLeave" class="ghost small">Leave</button>
+      </div>
+      <div id="drTimer" class="dr-timer hidden"><div class="dr-timer-fill"></div><span class="dr-timer-num"></span></div>
+      <div class="dr-team foe" id="drFoe"></div>
+      <div class="dr-grid" id="drGrid"></div>
+      <div class="dr-team me" id="drMe"></div>
     </section>
 
     <div id="sheet" class="scrim hidden"></div>
@@ -898,14 +957,17 @@
           `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">⚡ ${mon.chargeCost} charge</span></div>` +
           `<div class="s-desc">${esc(mon.ability.description)}</div>` +
           (mon.ability.passive ? `<div class="s-pass">✦ ${esc(mon.ability.passive)}</div>` : "") +
-          `<div class="s-actions"><button id="pickSelect" class="${i >= 0 ? "ghost" : ""}">${esc(label)}</button>` +
+          tagsHtml(mon) +
+          `<div class="s-actions">${draftMode ? "" : `<button id="pickSelect" class="${i >= 0 ? "ghost" : ""}">${esc(label)}</button>`}` +
           `<button class="ghost" id="sheetClose">Close</button></div></div>`;
         sheet.classList.remove("hidden");
         const close = () => sheet.classList.add("hidden");
         $("sheetClose").onclick = close;
         sheet.onclick = (e) => { if (e.target === sheet) close(); };
-        $("pickSelect").onclick = () => { togglePick(mon.id); close(); };
-        $("pickSelect").focus();
+        if ($("pickSelect")) {
+          $("pickSelect").onclick = () => { togglePick(mon.id); close(); };
+          $("pickSelect").focus();
+        }
       }
 
       function togglePick(id) {
@@ -936,15 +998,27 @@
       }
 
       function refreshButtons() {
-        const ready = picks.length === 2;
+        const ready = draftMode || picks.length === 2; // drafting picks teams in the match
         $("play").disabled = !ready;
         $("create").disabled = !ready;
         $("practice").disabled = !ready;
-        $("join").disabled = !ready || $("code").value.trim().length < 4;
+        $("join").disabled = $("code").value.trim().length < 4; // the host's mode decides; the server checks picks
       }
 
       const displayName = () => (account ? account.username : $("name").value.trim() || "Player");
-      const payload = (extra = {}) => ({ gameId: "match_monsters", mode: "casual", displayName: displayName(), monsters: picks, ...extra });
+      const payload = (extra = {}) => ({ gameId: "match_monsters", mode: "casual", displayName: displayName(), monsters: picks, draft: draftMode, ...extra });
+
+      /** Blind pick (choose your team here) or Draft (ban and pick against your rival in the match). */
+      let draftMode = (() => { try { return JSON.parse(localStorage.getItem("mm.draftMode")) === true; } catch { return false; } })();
+      function setDraftMode(on) {
+        draftMode = on;
+        try { localStorage.setItem("mm.draftMode", JSON.stringify(on)); } catch {}
+        $("modeBlind").setAttribute("aria-pressed", String(!on));
+        $("modeDraft").setAttribute("aria-pressed", String(on));
+        $("modeHint").textContent = on ? "Ban & pick in the match" : "Pick your team below";
+        $("dock").classList.toggle("drafting", on);
+        refreshButtons();
+      }
 
       // The lobby socket stays open all session: matchmaking, plus friends'
       // messages, presence and invites once signed in.
@@ -1071,19 +1145,28 @@
           renderEnd();
         }));
         sock.on("mm:rematchReady", live((d) => enterRematch(d.roomId)));
+        sock.on("mm:draftUpdate", live((d) => { draftState = d; renderDraft(); }));
+        sock.on("mm:draftDone", live(async () => {
+          cue("evolve");
+          await refresh();
+          toast("Teams locked in!", 1800);
+        }));
+        sock.on("mm:draftCancelled", live((d) => {
+          if (d.by !== room.seat) toast("Your rival left the draft", 3000);
+          leaveGame();
+        }));
         gameSock.addEventListener("close", onGameClose);
-        showScreen("game");
-        await refresh();
+        await refresh(); // shows the draft or the game
         if (state && state.phase === "finished") showEnd(state.winner === room.seat, state.forfeitedBy);
-        if (!store.get("mm.tipChips")) {
+        if (state && !store.get("mm.tipChips")) {
           store.set("mm.tipChips", true);
           toast("Tip: tap any monster to see what its move does", 3500);
         }
       }
 
       function onGameClose(ev) {
-        if (leaving || !room || !state) return;
-        if (state.phase === "finished") return;
+        if (leaving || !room || (!state && !draftState)) return;
+        if (state?.phase === "finished") return;
         if (ev && ev.code === 4004) { // a CloseEvent, or a failed reconnect's error
           // The server restarted (e.g. woke from sleep) and the room is gone.
           toast("That game ended — the server restarted", 4000);
@@ -1116,6 +1199,8 @@
 
       function leaveGame() {
         leaving = true;
+        draftState = null;
+        stopDraftTimer();
         document.title = BASE_TITLE;
         try { gameSock?.close(); } catch {}
         gameSock = null;
@@ -1133,17 +1218,30 @@
       }
 
       function showScreen(which) {
-        const game = which === "game";
-        $("lobby").classList.toggle("hidden", game);
-        $("dock").classList.toggle("hidden", game);
+        const game = which === "game", draft = which === "draft";
+        $("lobby").classList.toggle("hidden", game || draft);
+        $("dock").classList.toggle("hidden", game || draft);
         $("game").classList.toggle("hidden", !game);
+        $("draft").classList.toggle("hidden", !draft);
         document.body.classList.toggle("in-game", game);
         if (game) requestAnimationFrame(() => { sizeArena(); sizeBoard(); });
       }
 
+      /** Pull the room's state: a draft view while drafting, the game afterwards. */
       async function refresh() {
         if (!gameSock) return;
-        state = await gameSock.request("mm:getState", {});
+        const res = await gameSock.request("mm:getState", {});
+        if (res.draft) {
+          draftState = res;
+          state = null;
+          if ($("draft").classList.contains("hidden")) showScreen("draft");
+          renderDraft();
+          return;
+        }
+        draftState = null;
+        stopDraftTimer();
+        state = res;
+        if ($("game").classList.contains("hidden")) showScreen("game");
         renderGame();
       }
 
@@ -1559,6 +1657,180 @@
           if (score > bestScore) { bestScore = score; best = [{ x, y }, { x: x2, y: y2 }]; }
         }
         return best;
+      }
+
+      /* ------------------------------------------------------------ draft
+       * Ban 1 each (at the same time, revealed together), then a snake pick:
+       * the player who moves second in the match picks first, 1-2-1. The server
+       * runs the draft; this renders its view of it and sends bans and picks.
+       */
+      let draftState = null; // { draft, remainingMs, names, botSeat, connected }
+      let draftTimerIv = 0;
+      let draftHadMove = false;
+      const rosterById = (id) => roster.find((m) => m.id === id);
+      /** What each "strong vs" tag beats on the other side's "weak to" list. */
+      const BEATS = { shields: "piercing", healing: "poison", control: "bubbles" };
+      const counters = (mon, team) => team.some((t) => mon.tags?.strongVs.some((s) => t.tags?.weakTo.includes(BEATS[s])));
+      const combos = (mon, team) => team.some((t) => (mon.tags?.combos.includes("burns") && t.tags?.combos.includes("ignite")) || (mon.tags?.combos.includes("ignite") && t.tags?.combos.includes("burns")));
+      /** Strong vs / weak to / combos lines for a monster's sheet. */
+      function tagsHtml(mon) {
+        const t = mon.tags;
+        if (!t || (!t.strongVs.length && !t.weakTo.length && !t.combos.length)) return "";
+        const combo = t.combos.map((c) => (c === "burns" ? "burners (Emberwing)" : "ignite (Pyrup)"));
+        return `<div class="s-tags">` +
+          (t.strongVs.length ? `<div class="good"><b>Strong vs</b> ${t.strongVs.join(", ")}</div>` : "") +
+          (t.weakTo.length ? `<div class="bad"><b>Weak to</b> ${t.weakTo.join(", ")}</div>` : "") +
+          (combo.length ? `<div class="combo"><b>Combos with</b> ${combo.join(", ")}</div>` : "") + `</div>`;
+      }
+
+      function stopDraftTimer() {
+        clearInterval(draftTimerIv);
+        draftTimerIv = 0;
+      }
+
+      function renderDraft() {
+        if (!draftState || !roster.length) return;
+        const d = draftState.draft, me = d.you, foe = me === 0 ? 1 : 0;
+        const names = draftState.names;
+        const owner = new Map([...d.picks[me].map((id) => [id, "mine"]), ...d.picks[foe].map((id) => [id, "theirs"])]);
+        const banned = new Set(d.bans.filter((b) => typeof b === "string"));
+        const foeTeam = d.picks[foe].map(rosterById).filter(Boolean);
+        const myTeam = d.picks[me].map(rosterById).filter(Boolean);
+
+        // Whose move, in words.
+        const rival = esc(names[foe]);
+        let status;
+        if (d.phase === "ban") status = d.yourMove ? "Ban a monster" : `Waiting for ${rival} to ban…`;
+        else if (d.phase === "pick") status = d.yourMove ? `Your pick (${d.picks[me].length + 1} of 2)` : `${rival} is picking…`;
+        else status = "Locked in!";
+        $("drStatus").innerHTML = status;
+        $("drStatus").classList.toggle("go", d.yourMove);
+        if (d.yourMove && !draftHadMove) cue("turn");
+        draftHadMove = d.yourMove;
+
+        // Teams: ban slot + two picks; the next empty slot of whoever's turn it is glows.
+        const team = (seat, label) => {
+          const ban = d.bans[seat];
+          const banCell = typeof ban === "string" ? `<div class="dr-ban filled" title="Banned">${rigView(ban, 0, 1, CARD_CROP)}</div>`
+            : `<div class="dr-ban" title="Ban">${ban === false ? "—" : d.phase === "ban" ? "?" : ""}</div>`;
+          const slots = [0, 1].map((i) => {
+            const id = d.picks[seat][i];
+            if (id) return `<div class="dr-slot filled">${rigView(id, 0, 1, CARD_CROP)}</div>`;
+            const next = d.phase === "pick" && d.turn === seat && i === d.picks[seat].length;
+            return `<div class="dr-slot${next ? " next" : ""}">${i + 1}</div>`;
+          }).join("");
+          return `<div class="dr-name">${label}</div>${banCell}${slots}`;
+        };
+        $("drFoe").innerHTML = team(foe, rival);
+        $("drMe").innerHTML = team(me, `${esc(names[me])} (you)`);
+        $("drFoe").classList.toggle("turn", d.phase === "pick" && d.turn === foe);
+        $("drMe").classList.toggle("turn", d.yourMove);
+
+        // The grid: built once (so the rigs keep idling), then updated.
+        const grid = $("drGrid");
+        if (grid.children.length !== roster.length) {
+          grid.innerHTML = "";
+          for (const mon of roster) {
+            const card = document.createElement("button");
+            card.type = "button";
+            card.className = "pcard dr-card";
+            card.dataset.id = mon.id;
+            card.style.setProperty("--el", `var(--${mon.element})`);
+            card.innerHTML = `<div class="art">${rigView(mon.id, 0, lineUnit(), CARD_CROP)}</div><div class="pname">${esc(mon.name)}</div>`;
+            card.addEventListener("click", () => openDraftSheet(mon));
+            grid.appendChild(card);
+          }
+        }
+        for (const card of grid.children) {
+          const id = card.dataset.id, mon = rosterById(id), who = owner.get(id);
+          const isBanned = banned.has(id);
+          card.classList.toggle("banned", isBanned);
+          card.classList.toggle("mine", who === "mine");
+          card.classList.toggle("theirs", who === "theirs");
+          card.classList.toggle("myban", d.bans[me] === id && d.phase === "ban");
+          card.querySelectorAll(".dr-badge").forEach((b) => b.remove());
+          const free = !isBanned && !who;
+          if (who) card.insertAdjacentHTML("beforeend", `<span class="dr-badge who">${who === "mine" ? "You" : "Rival"}</span>`);
+          else if (free && counters(mon, foeTeam)) card.insertAdjacentHTML("beforeend", `<span class="dr-badge counter" title="Counters a rival pick">Counter</span>`);
+          else if (free && combos(mon, myTeam)) card.insertAdjacentHTML("beforeend", `<span class="dr-badge combo" title="Combos with your pick">Combo</span>`);
+          card.setAttribute("aria-label", `${mon.name}${isBanned ? ", banned" : who === "mine" ? ", your pick" : who === "theirs" ? ", rival's pick" : ""}`);
+        }
+
+        // Timer (Quick Play only): count down from the server's remaining time.
+        stopDraftTimer();
+        const bar = $("drTimer");
+        bar.classList.toggle("hidden", draftState.remainingMs == null || d.phase === "done");
+        if (draftState.remainingMs != null && d.stepMs) {
+          const endsAt = performance.now() + draftState.remainingMs;
+          const fill = bar.querySelector(".dr-timer-fill"), num = bar.querySelector(".dr-timer-num");
+          const tick = () => {
+            const left = Math.max(0, endsAt - performance.now());
+            fill.style.width = `${(left / d.stepMs) * 100}%`;
+            num.textContent = Math.ceil(left / 1000);
+          };
+          tick();
+          draftTimerIv = setInterval(tick, 250);
+        }
+      }
+
+      /** A monster's sheet in the draft, with Ban or Pick when it's your move. */
+      function openDraftSheet(mon) {
+        const sheet = $("sheet");
+        const render = () => {
+          const d = draftState?.draft;
+          if (!d) return sheet.classList.add("hidden");
+          const me = d.you;
+          const taken = d.picks[0].includes(mon.id) || d.picks[1].includes(mon.id);
+          const isBanned = d.bans.includes(mon.id);
+          let action = "", label = "";
+          if (isBanned) label = "Banned";
+          else if (taken) label = d.picks[me].includes(mon.id) ? "On your team" : "Taken by your rival";
+          else if (d.phase === "ban") { if (d.yourMove) action = "ban"; else label = d.bans[me] ? "You've banned" : "Waiting…"; }
+          else if (d.phase === "pick") { if (d.yourMove) action = "pick"; else label = "Rival's pick"; }
+          sheet.innerHTML =
+            `<div class="sheet" style="--el: var(--${mon.element})">` +
+            `<div class="s-art">${rigView(mon.id, 0, 3)}</div>` +
+            `<h2>${esc(mon.name)}</h2>` +
+            `<div class="s-sub">${gemIcon(mon.element, 16)} ${EL_LABEL[mon.element]}${mon.archetype?.title ? ` · ${esc(mon.archetype.title)}` : ""}</div>` +
+            `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">⚡ ${mon.chargeCost} charge</span></div>` +
+            `<div class="s-desc">${esc(mon.ability.description)}</div>` +
+            (mon.ability.passive ? `<div class="s-pass">✦ ${esc(mon.ability.passive)}</div>` : "") +
+            tagsHtml(mon) +
+            `<div class="s-actions">` +
+            (action ? `<button id="drAct" class="${action === "ban" ? "danger" : ""}">${action === "ban" ? "Ban" : "Pick"} ${esc(mon.name)}</button>` : `<button disabled>${label}</button>`) +
+            `<button class="ghost" id="sheetClose">Close</button></div></div>`;
+          $("sheetClose").onclick = () => sheet.classList.add("hidden");
+          const act = $("drAct");
+          if (act) {
+            act.onclick = async () => {
+              act.disabled = true;
+              try {
+                await gameSock.request(action === "ban" ? "mm:ban" : "mm:pick", { monsterId: mon.id });
+                cue(action === "ban" ? "hit" : "select");
+                sheet.classList.add("hidden");
+              } catch (e) { toast(e.message); render(); }
+            };
+            act.focus();
+          }
+        };
+        render();
+        sheet.classList.remove("hidden");
+        sheet.onclick = (e) => { if (e.target === sheet) sheet.classList.add("hidden"); };
+      }
+
+      function leaveDraft() {
+        const el = showPanel("leave-draft",
+          `<h2>Leave the draft?</h2>` +
+          `<p class="muted" style="text-align:center;margin:8px 0 16px">The match is cancelled for both of you.</p>` +
+          `<div class="s-actions"><button class="danger" data-act="leave">Leave</button><button class="ghost" data-act="close">Keep drafting</button></div>`);
+        el.onclick = async (e) => {
+          const btn = e.target.closest("[data-act]");
+          if (!btn) return;
+          closePanel();
+          if (btn.dataset.act !== "leave") return;
+          try { await gameSock?.request("mm:leaveDraft", {}); } catch {}
+          leaveGame();
+        };
       }
 
       /* ------------------------------------------------------------ settings sheet */
@@ -2461,9 +2733,10 @@
       function showInviteCard(inv) {
         const card = $("inviteCard");
         const [m0, m1] = inv.monsters || [];
+        const note = inv.draft ? "A draft match: you'll ban and pick together" : picks.length === 2 ? "Accept to battle with your current team" : "Pick two monsters, then accept";
         card.innerHTML =
-          `<div class="ic-top"><div class="ic-team">${art(m0, 40)}${art(m1, 40)}</div>` +
-          `<div class="ell"><b>${esc(inv.from.username)}</b> challenges you!<div class="muted" style="font-size:12px">${picks.length === 2 ? "Accept to battle with your current team" : "Pick two monsters, then accept"}</div></div></div>` +
+          `<div class="ic-top">${inv.draft ? "" : `<div class="ic-team">${art(m0, 40)}${art(m1, 40)}</div>`}` +
+          `<div class="ell"><b>${esc(inv.from.username)}</b> challenges you!<div class="muted" style="font-size:12px">${note}</div></div></div>` +
           `<div class="ic-actions"><button class="ghost" data-ic="decline">Decline</button><button data-ic="accept">Accept ⚔️</button></div><div class="ic-timer"></div>`;
         card.dataset.invite = inv.inviteId;
         card.classList.remove("hidden");
@@ -2477,7 +2750,8 @@
       }
 
       async function acceptInvite(inviteId) {
-        if (picks.length < 2) { closePanel(); return toast("Pick your two monsters first, then tap Accept", 2600); }
+        const inv = incomingInvites.get(inviteId);
+        if (!inv?.draft && picks.length < 2) { closePanel(); return toast("It's a blind-pick match: pick your two monsters first, then tap Accept", 2800); }
         try {
           const sock = await ensureLobby();
           const res = await sock.request("mm:acceptInvite", payload({ inviteId }));
@@ -2646,6 +2920,10 @@
       }
       $("friendToggle").addEventListener("click", () => toggleFriendRow());
       $("settingsBtn").addEventListener("click", openSettings);
+      $("modeBlind").addEventListener("click", () => setDraftMode(false));
+      $("modeDraft").addEventListener("click", () => setDraftMode(true));
+      setDraftMode(draftMode);
+      $("drLeave").addEventListener("click", leaveDraft);
       applySettings();
 
       const invited = new URLSearchParams(location.search).get("room");
@@ -2657,8 +2935,9 @@
 
       (async () => {
         restoreAccount();
-        const resumed = await resumeIfAny();
+        // The roster first: resuming straight into a draft needs it.
         try { await loadRoster(); } catch (e) { $("lobbyStatus").textContent = "Failed to load monsters: " + e.message; }
+        const resumed = await resumeIfAny();
         if (!resumed) showScreen("lobby");
       })();
     </script>

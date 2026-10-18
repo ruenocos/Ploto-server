@@ -49,9 +49,18 @@ npm run dev        # web, status and WebSocket all on :8080
 
 Then both of you open **`http://<the-host's-LAN-ip>:8080/play`** (the host can
 use `http://localhost:8080/play`), or deploy it (see [`docs/DEPLOY.md`](docs/DEPLOY.md)).
-Each picks two monsters, then either **Quick Play** (matched with anyone
-queuing) or **Invite a friend** (a 4-character code + a share link,
-`/play?room=CODE`, that pre-fills the code for them). No accounts.
+Choose **Blind pick** (each picks two monsters in the lobby) or **Draft**, then
+**Quick Play** (matched with anyone queuing in the same mode), **Bot**, or
+**Friend** (a 4-character code + a share link, `/play?room=CODE`, that pre-fills
+the code for them; the host's mode decides). No accounts needed.
+
+**Draft.** Both players ban one monster at the same time (revealed together),
+then pick in a snake: whoever moves second in the match picks first, 1-2-1.
+Picks are unique and visible, so you can counter what your rival takes: cards
+show **Counter** when they beat a rival pick (piercing vs shields, poison vs
+healing, bubbles vs control) and **Combo** when they pair with yours (burn and
+ignite). Quick Play gives 20 seconds per step (then no ban or a random pick);
+friend rooms and bot practice have no timer, and the bot drafts counters too.
 
 **Accounts & friends.** Claim a username (no password: the server hands back a
 secret key that stays in the browser's localStorage; copy it from your profile to
@@ -59,7 +68,7 @@ sign in on another device). Then add friends by username, chat with them, and
 tap **⚔️ Invite** to start a match without sharing codes. Your profile shows your
 record and recent matches.
 
-**Solo?** Tap **🤖 Practice vs bot**. The bot picks a random team and plays a
+**Solo?** Tap **Bot**. In blind pick the bot takes a random team; it plays a
 greedy (occasionally sloppy) game. Practice games add debug shortcuts under
 the board: **+4 🍓** (evolve right away) and **⚡ Charge up** (both your
 monsters fire on your next match). After any game, **Rematch** restarts with

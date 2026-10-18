@@ -45,12 +45,17 @@ class Sprite:
     name: str
     materials: dict[str, Material]
     outline: str
-    grid: list[list[str | None]] = field(default_factory=lambda: [[None] * SIZE for _ in range(SIZE)])
+    size: int = SIZE
+    grid: list[list[str | None]] = field(default_factory=list)
     highlights: list[tuple[int, int]] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        if not self.grid:
+            self.grid = [[None] * self.size for _ in range(self.size)]
 
     # -- authoring --------------------------------------------------------------
     def px(self, x: int, y: int, mat: str | None) -> None:
-        if 0 <= x < SIZE and 0 <= y < SIZE:
+        if 0 <= x < self.size and 0 <= y < self.size:
             self.grid[y][x] = mat
 
     def pxs(self, mat: str | None, pts) -> None:
@@ -58,14 +63,14 @@ class Sprite:
             self.px(x, y, mat)
 
     def ellipse(self, cx: float, cy: float, rx: float, ry: float, mat: str) -> None:
-        for y in range(SIZE):
-            for x in range(SIZE):
+        for y in range(self.size):
+            for x in range(self.size):
                 if ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1.0:
                     self.grid[y][x] = mat
 
     def poly(self, pts: list[tuple[float, float]], mat: str) -> None:
-        for y in range(SIZE):
-            for x in range(SIZE):
+        for y in range(self.size):
+            for x in range(self.size):
                 if _inside(x + 0.5, y + 0.5, pts):
                     self.grid[y][x] = mat
 
@@ -84,9 +89,9 @@ class Sprite:
 
     def mirror(self) -> None:
         """Copy the left half onto the right half (for symmetric bodies)."""
-        for y in range(SIZE):
-            for x in range(SIZE // 2):
-                self.grid[y][SIZE - 1 - x] = self.grid[y][x]
+        for y in range(self.size):
+            for x in range(self.size // 2):
+                self.grid[y][self.size - 1 - x] = self.grid[y][x]
 
     # -- rendering --------------------------------------------------------------
     def _group(self, mat: str | None) -> str | None:
@@ -95,24 +100,24 @@ class Sprite:
         return self.materials[mat].group or mat
 
     def render(self) -> Image.Image:
-        img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+        img = Image.new("RGBA", (self.size, self.size), (0, 0, 0, 0))
         floating = [(x, y, self.materials[m]) for y, row in enumerate(self.grid) for x, m in enumerate(row) if m and self.materials[m].floating]
         # Floating pixels sit outside the silhouette: no outline, no shading.
         g = [[None if (m and self.materials[m].floating) else m for m in row] for row in self.grid]
-        get = lambda x, y: g[y][x] if 0 <= x < SIZE and 0 <= y < SIZE else None  # noqa: E731
+        get = lambda x, y: g[y][x] if 0 <= x < self.size and 0 <= y < self.size else None  # noqa: E731
 
         # Bounding boxes per group, for the "lower part is darker" gradient.
         boxes: dict[str, list[int]] = {}
-        for y in range(SIZE):
-            for x in range(SIZE):
+        for y in range(self.size):
+            for x in range(self.size):
                 grp = self._group(g[y][x])
                 if grp is None:
                     continue
                 b = boxes.setdefault(grp, [x, y, x, y])
                 b[0], b[1], b[2], b[3] = min(b[0], x), min(b[1], y), max(b[2], x), max(b[3], y)
 
-        for y in range(SIZE):
-            for x in range(SIZE):
+        for y in range(self.size):
+            for x in range(self.size):
                 mat = g[y][x]
                 if mat is None:
                     continue
@@ -140,8 +145,8 @@ class Sprite:
 
         # Coloured outline around the whole silhouette.
         out = img.copy()
-        for y in range(SIZE):
-            for x in range(SIZE):
+        for y in range(self.size):
+            for x in range(self.size):
                 if g[y][x] is not None:
                     continue
                 neighbours = [(dx, dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)) if get(x + dx, y + dy) is not None]

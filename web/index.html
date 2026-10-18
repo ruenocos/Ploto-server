@@ -155,9 +155,12 @@
       .banner.you { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent2); }
       .banner.them { background: var(--panel); color: var(--muted); }
       .banner .sd { display: block; font-size: 11px; color: #ff9a6b; margin-top: 2px; }
+      .banner .round { opacity: 0.75; font-weight: 700; }
+      .mchip .info { position: absolute; top: 4px; right: 7px; font-size: 12px; color: var(--muted); }
 
       .board-wrap { flex: 1 1 auto; min-height: 120px; position: relative; display: flex; align-items: center; justify-content: center; }
-      .board { display: grid; gap: 4px; touch-action: manipulation; }
+      .board { display: grid; gap: 4px; touch-action: manipulation; border-radius: 10px; }
+      .board.falling { overflow: hidden; } /* new tiles enter from above the board */
       .tile {
         position: relative; border-radius: 10px; display: flex; align-items: center; justify-content: center;
         cursor: pointer; user-select: none; font-size: var(--glyph, 24px); line-height: 1;
@@ -528,6 +531,10 @@
         showScreen("game");
         await refresh();
         if (state && state.phase === "finished") showEnd(state.winner === room.seat);
+        if (!store.get("mm.tipChips")) {
+          store.set("mm.tipChips", true);
+          toast("Tip: tap any monster to see what its move does", 3500);
+        }
       }
 
       function onGameClose(ev) {
@@ -607,12 +614,18 @@
         if (state.connected) $("peerWarn").classList.toggle("hidden", state.connected[room.seat === 0 ? 1 : 0]);
 
         const ml = state.movesLeft ?? 2;
+        const round = Math.floor((state.turnPasses || 0) / 2) + 1;
         let sd = "";
         if (state.fatigueNext > 0) sd = `<span class="sd">☠ Sudden death — ${state.fatigueNext} damage at turn start</span>`;
-        else if (state.suddenDeathIn > 0 && state.suddenDeathIn <= 4) sd = `<span class="sd">Sudden death in ${state.suddenDeathIn} turn${state.suddenDeathIn === 1 ? "" : "s"}</span>`;
+        else if (state.suddenDeathIn > 0 && state.suddenDeathIn <= 6) {
+          const rounds = Math.ceil(state.suddenDeathIn / 2);
+          sd = `<span class="sd">Sudden death in ${rounds} round${rounds === 1 ? "" : "s"}</span>`;
+        }
         const banner = $("turnBanner");
         banner.className = "banner " + (myTurn() ? "you" : "them");
-        banner.innerHTML = (myTurn() ? `Your turn · ${ml} move${ml === 1 ? "" : "s"}` : `${esc(foe.displayName)}'s turn…`) + sd;
+        banner.innerHTML =
+          `<span class="round">Round ${round}</span> · ` +
+          (myTurn() ? `Your turn · ${ml} move${ml === 1 ? "" : "s"}` : `${esc(foe.displayName)}'s turn…`) + sd;
         renderBoard();
       }
 
@@ -654,6 +667,7 @@
             `<div class="mtext"><div class="mname ell">${esc(mon.name)}${evo ? " " + "★".repeat(evo) : ""}</div>` +
             `<div class="mmove ell">${esc(mon.ability.name)}</div>` +
             `<div class="mcharge">${ready ? "READY" : `⚡ ${Math.min(mon.charge, cost)}/${cost}`}</div></div>` +
+            `<span class="info" aria-label="Details">ⓘ</span>` +
             (canEvolve && evo < MAX_EVOLUTION ? `<span class="badge">EVOLVE</span>` : "") +
             (mon.sealed > 0 ? `<span class="sealed">🔒 ${mon.sealed}</span>` : "");
           chip.addEventListener("click", () => openSheet(mon, isMe, canEvolve && evo < MAX_EVOLUTION));
@@ -755,8 +769,61 @@
         for (const step of steps || []) {
           if (step.board) { state.board = step.board; renderBoard(); }
           for (const c of step.cleared) tileAt(c.x, c.y)?.classList.add("pop");
-          await sleep(330);
+          await sleep(300);
+          if (step.after) {
+            state.board = step.after;
+            renderBoard();
+            $("board").classList.add("falling");
+            const dur = applyFall(step.cleared);
+            await sleep(dur + 40);
+            $("board").classList.remove("falling");
+          }
         }
+      }
+
+      /**
+       * Animate gravity: in each column with cleared tiles, the survivors drop by
+       * the number of gaps below them and fresh tiles fall in from above the board.
+       * Returns the animation length in ms.
+       */
+      function applyFall(cleared) {
+        const H = state.board.length;
+        const first = $("board").firstElementChild;
+        if (!first) return 0;
+        const cell = first.getBoundingClientRect().height + 4; // tile + grid gap
+        const cols = new Map();
+        for (const c of cleared) {
+          if (!cols.has(c.x)) cols.set(c.x, new Set());
+          cols.get(c.x).add(c.y);
+        }
+        const moved = [];
+        let maxDrop = 0;
+        for (const [x, gone] of cols) {
+          const k = gone.size;
+          let i = 0;
+          for (let oldY = 0; oldY < H; oldY++) {
+            if (gone.has(oldY)) continue;
+            const newY = k + i++;
+            if (newY > oldY) moved.push([x, newY, newY - oldY]);
+          }
+          for (let r = 0; r < k; r++) moved.push([x, r, k]); // new tiles from the top
+          maxDrop = Math.max(maxDrop, k);
+        }
+        for (const [x, y, d] of moved) {
+          const t = tileAt(x, y);
+          if (!t) continue;
+          t.style.transition = "none";
+          t.style.transform = `translateY(${-d * cell}px)`;
+        }
+        void $("board").offsetHeight; // commit the start positions
+        const dur = 170 + maxDrop * 45;
+        for (const [x, y] of moved) {
+          const t = tileAt(x, y);
+          if (!t) continue;
+          t.style.transition = `transform ${dur}ms cubic-bezier(.45,0,.75,1)`;
+          t.style.transform = "";
+        }
+        return dur;
       }
 
       async function showCallout(cast) {

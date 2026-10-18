@@ -303,13 +303,11 @@ export class MatchMonstersGame {
         }
       }
       const cleared = [...matches.map((m) => ({ x: m.x, y: m.y })), ...adjacentStones(s.board, matches)];
-      steps.push({
-        cleared: cleared.map((c) => ({ x: c.x, y: c.y, element: s.board.grid[c.y]![c.x]! })),
-        countsByElement,
-        board: cloneGrid(s.board),
-      });
+      const before = cloneGrid(s.board);
+      const clearedInfo = cleared.map((c) => ({ x: c.x, y: c.y, element: s.board.grid[c.y]![c.x]! }));
       this.breakIce(cleared);
       collapseAndRefill(s.board, cleared, this.palette, this.rng);
+      steps.push({ cleared: clearedInfo, countsByElement, board: before, after: cloneGrid(s.board) });
     }
   }
 
@@ -486,14 +484,12 @@ export class MatchMonstersGame {
       if (t === "berry") ctx.berries += 1;
       else if (isElement(t)) counts[t] = (counts[t] ?? 0) + 1;
     }
-    ctx.effectSteps.push({
-      cleared: present.map((c) => ({ x: c.x, y: c.y, element: b.grid[c.y]![c.x]! })),
-      countsByElement: counts,
-      board: cloneGrid(b),
-    });
+    const before = cloneGrid(b);
+    const clearedInfo = present.map((c) => ({ x: c.x, y: c.y, element: b.grid[c.y]![c.x]! }));
     feedCharge(ctx.attacker, counts);
     this.breakIce(present);
     collapseAndRefill(b, present, this.palette, this.rng);
+    ctx.effectSteps.push({ cleared: clearedInfo, countsByElement: counts, board: before, after: cloneGrid(b) });
   }
 
   private breakIce(cells: readonly { x: number; y: number }[]): void {

@@ -37,8 +37,9 @@ export const MAX_SHIELD = 30;
 /**
  * Sudden death: once this many turns have passed (both players combined), each
  * player takes growing damage at the start of their turn (ignores shields).
+ * 38 passes = sudden death starts on each player's 20th turn (round 20).
  */
-export const FATIGUE_AFTER = 14;
+export const FATIGUE_AFTER = 38;
 /** Sudden-death damage grows by this much per turn. */
 export const FATIGUE_STEP = 3;
 
@@ -165,6 +166,8 @@ export interface CascadeStep {
   countsByElement: Partial<Record<Element, number>>;
   /** Board state where this step's cleared tiles are present (for animation). */
   board: Tile[][];
+  /** Board after the gaps collapse and refill, so clients can animate the fall. */
+  after: Tile[][];
 }
 
 export type NumericEventType =

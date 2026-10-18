@@ -64,7 +64,7 @@ queuing) or **Invite a friend** (a 4-character code + a share link,
   (+20% power, −1 charge cost, up to ★★★).
 - 🪨 **Stone** tiles can't move and crumble when a neighbour is matched;
   ❄ **frozen** tiles can't be swapped until the ice melts.
-- One HP pool each (80). Shields cap at 30. After 14 turns **sudden death**
+- One HP pool each (80). Shields cap at 30. From round 20, **sudden death**
   deals growing damage each turn, so every match ends.
 
 ### Element archetypes

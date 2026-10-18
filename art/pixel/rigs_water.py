@@ -12,7 +12,7 @@ import math
 
 from common import AQUA, ICE, base_materials
 from pixelkit import Material
-from rigkit import Rig, happy_eyes, mirror_poly, sparkle, sym_poly
+from rigkit import Rig, eyes, mirror_poly, sparkle, sym_poly
 
 WATER_BODY = ["#123a7d", "#1f63b8", "#3aa0ff", "#8fd3ff"]
 DEEP = ["#0a1c3c", "#14325e", "#22508a", "#3a74b0"]  # adult accent: darker shell/plates
@@ -23,55 +23,33 @@ def flip(pts):
     return [(32 - x, y) for x, y in pts]
 
 
-def big_eyes(r: Rig, lx: float, rx: float, y: float, rx_: float = 1.5, ry_: float = 2.0) -> None:
-    """Baby eyes: big dark ovals with a two-pixel shine."""
-    for cx in (lx, rx):
-        r.ellipse(cx, y, rx_, ry_, "ink")
-        r.pxs("shine", [(int(cx - 1), int(y - 1)), (int(cx), int(y + 1))])
-
-
-def fierce_eyes(r: Rig, lx: int, rx: int, y: int, mat: str = "glow") -> None:
-    """Adult eyes: a lit eye with the pupil towards the nose, under a brow sloping down to it."""
-    r.pxs(mat, [(lx, y), (lx + 1, y), (rx, y), (rx + 1, y)])
-    r.pxs("ink", [(lx + 1, y), (rx, y)])
-    r.pxs("ink", [(lx - 1, y - 2), (lx, y - 2), (lx + 1, y - 1), (lx + 2, y - 1)])
-    r.pxs("ink", [(rx - 1, y - 1), (rx, y - 1), (rx + 1, y - 2), (rx + 2, y - 2)])
-
-
-def young_eyes(r: Rig, lx: int, rx: int, y: int) -> None:
-    """Adolescent eyes: 2x2 with a shine and a short brow."""
-    for x0 in (lx, rx):
-        r.pxs("ink", [(x0, y), (x0 + 1, y), (x0, y + 1), (x0 + 1, y + 1)])
-        r.px(x0, y, "shine")
-    r.pxs("ink", [(lx - 1, y - 2), (lx, y - 2), (lx + 1, y - 1), (rx, y - 1), (rx + 1, y - 2), (rx + 2, y - 2)])
-
-
 # --------------------------------------------------------------------- Tidecoil
 def tidecoil(stage: int) -> Rig:
     r = Rig("tidecoil", base_materials(body=Material(["#0e3f6b", "#1c6fa8", "#2fa8d8", "#86dcf2"]),
                                        belly=Material(["#3f7fa8", "#7cc0e0", "#c4ecfa", "#ffffff"]), fin=Material(AQUA),
                                        vein=Material(["#13606e"], flat=True), horn=Material(["#6e6a5a", "#b8b29a", "#e8e2c8", "#ffffff"]),
-                                       plate=Material(DEEP), glow=Material(["#c8fbff"], flat=True)), "#061626", stage)
+                                       plate=Material(DEEP), glow=Material(["#c8fbff"], flat=True),
+                                       eye=Material(["#ffd84a"], flat=True)), "#061626", stage)
     if stage == 0:
         # Tadpole hatchling: a big round head on a little curled tail.
-        r.part("tail", "tail", pivot=(12, 28), z=-1)
-        r.stroke([(13, 28.5), (9, 29.5), (6, 28.6)], 3.4, "body")
-        r.stroke([(6, 28.6), (4.4, 26.6), (5, 24.6)], 2.2, "body")
-        r.poly([(5.6, 25.4), (2.4, 21.6), (6.8, 23.2)], "fin")
+        r.part("tail", "tail", pivot=(11, 27), z=-1)
+        r.stroke([(12, 28), (7.4, 29.2), (3.6, 28)], 4.2, "body")
+        r.stroke([(3.6, 28), (1.6, 25.6), (2.4, 23.2)], 2.7, "body")
+        r.poly([(3, 24.2), (-0.8, 19.4), (4.6, 21.6)], "fin")
         r.part("body", "body", pivot=(16, 30))
-        r.ellipse(16, 27, 6, 4, "body")
-        r.ellipse(16.4, 28, 3.6, 2.4, "belly")
-        r.part("head", "head", pivot=(16, 25), parent="body", z=1)
-        r.ellipse(16, 19.4, 7.2, 6.2, "body")
-        r.ellipse(16, 22.4, 4.2, 2.4, "belly")
-        big_eyes(r, 12.8, 19.2, 19.2)
-        r.pxs("ink", [(15, 23), (16, 23)])
-        r.pxs("blush", [(10, 22), (21, 22)])
-        r.part("crest", "fx", pivot=(16, 14), parent="head", z=-1)
-        r.poly([(14.6, 14.4), (17.6, 10.2), (18.8, 14.6)], "fin")
+        r.ellipse(16, 26, 7.5, 5, "body")
+        r.ellipse(16.5, 27.4, 4.5, 3, "belly")
+        r.part("head", "head", pivot=(16, 23.5), parent="body", z=1)
+        r.ellipse(16, 16.6, 9, 7.8, "body")
+        r.ellipse(16, 20.4, 5.2, 3, "belly")
+        eyes(r, 16, 14, 6)
+        r.pxs("ink", [(15, 21), (16, 21)])
+        r.pxs("blush", [(9, 18), (10, 18), (21, 18), (22, 18)])
+        r.part("crest", "fx", pivot=(16, 10.5), parent="head", z=-1)
+        r.poly([(14.2, 10.4), (18, 5), (19.6, 10.6)], "fin")
         for side in ("ear-l", "ear-r"):
-            r.part(side, side, pivot=(10, 18) if side == "ear-l" else (22, 18), parent="head", z=-1)
-            pts = [(10, 17.4), (5.6, 14.4), (6.4, 17.6), (9.4, 20)]
+            r.part(side, side, pivot=(8.5, 15) if side == "ear-l" else (23.5, 15), parent="head", z=-1)
+            pts = [(8.6, 13.6), (3, 9.8), (4, 14), (7.8, 17.2)]
             r.poly(pts if side == "ear-l" else flip(pts), "fin")
         return r
 
@@ -92,7 +70,7 @@ def tidecoil(stage: int) -> Rig:
         r.ellipse(15.4, 10.4, 5.6, 4.4, "body")
         r.ellipse(19.8, 11.8, 3.4, 2.6, "body")
         r.ellipse(18.6, 13, 3.4, 1.3, "belly")
-        young_eyes(r, 14, 18, 9)
+        eyes(r, 16.5, 9, 2)
         r.pxs("ink", [(21, 12), (22, 12)])
         r.stroke([(22.6, 12.6), (25, 12.2), (26.6, 13.6)], 0.9, "fin")
         r.part("crest", "fx", pivot=(14, 7), parent="head", z=-1)
@@ -127,7 +105,7 @@ def tidecoil(stage: int) -> Rig:
     r.ellipse(16, 9.2, 5.2, 3.8, "body")
     r.poly([(11.8, 10.2), (20.2, 10.2), (18.8, 14.6), (16, 15.6), (13.2, 14.6)], "body")
     r.poly([(13.4, 12.8), (18.6, 12.8), (17.6, 15), (14.4, 15)], "plate")
-    fierce_eyes(r, 13, 17, 10)
+    eyes(r, 16, 10, 2, iris="eye")  # amber: reads against the blue
     r.pxs("white", [(14, 13), (17, 13), (15, 14), (16, 14)])
     r.part("horns", "fx", pivot=(16, 7), parent="head", z=-1)
     r.stroke([(13.6, 7.4), (11, 4.4), (10.6, 1.4)], 1.4, "horn")
@@ -144,23 +122,23 @@ def frostnip(stage: int) -> Rig:
     if stage == 0:
         # Snowball: one round body, nub feet and hands, a single crystal sprout.
         r.part("feet", "legs", pivot=(16, 30), z=-1)
-        r.ellipse(12.6, 29.8, 2.2, 1.6, "body")
-        r.ellipse(19.4, 29.8, 2.2, 1.6, "body")
-        for side, cx in (("arm-l", 8.6), ("arm-r", 23.4)):
-            r.part(side, side, pivot=(cx + (1.4 if side == "arm-l" else -1.4), 24.6), z=1)
-            r.ellipse(cx, 25, 1.7, 1.4, "body")
+        r.ellipse(11.8, 29.6, 2.8, 2, "body")
+        r.ellipse(20.2, 29.6, 2.8, 2, "body")
+        for side, cx in (("arm-l", 6.8), ("arm-r", 25.2)):
+            r.part(side, side, pivot=(cx + (1.8 if side == "arm-l" else -1.8), 22), z=1)
+            r.ellipse(cx, 22.6, 2.1, 1.8, "body")
         r.part("body", "body", pivot=(16, 30))
-        r.ellipse(16, 23.4, 7.6, 7, "body")
-        r.pxs("frost", [(11, 19), (12, 18), (20, 18), (21, 19)])
-        big_eyes(r, 13, 19, 23.4, 1.4, 1.9)
-        r.pxs("ink", [(15, 27), (16, 26), (17, 27)])
-        r.pxs("blush", [(10, 26), (11, 26), (21, 26), (22, 26)])
-        r.part("crystal", "fx", pivot=(16, 17), parent="body", z=-1)
-        r.poly([(14.4, 17.4), (16, 11.4), (17.6, 17.4)], "crystal")
-        r.poly([(17, 17), (19.6, 13.6), (18.6, 17.6)], "crystal")
-        r.part("snow", "fx", pivot=(16, 22), z=2)
-        sparkle(r, 5, 17)
-        sparkle(r, 27, 21)
+        r.ellipse(16, 21.5, 9.5, 8.8, "body")
+        r.pxs("frost", [(11, 16), (12, 15), (13, 15), (20, 15), (21, 16)])
+        eyes(r, 16, 20, 6)
+        r.pxs("ink", [(15, 25), (16, 24), (17, 25)])
+        r.pxs("blush", [(9, 24), (10, 24), (22, 24), (23, 24)])
+        r.part("crystal", "fx", pivot=(16, 14.5), parent="body", z=-1)
+        r.poly([(14, 14.4), (16, 6.8), (18, 14.4)], "crystal")
+        r.poly([(17.2, 13.6), (20.6, 9.2), (19.4, 14.4)], "crystal")
+        r.part("snow", "fx", pivot=(16, 20), z=2)
+        sparkle(r, 2, 14)
+        sparkle(r, 30, 18)
         return r
 
     if stage == 1:
@@ -184,7 +162,7 @@ def frostnip(stage: int) -> Rig:
         r.ellipse(16, 24.2, 2.8, 2.6, "frost")
         r.part("head", "head", pivot=(16, 18), parent="body", z=1)
         r.ellipse(16, 14.4, 5.6, 4.8, "body")
-        young_eyes(r, 13, 17, 13)
+        eyes(r, 16, 13, 2)
         r.pxs("ink", [(14, 17), (15, 17), (16, 17), (17, 17), (18, 17)])
         r.pxs("white", [(15, 18)])
         r.pxs("frost", [(12, 10), (13, 10), (19, 10)])
@@ -219,7 +197,7 @@ def frostnip(stage: int) -> Rig:
     r.pxs("frost", [(12, 25), (13, 26), (19, 25), (20, 26)])
     r.part("head", "head", pivot=(16, 15), parent="body", z=2)
     r.ellipse(16, 11.6, 4.2, 3.8, "body")
-    fierce_eyes(r, 13, 17, 11)
+    eyes(r, 16, 11, 2)  # ink: a glow would vanish on pale ice
     r.poly([(13, 13.6), (19, 13.6), (17.8, 16.4), (16, 17.4), (14.2, 16.4)], "frost")
     r.part("crown", "fx", pivot=(16, 8), parent="head", z=-1)
     r.poly([(11.6, 9.4), (11.8, 3), (13.8, 7), (16, -0.6), (18.2, 7), (20.2, 3), (20.4, 9.4)], "crystal")
@@ -234,21 +212,21 @@ def krakling(stage: int) -> Rig:
     r = Rig("krakling", base_materials(body=Material(WATER_BODY), tent=Material(WATER_BODY),
                                        spot=Material(["#0f2f6b", "#174f9a", "#2a7fd6", "#4d9fe8"]), plate=Material(DEEP),
                                        sucker=Material(["#9cd6ff"], flat=True), fin=Material(AQUA),
-                                       glow=Material(["#7ff7ff"], flat=True)), "#071026", stage)
+                                       glow=Material(["#7ff7ff"], flat=True), eye=Material(["#ffa040"], flat=True)), "#071026", stage)
     if stage == 0:
         # Baby octopus: one round head, four stubby curled tentacles.
         for side in ("tent-l", "tent-r"):
             sx = 1 if side == "tent-l" else -1
-            r.part(side, side, pivot=(16 - sx * 3.4, 26), z=-1)
-            for path in ([(12, 26), (10.2, 29), (8.4, 30.2)], [(14.4, 27), (14, 30.6)]):
-                r.stroke(path if sx == 1 else flip(path), 2.6, "tent")
-        r.part("body", "body", pivot=(16, 28))
-        r.ellipse(16, 20.6, 8, 7.4, "body")
-        r.ellipse(16, 26, 6.4, 2.6, "body")
-        r.pxs("spot", [(10, 16), (11, 16), (10, 17), (20, 15), (21, 15), (14, 14)])
-        big_eyes(r, 12.6, 19.4, 21, 1.8, 2.3)
-        r.pxs("blush", [(9, 24), (10, 24), (21, 24), (22, 24)])
-        r.pxs("ink", [(15, 25), (16, 25)])
+            r.part(side, side, pivot=(16 - sx * 4.4, 24.5), z=-1)
+            for path in ([(10.8, 24.4), (8.4, 28.2), (5.8, 29.8)], [(13.9, 25.6), (13.4, 30.2)]):
+                r.stroke(path if sx == 1 else flip(path), 3.2, "tent")
+        r.part("body", "body", pivot=(16, 27))
+        r.ellipse(16, 17.6, 10.4, 9.6, "body")
+        r.ellipse(16, 24.4, 8.3, 3.4, "body")
+        r.pxs("spot", [(9, 12), (10, 12), (9, 13), (21, 11), (22, 11), (22, 12), (13, 10)])
+        eyes(r, 16, 17, 6)
+        r.pxs("blush", [(8, 22), (9, 22), (22, 22), (23, 22)])
+        r.pxs("ink", [(15, 23), (16, 23)])
         return r
 
     if stage == 1:
@@ -270,7 +248,7 @@ def krakling(stage: int) -> Rig:
         r.poly([(10.8, 10.4), (16, 4.4), (21.2, 10.4)], "body")
         r.ellipse(16, 19.6, 6.8, 4.2, "body")
         r.pxs("spot", [(13, 8), (18, 9), (19, 10), (12, 12), (20, 13), (16, 11)])
-        young_eyes(r, 12, 18, 18)
+        eyes(r, 16, 18, 4)
         r.pxs("ink", [(15, 22), (16, 22)])
         return r
 
@@ -295,7 +273,7 @@ def krakling(stage: int) -> Rig:
     r.poly([(9.6, 11.6), (16, 1.6), (22.4, 11.6)], "body")
     r.ellipse(16, 22.6, 8.2, 3.2, "body")
     r.pxs("plate", [(11, 12), (12, 12), (11, 13), (20, 11), (21, 11), (21, 12), (15, 6), (16, 6), (16, 7), (13, 9), (18, 9), (9, 17), (22, 16)])
-    fierce_eyes(r, 12, 18, 17)
+    eyes(r, 16, 17, 4, iris="eye")  # deep-sea orange
     r.poly([(14.4, 20.6), (17.6, 20.6), (16, 23.2)], "plate")
     r.part("fins", "fx", pivot=(16, 7), parent="body", z=-1)
     sym_poly(r, [(12.6, 6.6), (9.4, 1.4), (11.4, 8.6)], "fin")
@@ -315,18 +293,18 @@ def bublob(stage: int) -> Rig:
         # A single bubble: small round dome, two short tendrils, big shiny eyes.
         for side in ("tent-l", "tent-r"):
             sx = 1 if side == "tent-l" else -1
-            r.part(side, side, pivot=(16 - sx * 2.4, 24), z=-1)
-            path = [(13.6, 24), (12.8, 27), (14, 29.4), (13.4, 31)]
-            r.stroke(path if sx == 1 else flip(path), 1.5, "tendril")
-        r.part("body", "body", pivot=(16, 25))
-        r.ellipse(16, 19.4, 7, 6, "jelly")
-        for x in (10.4, 13.6, 16.8, 20):
-            r.ellipse(x + 0.4, 24.6, 1.6, 1.3, "jelly")
-        r.pxs("gloss", [(11, 16), (11, 15), (12, 14), (13, 14)])
-        big_eyes(r, 13.4, 18.6, 20, 1.3, 1.7)
-        r.pxs("blush", [(11, 22), (20, 22)])
-        r.part("bubbles", "fx", pivot=(16, 18), z=2)
-        r.pxs("bubble", [(24, 12), (23, 13), (25, 13), (24, 14)])
+            r.part(side, side, pivot=(16 - sx * 3.2, 21.5), z=-1)
+            path = [(12.8, 21.6), (11.7, 25.6), (13.3, 28.8), (12.5, 31)]
+            r.stroke(path if sx == 1 else flip(path), 1.9, "tendril")
+        r.part("body", "body", pivot=(16, 23))
+        r.ellipse(16, 15.3, 9.4, 8.1, "jelly")
+        for x in (9, 13.3, 17.6, 21.9):
+            r.ellipse(x + 0.1, 22.4, 2.2, 1.8, "jelly")
+        r.pxs("gloss", [(9, 12), (9, 11), (10, 10), (11, 9), (12, 9)])
+        eyes(r, 16, 15, 6)
+        r.pxs("blush", [(9, 19), (10, 19), (21, 19), (22, 19)])
+        r.part("bubbles", "fx", pivot=(16, 14), z=2)
+        r.pxs("bubble", [(27, 6), (26, 7), (28, 7), (27, 8)])
         return r
 
     if stage == 1:
@@ -343,7 +321,7 @@ def bublob(stage: int) -> Rig:
             r.ellipse(x + 0.5, 19.4, 1.8, 1.6, "rim")
         r.ellipse(16, 11.4, 2.2, 2.2, "core")
         r.pxs("gloss", [(9, 12), (9, 11), (10, 10), (11, 9), (12, 8)])
-        happy_eyes(r, 11, 15, 18)
+        eyes(r, 16, 14, 4)
         r.pxs("ink", [(15, 17), (16, 17)])
         r.pxs("blush", [(9, 16), (22, 16)])
         r.part("bubbles", "fx", pivot=(16, 14), z=2)
@@ -365,8 +343,8 @@ def bublob(stage: int) -> Rig:
     r.ellipse(16, 9.6, 3, 2.8, "core")
     r.pxs("gloss", [(9, 10), (9, 9), (10, 8), (11, 7)])
     r.pxs("glow", [(8, 19), (14, 20), (17, 20), (23, 19)])
-    r.pxs("ink", [(12, 14), (13, 14), (18, 14), (19, 14), (15, 16), (16, 16)])
-    r.pxs("glow", [(12, 13), (19, 13)])
+    eyes(r, 16, 13, 4, iris="glow")
+    r.pxs("ink", [(15, 16), (16, 16)])
     # The bubble motif grown up: a protective dome around the bell, with a violet crest knot on top.
     r.part("dome", "fx", pivot=(16, 11), z=2)
     ring = sorted({(round(16 + 12.4 * math.cos(a / 40 * math.pi)), round(11.6 - 12.4 * math.sin(a / 40 * math.pi))) for a in range(3, 38)})

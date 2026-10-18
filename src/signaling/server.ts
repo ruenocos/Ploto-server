@@ -13,6 +13,7 @@
  * The voice/mediasoup methods (`join`, `createWebRtcTransport`, `produce`, …)
  * attach here too, on the game room connection, once the SFU is wired in.
  */
+import { randomUUID } from "node:crypto";
 import type { Server as HttpServer } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 import { Matchmaker, type QueueKey, type Ticket } from "../matchmaking/pool.js";
@@ -30,6 +31,8 @@ export class SignalingServer {
   private readonly rooms = new Map<string, GameRoom>();
   private readonly lobbyPeers = new Map<string, Peer>();
   private readonly picks = new Map<string, [Monster, Monster]>();
+  /** Private rooms waiting on a friend, keyed by their share code. */
+  private readonly pendingRooms = new Map<string, PendingRoom>();
 
   /** Attaches WebSocket handling onto an existing HTTP server (shared port). */
   constructor(httpServer: HttpServer) {
@@ -64,6 +67,7 @@ export class SignalingServer {
         (p, method, data) => this.handleLobby(p, method, data),
         (p) => {
           this.matchmaker.cancel(p.id);
+          this.removePendingByHost(p.id);
           this.picks.delete(p.id);
           this.lobbyPeers.delete(p.id);
         },
@@ -126,8 +130,85 @@ export class SignalingServer {
         this.matchmaker.cancel(peer.id);
         return { cancelled: true };
 
+      // --- Private rooms: share a code / link instead of queueing ---
+      case "mm:createRoom": {
+        const req = parseEnqueue(data);
+        const code = this.makeCode();
+        this.pendingRooms.set(code, {
+          code,
+          hostPeerId: peer.id,
+          host: { peerId: peer.id, displayName: req.displayName, monsters: req.monsters },
+        });
+        return { code };
+      }
+
+      case "mm:joinRoom": {
+        const req = parseEnqueue(data);
+        const d = (data ?? {}) as Record<string, unknown>;
+        const code = typeof d["code"] === "string" ? d["code"].trim().toUpperCase() : "";
+        const pending = this.pendingRooms.get(code);
+        if (!pending) throw new Error("room not found or expired");
+        if (pending.hostPeerId === peer.id) throw new Error("cannot join your own room");
+        this.pendingRooms.delete(code);
+        const joiner = {
+          peerId: peer.id,
+          displayName: req.displayName,
+          monsters: req.monsters,
+        };
+        const spawned = this.spawnRoom(pending.host, joiner);
+        return { roomId: spawned.roomId, matchId: spawned.matchId, seat: 1, firstTurn: spawned.firstTurn };
+      }
+
+      case "mm:cancelRoom":
+        this.removePendingByHost(peer.id);
+        return { cancelled: true };
+
       default:
         throw new Error(`unknown lobby method: ${method}`);
+    }
+  }
+
+  /** Build a game room for two described players and tell both to connect. */
+  private spawnRoom(
+    a: PlayerDesc,
+    b: PlayerDesc,
+  ): { roomId: string; matchId: string; firstTurn: 0 | 1 } {
+    const roomId = randomUUID();
+    const matchId = randomUUID();
+    const seed = (Math.random() * 0xffffffff) >>> 0;
+    const firstTurn = (Math.random() < 0.5 ? 0 : 1) as 0 | 1;
+    this.rooms.set(
+      roomId,
+      new GameRoom({
+        matchId,
+        seed,
+        firstTurn,
+        players: [
+          { peerId: a.peerId, displayName: a.displayName, monsters: a.monsters },
+          { peerId: b.peerId, displayName: b.displayName, monsters: b.monsters },
+        ],
+      }),
+    );
+    this.notifyMatched(a.peerId, roomId, matchId, 0, firstTurn);
+    this.notifyMatched(b.peerId, roomId, matchId, 1, firstTurn);
+    return { roomId, matchId, firstTurn };
+  }
+
+  /** Generate a short, unambiguous, currently-unused room code. */
+  private makeCode(): string {
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no O/0/1/I
+    for (let attempt = 0; attempt < 1000; attempt++) {
+      let code = "";
+      for (let i = 0; i < 4; i++) code += alphabet[Math.floor(Math.random() * alphabet.length)];
+      if (!this.pendingRooms.has(code)) return code;
+    }
+    // Astronomically unlikely; fall back to a longer unique code.
+    return randomUUID().slice(0, 8).toUpperCase();
+  }
+
+  private removePendingByHost(hostPeerId: string): void {
+    for (const [code, pending] of this.pendingRooms) {
+      if (pending.hostPeerId === hostPeerId) this.pendingRooms.delete(code);
     }
   }
 
@@ -144,6 +225,18 @@ export class SignalingServer {
   private picksFor(peerId: string): [Monster, Monster] {
     return this.picks.get(peerId) ?? defaultPicks();
   }
+}
+
+interface PlayerDesc {
+  readonly peerId: string;
+  readonly displayName: string;
+  readonly monsters: [Monster, Monster];
+}
+
+interface PendingRoom {
+  readonly code: string;
+  readonly hostPeerId: string;
+  readonly host: PlayerDesc;
 }
 
 interface EnqueueRequest {

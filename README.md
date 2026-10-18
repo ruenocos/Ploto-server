@@ -48,10 +48,17 @@ npm run dev        # status+web on :8080, signaling on :8443
 ```
 
 Then both of you open **`http://<the-host's-LAN-ip>:8080/play`** (the host can
-use `http://localhost:8080/play`). Each picks two monsters, hits **Quick Play**,
-and you're matched into a live match: tap a tile then an adjacent one to swap,
-match 3+ of your monster's element to attack, last team standing wins. Works on
-phones on the same Wi-Fi. 20 monsters across five elements in the picker.
+use `http://localhost:8080/play`). Each picks two monsters, then either:
+
+- **Quick Play** — matched with anyone else queuing, or
+- **Create private room** — get a 4-character code + a one-click invite link
+  (`/play?room=CODE`). Send it to your friend; when they open it the code is
+  pre-filled, they pick monsters and hit **Join** and you're both dropped into
+  the same match. No queue, no accounts.
+
+In the match: tap a tile then an adjacent one to swap, match 3+ of your monster's
+element to attack, last team standing wins. Works on phones on the same Wi-Fi.
+20 monsters across five elements in the picker.
 
 (Want it reachable off-LAN? Put it behind any TLS reverse proxy / tunnel and the
 same `/play` page works.)

@@ -84,6 +84,27 @@
       .mon .n { font-size: 12px; font-weight: 600; margin-top: 2px; }
       .mon .s { font-size: 11px; color: var(--muted); }
       .status { color: var(--muted); font-size: 13px; min-height: 18px; margin-top: 10px; }
+      .actions { margin-top: 16px; }
+      button.ghost { background: var(--panel2); border: 1px solid var(--line); color: var(--ink); }
+      .or { text-align: center; color: var(--muted); font-size: 12px; margin: 12px 0 10px; }
+      .join-row { display: flex; gap: 8px; margin-top: 8px; }
+      .join-row input {
+        flex: 1; text-transform: uppercase; letter-spacing: 2px; font-weight: 700;
+        background: var(--panel2); border: 1px solid var(--line); border-radius: 10px;
+        color: var(--ink); padding: 11px 12px; font-size: 15px;
+      }
+      .join-row button { width: auto; padding: 11px 18px; }
+      .invite {
+        margin-top: 14px; padding: 14px; border-radius: 12px;
+        background: rgba(124, 92, 255, 0.12); border: 1px solid var(--accent); text-align: center;
+      }
+      .code-big {
+        font-size: 34px; font-weight: 800; letter-spacing: 6px; margin: 6px 0 10px;
+        color: #c9bcff; font-variant-numeric: tabular-nums;
+      }
+      .invite button { width: auto; padding: 9px 16px; }
+      .muted { color: var(--muted); font-size: 12px; }
+      #inviteWait { margin-top: 10px; }
       .turn-banner {
         text-align: center;
         font-weight: 700;
@@ -146,7 +167,24 @@
         <input id="name" type="text" placeholder="Player" maxlength="20" />
         <label style="margin-top: 14px">Pick two monsters</label>
         <div id="picker" class="pick-grid"></div>
-        <div style="margin-top: 14px"><button id="play" disabled>Quick Play</button></div>
+
+        <div class="actions">
+          <button id="play" disabled>Quick Play</button>
+          <div class="or">or play a friend</div>
+          <button id="create" class="ghost" disabled>Create private room</button>
+          <div class="join-row">
+            <input id="code" type="text" placeholder="CODE" maxlength="8" autocapitalize="characters" />
+            <button id="join" class="ghost" disabled>Join</button>
+          </div>
+        </div>
+
+        <div id="invite" class="invite hidden">
+          <div class="muted">Share this with your friend:</div>
+          <div class="code-big" id="codeBig"></div>
+          <button id="copyLink" class="ghost">Copy invite link</button>
+          <div class="muted" id="inviteWait">Waiting for them to join…</div>
+        </div>
+
         <div id="lobbyStatus" class="status"></div>
       </section>
 
@@ -252,34 +290,95 @@
           el.classList.toggle("sel", sel);
           el.classList.toggle("dim", picks.length === 2 && !sel);
         }
-        $("play").disabled = picks.length !== 2;
+        refreshButtons();
+      }
+
+      function refreshButtons() {
+        const ready = picks.length === 2;
+        $("play").disabled = !ready;
+        $("create").disabled = !ready;
+        $("join").disabled = !ready || $("code").value.trim().length < 4;
+      }
+
+      function displayName() {
+        return $("name").value.trim() || "Player";
+      }
+      const payload = (extra = {}) => ({
+        gameId: "match_monsters",
+        mode: "casual",
+        displayName: displayName(),
+        monsters: picks,
+        ...extra,
+      });
+
+      async function ensureLobby() {
+        if (lobbySock && lobbySock.readyState === WebSocket.OPEN) return lobbySock;
+        lobbySock = connect("lobby");
+        await waitOpen(lobbySock);
+        lobbySock.on("mm:matched", (d) => startGame(d));
+        return lobbySock;
       }
 
       async function quickPlay() {
-        $("play").disabled = true;
-        const displayName = $("name").value.trim() || "Player";
+        setBusy(true);
         $("lobbyStatus").textContent = "Connecting…";
         try {
-          lobbySock = connect("lobby");
-          await waitOpen(lobbySock);
-          lobbySock.on("mm:matched", (d) => startGame(d));
-          const res = await lobbySock.request("mm:enqueue", {
-            gameId: "match_monsters",
-            mode: "casual",
-            displayName,
-            monsters: picks,
-          });
+          const sock = await ensureLobby();
+          const res = await sock.request("mm:enqueue", payload());
           $("lobbyStatus").textContent = res.queued
-            ? "Waiting for an opponent… (open this page on another device and Quick Play)"
+            ? "Waiting for an opponent… (or use a private room below)"
             : "Matched! Starting…";
         } catch (e) {
           $("lobbyStatus").textContent = "Error: " + e.message;
-          $("play").disabled = false;
+          setBusy(false);
         }
       }
 
+      async function createRoom() {
+        setBusy(true);
+        $("lobbyStatus").textContent = "Creating room…";
+        try {
+          const sock = await ensureLobby();
+          const res = await sock.request("mm:createRoom", payload());
+          const link = `${location.origin}/play?room=${res.code}`;
+          $("codeBig").textContent = res.code;
+          $("invite").classList.remove("hidden");
+          $("copyLink").onclick = async () => {
+            try { await navigator.clipboard.writeText(link); toast("Invite link copied"); }
+            catch { toast(link); }
+          };
+          $("lobbyStatus").textContent = "";
+        } catch (e) {
+          $("lobbyStatus").textContent = "Error: " + e.message;
+          setBusy(false);
+        }
+      }
+
+      async function joinRoom() {
+        const code = $("code").value.trim().toUpperCase();
+        if (code.length < 4) return toast("Enter the room code");
+        setBusy(true);
+        $("lobbyStatus").textContent = "Joining " + code + "…";
+        try {
+          const sock = await ensureLobby();
+          await sock.request("mm:joinRoom", payload({ code }));
+          $("lobbyStatus").textContent = "Joined! Starting…";
+        } catch (e) {
+          $("lobbyStatus").textContent = "Error: " + e.message;
+          setBusy(false);
+        }
+      }
+
+      function setBusy(b) {
+        for (const id of ["play", "create", "join"]) $(id).disabled = b;
+        if (!b) refreshButtons();
+      }
+
       /* ---- game ---- */
+      let started = false;
       async function startGame(matched) {
+        if (started) return;
+        started = true;
         mySeat = matched.seat;
         try { lobbySock?.close(); } catch {}
         gameSock = connect(matched.roomId);
@@ -365,17 +464,37 @@
       }
 
       $("play").addEventListener("click", quickPlay);
-      $("again").addEventListener("click", () => {
-        try { gameSock?.close(); } catch {}
-        state = null; selected = null; picks = [];
-        $("end").classList.add("hidden");
-        $("lobby").classList.remove("hidden");
-        $("lobbyStatus").textContent = "";
-        for (const el of document.querySelectorAll(".mon")) el.classList.remove("sel", "dim");
-        $("play").disabled = true;
+      $("create").addEventListener("click", createRoom);
+      $("join").addEventListener("click", joinRoom);
+      $("code").addEventListener("input", refreshButtons);
+      $("code").addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !$("join").disabled) joinRoom();
       });
 
-      loadRoster().catch((e) => ($("lobbyStatus").textContent = "Failed to load roster: " + e.message));
+      $("again").addEventListener("click", () => {
+        try { gameSock?.close(); } catch {}
+        try { lobbySock?.close(); } catch {}
+        lobbySock = null;
+        state = null; selected = null; picks = []; started = false;
+        $("end").classList.add("hidden");
+        $("lobby").classList.remove("hidden");
+        $("invite").classList.add("hidden");
+        $("lobbyStatus").textContent = "";
+        $("code").value = "";
+        for (const el of document.querySelectorAll(".mon")) el.classList.remove("sel", "dim");
+        refreshButtons();
+      });
+
+      // If opened via an invite link (/play?room=CODE), prefill the code box.
+      const invited = new URLSearchParams(location.search).get("room");
+      if (invited) {
+        $("code").value = invited.toUpperCase();
+        $("lobbyStatus").textContent = `Invited to room ${invited.toUpperCase()} — pick two monsters, then Join.`;
+      }
+
+      loadRoster()
+        .then(refreshButtons)
+        .catch((e) => ($("lobbyStatus").textContent = "Failed to load roster: " + e.message));
     </script>
   </body>
 </html>

@@ -25,8 +25,8 @@ export interface BoardOptions {
 }
 
 export const DEFAULT_BOARD: BoardOptions = {
-  width: 7,
-  height: 7,
+  width: 6,
+  height: 6,
   palette: ELEMENTS,
 };
 

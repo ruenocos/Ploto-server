@@ -208,7 +208,7 @@
       .mchip .info { position: absolute; top: 4px; right: 7px; font-size: 12px; color: var(--muted); }
 
       .board-wrap { flex: 1 1 auto; min-height: 120px; position: relative; display: flex; align-items: center; justify-content: center; }
-      .board { display: grid; gap: 4px; touch-action: manipulation; border-radius: 14px; }
+      .board { display: grid; gap: 2px; touch-action: manipulation; border-radius: 14px; }
       .board.falling { overflow: hidden; } /* new tiles enter from above the board */
       .tile {
         --el: #8a8f9c;
@@ -216,7 +216,7 @@
         cursor: pointer; user-select: none;
         transition: transform 0.12s ease, background 0.12s ease;
       }
-      .tile .gem { width: 88%; height: 88%; display: block; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.45)); }
+      .tile .gem { width: 96%; height: 96%; display: block; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.45)); }
       /* gem colours: one hue per element (--el also tints effects) */
       .tile.fire { --el: #ff5a36; --gc: #e8452c; }
       .tile.water { --el: #2fb0f0; --gc: #2b9fe0; }
@@ -224,7 +224,7 @@
       .tile.nature { --el: #5ccf3c; --gc: #4fb935; }
       .tile.light { --el: #ffcc33; --gc: #f0b922; }
       .tile.berry { --el: #e8304a; }
-      .tile.berry .gem { width: 82%; height: 82%; }
+      .tile.berry .gem { width: 90%; height: 90%; }
       .tile.stone { --el: #6d717c; cursor: not-allowed; }
       .tile.sel { transform: scale(0.94); background: rgba(255, 255, 255, 0.12); box-shadow: 0 0 0 2px #fff, 0 0 18px rgba(255, 255, 255, 0.4); }
       .tile.sel .gem { animation: gemWiggle 0.45s ease-in-out infinite alternate; }
@@ -1229,7 +1229,7 @@
         const H = state.board.length;
         const first = $("board").firstElementChild;
         if (!first) return 0;
-        const cell = first.getBoundingClientRect().height + 4; // tile + grid gap
+        const cell = first.getBoundingClientRect().height + (parseFloat(getComputedStyle($("board")).rowGap) || 0); // tile + grid gap
         const cols = new Map();
         for (const c of cleared) {
           if (!cols.has(c.x)) cols.set(c.x, new Set());

@@ -88,6 +88,7 @@ npm test          # engine, board, matchmaking, protoo, rooms, end-to-end
 npm run typecheck
 npm run dev       # everything on :8080
 npm run sim       # balance simulator (N=600 SEED=777)
+npm run tiers     # per-monster win rates + what evolving each is worth
 ```
 
 Environment variables: `PORT` / `PLOTO_PORT`, `PLOTO_HOST`, `PLOTO_DOWNTIME`

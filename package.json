@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "dump": "tsx src/tools/bundleDumper/cli.ts",
-    "sim": "npm run build && node scripts/balance-sim.mjs"
+    "sim": "npm run build && node scripts/balance-sim.mjs",
+    "tiers": "npm run build && node scripts/monster-tiers.mjs"
   },
   "dependencies": {
     "fastify": "^5.1.0",

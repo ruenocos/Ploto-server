@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from common import BONE, CREAM, CRYSTAL, GOLD, MOSS, ROCK, base_materials
 from pixelkit import Material
-from rigkit import Rig, dot_eyes, happy_eyes, sym_poly
+from rigkit import Rig, eyes, sym_poly
 
 LIMB = ["#2a2b32", "#484a54", "#6c6e7a", "#9a9caa"]
 
@@ -25,22 +25,22 @@ def craggol(stage: int) -> Rig:
     if stage == 0:
         # A round pebble with a sprout: all head, stubby feet, nub arms.
         r.part("legs", "legs", pivot=(16, 30), z=-1)
-        r.ellipse(12.4, 30, 2.4, 1.6, "limb")
-        r.ellipse(19.6, 30, 2.4, 1.6, "limb")
+        r.ellipse(12, 30, 2.8, 1.7, "limb")
+        r.ellipse(20, 30, 2.8, 1.7, "limb")
         for side in ("arm-l", "arm-r"):
-            r.part(side, side, pivot=(9, 22) if side == "arm-l" else (23, 22), z=1)
-            r.ellipse(7.4 if side == "arm-l" else 24.6, 23.4, 1.9, 2.3, "limb")
+            r.part(side, side, pivot=(8, 20) if side == "arm-l" else (24, 20), z=1)
+            r.ellipse(5.8 if side == "arm-l" else 26.2, 21.6, 2.2, 2.7, "limb")
         r.part("body", "body", pivot=(16, 30))
-        r.poly([(10, 15), (13.6, 12.8), (18.6, 12.8), (22.4, 15), (24.2, 21), (23.2, 26.6), (19.4, 29.8), (12.6, 29.8), (8.8, 26.6), (7.8, 21)], "rock")
-        r.pxs("moss", [(12, 14), (13, 13), (14, 13), (19, 13), (20, 14), (21, 15)])
-        dot_eyes(r, 11, 19, 19, h=3)
-        r.pxs("ink", [(15, 24), (16, 24)])
-        r.pxs("blush", [(10, 23), (22, 23)])
-        r.pxs("crack", [(21, 18), (22, 19), (10, 26), (11, 27)])
-        r.part("sprout", "fx", pivot=(16, 13), parent="body", z=1)
-        r.stroke([(16, 13.2), (16, 10)], 1, "moss")
-        r.ellipse(14.4, 9.6, 1.8, 1.1, "moss")
-        r.ellipse(17.8, 9.2, 1.8, 1.1, "moss")
+        r.poly([(9, 12), (13, 9.6), (19, 9.6), (23, 12), (25.2, 19), (24.2, 25.6), (20, 29.8), (12, 29.8), (7.8, 25.6), (6.8, 19)], "rock")
+        r.pxs("moss", [(11, 11), (12, 10), (13, 10), (14, 10), (18, 10), (19, 10), (20, 11), (21, 11)])
+        eyes(r, 16, 16, 6)
+        r.pxs("ink", [(15, 22), (16, 22)])
+        r.pxs("blush", [(10, 20), (22, 20)])
+        r.pxs("crack", [(22, 14), (23, 15), (9, 24), (10, 25)])
+        r.part("sprout", "fx", pivot=(16, 10), parent="body", z=1)
+        r.pxs("moss", [(16, 7), (16, 8), (16, 9)])
+        r.ellipse(14.1, 6.6, 1.9, 1.1, "moss")
+        r.ellipse(17.9, 6.2, 1.9, 1.1, "moss")
     elif stage == 1:
         # Stands up: a block torso with its own head, boulder fists, a first crystal.
         r.part("legs", "legs", pivot=(16, 30), z=-1)
@@ -62,8 +62,7 @@ def craggol(stage: int) -> Rig:
         r.part("head", "head", pivot=(16, 12), parent="body", z=1)
         r.poly([(11.2, 12.8), (11.4, 7.8), (13.6, 5.6), (18.4, 5.6), (20.6, 7.8), (20.8, 12.8)], "rock")
         r.pxs("moss", [(x, 5) for x in range(13, 19)] + [(12, 6), (13, 6), (15, 6), (18, 6), (19, 6)])
-        r.pxs("crack", [(13, 8), (14, 8), (18, 8), (19, 8)])
-        r.pxs("glow", [(13, 9), (14, 9), (18, 9), (19, 9), (14, 10), (18, 10)])
+        eyes(r, 16, 9, 3)
         r.pxs("crack", [(15, 11), (16, 11), (17, 11)])
     else:
         # A hunched mountain ape: huge shoulders and knuckle-walking arms, a small
@@ -93,8 +92,7 @@ def craggol(stage: int) -> Rig:
         r.part("head", "head", pivot=(16, 13), parent="body", z=1)
         r.poly([(12.6, 13.6), (12.6, 9.4), (14.4, 7.6), (17.6, 7.6), (19.4, 9.4), (19.4, 13.6), (16, 14.8)], "rock")
         r.pxs("moss", [(14, 7), (15, 7), (16, 7), (17, 7), (13, 8), (18, 8)])
-        r.pxs("crack", [(13, 9), (14, 10), (19, 9), (18, 10)])
-        r.pxs("glow", [(14, 11), (15, 11), (17, 11), (18, 11)])
+        eyes(r, 16, 11, 2, iris="glow")
     return r
 
 
@@ -103,29 +101,31 @@ def rubbug(stage: int) -> Rig:
     r = Rig("rubbug", base_materials(shell=Material(["#3a200c", "#6e3e16", "#a8642a", "#e09a52"]), head=Material(["#241408", "#422612", "#66401f", "#8f5e32"]),
                                      horn=Material(BONE), leg=Material(["#241408", "#3b2210", "#55331a", "#734828"]),
                                      seam=Material(["#2a1606"], flat=True), fleck=Material(["#f2b874"], flat=True), rim=Material(GOLD),
-                                     belly=Material(["#4a3018", "#7a5430", "#a87c4c", "#d0a470"]), membrane=Material(["#a89870", "#d8c8a0", "#f2e6c4", "#fffaea"])),
+                                     belly=Material(["#4a3018", "#7a5430", "#a87c4c", "#d0a470"]), membrane=Material(["#a89870", "#d8c8a0", "#f2e6c4", "#fffaea"]),
+                                     eyeglow=Material(["#ffd23c"], flat=True),
+                                     babyhead=Material(["#3e2614", "#6e4626", "#9a6c40", "#c49464"])),
              "#120904", stage)
     if stage == 0:
         # A round baby: big head with big eyes up front, a small dome behind, antennae.
         r.part("legs", "legs", pivot=(16, 29), z=-1)
-        for path in ([(8.6, 25.6), (5.6, 28.4), (5, 30.6)], [(11.4, 28), (10, 31)]):
-            r.stroke(path, 1.6, "leg")
-            r.stroke(_mirror(path), 1.6, "leg")
+        for path in ([(8, 25), (4.8, 28.2), (4.2, 30.6)], [(11, 28.2), (9.6, 31)]):
+            r.stroke(path, 1.7, "leg")
+            r.stroke(_mirror(path), 1.7, "leg")
         for side in ("ear-l", "ear-r"):
-            r.part(side, side, pivot=(13, 15) if side == "ear-l" else (19, 15), z=-2)
-            ant = [(13.4, 15.6), (11.6, 11.6), (9.2, 10.6)]
+            r.part(side, side, pivot=(13, 13) if side == "ear-l" else (19, 13), z=-2)
+            ant = [(13.4, 13.4), (11.2, 9), (8.4, 7.8)]
             r.stroke(ant if side == "ear-l" else _mirror(ant), 1.1, "leg")
-            r.ellipse(9 if side == "ear-l" else 23, 10.6, 1.2, 1.2, "fleck")
+            r.ellipse(8.2 if side == "ear-l" else 23.8, 7.6, 1.4, 1.4, "fleck")
         r.part("body", "body", pivot=(16, 30))
-        r.ellipse(16, 20.4, 9.2, 7.6, "shell")
-        r.pxs("seam", [(16, y) for y in range(13, 19)])
-        r.pxs("fleck", [(10, 17), (11, 15), (21, 16), (22, 19)])
+        r.ellipse(16, 19, 10.4, 8.6, "shell")
+        r.pxs("seam", [(16, y) for y in range(11, 18)])
+        r.pxs("fleck", [(9, 16), (10, 13), (22, 14), (23, 18)])
         r.part("head", "head", pivot=(16, 28), parent="body", z=1)
-        r.ellipse(16, 24.8, 6.8, 5.2, "head")
-        dot_eyes(r, 12, 23, 18, h=3)
-        r.pxs("blush", [(11, 27), (21, 27)])
+        r.ellipse(16, 24.2, 7.8, 6.2, "babyhead")
+        eyes(r, 16, 22, 6)
+        r.pxs("blush", [(10, 26), (22, 26)])
         r.pxs("ink", [(15, 27), (16, 27)])
-        r.pxs("horn", [(16, 19), (15, 20), (16, 20)])
+        r.pxs("horn", [(16, 17), (15, 18), (16, 18)])
     elif stage == 1:
         # On six legs: a plated shell, a tall horn, mandibles.
         r.part("legs", "legs", pivot=(16, 22), z=-1)
@@ -140,9 +140,7 @@ def rubbug(stage: int) -> Rig:
         r.pxs("fleck", [(11, 16), (20, 16), (12, 21), (21, 21), (13, 26), (19, 26)])
         r.part("head", "head", pivot=(16, 14), parent="body", z=1)
         r.ellipse(16, 12, 5, 3.4, "head")
-        r.pxs("seam", [(12, 10), (13, 10)] + [(19, 10), (20, 10)])
-        r.pxs("white", [(13, 11), (19, 11)])
-        r.pxs("ink", [(14, 11), (18, 11)])
+        eyes(r, 16, 11, 3)
         sym_poly(r, [(12.2, 13.2), (9.6, 14.4), (10.6, 16), (12.8, 14.6)], "horn")  # mandibles
         r.part("horn", "fx", pivot=(16, 9), parent="head", z=-1)
         r.poly([(14.6, 9.6), (14.8, 4.6), (16.4, 1.8), (18.4, 3.2), (17.4, 5.4), (17.6, 9.6)], "horn")
@@ -173,8 +171,7 @@ def rubbug(stage: int) -> Rig:
             r.poly(claw if side == "arm-l" else _mirror(claw), "horn")
         r.part("head", "head", pivot=(16, 11), parent="body", z=1)
         r.ellipse(16, 9, 4.4, 3.2, "head")
-        r.pxs("seam", [(13, 7), (14, 8), (19, 7), (18, 8)])
-        r.pxs("rim", [(14, 9), (18, 9)])
+        eyes(r, 16, 8, 3, iris="eyeglow")
         r.part("horn", "fx", pivot=(16, 7), parent="head", z=-1)
         r.poly([(14.4, 7.6), (14.4, 2.4), (15.2, -1), (16.8, -1), (17.6, 2.4), (17.6, 7.6)], "horn")
         sym_poly(r, [(15, 3), (11.4, 1.4), (9.6, -2.6), (12.6, -0.6), (15.4, 0.6)], "horn")
@@ -188,27 +185,28 @@ def tremole(stage: int) -> Rig:
                                       belly=Material(["#5e4c40", "#8c7462", "#b89c84", "#dcc4aa"]),
                                       hat=Material(GOLD), claw=Material(["#f4ead2"], flat=True), nose=Material(["#e05a7a"], flat=True),
                                       lamp=Material(["#fff6b0"], flat=True), goggle=Material(["#7fd8ff"], flat=True), strap=Material(["#3a2a1a"], flat=True),
-                                      drill=Material(["#4a4e5c", "#7c8496", "#b4bccc", "#eef2fa"]), groove=Material(["#30343e"], flat=True)),
+                                      drill=Material(["#4a4e5c", "#7c8496", "#b4bccc", "#eef2fa"]), groove=Material(["#30343e"], flat=True),
+                                      babyfur=Material(["#4a3a30", "#7a6252", "#a88c74", "#d0b49a"])),
              "#120c0a", stage)
     if stage == 0:
         # A fluffball under a helmet two sizes too big; eyes squeezed shut, tiny paws.
         r.part("feet", "legs", pivot=(16, 30), z=-1)
-        r.ellipse(12.4, 30, 2.2, 1.4, "pink")
-        r.ellipse(19.6, 30, 2.2, 1.4, "pink")
+        r.ellipse(12, 30.2, 2.6, 1.5, "pink")
+        r.ellipse(20, 30.2, 2.6, 1.5, "pink")
         r.part("body", "body", pivot=(16, 30))
-        r.ellipse(16, 24.4, 7.8, 6.2, "fur")
-        r.ellipse(16, 25.6, 2.8, 2, "pink")
-        r.pxs("nose", [(15, 25), (16, 25)])
-        happy_eyes(r, 10, 22, 19)
-        r.pxs("blush", [(10, 24), (11, 24), (20, 24), (21, 24)])
-        for side, cx in (("arm-l", 8.4), ("arm-r", 23.6)):
-            r.part(side, side, pivot=(cx + (1.6 if side == "arm-l" else -1.6), 26), z=1)
-            r.ellipse(cx, 27, 2.2, 1.7, "pink")
-            r.pxs("claw", [(7, 28), (8, 28)] if side == "arm-l" else [(23, 28), (24, 28)])
-        r.part("hat", "head", pivot=(16, 20), parent="body", z=1)
-        r.ellipse(16, 18.6, 7.4, 4.4, "hat")
-        r.poly([(7.4, 19.4), (24.6, 19.4), (24.6, 21), (7.4, 21)], "hat")
-        r.pxs("white", [(16, 16), (16, 17)])
+        r.ellipse(16, 22.4, 9.6, 8.2, "babyfur")
+        r.ellipse(16, 23.6, 3.4, 2.4, "pink")
+        r.pxs("nose", [(15, 22), (16, 22)])
+        eyes(r, 16, 19, 5, style="closed")
+        r.pxs("blush", [(9, 22), (10, 22), (21, 22), (22, 22)])
+        for side, cx in (("arm-l", 6.8), ("arm-r", 25.2)):
+            r.part(side, side, pivot=(cx + (1.8 if side == "arm-l" else -1.8), 24.6), z=1)
+            r.ellipse(cx, 25.8, 2.6, 2, "pink")
+            r.pxs("claw", [(5, 27), (6, 27)] if side == "arm-l" else [(25, 27), (26, 27)])
+        r.part("hat", "head", pivot=(16, 17), parent="body", z=1)
+        r.ellipse(16, 11.8, 9, 5.4, "hat")
+        r.poly([(6.4, 14.6), (25.6, 14.6), (25.6, 16.6), (6.4, 16.6)], "hat")
+        r.pxs("white", [(12, 8), (11, 9), (11, 10)])
     elif stage == 1:
         # Up on its feet: pear-shaped, a long snout, shovel paws and a lamp on the helmet.
         r.part("feet", "legs", pivot=(16, 30), z=-1)
@@ -221,10 +219,10 @@ def tremole(stage: int) -> Rig:
         r.ellipse(16, 23.6, 4.6, 5, "belly")
         r.part("head", "head", pivot=(16, 16), parent="body", z=1)
         r.ellipse(16, 14.4, 6, 4.6, "fur")
+        r.ellipse(16, 15.4, 4.6, 2.6, "belly")  # light face mask so the eyes read on dark fur
         r.ellipse(16, 17.2, 2.6, 2, "pink")
         r.pxs("nose", [(15, 17), (16, 17)])
-        r.pxs("ink", [(12, 14), (19, 14)])
-        r.pxs("strap", [(11, 13), (12, 13), (19, 13), (20, 13)])
+        eyes(r, 16, 14.6, 4, brow=False)  # the helmet brim is its brow
         r.ellipse(16, 10.6, 6, 3, "hat")
         r.pxs("hat", [(x, 12) for x in range(9, 23)])
         r.ellipse(16, 9.6, 1.4, 1.2, "lamp")
@@ -249,7 +247,7 @@ def tremole(stage: int) -> Rig:
         r.pxs("nose", [(15, 14), (16, 14), (15, 15), (16, 15)])
         r.pxs("claw", [(10, 14), (9, 15), (22, 14), (23, 15)])  # whiskers
         r.pxs("strap", [(x, 10) for x in range(9, 24)])
-        r.pxs("goggle", [(11, 10), (12, 10), (13, 10), (19, 10), (20, 10), (21, 10), (12, 11), (20, 11)])
+        eyes(r, 16, 10, 3, iris="goggle", brow=False)
         r.ellipse(16, 6.4, 6.8, 3.6, "hat")
         r.pxs("hat", [(x, 9) for x in range(8, 25)])
         r.ellipse(16, 5.4, 2.4, 2, "lamp")
@@ -275,22 +273,22 @@ def gemox(stage: int) -> Rig:
     if stage == 0:
         # A calf lying down: a big head on a little loaf of a body, crystal nubs.
         r.part("body", "body", pivot=(16, 30))
-        r.ellipse(16, 27.4, 9, 3.8, "fur")
-        r.pxs("hoof", [(10, 30), (11, 30), (21, 30), (22, 30)])
-        r.part("head", "head", pivot=(16, 25), parent="body", z=1)
-        r.ellipse(16, 20.2, 6.8, 6, "fur")
-        r.ellipse(16, 23.6, 4.2, 2.3, "muzzle")
-        r.pxs("ink", [(14, 23), (17, 23)])
-        dot_eyes(r, 12, 18, 18, h=3)
-        r.pxs("blush", [(11, 21), (21, 21)])
-        r.pxs("gem", [(15, 15), (16, 15), (15, 16), (16, 16)])
-        r.pxs("shine", [(15, 15)])
+        r.ellipse(16, 26.8, 10.6, 4.4, "fur")
+        r.pxs("hoof", [(9, 30), (10, 30), (22, 30), (23, 30)])
+        r.part("head", "head", pivot=(16, 24), parent="body", z=1)
+        r.ellipse(16, 18.4, 8.2, 7.2, "fur")
+        r.ellipse(16, 22.6, 5, 2.8, "muzzle")
+        r.pxs("ink", [(14, 22), (17, 22)])
+        eyes(r, 16, 16, 6)
+        r.pxs("blush", [(10, 20), (22, 20)])
+        r.pxs("gem", [(15, 12), (16, 12), (15, 13), (16, 13)])
+        r.pxs("shine", [(15, 12)])
         for side in ("ear-l", "ear-r"):
-            r.part(side, side, pivot=(10.6, 18) if side == "ear-l" else (21.4, 18), parent="head", z=-1)
-            ear = [(10.6, 17), (6.6, 18.6), (7.4, 20), (10.8, 19.6)]
+            r.part(side, side, pivot=(9.4, 16.4) if side == "ear-l" else (22.6, 16.4), parent="head", z=-1)
+            ear = [(9.6, 15.4), (4.8, 17.4), (5.6, 19.4), (10, 18.4)]
             r.poly(ear if side == "ear-l" else _mirror(ear), "fur")
-        r.part("horns", "fx", pivot=(16, 15), parent="head", z=-1)
-        sym_poly(r, [(11.6, 15.4), (11.4, 12.6), (13.6, 14.6)], "crystal")
+        r.part("horns", "fx", pivot=(16, 12), parent="head", z=-1)
+        sym_poly(r, [(11, 13), (10.4, 8.2), (13.8, 11.6)], "crystal")
     elif stage == 1:
         # A young bull on four legs: curving crystal horns, the first shoulder crystals, a tail.
         r.part("legs", "legs", pivot=(16, 30), z=-1)
@@ -311,8 +309,7 @@ def gemox(stage: int) -> Rig:
         r.ellipse(16, 15.6, 5.6, 5, "fur")
         r.ellipse(16, 18.6, 3.8, 2.2, "muzzle")
         r.pxs("ink", [(14, 18), (17, 18)])
-        r.pxs("mane", [(12, 13), (13, 13), (18, 13), (19, 13)])
-        dot_eyes(r, 12, 14, 18)
+        eyes(r, 16, 14, 4)
         r.pxs("gem", [(15, 11), (16, 11), (14, 12), (15, 12), (16, 12), (17, 12)])
         r.pxs("shine", [(15, 11)])
         r.part("horns", "fx", pivot=(16, 12), parent="head", z=-1)
@@ -338,8 +335,7 @@ def gemox(stage: int) -> Rig:
         r.ellipse(16, 17.6, 5.2, 4.6, "fur")
         r.ellipse(16, 20.6, 3.6, 2, "muzzle")
         r.pxs("ink", [(14, 20), (17, 20)])
-        r.pxs("mane", [(12, 15), (13, 16), (19, 15), (18, 16)])
-        r.pxs("gem", [(12, 16), (19, 16)])  # glowing eyes under a heavy brow
+        eyes(r, 16, 16, 4, iris="gem")  # glowing eyes under a heavy brow
         r.pxs("gem", [(15, 12), (16, 12), (14, 13), (15, 13), (16, 13), (17, 13), (15, 14), (16, 14)])
         r.pxs("shine", [(15, 12)])
         r.part("horns", "fx", pivot=(16, 14), parent="head", z=-1)

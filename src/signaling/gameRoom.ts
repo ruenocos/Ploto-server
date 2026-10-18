@@ -25,15 +25,50 @@ export interface PeerLike {
 }
 
 export class GameRoom {
-  private readonly game: MatchMonstersGame;
+  readonly game: MatchMonstersGame;
+  private readonly config: GameConfig;
   /** peerId -> player index (0 | 1). */
   private readonly seats = new Map<string, 0 | 1>();
   private readonly peers: (PeerLike | undefined)[] = [undefined, undefined];
+  private readonly rematchVotes = new Set<0 | 1>();
+  /** Room id of the rematch, once both players agreed. */
+  rematchRoomId: string | null = null;
 
   constructor(config: GameConfig) {
+    this.config = config;
     this.game = new MatchMonstersGame(config);
     this.seats.set(config.players[0].peerId, 0);
     this.seats.set(config.players[1].peerId, 1);
+  }
+
+  seatOf(peerId: string): 0 | 1 | undefined {
+    return this.seats.get(peerId);
+  }
+
+  /**
+   * Record a rematch vote after the game ends. The first vote notifies the
+   * opponent; returns true once both players want a rematch.
+   */
+  voteRematch(seat: 0 | 1): boolean {
+    if (!this.finished) throw new Error("the game isn't over yet");
+    this.rematchVotes.add(seat);
+    if (this.rematchVotes.size < 2) {
+      this.peers[seat === 0 ? 1 : 0]?.notify("mm:rematchRequested", { seat });
+      return false;
+    }
+    return true;
+  }
+
+  /** Same players and monsters; the loser of this game opens the next one. */
+  rematchConfig(matchId: string, seed: number): GameConfig {
+    const loser: 0 | 1 = this.game.state.winner === 0 ? 1 : 0;
+    return { ...this.config, matchId, seed, firstTurn: loser };
+  }
+
+  /** Point both players at the new room. */
+  announceRematch(roomId: string): void {
+    this.rematchRoomId = roomId;
+    this.broadcast("mm:rematchReady", { roomId });
   }
 
   /**

@@ -95,3 +95,50 @@ describe("GameRoom", () => {
     expect(() => room.handleRequest("ghost", "mm:getState", {})).toThrow(/not seated/);
   });
 });
+
+describe("GameRoom rematch", () => {
+  function finishedRoom(winner: 0 | 1) {
+    const room = new GameRoom(roomConfig());
+    const a = new FakePeer("p0");
+    const b = new FakePeer("p1");
+    room.join(a);
+    room.join(b);
+    a.notifications.length = 0;
+    b.notifications.length = 0;
+    const s = room.game.state as { phase: string; winner: 0 | 1 | null };
+    s.phase = "finished";
+    s.winner = winner;
+    return { room, a, b };
+  }
+
+  it("refuses a rematch vote while the game is still running", () => {
+    const room = new GameRoom(roomConfig());
+    expect(() => room.voteRematch(0)).toThrow(/isn't over/);
+  });
+
+  it("asks the opponent on the first vote and agrees on the second", () => {
+    const { room, a, b } = finishedRoom(0);
+    expect(room.voteRematch(0)).toBe(false);
+    expect(b.notifications).toEqual([{ method: "mm:rematchRequested", data: { seat: 0 } }]);
+    expect(a.notifications).toHaveLength(0);
+    expect(room.voteRematch(0)).toBe(false); // voting twice doesn't count double
+    expect(room.voteRematch(1)).toBe(true);
+    room.announceRematch("r2");
+    expect(room.rematchRoomId).toBe("r2");
+    expect(a.notifications.at(-1)).toEqual({ method: "mm:rematchReady", data: { roomId: "r2" } });
+    expect(b.notifications.at(-1)).toEqual({ method: "mm:rematchReady", data: { roomId: "r2" } });
+  });
+
+  it("keeps the teams and lets the loser open", () => {
+    const { room } = finishedRoom(0);
+    const cfg = room.rematchConfig("m2", 999);
+    expect(cfg.firstTurn).toBe(1);
+    expect(cfg.matchId).toBe("m2");
+    expect(cfg.seed).toBe(999);
+    expect(cfg.players.map((p) => p.monsters.map((m) => m.id))).toEqual([
+      ["ember_pup", "prism_owl"],
+      ["stone_golem", "tide_serpent"],
+    ]);
+    expect(finishedRoom(1).room.rematchConfig("m3", 1).firstTurn).toBe(0);
+  });
+});

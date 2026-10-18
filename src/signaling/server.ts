@@ -94,7 +94,8 @@ export class SignalingServer {
       peerId,
       roomId,
       socket,
-      (p, method, data) => room.handleRequest(p.id, method, data),
+      (p, method, data) =>
+        method === "mm:rematch" ? this.handleRematch(room, p) : room.handleRequest(p.id, method, data),
       (p) => {
         room.leave(p);
         if (room.connectedCount() === 0) this.scheduleRoomCleanup(roomId);
@@ -109,6 +110,23 @@ export class SignalingServer {
       clearTimeout(pending);
       this.roomTimers.delete(roomId);
     }
+  }
+
+  /**
+   * A player asked for a rematch. Once both have, spin up a fresh room with the
+   * same teams (loser opens) and send both players there.
+   */
+  private handleRematch(room: GameRoom, peer: Peer): unknown {
+    const seat = room.seatOf(peer.id);
+    if (seat === undefined) throw new Error("peer is not seated in this room");
+    if (room.rematchRoomId) return { roomId: room.rematchRoomId };
+    if (!room.voteRematch(seat)) return { waiting: true };
+    const roomId = randomUUID();
+    const seed = (Math.random() * 0xffffffff) >>> 0;
+    this.rooms.set(roomId, new GameRoom(room.rematchConfig(randomUUID(), seed)));
+    this.scheduleRoomCleanup(roomId); // cancelled as soon as a player connects
+    room.announceRematch(roomId);
+    return { roomId };
   }
 
   /** Drop an abandoned room after a grace period (long enough to reload a tab). */

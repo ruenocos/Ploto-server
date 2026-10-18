@@ -238,6 +238,12 @@
       .end-card { width: min(92vw, 380px); background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 24px; text-align: center; margin: auto; }
       .end-card .big { font-size: 30px; font-weight: 900; margin: 4px 0 6px; }
       .end-card p { color: var(--muted); margin: 0 0 16px; }
+      .end-actions { display: grid; gap: 8px; }
+      .end-hint { color: var(--muted); font-size: 13px; margin-bottom: 6px; min-height: 1.3em; }
+      .end-hint.hot { color: var(--accent2); font-weight: 700; }
+      button.pulse { animation: pulse 1.4s ease-in-out infinite; }
+      @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(139, 108, 255, 0.6); } 50% { box-shadow: 0 0 0 8px rgba(139, 108, 255, 0); } }
+      @media (prefers-reduced-motion: reduce) { button.pulse { animation: none; } }
 
       .toast {
         position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translate(-50%, 10px);
@@ -331,6 +337,8 @@
       let animating = false;
       let leaving = false;
       let reconnectTries = 0;
+      let rivalOnline = true;
+      let endInfo = null; // { won, mine, theirs } while the end screen is up
 
       const art = (id, size) => { try { return window.PLOTOMON ? PLOTOMON.svg(id, size) : ""; } catch { return ""; } };
       const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -520,13 +528,27 @@
 
       async function openGame() {
         leaving = false;
-        gameSock = connect(room.roomId);
-        await waitOpen(gameSock);
+        rivalOnline = true;
+        const sock = (gameSock = connect(room.roomId));
+        await waitOpen(sock);
         reconnectTries = 0;
-        gameSock.on("mm:moveResult", (d) => animate(d));
-        gameSock.on("mm:gameOver", (d) => setTimeout(() => showEnd(d.winner === room.seat), 900));
-        gameSock.on("mm:evolved", (d) => { if (d.by === room.seat) toast("✨ Evolved!"); refresh(); });
-        gameSock.on("mm:peerStatus", (d) => { if (d.seat !== room.seat) $("peerWarn").classList.toggle("hidden", d.connected); });
+        // Ignore stragglers from a socket we've already moved on from (e.g. after a rematch).
+        const live = (fn) => (d) => { if (sock === gameSock) fn(d); };
+        sock.on("mm:moveResult", live((d) => animate(d)));
+        sock.on("mm:gameOver", live((d) => setTimeout(() => showEnd(d.winner === room.seat), 900)));
+        sock.on("mm:evolved", live((d) => { if (d.by === room.seat) toast("✨ Evolved!"); refresh(); }));
+        sock.on("mm:peerStatus", live((d) => {
+          if (d.seat === room.seat) return;
+          rivalOnline = d.connected;
+          $("peerWarn").classList.toggle("hidden", d.connected);
+          renderEnd();
+        }));
+        sock.on("mm:rematchRequested", live(() => {
+          if (!endInfo) return;
+          endInfo.theirs = true;
+          renderEnd();
+        }));
+        sock.on("mm:rematchReady", live((d) => enterRematch(d.roomId)));
         gameSock.addEventListener("close", onGameClose);
         showScreen("game");
         await refresh();
@@ -576,6 +598,7 @@
         room = null;
         state = null;
         selected = null;
+        endInfo = null;
         store.del("mm.room");
         $("end").classList.add("hidden");
         $("invite").classList.add("hidden");
@@ -611,7 +634,10 @@
         renderStrip($("foeStrip"), foe, false, state.connected ? state.connected[room.seat === 0 ? 1 : 0] : true);
         $("meStrip").classList.toggle("active", myTurn());
         $("foeStrip").classList.toggle("active", !myTurn() && state.phase === "awaiting-move");
-        if (state.connected) $("peerWarn").classList.toggle("hidden", state.connected[room.seat === 0 ? 1 : 0]);
+        if (state.connected) {
+          rivalOnline = state.connected[room.seat === 0 ? 1 : 0];
+          $("peerWarn").classList.toggle("hidden", rivalOnline);
+        }
 
         const ml = state.movesLeft ?? 2;
         const round = Math.floor((state.turnPasses || 0) / 2) + 1;
@@ -893,14 +919,66 @@
 
       function showEnd(won) {
         store.del("mm.room");
-        const end = $("end");
-        end.innerHTML =
+        endInfo = { won, mine: false, theirs: false };
+        renderEnd();
+        $("end").classList.remove("hidden");
+      }
+
+      /** Re-draw the end card from endInfo + rivalOnline (votes and presence change it live). */
+      function renderEnd() {
+        if (!endInfo) return;
+        const { won, mine, theirs } = endInfo;
+        let label = "Rematch", hint = won ? "Same teams. They'll open the next game." : "Same teams. You'll open the next game.";
+        let disabled = false, invited = false;
+        if (!rivalOnline) { disabled = true; hint = "Your rival left the arena."; }
+        else if (mine) { label = "Waiting for rival…"; disabled = true; hint = "Rematch requested — they just need to accept."; }
+        else if (theirs) { label = "Accept rematch"; hint = "Your rival wants a rematch!"; invited = true; }
+        $("end").innerHTML =
           `<div class="end-card"><div style="font-size:48px">${won ? "🏆" : "💀"}</div>` +
           `<div class="big">${won ? "Victory!" : "Defeat"}</div>` +
           `<p>${won ? "Your monsters carried the day." : "Your rival takes this one."}</p>` +
-          `<button id="again" style="width:100%">Back to lobby</button></div>`;
-        end.classList.remove("hidden");
+          `<div class="end-actions">` +
+          `<button id="rematch" class="${invited ? "pulse" : ""}"${disabled ? " disabled" : ""}>${label}</button>` +
+          `<div class="end-hint${invited ? " hot" : ""}">${hint}</div>` +
+          `<button id="again" class="ghost">Back to lobby</button></div></div>`;
+        $("rematch").onclick = requestRematch;
         $("again").onclick = leaveGame;
+      }
+
+      async function requestRematch() {
+        if (!endInfo || endInfo.mine) return;
+        endInfo.mine = true;
+        renderEnd();
+        try {
+          const res = await gameSock.request("mm:rematch", {});
+          if (res && res.roomId) await enterRematch(res.roomId);
+        } catch (e) {
+          if (!endInfo) return;
+          endInfo.mine = false;
+          renderEnd();
+          toast(`Couldn't start a rematch — ${e.message || "connection lost"}`, 3000);
+        }
+      }
+
+      /** Both players agreed: hop to the fresh room (same seat, same monsters). */
+      async function enterRematch(roomId) {
+        if (!room || room.roomId === roomId) return;
+        const seat = room.seat;
+        leaving = true;
+        try { gameSock?.close(); } catch {}
+        endInfo = null;
+        $("end").classList.add("hidden");
+        room = { roomId, seat };
+        store.set("mm.room", room);
+        state = null;
+        selected = null;
+        try {
+          await openGame();
+          toast(state && state.turn === room.seat ? "Rematch! You go first" : "Rematch! Rival goes first", 2500);
+        } catch {
+          toast("Couldn't join the rematch", 3000);
+          leaveGame();
+        }
       }
 
       /* ------------------------------------------------------------ boot */

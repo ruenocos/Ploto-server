@@ -1541,7 +1541,8 @@
       /* ------------------------------------------------------------ settings sheet */
       const SETTING_ROWS = [
         { key: "sound", label: "Sound", options: [[true, "On"], [false, "Off"]] },
-        { key: "haptics", label: "Vibration", options: [[true, "On"], [false, "Off"]], note: () => (window.MM_FEEDBACK?.canVibrate ? "" : "Not supported on this device") },
+        { key: "haptics", label: "Vibration", options: [[true, "On"], [false, "Off"]], test: true,
+          note: () => (window.MM_FEEDBACK?.canVibrate ? "Feel nothing? Take your phone off mute: Android silences app vibration then" : "Not supported on this device (iPhones don't allow it)") },
         { key: "hints", label: "Hints", options: [[true, "On"], [false, "Off"]], note: () => "A good swap nudges after 8 seconds idle" },
         { key: "text", label: "Text size", options: [[1, "Normal"], [1.15, "Large"], [1.3, "Larger"]] },
         { key: "motion", label: "Motion", options: [["device", "Device"], ["reduced", "Reduced"]], note: () => (systemReduce?.matches ? "Your device asks for reduced motion" : "") },
@@ -1555,6 +1556,7 @@
             return `<div class="set-row"><div class="set-label">${r.label}${note ? `<span class="set-note">${esc(note)}</span>` : ""}</div>` +
               `<div class="seg" role="group" aria-label="${r.label}">` +
               r.options.map(([v, l]) => `<button class="ghost small" data-key="${r.key}" data-val='${JSON.stringify(v)}' aria-pressed="${settings[r.key] === v}">${l}</button>`).join("") +
+              (r.test && window.MM_FEEDBACK?.canVibrate ? `<button class="ghost small" data-test="buzz">Test</button>` : "") +
               `</div></div>`;
           }).join("") +
           `<div class="s-actions"><button class="ghost" id="sheetClose">Close</button></div></div>`;
@@ -1563,12 +1565,16 @@
         $("sheetClose").onclick = close;
         sheet.onclick = (e) => {
           if (e.target === sheet) return close();
+          if (e.target.closest?.("[data-test]")) {
+            if (!settings.haptics) return toast("Vibration is off");
+            return toast(window.MM_FEEDBACK?.testBuzz() ? "Bzzt! Nothing? Check your phone isn't on mute" : "Your browser blocked vibration", 3000);
+          }
           const b = e.target.closest?.("[data-key]");
           if (!b) return;
           settings[b.dataset.key] = JSON.parse(b.dataset.val);
           saveSettings();
           if (b.dataset.key === "sound" && settings.sound) cue("select");
-          if (b.dataset.key === "haptics" && settings.haptics) cue("ready");
+          if (b.dataset.key === "haptics" && settings.haptics) window.MM_FEEDBACK?.testBuzz();
           openSettings();
           sizeArena(); sizeBoard();
         };

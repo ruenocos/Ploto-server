@@ -16,26 +16,42 @@
 
 /**
  * What each moment sounds and feels like. `vol` is relative (0..1);
- * `buzz` is a vibration pattern in ms (on, off, on, ...).
+ * `buzz` is a vibration pattern in ms (on, off, on, ...). Phone motors need
+ * ~20-30 ms just to spin up, so nothing is shorter than that: anything less
+ * is never felt.
  * @type {Record<Cue, { sound: string, vol: number, buzz: number | number[] }>}
  */
 const CUES = {
-  select: { sound: "select", vol: 0.35, buzz: 5 },
-  swap: { sound: "swap", vol: 0.4, buzz: 8 },
-  match: { sound: "match", vol: 0.45, buzz: 12 },
-  ready: { sound: "ready", vol: 0.5, buzz: [15, 30, 15] },
-  cast: { sound: "cast", vol: 0.6, buzz: 25 },
-  hit: { sound: "hit", vol: 0.6, buzz: 30 },
-  bigHit: { sound: "bigHit", vol: 0.7, buzz: [40, 30, 60] },
-  heal: { sound: "heal", vol: 0.45, buzz: 15 },
-  turn: { sound: "turn", vol: 0.6, buzz: [30, 60, 30] },
-  evolve: { sound: "evolve", vol: 0.7, buzz: [20, 40, 20, 40, 60] },
-  ko: { sound: "ko", vol: 0.7, buzz: 80 },
-  win: { sound: "evolve", vol: 0.7, buzz: [30, 50, 30, 50, 80] },
+  select: { sound: "select", vol: 0.35, buzz: 20 },
+  swap: { sound: "swap", vol: 0.4, buzz: 25 },
+  match: { sound: "match", vol: 0.45, buzz: 30 },
+  ready: { sound: "ready", vol: 0.5, buzz: [40, 50, 40] },
+  cast: { sound: "cast", vol: 0.6, buzz: 50 },
+  hit: { sound: "hit", vol: 0.6, buzz: 60 },
+  bigHit: { sound: "bigHit", vol: 0.7, buzz: [80, 40, 120] },
+  heal: { sound: "heal", vol: 0.45, buzz: 35 },
+  turn: { sound: "turn", vol: 0.6, buzz: [60, 80, 60] },
+  evolve: { sound: "evolve", vol: 0.7, buzz: [50, 60, 50, 60, 140] },
+  ko: { sound: "ko", vol: 0.7, buzz: 200 },
+  win: { sound: "evolve", vol: 0.7, buzz: [60, 70, 60, 70, 160] },
 };
 
 const W = /** @type {any} */ (window);
 const settings = { sound: true, haptics: true };
+/** The vibration still playing: a new call cancels it, so a weaker buzz mustn't cut a stronger one short. */
+let buzzUntil = 0, buzzStrength = 0;
+const total = (/** @type {number | number[]} */ p) => (Array.isArray(p) ? p.reduce((a, b) => a + b, 0) : p);
+
+/** Vibrate, unless a stronger pattern is still playing. Returns whether the browser accepted it. */
+function buzz(/** @type {number | number[]} */ pattern) {
+  if (!settings.haptics || !("vibrate" in navigator)) return false;
+  const now = performance.now(), strength = total(pattern);
+  if (now < buzzUntil && strength < buzzStrength) return false;
+  let ok = false;
+  try { ok = navigator.vibrate(pattern); } catch {}
+  if (ok) { buzzUntil = now + strength; buzzStrength = strength; }
+  return ok;
+}
 /** @type {AudioContext | null} */
 let ctx = null;
 /** @type {GainNode | null} */
@@ -88,9 +104,7 @@ function bufferFor(/** @type {string} */ name) {
 function cue(name, opts = {}) {
   const c = CUES[name];
   if (!c) return;
-  if (settings.haptics && "vibrate" in navigator) {
-    try { navigator.vibrate(c.buzz); } catch {}
-  }
+  buzz(c.buzz);
   if (!settings.sound || !ctx || !master || ctx.state !== "running") return;
   const buf = bufferFor(c.sound);
   if (!buf) return;
@@ -111,5 +125,11 @@ function configure(/** @type {{ sound?: boolean, haptics?: boolean }} */ next) {
   }
 }
 
-W.MM_FEEDBACK = { cue, configure, canVibrate: "vibrate" in navigator };
+/** A long, unmistakable buzz for the settings' Test button; false if the browser refused it. */
+function testBuzz() {
+  buzzUntil = 0;
+  return buzz([200, 100, 200]);
+}
+
+W.MM_FEEDBACK = { cue, configure, testBuzz, canVibrate: "vibrate" in navigator };
 })();

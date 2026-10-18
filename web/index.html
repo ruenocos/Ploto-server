@@ -28,7 +28,7 @@
         --c-panel: #232a46;    /* panels, cards */
         --c-raise: #2f375c;    /* raised: ghost buttons, chips */
         --c-edge: #4a5486;     /* bevel highlight, dividers */
-        --c-mute: #8e97bf;     /* secondary text */
+        --c-mute: #9aa3cb;     /* secondary text (AA on panel and raise) */
         --c-text: #eef0ff;     /* text */
         --c-cream: #fff4d6;    /* numbers, emphasis */
         --c-accent-lo: #33267d;
@@ -41,7 +41,8 @@
         /* type: Silkscreen for labels, numbers and headings; Pixelify Sans for reading */
         --f-label: "Silkscreen", ui-monospace, monospace;
         --f-text: "Pixelify Sans", ui-sans-serif, system-ui, sans-serif;
-        --fs-xs: 11px; --fs-s: 13px; --fs-m: 15px; --fs-l: 18px; --fs-xl: 24px; --fs-xxl: 32px;
+        --ts: 1; /* text size setting: 1, 1.15, 1.3 */
+        --fs-xs: calc(11px * var(--ts)); --fs-s: calc(13px * var(--ts)); --fs-m: calc(15px * var(--ts)); --fs-l: calc(18px * var(--ts)); --fs-xl: calc(24px * var(--ts)); --fs-xxl: calc(32px * var(--ts));
         /* spacing: 4px grid */
         --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s6: 24px;
         /* legacy names used by inline styles in the markup */
@@ -112,7 +113,8 @@
 
       /* ---------------------------------------------------------------- lobby */
       #lobby { max-width: 980px; margin: 0 auto; padding: 18px 16px calc(var(--dock-h, 160px) + 16px); }
-      .brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+      .brand { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 10px; row-gap: 6px; }
+      .brand .tag { grid-column: 1; }
       .brand h1 { font-size: min(var(--fs-xxl), 6.4vw); white-space: nowrap; line-height: 1; margin: 0; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
       .brand .tag { font: 700 var(--fs-xs)/1 var(--f-label); color: var(--c-accent-hi); text-transform: uppercase; }
       .intro { color: var(--c-mute); margin: 8px 0 14px; max-width: 640px; }
@@ -327,7 +329,10 @@
         margin-top: -22px; padding: 10px; z-index: 4; background: var(--c-well); border: var(--px) solid var(--c-ink);
         box-shadow: inset 0 var(--px) 0 var(--c-edge), inset 0 calc(var(--px) * -2) 0 rgba(10, 12, 20, 0.6);
       }
-      .board { display: grid; gap: 2px; touch-action: manipulation; transition: filter 0.2s steps(2); }
+      .board { display: grid; gap: 2px; touch-action: none; transition: filter 0.2s steps(2); } /* none: drags swap gems instead of scrolling */
+      .tile.dragging { z-index: 2; }
+      .tile.dragging .gem { filter: drop-shadow(0 calc(var(--px) * 2) 0 rgba(10, 12, 20, 0.6)); }
+      .tile.hint { box-shadow: inset 0 0 0 var(--px) rgba(255, 244, 214, 0.55); }
       /* the rival's turn: the board rests (but not while their move is playing on it) */
       .board-wrap.waiting:not(.playing) .board { filter: saturate(0.45) brightness(0.7); }
       .board-wrap.waiting:not(.playing)::after {
@@ -411,8 +416,8 @@
       @media (prefers-reduced-motion: reduce) {
         .bob svg, .bob img, .tile.sel .gem, .board.shuffling .gem, .rig .part { animation: none; }
         .float { animation: fadeOnly 1s ease forwards; }
-        @keyframes fadeOnly { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
       }
+      @keyframes fadeOnly { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
 
       /* ---------------------------------------------------------------- sheet / overlays */
       .scrim { position: fixed; inset: 0; background: rgba(6, 8, 14, 0.7); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
@@ -456,6 +461,28 @@
         transition: opacity 0.18s steps(3), transform 0.18s steps(3); z-index: 60; max-width: 92vw; text-align: center;
       }
       .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+      /* settings */
+      .brand .settings-btn { grid-column: 2; grid-row: 1; }
+      .px-icon { display: block; fill: currentColor; shape-rendering: crispEdges; }
+      .icon-btn .px-icon { margin: 0 auto; }
+      .settings h2 { margin-bottom: 12px; }
+      .set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: var(--px) solid var(--c-well); }
+      .set-label { font: 700 var(--fs-s)/1.2 var(--f-label); color: var(--c-cream); display: grid; gap: 4px; }
+      .set-note { font: 400 var(--fs-xs)/1.3 var(--f-text); color: var(--c-mute); text-transform: none; }
+      .seg { display: flex; gap: 4px; flex: none; }
+      .seg button[aria-pressed="true"] { --b: var(--c-accent); --b-hi: var(--c-accent-hi); --b-lo: var(--c-accent-lo); color: #fff; }
+      .settings .s-actions { margin-top: 14px; }
+
+      /* keyboard focus: an inset cream ring (an outer ring would be cut by the pixel corners) */
+      :focus-visible { outline: var(--px) solid var(--c-cream); outline-offset: calc(var(--px) * -3); }
+      input[type="text"]:focus-visible { outline: none; }
+
+      /* the Motion setting forces reduced motion even when the device doesn't ask for it */
+      .reduce-motion .animate__animated { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+      .reduce-motion .bob svg, .reduce-motion .bob img, .reduce-motion .tile.sel .gem, .reduce-motion .board.shuffling .gem,
+      .reduce-motion .rig .part, .reduce-motion button.pulse { animation: none; }
+      .reduce-motion .float { animation: fadeOnly 1s ease forwards; }
       /* YOUR TURN: the one big call in the middle of the screen */
       .turn-call { position: fixed; left: 50%; top: 52%; translate: -50% -50%; z-index: 35; pointer-events: none; }
       .turn-call .tc-box {
@@ -467,7 +494,7 @@
           var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n)));
       }
       .turn-call .tc-big { font: 700 var(--fs-xxl)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
-      .turn-call .tc-sub { margin-top: 6px; font: 700 var(--fs-xs)/1 var(--f-label); text-transform: uppercase; color: var(--c-gold); }
+      .turn-call .tc-sub { margin-top: 6px; font: 700 var(--fs-xs)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); }
     </style>
   </head>
   <body>
@@ -538,7 +565,7 @@
     </svg>
     <!-- ============================================================ LOBBY -->
     <section id="lobby">
-      <div class="brand"><h1>Match Monsters</h1><span class="tag">Plotomon</span></div>
+      <div class="brand"><h1>Match Monsters</h1><span class="tag">Plotomon</span><button id="settingsBtn" class="ghost small icon-btn settings-btn" aria-label="Settings" title="Settings"><svg class="px-icon" viewBox="0 0 9 7" width="18" height="14" aria-hidden="true"><rect x="0" y="1" width="9" height="1"/><rect x="2" y="0" width="2" height="3"/><rect x="0" y="5" width="9" height="1"/><rect x="5" y="4" width="2" height="3"/></svg></button></div>
       <p class="intro">Pick two monsters. Match their gems to charge them up. Knock out your rival.</p>
       <div id="acct" class="acct">
         <div id="acctGuest" class="acct-guest">
@@ -593,7 +620,7 @@
       <div class="arena" id="arena">
         <div class="arena-top">
           <div id="turnBanner" class="banner"></div>
-          <button id="forfeitBtn" class="ghost icon-btn" aria-label="Forfeit match" title="Forfeit">🏳️</button>
+          <button id="gameMenuBtn" class="ghost icon-btn" aria-label="Menu: settings, forfeit" title="Menu"><svg class="px-icon" viewBox="0 0 8 7" width="16" height="14" aria-hidden="true"><rect x="0" y="0" width="8" height="1"/><rect x="0" y="3" width="8" height="1"/><rect x="0" y="6" width="8" height="1"/></svg></button>
         </div>
         <div class="side foe" id="foeSide"><div class="s-fx"></div></div>
         <div class="side me" id="meSide"><div class="s-fx"></div></div>
@@ -616,6 +643,10 @@
     <div id="inviteCard" class="invite-card hidden"></div>
     <div id="fx" aria-hidden="true"></div>
 
+    <script src="/play/riffwave.js"></script>
+    <script src="/play/sfxr.js"></script>
+    <script src="/play/sounds.js"></script>
+    <script src="/play/feedback.js"></script>
     <script src="/play/plotomon.js"></script>
     <script src="/play/animators.js"></script>
     <script src="/play/pixelart.js"></script>
@@ -627,6 +658,33 @@
       const MAX_EVOLUTION = 2; // three stages: base, ★, ★★
       const MOVES_PER_TURN = 2;
       const BERRIES_TO_EVOLVE = 4;
+
+      /*
+       * Settings, per device (localStorage): sound, haptics, idle hints, text
+       * size and motion. Motion "device" follows prefers-reduced-motion;
+       * "reduced" forces it on whatever the device says.
+       */
+      const SETTINGS_KEY = "mm.settings";
+      const settings = Object.assign(
+        { sound: true, haptics: true, hints: true, text: 1, motion: "device" },
+        (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch { return {}; } })(),
+      );
+      const systemReduce = window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : null;
+      let reduceMotion = false;
+      function applySettings() {
+        reduceMotion = settings.motion === "reduced" || !!systemReduce?.matches;
+        document.documentElement.classList.toggle("reduce-motion", reduceMotion);
+        document.documentElement.style.setProperty("--ts", String(settings.text));
+        window.MM_FEEDBACK?.configure({ sound: settings.sound, haptics: settings.haptics });
+        if (!settings.hints) clearHint();
+      }
+      function saveSettings() {
+        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch {}
+        applySettings();
+      }
+      systemReduce?.addEventListener?.("change", applySettings);
+      /** Sound + haptic for a game moment (web/feedback.js); called where its visual happens. */
+      const cue = (name, opts) => window.MM_FEEDBACK?.cue(name, opts);
 
       // Session storage is a convenience (resume after reload); never required.
       const store = {
@@ -1078,6 +1136,7 @@
         const foe = state.players[room.seat === 0 ? 1 : 0];
         for (const seat of [0, 1]) { renderHud(seat); renderSide(seat); }
         noteTurn();
+        if (!animating) armHint();
         $("debugBar").classList.toggle("hidden", state.botSeat == null);
         if (state.connected) {
           rivalOnline = state.connected[room.seat === 0 ? 1 : 0];
@@ -1138,7 +1197,7 @@
         const n = state.movesLeft ?? MOVES_PER_TURN;
         el.innerHTML = `<div class="tc-box"><div class="tc-big">Your turn</div><div class="tc-sub">${n} move${n === 1 ? "" : "s"}</div></div>`;
         el.classList.remove("hidden");
-        try { navigator.vibrate?.(40); } catch {}
+        cue("turn");
         if (document.hidden) document.title = `▶ Your turn · ${BASE_TITLE}`;
         const box = el.firstElementChild;
         await playPreset(box, "bounceIn", { speed: "fast" });
@@ -1269,7 +1328,6 @@
             t.dataset.y = y;
             if (gem) t.innerHTML = gemHtml(gem);
             if (selected && selected.x === x && selected.y === y) t.classList.add("sel");
-            t.addEventListener("click", () => onTile(x, y));
             grid.appendChild(t);
           });
         });
@@ -1342,22 +1400,178 @@
         catch (e) { toast(e.message); }
       }
 
-      /* ------------------------------------------------------------ input */
-      async function onTile(x, y) {
-        if (animating || !state) return;
-        if (!myTurn()) return toast("Not your turn");
-        const gem = state.board[y][x];
-        if (gem === "stone") return toast("🪨 Stone can't be moved — match next to it to break it");
-        if ((state.ice?.[y]?.[x] ?? 0) > 0) return toast("❄ That tile is frozen");
-        if (!selected) { selected = { x, y }; return renderBoard(); }
-        if (selected.x === x && selected.y === y) { selected = null; return renderBoard(); }
-        const adjacent = Math.abs(selected.x - x) + Math.abs(selected.y - y) === 1;
-        if (!adjacent) { selected = { x, y }; return renderBoard(); }
-        const from = selected;
+      /* ------------------------------------------------------------ input
+       * Two ways to swap: tap a gem then a neighbour, or press a gem and drag it
+       * onto a neighbour. Both go through canMove + sendMove.
+       */
+      /** Can the gem at (x, y) be moved right now? Explains why not, unless `quiet`. */
+      function canMove(x, y, quiet = false) {
+        if (animating || !state) return false;
+        const say = (m) => { if (!quiet) toast(m); return false; };
+        if (!myTurn()) return say("Not your turn");
+        if (state.board[y]?.[x] == null) return false;
+        if (state.board[y][x] === "stone") return say("🪨 Stone can't be moved — match next to it to break it");
+        if ((state.ice?.[y]?.[x] ?? 0) > 0) return say("❄ That tile is frozen");
+        return true;
+      }
+      async function sendMove(from, to) {
         selected = null;
         renderBoard();
-        try { await gameSock.request("mm:move", { from, to: { x, y } }); }
+        try { await gameSock.request("mm:move", { from, to }); }
         catch (e) { toast(e.message); }
+      }
+      async function onTile(x, y) {
+        if (!canMove(x, y)) return;
+        if (!selected) { selected = { x, y }; cue("select"); return renderBoard(); }
+        if (selected.x === x && selected.y === y) { selected = null; return renderBoard(); }
+        const adjacent = Math.abs(selected.x - x) + Math.abs(selected.y - y) === 1;
+        if (!adjacent) { selected = { x, y }; cue("select"); return renderBoard(); }
+        sendMove(selected, { x, y });
+      }
+
+      /** Drag to swap: the gem follows your finger (up to half a tile); past DRAG_SWAP of a tile it swaps. */
+      const DRAG_START = 8; // px of travel before a press counts as a drag rather than a tap
+      const DRAG_SWAP = 0.38; // of a tile
+      let drag = null;
+      function endDrag() {
+        if (!drag) return;
+        drag.el.classList.remove("dragging");
+        const gem = drag.el.querySelector(".gem");
+        if (gem) gem.style.transform = "";
+        drag = null;
+      }
+      (() => {
+        const board = $("board");
+        board.addEventListener("pointerdown", (e) => {
+          if (e.button > 0) return;
+          const t = e.target.closest?.(".tile");
+          if (!t) return;
+          armHint(); // any touch restarts the idle-hint clock
+          endDrag();
+          drag = { x: +t.dataset.x, y: +t.dataset.y, sx: e.clientX, sy: e.clientY, el: t, id: e.pointerId, moved: false, dead: false, size: t.getBoundingClientRect().width };
+          try { board.setPointerCapture(e.pointerId); } catch {}
+        });
+        board.addEventListener("pointermove", (e) => {
+          if (!drag || e.pointerId !== drag.id || drag.dead) return;
+          const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+          if (!drag.moved) {
+            if (Math.hypot(dx, dy) < DRAG_START) return;
+            drag.moved = true;
+            if (!canMove(drag.x, drag.y)) { drag.dead = true; return; }
+            if (selected) { selected = null; renderBoard(); drag.el = tileAt(drag.x, drag.y) || drag.el; }
+            drag.el.classList.add("dragging");
+          }
+          const horiz = Math.abs(dx) >= Math.abs(dy);
+          const d = horiz ? dx : dy;
+          const off = Math.max(-drag.size / 2, Math.min(drag.size / 2, d));
+          const gem = drag.el.querySelector(".gem");
+          if (gem) gem.style.transform = horiz ? `translateX(${off}px)` : `translateY(${off}px)`;
+          if (Math.abs(d) < drag.size * DRAG_SWAP) return;
+          const from = { x: drag.x, y: drag.y };
+          const to = horiz ? { x: from.x + Math.sign(dx), y: from.y } : { x: from.x, y: from.y + Math.sign(dy) };
+          endDrag();
+          if (canMove(to.x, to.y)) sendMove(from, to);
+        });
+        board.addEventListener("pointerup", (e) => {
+          if (!drag || e.pointerId !== drag.id) return;
+          const tap = !drag.moved, { x, y } = drag;
+          endDrag();
+          if (tap) onTile(x, y);
+        });
+        board.addEventListener("pointercancel", endDrag);
+      })();
+
+      /*
+       * Idle hint: if you haven't touched the board for HINT_DELAY on your turn,
+       * the best swap we can see nudges (Animate.css headShake). Prefers matches
+       * that charge your own monsters, then berries.
+       */
+      const HINT_DELAY = 8000;
+      let hintTimer = 0;
+      function clearHint() {
+        clearTimeout(hintTimer);
+        for (const t of document.querySelectorAll(".tile.hint")) {
+          t.classList.remove("hint");
+          t.querySelector(".gem")?.classList.remove("animate__animated", "animate__headShake", "animate__infinite", "animate__slow");
+        }
+      }
+      function armHint() {
+        clearHint();
+        if (!settings.hints || !state || !room || !myTurn() || animating) return;
+        hintTimer = setTimeout(showHint, HINT_DELAY);
+      }
+      function showHint() {
+        if (!myTurn() || animating || drag) return;
+        for (const c of findHint() || []) {
+          const t = tileAt(c.x, c.y);
+          t?.classList.add("hint");
+          t?.querySelector(".gem")?.classList.add("animate__animated", "animate__headShake", "animate__infinite", "animate__slow");
+        }
+      }
+      /** The best swap on the board for you, as its two cells (or null). */
+      function findHint() {
+        const g = state.board, ice = state.ice || [], H = g.length, Wd = g[0].length;
+        const movable = (x, y) => g[y][x] && g[y][x] !== "stone" && !((ice[y]?.[x] ?? 0) > 0);
+        const mine = new Set(state.players[room.seat].monsters.filter((m) => !(m.sealed > 0)).map((m) => m.element));
+        const run = (b, x, y) => {
+          const v = b[y][x];
+          let h = 1, w = 1, i;
+          for (i = x - 1; i >= 0 && b[y][i] === v; i--) h++;
+          for (i = x + 1; i < Wd && b[y][i] === v; i++) h++;
+          for (i = y - 1; i >= 0 && b[i][x] === v; i--) w++;
+          for (i = y + 1; i < H && b[i][x] === v; i++) w++;
+          return Math.max(h >= 3 ? h : 0, w >= 3 ? w : 0);
+        };
+        let best = null, bestScore = 0;
+        for (let y = 0; y < H; y++) for (let x = 0; x < Wd; x++) for (const [dx, dy] of [[1, 0], [0, 1]]) {
+          const x2 = x + dx, y2 = y + dy;
+          if (x2 >= Wd || y2 >= H || !movable(x, y) || !movable(x2, y2) || g[y][x] === g[y2][x2]) continue;
+          const b = g.map((r) => r.slice());
+          [b[y][x], b[y2][x2]] = [b[y2][x2], b[y][x]];
+          let score = 0;
+          for (const [cx, cy] of [[x, y], [x2, y2]]) {
+            const n = run(b, cx, cy);
+            if (n) score += n + (mine.has(b[cy][cx]) ? 3 : b[cy][cx] === "berry" ? 2 : 0);
+          }
+          if (score > bestScore) { bestScore = score; best = [{ x, y }, { x: x2, y: y2 }]; }
+        }
+        return best;
+      }
+
+      /* ------------------------------------------------------------ settings sheet */
+      const SETTING_ROWS = [
+        { key: "sound", label: "Sound", options: [[true, "On"], [false, "Off"]] },
+        { key: "haptics", label: "Vibration", options: [[true, "On"], [false, "Off"]], note: () => (window.MM_FEEDBACK?.canVibrate ? "" : "Not supported on this device") },
+        { key: "hints", label: "Hints", options: [[true, "On"], [false, "Off"]], note: () => "A good swap nudges after 8 seconds idle" },
+        { key: "text", label: "Text size", options: [[1, "Normal"], [1.15, "Large"], [1.3, "Larger"]] },
+        { key: "motion", label: "Motion", options: [["device", "Device"], ["reduced", "Reduced"]], note: () => (systemReduce?.matches ? "Your device asks for reduced motion" : "") },
+      ];
+      function openSettings() {
+        const sheet = $("sheet");
+        sheet.innerHTML =
+          `<div class="sheet settings" role="dialog" aria-label="Settings"><h2>Settings</h2>` +
+          SETTING_ROWS.map((r) => {
+            const note = r.note?.() || "";
+            return `<div class="set-row"><div class="set-label">${r.label}${note ? `<span class="set-note">${esc(note)}</span>` : ""}</div>` +
+              `<div class="seg" role="group" aria-label="${r.label}">` +
+              r.options.map(([v, l]) => `<button class="ghost small" data-key="${r.key}" data-val='${JSON.stringify(v)}' aria-pressed="${settings[r.key] === v}">${l}</button>`).join("") +
+              `</div></div>`;
+          }).join("") +
+          `<div class="s-actions"><button class="ghost" id="sheetClose">Close</button></div></div>`;
+        sheet.classList.remove("hidden");
+        const close = () => sheet.classList.add("hidden");
+        $("sheetClose").onclick = close;
+        sheet.onclick = (e) => {
+          if (e.target === sheet) return close();
+          const b = e.target.closest?.("[data-key]");
+          if (!b) return;
+          settings[b.dataset.key] = JSON.parse(b.dataset.val);
+          saveSettings();
+          if (b.dataset.key === "sound" && settings.sound) cue("select");
+          if (b.dataset.key === "haptics" && settings.haptics) cue("ready");
+          openSettings();
+          sizeArena(); sizeBoard();
+        };
       }
 
       /* ------------------------------------------------------------ animation
@@ -1366,7 +1580,6 @@
        * dimmed board; its effect travels as an orb to the target, which flashes,
        * shakes (scaled to damage) and drains its HP bar in two stages.
        */
-      const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
       const COLOR = { fire: "#ff5a36", water: "#2fb0f0", earth: "#c98a46", nature: "#5ccf3c", light: "#ffcc33", berry: "#e8304a", stone: "#9aa0ad" };
       const tileAt = (x, y) => $("board").querySelector(`[data-x="${x}"][data-y="${y}"]`);
       const centerOf = (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
@@ -1436,6 +1649,7 @@
       }
 
       async function faintFx(seat) {
+        cue("ko");
         await pose(seat, null, "faint");
         if (reduceMotion) for (const f of sideOf(seat).querySelectorAll(".fighter")) f.classList.add("fainted");
       }
@@ -1539,7 +1753,9 @@
         const fill = f.querySelector(".cbar-fill"), num = f.querySelector(".cbar-num");
         if (fill) fill.style.width = Math.round((c / cost) * 100) + "%";
         if (num) num.textContent = `${c}/${cost}`;
+        const wasReady = f.classList.contains("ready");
         setReady(f, d.charge[i] >= cost && !d.sealed[i]);
+        if (!wasReady && f.classList.contains("ready")) cue("ready");
         if (gulp) { pose(seat, f.dataset.mon, "charge"); bump(f.querySelector(".cbar")); }
       }
 
@@ -1588,6 +1804,7 @@
       async function playStep(step, { mover = null, combo = 0 } = {}) {
         if (step.board) { state.board = step.board; renderBoard(); }
         if (combo >= 2) showCombo(combo);
+        if (step.cleared.length) cue("match", { pitch: 1 + 0.08 * (Math.max(1, combo) - 1) }); // each cascade step a little higher
         const targetsFor = mover == null ? null : chargeTargets(mover);
         const shards = step.cleared.length > 12 ? 2 : 5;
         let k = 0;
@@ -1661,6 +1878,7 @@
 
       /** The cast moment: the arena dims around the caster, who winds up while its move's name slides in. */
       async function showCastCard(cast) {
+        cue("cast");
         const el = $("cast");
         const caster = chipOf(cast.by, cast.monsterId)?.el;
         el.style.setProperty("--el", `var(--${cast.element})`);
@@ -1713,9 +1931,11 @@
         flash.animate([{ opacity: 0 }, { opacity: hurt ? 0.45 : 0.3 }, { opacity: 0 }], { duration: 360, easing: "ease-out" })
           .finished.catch(() => {}).then(() => flash.remove());
         if (hurt) {
+          cue(hurt >= 12 ? "bigHit" : "hit");
           pose(seat, null, "hurt");
           if (!reduceMotion) playPreset(hud, "headShake", { speed: "faster" });
         } else if (kind === "heal" || kind === "shield") {
+          cue("heal");
           pose(seat, null, "cheer");
           bump(hud.querySelector(".hp .bar"));
         }
@@ -1749,7 +1969,7 @@
 
       /** Primitives handed to every animator in web/animators.js (see its `Fx` type). */
       const fx = {
-        sleep, reduceMotion, COLOR, tileAt, centerOf, sideOf, monOf, hitOf,
+        sleep, get reduceMotion() { return reduceMotion; }, COLOR, tileAt, centerOf, sideOf, monOf, hitOf,
         hpBarOf: (seat) => hudOf(seat).querySelector(".hp .bar") || hudOf(seat),
         board: () => $("board"),
         banner: () => $("turnBanner"),
@@ -1783,6 +2003,7 @@
         f.classList.add("spot");
         const at = centerOf(f.querySelector(".core") || f);
         const arrived = pose(seat, monsterId, "evolveIn");
+        cue("evolve");
         burst(at, "#ffd23c", 12, 52);
         burst(at, "#fff6c2", 6, 30);
         floatText(f.querySelector(".stage"), "★".repeat(state.players[seat].monsters.find((m) => m.id === monsterId)?.evolution || 1), "#ffe14d");
@@ -1810,6 +2031,8 @@
 
       async function animate(data) {
         animating = true;
+        clearHint();
+        endDrag();
         $("boardWrap").classList.add("playing"); // the rival's move plays on an undimmed board
         const A = animators();
         try {
@@ -1819,6 +2042,7 @@
           const g = state.board;
           const t = g[from.y][from.x]; g[from.y][from.x] = g[to.y][to.x]; g[to.y][to.x] = t;
           renderBoard();
+          cue("swap");
           await A.board.swap.animate(data, fx);
           await A.board.cascade.animate(data.cascades, { mover: data.by, combo: true }, fx);
           await settle();
@@ -1857,6 +2081,7 @@
           inflight = [];
           disp = null;
           animating = false;
+          armHint(); // the closing render ran while animating; start the idle clock now
         }
       }
 
@@ -1865,6 +2090,7 @@
         if (panel) closePanel();
         const forfeit = forfeitedBy == null ? null : forfeitedBy === room.seat ? "me" : "them";
         endInfo = { won, forfeit, mine: false, theirs: false };
+        if (won) cue("win");
         renderEnd();
         $("end").classList.remove("hidden");
       }
@@ -2347,7 +2573,21 @@
       $("play").addEventListener("click", quickPlay);
       $("create").addEventListener("click", createRoom);
       $("practice").addEventListener("click", practice);
-      $("forfeitBtn").addEventListener("click", confirmForfeit);
+      /** In-game menu: one button in the top bar instead of two, so the turn banner keeps its room. */
+      function openGameMenu() {
+        const sheet = $("sheet");
+        sheet.innerHTML =
+          `<div class="sheet" role="dialog" aria-label="Menu"><h2>Menu</h2><div class="s-actions" style="margin-top: 14px">` +
+          `<button id="menuSettings" class="ghost">Settings</button>` +
+          `<button id="menuForfeit" class="danger">Forfeit match</button>` +
+          `<button id="sheetClose" class="ghost">Close</button></div></div>`;
+        sheet.classList.remove("hidden");
+        sheet.onclick = (e) => { if (e.target === sheet) sheet.classList.add("hidden"); };
+        $("sheetClose").onclick = () => sheet.classList.add("hidden");
+        $("menuSettings").onclick = openSettings;
+        $("menuForfeit").onclick = () => { sheet.classList.add("hidden"); confirmForfeit(); };
+      }
+      $("gameMenuBtn").addEventListener("click", openGameMenu);
       for (const b of document.querySelectorAll("[data-dbg]")) {
         b.addEventListener("click", async () => {
           try {
@@ -2375,6 +2615,8 @@
         $("friendToggle").classList.toggle("on", open);
       }
       $("friendToggle").addEventListener("click", () => toggleFriendRow());
+      $("settingsBtn").addEventListener("click", openSettings);
+      applySettings();
 
       const invited = new URLSearchParams(location.search).get("room");
       if (invited) {

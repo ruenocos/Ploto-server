@@ -74,9 +74,11 @@ Animate.css presets: they wind up to cast, strike, flinch when hit, cheer on
 heals and shields, wobble when slowed, and flash into their next stage when
 they evolve. Tap one for its move, passive and evolution line.
 
-- Tap a tile, then a neighbour, to swap. Any swap is allowed: one that makes no
+- Drag a gem onto a neighbour to swap (or tap one, then the other). Any swap is allowed: one that makes no
   match just moves the tile (handy for setting up a combo) and still uses a move,
   so the board can never lock you in.
+- Stuck? After 8 seconds without a move, the best swap on the board nudges.
+- Every moment has a sound and, on phones that support it, a vibration. Settings (the sliders button in the lobby, ☰ in a match) turn sound, vibration and hints on or off, set the text size, and can force reduced motion.
 - You get **2 moves per turn** (the opening player gets 1 on their first turn).
   A line of **4+** grants an extra move.
 - Matching tiles **charges** your monsters of that element. At its charge cost a

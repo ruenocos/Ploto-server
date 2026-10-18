@@ -90,6 +90,27 @@ No rounded corners, no blur, no soft drop shadows. Depth is bevels only.
   glows.
 - Everything respects `prefers-reduced-motion`.
 
+## Sound and haptics
+
+- One `cue(event)` per game moment (`web/feedback.js`), called where the
+  visual happens, so sound, vibration and animation land together.
+- Light touches for frequent events (select, swap, match), stronger patterned
+  ones for big moments (cast, heavy hit, your turn, evolve, KO, win).
+  Consecutive cascade steps pitch the match sound up.
+- Sounds are jsfxr's stock presets (one seeded variant each,
+  `scripts/gen-sounds.mjs` → `web/sounds.js`), normalised to the same peak.
+- Every cue has a visual too, so nothing depends on hearing or feeling it.
+  iOS has no Vibration API.
+
+## Settings and accessibility
+
+- Per device: sound, vibration, hints, text size (1× / 1.15× / 1.3×, through
+  `--ts`), and motion ("Device" follows `prefers-reduced-motion`; "Reduced"
+  forces it on).
+- Text colours meet WCAG AA (4.5:1) on the surfaces they sit on. Gems differ
+  in shape as well as colour.
+- Keyboard focus shows as an inset cream ring.
+
 ## Evolutions
 
 See [`art/pixel/EVOLUTION.md`](../art/pixel/EVOLUTION.md): every stage changes

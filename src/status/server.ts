@@ -8,6 +8,7 @@
  */
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import Fastify, { type FastifyInstance } from "fastify";
 import type { ServerConfig } from "../config/env.js";
@@ -74,6 +75,22 @@ export function buildStatusServer(config: ServerConfig): FastifyInstance {
     return loadArtJs();
   });
 
+  // Sound and haptics (web/feedback.js), the generated sound set (web/sounds.js),
+  // and jsfxr, the synth that plays it (pinned npm dependency).
+  for (const name of ["feedback.js", "sounds.js"]) {
+    app.get(`/play/${name}`, async (_req, reply) => {
+      reply.header("content-type", "application/javascript; charset=utf-8");
+      return loadWebFile(name);
+    });
+  }
+  for (const name of ["riffwave.js", "sfxr.js"]) {
+    app.get(`/play/${name}`, async (_req, reply) => {
+      reply.header("content-type", "application/javascript; charset=utf-8");
+      reply.header("cache-control", "public, max-age=86400");
+      return loadPackageText(`jsfxr/${name}`);
+    });
+  }
+
   // Animate.css (pinned npm dependency): the stock presets monsters react with.
   app.get("/play/animate.min.css", async (_req, reply) => {
     reply.header("content-type", "text/css; charset=utf-8");
@@ -109,12 +126,30 @@ function loadFont(spec: string): Buffer {
   return font;
 }
 
-let cachedAnimateCss: string | null = null;
 function loadAnimateCss(): string {
-  if (cachedAnimateCss === null) {
-    cachedAnimateCss = readFileSync(createRequire(import.meta.url).resolve("animate.css/animate.min.css"), "utf8");
+  return loadPackageText("animate.css/animate.min.css");
+}
+
+/** A text file shipped inside an npm dependency ("pkg/path" or "@scope/pkg/path"), read once. */
+const packageTextCache = new Map<string, string>();
+function loadPackageText(spec: string): string {
+  let text = packageTextCache.get(spec);
+  if (text === undefined) {
+    const parts = spec.split("/");
+    const nameLen = spec.startsWith("@") ? 2 : 1;
+    const pkg = parts.slice(0, nameLen).join("/");
+    const file = parts.slice(nameLen).join("/");
+    const req = createRequire(import.meta.url);
+    let root: string;
+    try {
+      root = dirname(req.resolve(`${pkg}/package.json`));
+    } catch {
+      root = dirname(req.resolve(pkg)); // "exports" hides package.json: use the main entry's folder
+    }
+    text = readFileSync(`${root}/${file}`, "utf8");
+    packageTextCache.set(spec, text);
   }
-  return cachedAnimateCss;
+  return text;
 }
 
 let cachedArt: string | null = null;

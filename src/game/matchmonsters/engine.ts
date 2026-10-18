@@ -29,15 +29,19 @@ import type {
   PlayerState,
   Tile,
 } from "./types.js";
-import { STARTING_HP } from "./types.js";
+import { MOVES_PER_TURN, STARTING_HP } from "./types.js";
 import { Rng } from "./rng.js";
 import {
   collapseAndRefill,
   DEFAULT_BOARD,
   findMatches,
   generateBoard,
+  hasBigMatch,
   type BoardOptions,
 } from "./board.js";
+
+/** Hard cap so chained match-4 bonuses can't stack a player's turn forever. */
+const MAX_MOVES = 4;
 
 export interface PlayerSetup {
   readonly peerId: string;
@@ -74,6 +78,7 @@ export class MatchMonstersGame {
       board,
       players,
       turn: config.firstTurn ?? 0,
+      movesLeft: MOVES_PER_TURN,
       phase: "awaiting-move",
       winner: null,
       moveNumber: 0,
@@ -99,9 +104,11 @@ export class MatchMonstersGame {
     // Resolve cascades and tally matched tiles per element.
     const cascades: CascadeStep[] = [];
     const charged: Partial<Record<Element, number>> = {};
+    let bigMatch = false;
     for (;;) {
       const matches = findMatches(s.board);
       if (matches.length === 0) break;
+      if (hasBigMatch(s.board)) bigMatch = true; // a line of 4+ grants an extra move
       const countsByElement: Partial<Record<Element, number>> = {};
       for (const mtch of matches) {
         countsByElement[mtch.element] = (countsByElement[mtch.element] ?? 0) + 1;
@@ -139,23 +146,29 @@ export class MatchMonstersGame {
 
     let finished = defender.hp <= 0;
     let nextTurn: 0 | 1 = by;
+    // A move of 4+ grants an extra move instead of consuming one.
+    const extraTurn = !finished && bigMatch;
 
     if (!finished) {
-      // Pass the turn; the incoming player's burns tick now.
-      nextTurn = other(by);
-      const incoming = s.players[nextTurn];
-      tickBurns(incoming, nextTurn, abilities);
-      if (incoming.hp <= 0) {
-        finished = true; // attacker still wins — opponent burned down
+      const movesLeft = s.movesLeft - 1 + (extraTurn ? 1 : 0);
+      if (movesLeft < 1) {
+        // Turn passes; the incoming player's burns tick as their turn begins.
+        nextTurn = other(by);
+        s.turn = nextTurn;
+        s.movesLeft = MOVES_PER_TURN;
+        const incoming = s.players[nextTurn];
+        tickBurns(incoming, nextTurn, abilities);
+        if (incoming.hp <= 0) finished = true; // attacker wins — opponent burned down
+      } else {
+        // Same player keeps the turn with a move remaining.
+        s.movesLeft = Math.min(movesLeft, MAX_MOVES);
+        nextTurn = by;
       }
     }
 
     if (finished) {
       s.phase = "finished";
       s.winner = by;
-      nextTurn = s.turn;
-    } else {
-      s.turn = nextTurn;
     }
     s.moveNumber += 1;
 
@@ -167,6 +180,8 @@ export class MatchMonstersGame {
       charged,
       abilities,
       nextTurn,
+      movesLeft: s.movesLeft,
+      extraTurn,
       finished,
       winner: s.winner,
       board: cloneGrid(s.board),

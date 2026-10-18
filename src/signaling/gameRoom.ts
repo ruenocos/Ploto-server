@@ -75,6 +75,7 @@ export class GameRoom {
       matchId: s.matchId,
       board: s.board.grid,
       turn: s.turn,
+      movesLeft: s.movesLeft,
       phase: s.phase,
       winner: s.winner,
       moveNumber: s.moveNumber,

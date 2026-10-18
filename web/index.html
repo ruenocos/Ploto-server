@@ -81,7 +81,9 @@
       .mon.sel { border-color: var(--accent); }
       .mon.dim { opacity: 0.45; }
       .mon .emoji { font-size: 22px; }
-      .mon .n { font-size: 12px; font-weight: 600; margin-top: 2px; }
+      .mon .art { display: flex; justify-content: center; }
+      .mon .art svg { border-radius: 50%; }
+      .mon .n { font-size: 12px; font-weight: 600; margin-top: 4px; }
       .mon .s { font-size: 11px; color: var(--muted); }
       .status { color: var(--muted); font-size: 13px; min-height: 18px; margin-top: 10px; }
       .actions { margin-top: 16px; }
@@ -130,6 +132,9 @@
       .burns { font-size: 11px; color: var(--fire); margin-top: 4px; }
       .mrow { margin-top: 8px; padding: 6px; border-radius: 8px; background: var(--panel2); }
       .mrow.ready { box-shadow: 0 0 0 1px var(--accent) inset; }
+      .mtop { display: flex; align-items: center; gap: 8px; }
+      .mart svg { border-radius: 50%; display: block; }
+      .mmeta { flex: 1; min-width: 0; }
       .mhd { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px; }
       .mcost { color: var(--muted); font-variant-numeric: tabular-nums; }
       .mrow.ready .mcost { color: #c9bcff; font-weight: 700; }
@@ -244,10 +249,14 @@
 
     <div id="toast" class="toast"></div>
 
+    <script src="/play/plotomon.js"></script>
     <script>
       // Same-origin WebSocket: ws:// locally, wss:// behind HTTPS hosting.
       const WS_BASE = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
       const EMOJI = { fire: "🔥", water: "💧", earth: "🪨", nature: "🌿", light: "✨" };
+      const art = (id, size) => {
+        try { return window.PLOTOMON ? PLOTOMON.svg(id, size) : ""; } catch (e) { return ""; }
+      };
 
       const $ = (id) => document.getElementById(id);
       const peerId = crypto.randomUUID();
@@ -309,7 +318,7 @@
           const el = document.createElement("div");
           el.className = "mon";
           el.dataset.id = mon.id;
-          el.innerHTML = `<div class="emoji">${EMOJI[mon.element]}</div>
+          el.innerHTML = `<div class="art">${art(mon.id, 60)}</div>
             <div class="n">${mon.name}</div>
             <div class="s">${mon.ability.description}</div>
             <div class="s">⚡ charge ${mon.chargeCost}</div>`;
@@ -444,7 +453,10 @@
         renderPlayer($("foeTeam"), foe);
 
         const banner = $("turnBanner");
-        banner.textContent = myTurn() ? "Your turn — make a match" : `${foe.displayName}'s turn…`;
+        const ml = state.movesLeft ?? 2;
+        banner.textContent = myTurn()
+          ? `Your turn — ${ml} move${ml === 1 ? "" : "s"} left`
+          : `${foe.displayName}'s turn…`;
         banner.className = "turn-banner " + (myTurn() ? "turn-you" : "turn-them");
 
         const board = state.board;
@@ -487,9 +499,10 @@
           const row = document.createElement("div");
           row.className = "mrow" + (ready ? " ready" : "");
           row.innerHTML =
-            `<div class="mhd"><span>${EMOJI[mon.element]} ${mon.name}</span>` +
+            `<div class="mtop"><span class="mart">${art(mon.id, 34)}</span>` +
+            `<div class="mmeta"><div class="mhd"><span>${mon.name}</span>` +
             `<span class="mcost">${ready ? "READY" : shown + "/" + cost}</span></div>` +
-            `<div class="bar"><div class="fill chg" style="width:${pct}%"></div></div>` +
+            `<div class="bar"><div class="fill chg" style="width:${pct}%"></div></div></div></div>` +
             `<div class="ability">${mon.ability.description}</div>`;
           container.appendChild(row);
         }
@@ -539,6 +552,7 @@
         state.board = data.board;
         render();
         showAbilityFloats(data.abilities);
+        if (data.extraTurn && data.by === mySeat) toast("💥 Match-4 — extra move!");
         // 4) sync authoritative HP / turn / phase from the server
         await refresh();
         animating = false;

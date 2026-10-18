@@ -93,6 +93,25 @@ function cell(b: Board, horizontal: boolean, outer: number, inner: number): Tile
   return horizontal ? b.grid[outer]![inner]! : b.grid[inner]![outer]!;
 }
 
+/** True if the board contains any single line-run of 4+ identical tiles. */
+export function hasBigMatch(b: Board, minRun = 4): boolean {
+  const scan = (horizontal: boolean): boolean => {
+    const outer = horizontal ? b.height : b.width;
+    const inner = horizontal ? b.width : b.height;
+    for (let o = 0; o < outer; o++) {
+      let run = 1;
+      for (let i = 1; i < inner; i++) {
+        const cur = cell(b, horizontal, o, i);
+        const prev = cell(b, horizontal, o, i - 1);
+        run = cur != null && cur === prev ? run + 1 : 1;
+        if (run >= minRun) return true;
+      }
+    }
+    return false;
+  };
+  return scan(true) || scan(false);
+}
+
 /**
  * Clear the given cells, drop everything above into the gaps, and refill the top
  * with fresh random tiles. Mutates and returns the board.

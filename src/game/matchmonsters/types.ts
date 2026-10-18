@@ -66,11 +66,16 @@ export interface PlayerState {
 
 export type Phase = "awaiting-move" | "finished";
 
+/** Moves a player gets per turn. */
+export const MOVES_PER_TURN = 2;
+
 export interface GameState {
   readonly matchId: string;
   board: Board;
   players: [PlayerState, PlayerState];
   turn: 0 | 1;
+  /** Moves the current player has left this turn. */
+  movesLeft: number;
   phase: Phase;
   winner: 0 | 1 | null;
   moveNumber: number;
@@ -108,6 +113,10 @@ export interface MoveResult {
   readonly charged: Partial<Record<Element, number>>;
   readonly abilities: AbilityEvent[];
   readonly nextTurn: 0 | 1;
+  /** Moves the next player has after this move resolves. */
+  readonly movesLeft: number;
+  /** This move cleared a line of 4+, granting an extra move. */
+  readonly extraTurn: boolean;
   readonly finished: boolean;
   readonly winner: 0 | 1 | null;
   readonly board: Tile[][];

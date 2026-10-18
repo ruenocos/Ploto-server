@@ -5,6 +5,8 @@ import { ELEMENTS, type Ability, type Element, type Monster, type Tile } from ".
 const MAP: Record<string, Element> = { F: "fire", W: "water", E: "earth", N: "nature", L: "light" };
 /** No pre-existing matches; swapping (1,2)<->(0,2) makes a vertical fire 3. */
 const LAYOUT = ["FWENL", "FENLW", "WFENL", "ENLWF", "NLWFE"];
+/** Same swap makes a vertical fire run of 4 (extra-move trigger). */
+const LAYOUT4 = ["FWENL", "FENLW", "WFENL", "FNLWE", "NLWFE"];
 const FIRE_SWAP = { type: "swap" as const, from: { x: 1, y: 2 }, to: { x: 0, y: 2 } };
 
 function grid(rows: string[]): Tile[][] {
@@ -49,7 +51,33 @@ describe("charging + abilities", () => {
     if (!r.ok) return;
     expect(r.abilities.some((a) => a.type === "attack")).toBe(true);
     expect(g.state.players[1].hp).toBeLessThanOrEqual(86); // 100 - 14 (maybe more from cascades)
-    expect(r.nextTurn).toBe(1);
+    // A plain 3-match keeps the turn (2 moves per turn) and uses one move.
+    expect(r.nextTurn).toBe(0);
+    expect(r.movesLeft).toBe(1);
+  });
+
+  it("passes the turn after both moves are used", () => {
+    const g = newGame(fireMon("a", { type: "attack", amount: 10, description: "" }, 99));
+    const r1 = g.applyMove(0, FIRE_SWAP);
+    expect(r1.ok).toBe(true);
+    if (r1.ok) expect(r1.nextTurn).toBe(0);
+    g.state.board.grid = grid(LAYOUT); // reset to a known legal position
+    const r2 = g.applyMove(0, FIRE_SWAP);
+    expect(r2.ok).toBe(true);
+    if (!r2.ok) return;
+    expect(r2.nextTurn).toBe(1);
+    expect(r2.movesLeft).toBe(2);
+  });
+
+  it("a line of 4+ grants an extra move", () => {
+    const g = newGame(fireMon("a", { type: "attack", amount: 5, description: "" }, 99));
+    g.state.board.grid = grid(LAYOUT4);
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.extraTurn).toBe(true);
+    expect(r.nextTurn).toBe(0);
+    expect(r.movesLeft).toBe(2); // 2 - 1 + 1
   });
 
   it("does not fire until the charge cost is met", () => {
@@ -80,6 +108,7 @@ describe("charging + abilities", () => {
   it("burn ticks on the victim's turn and ignores shields", () => {
     const g = newGame(fireMon("bn", { type: "burn", amount: 7, turns: 2, description: "" }, 3));
     g.state.players[1].shield = 100;
+    g.state.movesLeft = 1; // this move ends the turn, so it passes and burns tick
     const r = g.applyMove(0, FIRE_SWAP);
     expect(r.ok).toBe(true);
     if (!r.ok) return;

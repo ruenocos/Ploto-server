@@ -45,7 +45,21 @@ export function buildStatusServer(config: ServerConfig): FastifyInstance {
   // Monster roster for the client's picker.
   app.get("/play/monsters", async () => roster());
 
+  // Plotomon creature art module (served to the client).
+  app.get("/play/plotomon.js", async (_req, reply) => {
+    reply.header("content-type", "application/javascript; charset=utf-8");
+    return loadArtJs();
+  });
+
   return app;
+}
+
+let cachedArt: string | null = null;
+function loadArtJs(): string {
+  if (cachedArt === null) {
+    cachedArt = readFileSync(fileURLToPath(new URL("../../web/plotomon.js", import.meta.url)), "utf8");
+  }
+  return cachedArt;
 }
 
 let cachedHtml: string | null = null;

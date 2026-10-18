@@ -146,70 +146,134 @@
       /* ---------------------------------------------------------------- game */
       #game {
         height: 100vh; height: 100dvh; max-width: 560px; margin: 0 auto;
-        display: flex; flex-direction: column; gap: 8px;
-        padding: calc(8px + env(safe-area-inset-top)) 12px calc(8px + env(safe-area-inset-bottom));
-      }
-      .strip {
-        flex: none; background: linear-gradient(180deg, var(--panel), var(--bg2));
-        border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; position: relative;
+        display: flex; flex-direction: column; gap: 6px;
+        padding: calc(6px + env(safe-area-inset-top)) 10px calc(6px + env(safe-area-inset-bottom));
       }
       .s-fx { position: absolute; inset: 0; pointer-events: none; }
-      .strip.active { border-color: color-mix(in srgb, var(--accent) 75%, var(--line)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
-      .s-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
-      .s-name { font-weight: 800; flex: 1; min-width: 0; }
       .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); flex: none; }
       .dot.off { background: var(--bad); }
-      .chips { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
-      .chip { font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 999px; background: var(--panel2); white-space: nowrap; }
+      .chips { display: flex; gap: 4px; flex-wrap: wrap; }
+      .chip { font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 999px; background: var(--panel2); white-space: nowrap; }
       .chip.shield { color: #7fd0ff; }
       .chip.dot-fx { color: #ff9a3c; }
       .chip.berry { color: #ff8db4; }
       .chip.slow { color: #9bf6ff; }
-      .hp { margin: 7px 0 8px; display: flex; align-items: center; gap: 8px; }
-      .hp .bar { flex: 1; height: 12px; border-radius: 999px; background: #0b0e16; overflow: hidden; position: relative; }
+      .px { display: block; image-rendering: pixelated; }
+
+      /* HUD: one card per player */
+      .hud { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+      .hud-card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px 8px; min-width: 0; position: relative; transition: border-color 0.2s ease; }
+      .hud-card.active { border-color: color-mix(in srgb, var(--accent) 75%, var(--line)); }
+      .hud-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
+      .hud-name { font-weight: 800; font-size: 13px; flex: 1; min-width: 0; }
+      .hud-card.foe .hud-top { flex-direction: row-reverse; }
+      .hud-card.foe .hud-name { text-align: right; }
+      .hud-card.foe .chips { justify-content: flex-end; }
+      .hp { margin: 4px 0 3px; display: flex; align-items: center; gap: 6px; }
+      .hud-card.foe .hp { flex-direction: row-reverse; }
+      .hp .bar { flex: 1; height: 10px; border-radius: 999px; background: #0b0e16; overflow: hidden; position: relative; }
       .hp .ghost { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: #ffd9c7; transition: width 0.6s cubic-bezier(0.3, 0, 0.2, 1) 0.3s; }
       .hp .fill { position: relative; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #39c466, #8be27f); transition: width 0.25s ease; }
       .hp .fill.low { background: linear-gradient(90deg, #ff5d5d, #ff9a6b); }
       .hp .shieldfill { position: absolute; inset: 0 auto 0 0; background: repeating-linear-gradient(45deg, rgba(127,208,255,0.55) 0 4px, rgba(127,208,255,0.25) 4px 8px); border-radius: 999px; transition: width 0.45s ease; }
-      .hp .num { font-weight: 800; font-size: 13px; font-variant-numeric: tabular-nums; min-width: 52px; text-align: right; }
-      .mons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-      .mchip {
-        display: flex; align-items: center; gap: 8px; min-width: 0; padding: 6px; border-radius: 12px;
-        background: var(--panel2); cursor: pointer; position: relative; border: 1px solid transparent;
-      }
-      .mchip.ready { border-color: color-mix(in srgb, var(--el) 80%, transparent); }
-      .ring { --p: 0%; flex: none; width: 46px; height: 46px; border-radius: 50%; padding: 3px; background: conic-gradient(var(--el) var(--p), rgba(255,255,255,0.08) 0); transition: --p 0.25s ease; }
-      .mchip.ready .mcharge { color: var(--el); font-weight: 900; }
-      .ring .art { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; }
-      .ring .art { display: grid; place-items: center; }
-      .ring .art svg { display: block; width: 40px; height: 40px; }
-      .px { display: block; image-rendering: pixelated; image-rendering: crisp-edges; image-rendering: pixelated; }
-      .mtext { min-width: 0; flex: 1; }
-      .mname { font-weight: 800; font-size: 13px; }
-      .mmove { font-size: 11px; color: var(--el); font-weight: 700; }
-      .mcharge { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
-      .mchip .badge { position: absolute; top: -6px; right: -4px; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 999px; background: var(--accent); color: #fff; }
-      .mchip .sealed { position: absolute; bottom: -6px; right: -4px; font-size: 10px; font-weight: 900; padding: 1px 6px; border-radius: 999px; background: #3a2f55; color: #d8c8ff; }
+      .hp .num { font-weight: 800; font-size: 12px; font-variant-numeric: tabular-nums; min-width: 46px; text-align: right; }
+      .hud-card.foe .hp .num { text-align: left; }
 
-      .banner { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-weight: 800; padding: 8px 12px; border-radius: 12px; font-size: 14px; position: relative; transition: background 0.25s ease, color 0.25s ease; }
-      .banner-row { flex: none; display: flex; gap: 8px; }
-      .banner-row .banner { flex: 1; min-width: 0; }
+      /* Arena: pixel meadow, rival row at the back, yours in front */
+      .arena {
+        flex: none; position: relative; isolation: isolate; height: clamp(210px, 38vh, 340px); border-radius: 14px; overflow: hidden;
+        background-color: #5cae44; background-position: center bottom; background-repeat: no-repeat; image-rendering: pixelated;
+      }
+      .arena::after { content: ""; position: absolute; inset: 0; background: rgba(8, 10, 18, 0); transition: background 0.2s ease; pointer-events: none; z-index: 3; }
+      .arena.casting::after { background: rgba(8, 10, 18, 0.5); }
+      .arena-top { position: absolute; left: 6px; right: 6px; top: 6px; display: flex; gap: 6px; z-index: 6; }
+      .arena-top .banner { flex: 1; min-width: 0; }
+      /* --u: one sprite pixel in CSS px (set by sizeArena, whole device pixels); --gu: same for the badge gem */
+      .side { position: absolute; left: 0; right: 0; --u: 2px; --gu: 1px; }
+      .side.foe { top: 10%; height: 40%; }
+      .side.me { bottom: 26px; height: 44%; } /* clear of the board panel tucked under the arena */
+      /*
+       * Layers (the arena is the only stacking context, so these compete across both rows):
+       * sprites 1 (front row wins by DOM order) < every badge 2 < cast dimmer 3 < spotlit sprite 4.
+       * Fighters are centred with a margin, not a transform, so they don't trap their children's z-index.
+       */
+      .fighter { position: absolute; bottom: 0; width: calc(var(--u) * 48); margin-left: calc(var(--u) * -24); display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+      .side.me .f0 { left: 25%; } .side.me .f1 { left: 75%; }
+      .side.foe .f0 { left: 34%; } .side.foe .f1 { left: 66%; }
+      .stage { position: relative; z-index: 1; width: calc(var(--u) * 48); height: calc(var(--u) * 48); }
+      .fighter.spot .stage, .fighter.spot .cbadge { z-index: 4; }
+      .platform { position: absolute; left: calc(var(--u) * 4); top: calc(var(--u) * 40); width: calc(var(--u) * 40); height: calc(var(--u) * 14); }
+      .bounce { position: absolute; inset: 0; transform-origin: 50% 98%; }
+      .rig { position: absolute; inset: 0; transform-origin: 50% 98%; }
+      .rig .part { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+      .rig .part > img { position: absolute; display: block; image-rendering: pixelated; }
+      .core { position: absolute; left: calc(var(--u) * 24); width: 0; height: 0; } /* body centre: where motes and orbs aim */
+      .fighter.sealed .rig { filter: grayscale(0.85) brightness(0.8); }
+      .fighter.fainted .stage { opacity: 0.35; filter: grayscale(1); }
+      /* idle motion, per part role */
+      .rig .r-body { animation: breathe 2.4s ease-in-out infinite; }
+      .rig .r-head { animation: headBob 2.4s steps(1, end) infinite; animation-delay: -1.2s; }
+      .rig .r-tail { animation: sway 1.8s ease-in-out infinite; }
+      .rig .r-wing-l { animation: flapL 0.9s ease-in-out infinite; }
+      .rig .r-wing-r { animation: flapR 0.9s ease-in-out infinite; }
+      .rig .r-arm-l { animation: armL 2.4s ease-in-out infinite; }
+      .rig .r-arm-r { animation: armR 2.4s ease-in-out infinite; }
+      .rig .r-ear-l { animation: earL 4.2s ease-in-out infinite; }
+      .rig .r-ear-r { animation: earR 4.2s ease-in-out infinite; animation-delay: -0.3s; }
+      .rig .r-tent-l { animation: tentL 2s ease-in-out infinite; }
+      .rig .r-tent-r { animation: tentR 2s ease-in-out infinite; }
+      .rig .r-fx { animation: hover 1.6s steps(1, end) infinite; }
+      @keyframes breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(0.985, 1.035); } }
+      @keyframes headBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(var(--u) * -1)); } }
+      @keyframes hover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(var(--u) * -1)); } }
+      @keyframes sway { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+      @keyframes flapL { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-14deg); } }
+      @keyframes flapR { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(14deg); } }
+      @keyframes armL { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(5deg); } }
+      @keyframes armR { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-5deg); } }
+      @keyframes earL { 0%, 86%, 100% { transform: rotate(0); } 91% { transform: rotate(-14deg); } }
+      @keyframes earR { 0%, 86%, 100% { transform: rotate(0); } 91% { transform: rotate(14deg); } }
+      @keyframes tentL { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(5deg); } }
+      @keyframes tentR { 0%, 100% { transform: rotate(4deg); } 50% { transform: rotate(-5deg); } }
+      /* a monster with a full charge can't sit still */
+      .fighter.ready .bounce { animation: readyHop 0.8s steps(1, end) infinite; }
+      @keyframes readyHop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(var(--u) * -2)); } }
+      /* charge badge under each monster: element gem + bar with "charge/cost" */
+      .cbadge { display: flex; align-items: center; margin-top: calc(var(--u) * 2); position: relative; z-index: 2; white-space: nowrap; }
+      .cbadge > .px { position: relative; z-index: 1; width: calc(var(--gu) * 16); height: calc(var(--gu) * 16); }
+      .cbar { position: relative; height: calc(var(--gu) * 11); min-width: calc(var(--gu) * 34); margin-left: calc(var(--gu) * -5); padding: 0 7px 0 calc(var(--gu) * 7);
+        background: rgba(10, 12, 20, 0.85); border-radius: 0 999px 999px 0; display: flex; align-items: center; gap: 4px; overflow: hidden; }
+      .cbar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: color-mix(in srgb, var(--el) 65%, transparent); transition: width 0.25s ease; }
+      .cbar-num { position: relative; font-weight: 900; font-size: 12px; color: #fff; font-variant-numeric: tabular-nums; text-shadow: 0 1px 0 #000; }
+      .cbar-stars { position: relative; font-size: 10px; color: #ffe14d; text-shadow: 0 1px 0 #000; }
+      .fighter.ready .cbar-num { color: #fff6c8; }
+      .cbadge .lock, .cbadge .evo { position: absolute; bottom: calc(100% + 2px); font-size: 10px; font-weight: 900; border-radius: 999px; padding: 1px 6px; white-space: nowrap; }
+      .cbadge .lock { right: -4px; background: #3a2f55; color: #d8c8ff; }
+      .cbadge .evo { left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; animation: evoNudge 1.2s ease-in-out infinite; }
+      @keyframes evoNudge { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -3px); } }
+      .stamp { position: absolute; left: 50%; top: 55%; z-index: 5; font-size: 30px; pointer-events: none; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6)); }
+
+      .banner { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-weight: 800; padding: 6px 10px; border-radius: 12px; font-size: 13px; position: relative; transition: background 0.25s ease, color 0.25s ease; }
       .icon-btn { flex: none; padding: 0 12px; font-size: 16px; border-radius: 12px; }
+      .arena-top .icon-btn { background: rgba(10, 12, 20, 0.7); border-color: transparent; }
       button.danger { background: var(--bad); }
-      .banner .round { font-size: 12px; min-width: 58px; }
+      .banner .round { font-size: 12px; min-width: 52px; }
       .banner .who { flex: 1; text-align: center; }
-      .banner .pips { display: flex; gap: 6px; min-width: 58px; justify-content: flex-end; }
+      .banner .pips { display: flex; gap: 6px; min-width: 52px; justify-content: flex-end; }
       .pip { width: 11px; height: 11px; border-radius: 50%; background: currentColor; }
       .pip.used { background: transparent; box-shadow: inset 0 0 0 2px currentColor; opacity: 0.4; }
       .pip.new { animation: pipIn 0.55s cubic-bezier(0.2, 1.8, 0.4, 1); }
       @keyframes pipIn { 0% { transform: scale(0); } 60% { transform: scale(1.7); } 100% { transform: scale(1); } }
-      .banner.you { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent2); }
-      .banner.them { background: var(--panel); color: var(--muted); }
+      .banner.you { background: rgba(40, 26, 92, 0.85); color: #d6c8ff; }
+      .banner.them { background: rgba(10, 12, 20, 0.75); color: #b8bfd0; }
       .banner .sd { flex-basis: 100%; text-align: center; font-size: 11px; color: #ff9a6b; }
       .banner .round { opacity: 0.75; font-weight: 700; }
-      .mchip .info { position: absolute; top: 4px; right: 7px; font-size: 12px; color: var(--muted); }
 
-      .board-wrap { flex: 1 1 auto; min-height: 120px; position: relative; display: flex; align-items: center; justify-content: center; }
+      /* Board panel under the arena, Match Monsters style */
+      .board-wrap {
+        flex: 1 1 auto; min-height: 120px; position: relative; display: flex; align-items: center; justify-content: center;
+        margin-top: -22px; padding: 8px; border-radius: 16px; background: rgba(12, 16, 26, 0.92); border: 1px solid rgba(255, 255, 255, 0.06); z-index: 4;
+      }
       .board { display: grid; gap: 2px; touch-action: manipulation; border-radius: 14px; }
       .board.falling { overflow: hidden; } /* new tiles enter from above the board */
       .tile {
@@ -248,22 +312,12 @@
       @keyframes zap { 0% { box-shadow: inset 0 0 0 0 transparent; } 40% { box-shadow: inset 0 0 0 3px #fff, 0 0 18px 4px var(--zap); filter: brightness(1.8); } 100% { box-shadow: inset 0 0 0 2px var(--zap), 0 0 10px 2px var(--zap); } }
       .tile.converted .gem { animation: flipIn 460ms cubic-bezier(0.2, 1.2, 0.4, 1); }
       @keyframes flipIn { 0% { transform: rotateY(90deg) scale(0.7); filter: brightness(2); } 100% { transform: none; } }
-      .stamp { position: absolute; left: 50%; top: 50%; z-index: 5; font-size: 30px; pointer-events: none; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6)); }
       .board.shuffling .gem { animation: shuffleIn 560ms cubic-bezier(0.2, 1.4, 0.4, 1) both; animation-delay: var(--d, 0ms); }
       @keyframes shuffleIn { from { transform: rotate(-200deg) scale(0); opacity: 0; } to { transform: none; opacity: 1; } }
 
-      /* cast moment: the move takes the stage over a dimmed board */
-      .board { transition: filter 0.2s ease; }
-      .board-wrap.casting .board { filter: brightness(0.45) saturate(0.7); }
-      .cast { position: absolute; inset: 0; display: none; place-items: center; pointer-events: none; z-index: 7; }
-      .cast.show { display: grid; }
-      .cast-inner { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-      .cast-art {
-        width: 132px; height: 132px; border-radius: 50%; display: grid; place-items: center;
-        background: radial-gradient(circle, color-mix(in srgb, var(--el) 60%, transparent) 0%, color-mix(in srgb, var(--el) 18%, transparent) 50%, transparent 70%);
-      }
-      .cast-art svg { width: 112px; height: 112px; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.6)); }
-      .cast-art img { filter: drop-shadow(0 6px 10px rgba(0,0,0,0.55)); }
+      /* cast moment: the arena dims, the caster stays lit, and the move's name slides in between the rows */
+      .cast { position: absolute; left: 0; right: 0; top: 49%; display: none; justify-content: center; pointer-events: none; z-index: 7; }
+      .cast.show { display: flex; }
       .cast-name {
         font-weight: 900; font-size: 18px; color: #fff; padding: 5px 16px; border-radius: 999px; white-space: nowrap;
         background: color-mix(in srgb, var(--el) 30%, #0d1018); border: 1px solid var(--el);
@@ -306,7 +360,7 @@
       .bob:nth-child(2n) svg, .bob:nth-child(2n) img { animation-delay: -1.3s; }
       @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px) scale(1.02); } }
       @media (prefers-reduced-motion: reduce) {
-        .bob svg, .bob img, .tile.sel .gem, .board.shuffling .gem { animation: none; }
+        .bob svg, .bob img, .tile.sel .gem, .board.shuffling .gem, .rig .part, .fighter.ready .bounce, .cbadge .evo { animation: none; }
         .float { animation: fadeOnly 1s ease forwards; }
         @keyframes fadeOnly { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
       }
@@ -332,6 +386,11 @@
       .sheet .s-next { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin: 0 0 14px; }
       .sheet .s-next h3 { margin: 0 0 6px; font-size: 13px; color: var(--accent2); }
       .sheet .s-next ul { margin: 0; padding-left: 18px; font-size: 14px; display: grid; gap: 2px; }
+      .evo-line { display: flex; justify-content: center; align-items: flex-end; gap: 6px; margin: 0 0 12px; }
+      .evo-line .evo-st { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: #ffe14d; min-width: 52px; }
+      .evo-line .evo-st.locked img { opacity: 0.45; filter: grayscale(0.6); }
+      .evo-line .evo-st.cur { background: var(--panel2); border-radius: 10px; box-shadow: inset 0 0 0 1px var(--el); }
+      .evo-line .arrow { color: var(--muted); padding-bottom: 22px; }
 
       .end-card { width: min(92vw, 380px); background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 24px; text-align: center; margin: auto; }
       .end-card .big { font-size: 30px; font-weight: 900; margin: 4px 0 6px; }
@@ -467,22 +526,29 @@
 
     <!-- ============================================================ GAME -->
     <section id="game" class="hidden">
-      <div class="strip" id="foeStrip"><div class="s-body"></div><div class="s-fx"></div></div>
+      <div class="hud">
+        <div class="hud-card me" id="meHud"></div>
+        <div class="hud-card foe" id="foeHud"></div>
+      </div>
       <div id="peerWarn" class="peer-warn hidden">Your rival disconnected — waiting for them to come back…</div>
-      <div class="banner-row">
-        <div id="turnBanner" class="banner"></div>
-        <button id="forfeitBtn" class="ghost icon-btn" aria-label="Forfeit match" title="Forfeit">🏳️</button>
+      <!-- The battlefield: rival's monsters at the back, yours in front. -->
+      <div class="arena" id="arena">
+        <div class="arena-top">
+          <div id="turnBanner" class="banner"></div>
+          <button id="forfeitBtn" class="ghost icon-btn" aria-label="Forfeit match" title="Forfeit">🏳️</button>
+        </div>
+        <div class="side foe" id="foeSide"><div class="s-fx"></div></div>
+        <div class="side me" id="meSide"><div class="s-fx"></div></div>
+        <div id="cast" class="cast"></div>
       </div>
       <div class="board-wrap" id="boardWrap">
         <div id="board" class="board"></div>
-        <div id="cast" class="cast"></div>
       </div>
       <div id="debugBar" class="debug-bar hidden">
         <span class="muted">🛠 Practice</span>
         <button class="small ghost" data-dbg="berries">+4 🍓</button>
         <button class="small ghost" data-dbg="charge">⚡ Charge up</button>
       </div>
-      <div class="strip" id="meStrip"><div class="s-body"></div><div class="s-fx"></div></div>
     </section>
 
     <div id="sheet" class="scrim hidden"></div>
@@ -532,15 +598,49 @@
 
       // Pixel sprites (web/pixelart.js) at the biggest whole-number scale that fits
       // the slot; the vector art is only a fallback.
-      const PX_SIZES = [128, 96, 64, 32];
+      const pxMon = (id) => (window.PIXELART && PIXELART.monsters[id]) || null;
       const art = (id, size) => {
-        const px = window.PIXELART && PIXELART.monsters[id];
+        const px = pxMon(id);
         if (px) {
-          const s = PX_SIZES.find((p) => p <= size) || 32;
-          return `<img class="px" src="${px}" width="${s}" height="${s}" alt="" draggable="false">`;
+          const s = 32 * Math.max(1, Math.floor(size / 32));
+          return `<img class="px" src="${px.icon}" width="${s}" height="${s}" alt="" draggable="false">`;
         }
         try { return window.PLOTOMON ? PLOTOMON.svg(id, size) : ""; } catch { return ""; }
       };
+      /** A whole evolution stage (48x48 canvas) at an integer scale. */
+      const stageArt = (id, stage, scale) => {
+        const px = pxMon(id);
+        if (!px) return art(id, 32 * scale);
+        const s = 48 * scale;
+        return `<img class="px" src="${px.stages[stage].flat}" width="${s}" height="${s}" alt="" draggable="false">`;
+      };
+      const STAGE_SCALE = [1, 1.2, 1.38]; // matches art/pixel/rigkit.py
+      const U = (n) => `calc(var(--u) * ${n})`;
+      /**
+       * A rigged monster: every part is a full-canvas layer (so nested parts share
+       * coordinates) pivoting at its joint, with its cropped image placed inside.
+       * Children with z < 0 paint behind their parent, the rest in front, like
+       * rigkit.tree_order. Sizes are in sprite pixels times --u.
+       */
+      function rigHtml(id, stage) {
+        const px = pxMon(id);
+        if (!px) return `<div class="rig">${art(id, 64)}</div>`;
+        const parts = px.stages[stage].parts;
+        const kids = new Map();
+        for (const p of parts) {
+          if (!kids.has(p.parent)) kids.set(p.parent, []);
+          kids.get(p.parent).push(p);
+        }
+        const byZ = (list) => [...(list || [])].sort((a, b) => a.z - b.z);
+        const node = (p) => {
+          const mine = byZ(kids.get(p.n));
+          return `<div class="part r-${p.role}" style="transform-origin:${U(p.pivot[0])} ${U(p.pivot[1])}">` +
+            mine.filter((c) => c.z < 0).map(node).join("") +
+            `<img src="${p.src}" alt="" draggable="false" style="left:${U(p.at[0])};top:${U(p.at[1])};width:${U(p.size[0])};height:${U(p.size[1])}">` +
+            mine.filter((c) => c.z >= 0).map(node).join("") + `</div>`;
+        };
+        return `<div class="rig">${byZ(kids.get(null)).map(node).join("")}</div>`;
+      }
       const gemHtml = (gem) => {
         const px = window.PIXELART && PIXELART.gems[gem];
         return px
@@ -778,14 +878,13 @@
         const stillHere = () => sock === gameSock;
         sock.on("mm:moveResult", live((d) => { animQueue = animQueue.then(() => stillHere() && animate(d)); }));
         sock.on("mm:gameOver", live((d) => {
-          animQueue = animQueue.then(() => sleep(500)).then(() => { if (stillHere()) showEnd(d.winner === room.seat, d.forfeitedBy); });
+          animQueue = animQueue.then(() => sleep(350)).then(async () => {
+            if (!stillHere()) return;
+            await faintFx(d.winner === 0 ? 1 : 0);
+            if (stillHere()) showEnd(d.winner === room.seat, d.forfeitedBy);
+          });
         }));
-        sock.on("mm:evolved", live(async (d) => {
-          await refresh();
-          const idx = state.players[d.by].monsters.findIndex((m) => m.id === d.monsterId);
-          const chip = stripOf(d.by).querySelectorAll(".mchip")[idx];
-          if (chip) evolveFx(chip);
-        }));
+        sock.on("mm:evolved", live((d) => { animQueue = animQueue.then(() => stillHere() && evolveFx(d.by, d.monsterId)); }));
         sock.on("mm:peerStatus", live((d) => {
           if (d.seat === room.seat) return;
           rivalOnline = d.connected;
@@ -864,7 +963,7 @@
         $("dock").classList.toggle("hidden", game);
         $("game").classList.toggle("hidden", !game);
         document.body.classList.toggle("in-game", game);
-        if (game) requestAnimationFrame(sizeBoard);
+        if (game) requestAnimationFrame(() => { sizeArena(); sizeBoard(); });
       }
 
       async function refresh() {
@@ -878,12 +977,8 @@
       /* ------------------------------------------------------------ rendering */
       function renderGame() {
         if (!state) return;
-        const me = state.players[room.seat];
         const foe = state.players[room.seat === 0 ? 1 : 0];
-        renderStrip($("meStrip"), me, true, state.connected ? state.connected[room.seat] : true);
-        renderStrip($("foeStrip"), foe, false, state.connected ? state.connected[room.seat === 0 ? 1 : 0] : true);
-        $("meStrip").classList.toggle("active", myTurn());
-        $("foeStrip").classList.toggle("active", !myTurn() && state.phase === "awaiting-move");
+        for (const seat of [0, 1]) { renderHud(seat); renderSide(seat); }
         $("debugBar").classList.toggle("hidden", state.botSeat == null);
         if (state.connected) {
           rivalOnline = state.connected[room.seat === 0 ? 1 : 0];
@@ -918,7 +1013,14 @@
         renderBoard();
       }
 
-      function renderStrip(container, p, isMe, connected) {
+      const hudOf = (seat) => (seat === room.seat ? $("meHud") : $("foeHud"));
+      const sideOf = (seat) => (seat === room.seat ? $("meSide") : $("foeSide"));
+
+      /** A player's card: name, status chips, berries and the shared HP bar. */
+      function renderHud(seat) {
+        const p = state.players[seat];
+        const isMe = seat === room.seat;
+        const connected = state.connected ? state.connected[seat] : true;
         const hpPct = Math.max(0, Math.round((p.hp / p.maxHp) * 100));
         const shieldPct = Math.min(100, Math.round(((p.shield || 0) / p.maxHp) * 100));
         const dots = p.dots || [];
@@ -931,39 +1033,88 @@
         }
         if (p.slow > 0) chips.push(`<span class="chip slow">🐌 −${p.slow}</span>`);
         chips.push(`<span class="chip berry" data-berry>🍓 <b>${p.berries || 0}</b>/${BERRIES_TO_EVOLVE}</span>`);
-        const canEvolve = isMe && myTurn() && (p.berries || 0) >= BERRIES_TO_EVOLVE;
-
-        const body = container.querySelector(".s-body");
-        body.innerHTML =
-          `<div class="s-top"><span class="dot ${connected ? "" : "off"}"></span>` +
-          `<span class="s-name ell">${esc(p.displayName)}${isMe ? " (you)" : ""}</span>` +
-          `<span class="chips">${chips.join("")}</span></div>` +
+        const card = hudOf(seat);
+        card.classList.toggle("active", state.phase === "awaiting-move" && state.turn === seat);
+        card.innerHTML =
+          `<div class="hud-top"><span class="dot ${connected ? "" : "off"}"></span>` +
+          `<span class="hud-name ell">${esc(p.displayName)}${isMe ? " (you)" : ""}</span></div>` +
           `<div class="hp"><div class="bar"><div class="ghost" style="width:${hpPct}%"></div>` +
           `<div class="fill ${hpPct <= 30 ? "low" : ""}" style="width:${hpPct}%"></div>` +
           `<div class="shieldfill" style="width:${shieldPct}%"></div></div>` +
-          `<span class="num">❤ ${p.hp}/${p.maxHp}</span></div>` +
-          `<div class="mons"></div>`;
-        const mons = body.querySelector(".mons");
-        for (const mon of p.monsters) {
-          const cost = mon.chargeCost;
-          const pct = Math.min(100, Math.round((mon.charge / cost) * 100));
-          const ready = mon.charge >= cost;
+          `<span class="num">❤ ${p.hp}</span></div>` +
+          `<div class="chips">${chips.join("")}</div>`;
+      }
+
+      /**
+       * A player's two monsters on the battlefield. Rig DOM is only rebuilt when
+       * a monster's stage changes, so idle animations don't restart every render.
+       */
+      function renderSide(seat) {
+        const p = state.players[seat];
+        const isMe = seat === room.seat;
+        const side = sideOf(seat);
+        const canEvolve = isMe && myTurn() && (p.berries || 0) >= BERRIES_TO_EVOLVE;
+        const gems = (window.PIXELART && PIXELART.gems) || {};
+        p.monsters.forEach((mon, i) => {
           const evo = mon.evolution || 0;
-          const chip = document.createElement("div");
-          chip.className = "mchip" + (ready ? " ready" : "");
-          chip.style.setProperty("--el", `var(--${mon.element})`);
-          chip.innerHTML =
-            `<div class="ring" style="--p:${pct}%"><div class="art bob">${art(mon.id, 40)}</div></div>` +
-            `<div class="mtext"><div class="mname ell">${esc(mon.name)}${evo ? " " + "★".repeat(evo) : ""}</div>` +
-            `<div class="mmove ell">${esc(mon.ability.name)}</div>` +
-            `<div class="mcharge">${ready ? "READY" : `⚡ ${Math.min(mon.charge, cost)}/${cost}`}</div></div>` +
-            `<span class="info" aria-label="Details">ⓘ</span>` +
-            (canEvolve && evo < MAX_EVOLUTION ? `<span class="badge">EVOLVE</span>` : "") +
-            (mon.sealed > 0 ? `<span class="sealed">🔒 ${mon.sealed}</span>` : "");
-          chip.addEventListener("click", () => openSheet(mon, isMe, canEvolve && evo < MAX_EVOLUTION));
-          mons.appendChild(chip);
+          const key = `${mon.id}:${evo}`;
+          let f = side.querySelector(`.fighter.f${i}`);
+          if (!f || f.dataset.key !== key) {
+            f?.remove();
+            f = document.createElement("div");
+            f.className = `fighter f${i}`;
+            f.dataset.key = key;
+            f.dataset.mon = mon.id;
+            const plat = window.PIXELART ? `<img class="platform px" src="${PIXELART.platform}" alt="" draggable="false">` : "";
+            f.innerHTML =
+              `<div class="stage">${plat}<div class="bounce">${rigHtml(mon.id, evo)}` +
+              `<i class="core" style="top:${U(47 - 16 * STAGE_SCALE[evo])}"></i></div></div><div class="cbadge"></div>`;
+            side.appendChild(f);
+          }
+          const cost = mon.chargeCost, c = Math.min(mon.charge, cost);
+          const ready = mon.charge >= cost;
+          const evolvable = canEvolve && evo < MAX_EVOLUTION;
+          f.style.setProperty("--el", `var(--${mon.element})`);
+          f.classList.toggle("ready", ready && !(mon.sealed > 0));
+          f.classList.toggle("sealed", mon.sealed > 0);
+          f.setAttribute("aria-label", `${mon.name}, ${c} of ${cost} charge`);
+          f.querySelector(".cbadge").innerHTML =
+            (gems[mon.element] ? `<img class="px" src="${gems[mon.element]}" alt="" draggable="false">` : `<span>${EMOJI[mon.element]}</span>`) +
+            `<div class="cbar"><div class="cbar-fill" style="width:${Math.round((c / cost) * 100)}%"></div>` +
+            `<span class="cbar-num">${c}/${cost}</span>${evo ? `<span class="cbar-stars">${"★".repeat(evo)}</span>` : ""}</div>` +
+            (evolvable ? `<span class="evo">EVOLVE</span>` : "") +
+            (mon.sealed > 0 ? `<span class="lock">🔒 ${mon.sealed}</span>` : "");
+          f.onclick = () => openSheet(mon, isMe, evolvable);
+        });
+      }
+
+      /**
+       * Pick the sprite scale: the biggest whole number of *device* pixels per
+       * sprite pixel that fits both rows (the back row a step smaller for depth),
+       * and the backdrop at an integer scale that covers the arena.
+       */
+      function sizeArena() {
+        const arena = $("arena");
+        if (!arena || !arena.clientWidth) return;
+        const dpr = window.devicePixelRatio || 1;
+        const W = arena.clientWidth;
+        const snap = (u) => Math.max(1, Math.floor(u * dpr)) / dpr;
+        for (const [id, depth] of [["meSide", 1], ["foeSide", 0.86]]) {
+          const side = $(id);
+          // 40 rows of sprite (the top of the canvas is headroom) + the badge below it.
+          const u = snap(Math.min(side.clientHeight / 52, W / 2 / 52) * depth);
+          side.style.setProperty("--u", u + "px");
+          side.style.setProperty("--gu", snap(u * 0.55) + "px");
+          side.dataset.u = u;
+        }
+        if (window.PIXELART) {
+          const k = Math.ceil(Math.max(W / 160, arena.clientHeight / 100) * dpr) / dpr;
+          arena.style.backgroundImage = `url(${PIXELART.arena})`;
+          arena.style.backgroundSize = `${160 * k}px ${100 * k}px`;
         }
       }
+      window.addEventListener("resize", sizeArena);
+      if (window.ResizeObserver) new ResizeObserver(sizeArena).observe(document.getElementById("arena"));
 
       function renderBoard() {
         const board = state.board;
@@ -1015,9 +1166,15 @@
         const evo = mon.evolution || 0;
         sheet.innerHTML =
           `<div class="sheet" style="--el: var(--${mon.element})">` +
-          `<div class="s-art bob">${art(mon.id, 128)}</div>` +
+          `<div class="s-art bob">${stageArt(mon.id, evo, 3)}</div>` +
           `<h2>${esc(mon.name)}${evo ? " " + "★".repeat(evo) : ""}</h2>` +
           `<div class="s-sub">${EMOJI[mon.element]} ${EL_LABEL[mon.element]}${evo ? ` · Evolution ${evo}/${MAX_EVOLUTION}` : ""}</div>` +
+          (pxMon(mon.id)
+            ? `<div class="evo-line" aria-label="Evolution line">` +
+              [0, 1, 2].map((s) =>
+                `<div class="evo-st${s === evo ? " cur" : s > evo ? " locked" : ""}">${stageArt(mon.id, s, window.innerWidth >= 400 ? 2 : 1)}<span>${s ? "★".repeat(s) : "Base"}</span></div>`,
+              ).join(`<span class="arrow">›</span>`) + `</div>`
+            : "") +
           `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">⚡ ${mon.chargeCost} charge</span></div>` +
           `<div class="s-desc">${esc(mon.ability.description)}</div>` +
           (mon.ability.passive ? `<div class="s-pass">✦ ${esc(mon.ability.passive)}</div>` : "") +
@@ -1043,7 +1200,8 @@
 
       async function onEvolve(monsterId) {
         if (animating) return;
-        try { await gameSock.request("mm:evolve", { monsterId }); await refresh(); }
+        // The mm:evolved broadcast plays the transformation and refreshes.
+        try { await gameSock.request("mm:evolve", { monsterId }); }
         catch (e) { toast(e.message); }
       }
 
@@ -1074,12 +1232,54 @@
       const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
       const COLOR = { fire: "#ff5a36", water: "#2fb0f0", earth: "#c98a46", nature: "#5ccf3c", light: "#ffcc33", berry: "#e8304a", stone: "#9aa0ad" };
       const tileAt = (x, y) => $("board").querySelector(`[data-x="${x}"][data-y="${y}"]`);
-      const stripOf = (seat) => (seat === room.seat ? $("meStrip") : $("foeStrip"));
       const centerOf = (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+      /** A monster's fighter element on the battlefield, by id. */
       const chipOf = (seat, monsterId) => {
         const idx = state.players[seat].monsters.findIndex((m) => m.id === monsterId);
-        return idx < 0 ? null : { idx, el: stripOf(seat).querySelectorAll(".mchip")[idx] };
+        return idx < 0 ? null : { idx, el: sideOf(seat).querySelector(`.fighter.f${idx}`) };
       };
+      /** Where things aimed at a monster land: its body centre (moves with its hops). */
+      const monOf = (seat, monsterId) => chipOf(seat, monsterId)?.el?.querySelector(".core") ?? null;
+      /** Where things aimed at a player land: between their two monsters. */
+      const hitOf = (seat) => {
+        const cores = [...sideOf(seat).querySelectorAll(".core")].map(centerOf);
+        if (!cores.length) return centerOf(sideOf(seat));
+        return { x: cores.reduce((s, c) => s + c.x, 0) / cores.length, y: cores.reduce((s, c) => s + c.y, 0) / cores.length };
+      };
+
+      /**
+       * Monster body language (WAAPI on the sprite, layered over its idle loop).
+       * `monsterId` null poses both of a player's monsters. Distances are in
+       * sprite pixels so the motion scales with the art.
+       */
+      const POSES = {
+        attack: (dir, u) => [[{ transform: "none" }, { transform: `translateY(${-dir * 2 * u}px) scale(1.06, 0.94)`, offset: 0.25 }, { transform: `translateY(${dir * 12 * u}px) scale(0.96, 1.05)`, offset: 0.5 }, { transform: "none" }], { duration: 440, easing: "cubic-bezier(0.3, 0, 0.3, 1)" }],
+        cast: (dir, u) => [[{ transform: "none" }, { transform: `translateY(${-7 * u}px) scale(0.94, 1.08)`, offset: 0.35 }, { transform: `scale(1.1, 0.9)`, offset: 0.7 }, { transform: "none" }], { duration: 460, easing: "ease-out" }],
+        hurt: (dir, u) => [[0, -3, 3, -2, 1, 0].map((x) => ({ transform: `translateX(${x * u}px)` })), { duration: 340, easing: "ease-out" }],
+        cheer: (dir, u) => [[{ transform: "none" }, { transform: `translateY(${-4 * u}px)`, offset: 0.25 }, { transform: "none", offset: 0.5 }, { transform: `translateY(${-3 * u}px)`, offset: 0.75 }, { transform: "none" }], { duration: 560, easing: "ease-in-out" }],
+        charge: () => [[{ transform: "none" }, { transform: "scale(1.07, 0.93)" }, { transform: "none" }], { duration: 170, easing: "ease-out" }],
+        dizzy: () => [[0, -9, 8, -6, 4, 0].map((r) => ({ transform: `rotate(${r}deg)` })), { duration: 700, easing: "ease-in-out" }],
+        faint: (dir, u) => [[{ transform: "none", opacity: 1 }, { transform: `translateY(${-3 * u}px)`, opacity: 1, offset: 0.2 }, { transform: `translateY(${2 * u}px) scale(1.15, 0.15)`, opacity: 0 }], { duration: 620, easing: "ease-in", fill: "forwards" }],
+      };
+      function pose(seat, monsterId, name) {
+        if (reduceMotion || !room) return Promise.resolve();
+        const side = sideOf(seat);
+        const u = parseFloat(side.dataset.u) || 2;
+        const dir = seat === room.seat ? -1 : 1; // towards the rival row
+        const fighters = monsterId ? [chipOf(seat, monsterId)?.el].filter(Boolean) : [...side.querySelectorAll(".fighter")];
+        const runs = fighters.map((f) => {
+          const [frames, opts] = POSES[name](dir, u);
+          const run = f.querySelector(".bounce").animate(frames, opts);
+          if (name === "hurt") f.querySelector(".rig").animate([{ filter: "none" }, { filter: "brightness(2.4) saturate(0.3)", offset: 0.15 }, { filter: "none" }], { duration: 300 });
+          return run.finished.catch(() => {});
+        });
+        return Promise.all(runs).then(() => {});
+      }
+
+      async function faintFx(seat) {
+        await pose(seat, null, "faint");
+        for (const f of sideOf(seat).querySelectorAll(".fighter")) f.classList.add("fainted");
+      }
 
       /** Something small flying along an arc from a to b; resolves on arrival. */
       function fly(cls, from, to, color, { delay = 0, dur = 520, arc = 60 } = {}) {
@@ -1151,36 +1351,34 @@
 
       function drawHp(seat, healed) {
         const d = disp[seat];
-        const strip = stripOf(seat);
-        const fill = strip.querySelector(".hp .fill"), ghost = strip.querySelector(".hp .ghost");
-        const shield = strip.querySelector(".hp .shieldfill"), num = strip.querySelector(".hp .num");
+        const hud = hudOf(seat);
+        const fill = hud.querySelector(".hp .fill"), ghost = hud.querySelector(".hp .ghost");
+        const shield = hud.querySelector(".hp .shieldfill"), num = hud.querySelector(".hp .num");
         const pct = Math.max(0, (d.hp / d.maxHp) * 100);
         if (healed && ghost) { ghost.style.transition = "none"; ghost.style.width = pct + "%"; void ghost.offsetWidth; ghost.style.transition = ""; }
         if (fill) { fill.style.width = pct + "%"; fill.classList.toggle("low", pct <= 30); }
         if (ghost && !healed) ghost.style.width = pct + "%";
         if (shield) shield.style.width = Math.min(100, (d.shield / d.maxHp) * 100) + "%";
-        if (num) num.textContent = `❤ ${d.hp}/${d.maxHp}`;
+        if (num) num.textContent = `❤ ${d.hp}`;
       }
 
       function drawCharge(seat, i, gulp) {
         const d = disp[seat];
-        const chip = stripOf(seat).querySelectorAll(".mchip")[i];
-        if (!chip) return;
-        const cost = d.cost[i], c = d.charge[i];
-        const ready = c >= cost;
-        const ring = chip.querySelector(".ring");
-        ring.style.setProperty("--p", Math.min(100, Math.round((c / cost) * 100)) + "%");
-        chip.querySelector(".mcharge").textContent = ready ? "READY" : `⚡ ${Math.min(c, cost)}/${cost}`;
-        chip.classList.toggle("ready", ready);
-        if (gulp) bump(ring, 1.14, 200);
+        const f = sideOf(seat).querySelector(`.fighter.f${i}`);
+        if (!f) return;
+        const cost = d.cost[i], c = Math.min(d.charge[i], cost);
+        const fill = f.querySelector(".cbar-fill"), num = f.querySelector(".cbar-num");
+        if (fill) fill.style.width = Math.round((c / cost) * 100) + "%";
+        if (num) num.textContent = `${c}/${cost}`;
+        f.classList.toggle("ready", d.charge[i] >= cost && !d.sealed[i]);
+        if (gulp) { pose(seat, f.dataset.mon, "charge"); bump(f.querySelector(".cbar"), 1.1, 180); }
       }
 
-      /** Where a cleared tile's energy goes for `seat`: charge rings and the berry stash. */
+      /** Where a cleared tile's energy goes for `seat`: into the matching monsters, or the berry stash. */
       function chargeTargets(seat) {
         if (!disp) return () => [];
-        const strip = stripOf(seat);
-        const chips = strip.querySelectorAll(".mchip");
-        const berryChip = strip.querySelector("[data-berry]");
+        const side = sideOf(seat);
+        const berryChip = hudOf(seat).querySelector("[data-berry]");
         const d = disp[seat];
         return (gem) => {
           if (gem === "berry" && berryChip) {
@@ -1188,8 +1386,9 @@
           }
           const out = [];
           d.elements.forEach((el, i) => {
-            if (el !== gem || d.sealed[i] || !chips[i]) return;
-            out.push({ pos: centerOf(chips[i].querySelector(".ring")), arrive: () => { d.charge[i]++; drawCharge(seat, i, true); } });
+            const core = side.querySelector(`.fighter.f${i} .core`);
+            if (el !== gem || d.sealed[i] || !core) return;
+            out.push({ pos: centerOf(core), arrive: () => { d.charge[i]++; drawCharge(seat, i, true); } });
           });
           return out;
         };
@@ -1291,29 +1490,33 @@
         return dur;
       }
 
-      /** The cast moment: big art + move name over a dimmed board. */
+      /** The cast moment: the arena dims around the caster, who winds up while its move's name slides in. */
       async function showCastCard(cast) {
         const el = $("cast");
+        const caster = chipOf(cast.by, cast.monsterId)?.el;
         el.style.setProperty("--el", `var(--${cast.element})`);
-        el.innerHTML = `<div class="cast-inner"><div class="cast-art">${art(cast.monsterId, 128)}</div><div class="cast-name">${esc(cast.moveName)}</div></div>`;
+        el.innerHTML = `<div class="cast-name">${esc(cast.moveName)}</div>`;
         el.classList.add("show");
-        $("boardWrap").classList.add("casting");
-        const inner = el.firstElementChild;
-        const from = cast.by === room.seat ? 40 : -40; // rises from your side, drops from theirs
-        inner.animate(
+        $("arena").classList.add("casting");
+        caster?.classList.add("spot");
+        const name = el.firstElementChild;
+        const from = cast.by === room.seat ? -60 : 60; // slides in from the caster's side of the screen
+        name.animate(
           reduceMotion
             ? [{ opacity: 0 }, { opacity: 1 }]
             : [
-                { opacity: 0, transform: `translateY(${from}px) scale(0.6)` },
-                { opacity: 1, transform: "translateY(0) scale(1.08)", offset: 0.65 },
-                { opacity: 1, transform: "translateY(0) scale(1)" },
+                { opacity: 0, transform: `translate(${from}px, -50%) scale(0.8)` },
+                { opacity: 1, transform: "translate(0, -50%) scale(1.06)", offset: 0.6 },
+                { opacity: 1, transform: "translate(0, -50%) scale(1)" },
               ],
-          { duration: 340, easing: "cubic-bezier(0.2, 0.9, 0.3, 1)", fill: "forwards" },
+          { duration: 300, easing: "cubic-bezier(0.2, 0.9, 0.3, 1)", fill: "forwards" },
         );
-        await sleep(640);
-        inner.animate([{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(1.12)" }], { duration: 170, easing: "ease-in", fill: "forwards" });
-        $("boardWrap").classList.remove("casting");
-        await sleep(150);
+        await pose(cast.by, cast.monsterId, "cast");
+        await sleep(reduceMotion ? 500 : 180);
+        name.animate([{ opacity: 1, transform: "translate(0, -50%) scale(1)" }, { opacity: 0, transform: "translate(0, -50%) scale(1.1)" }], { duration: 160, easing: "ease-in", fill: "forwards" });
+        $("arena").classList.remove("casting");
+        await sleep(140);
+        caster?.classList.remove("spot");
         el.classList.remove("show");
         el.innerHTML = "";
       }
@@ -1329,11 +1532,11 @@
         fatigue: { color: "#ff9a6b", icon: "☠", sign: "−" },
       };
 
-      /** Apply a number to a player's shown HP/shield and react: flash, shake (scaled to the hit), float. */
+      /** Apply a number to a player's shown HP/shield and react: flash, monsters flinch or cheer, HUD shakes, float. */
       function land(seat, kind, amount, colorOverride) {
         const style = EVENT_STYLE[kind] || EVENT_STYLE.attack;
         const color = colorOverride || style.color || "#ff6a4d";
-        const strip = stripOf(seat);
+        const side = sideOf(seat), hud = hudOf(seat);
         const d = disp && disp[seat];
         let hurt = 0, healed = false;
         if (d) {
@@ -1346,22 +1549,27 @@
         const flash = document.createElement("div");
         flash.className = "flash";
         flash.style.setProperty("--c", color);
-        strip.querySelector(".s-fx").appendChild(flash);
-        flash.animate([{ opacity: 0 }, { opacity: hurt ? 0.55 : 0.35 }, { opacity: 0 }], { duration: 360, easing: "ease-out" })
+        side.querySelector(".s-fx").appendChild(flash);
+        flash.animate([{ opacity: 0 }, { opacity: hurt ? 0.45 : 0.3 }, { opacity: 0 }], { duration: 360, easing: "ease-out" })
           .finished.catch(() => {}).then(() => flash.remove());
-        if (hurt && !reduceMotion) {
-          const amp = Math.min(9, 2 + hurt / 3);
-          strip.animate([0, -amp, amp, -amp * 0.6, amp * 0.4, 0].map((x) => ({ transform: `translateX(${x}px)` })), { duration: 340, easing: "ease-out" });
+        if (hurt) {
+          pose(seat, null, "hurt");
+          if (!reduceMotion) {
+            const amp = Math.min(7, 2 + hurt / 4);
+            hud.animate([0, -amp, amp, -amp * 0.6, amp * 0.4, 0].map((x) => ({ transform: `translateX(${x}px)` })), { duration: 340, easing: "ease-out" });
+          }
+        } else if (kind === "heal" || kind === "shield") {
+          pose(seat, null, "cheer");
+          bump(hud.querySelector(".hp .bar"), 1.06, 260);
         }
-        if (kind === "shield" || kind === "heal") bump(strip.querySelector(".hp .bar"), 1.06, 260);
         const f = document.createElement("div");
         f.className = `float ${kind.replace("-tick", "")}`;
         f.textContent = `${style.icon}${style.sign}${amount}${style.suffix || ""}`;
-        strip.querySelector(".s-fx").appendChild(f);
+        const at = hitOf(seat), box = side.getBoundingClientRect();
+        f.style.top = Math.max(0, at.y - box.top - 22) + "px";
+        side.querySelector(".s-fx").appendChild(f);
         setTimeout(() => f.remove(), 1100);
       }
-
-      const ringOf = (seat, monsterId) => chipOf(seat, monsterId)?.el?.querySelector(".ring") ?? null;
 
       /** Move a monster's shown charge (sap, empower). */
       function chargeBy(seat, monsterId, delta) {
@@ -1384,39 +1592,56 @@
 
       /** Primitives handed to every animator in web/animators.js (see its `Fx` type). */
       const fx = {
-        sleep, reduceMotion, COLOR, tileAt, centerOf, stripOf, ringOf,
-        hpBarOf: (seat) => stripOf(seat).querySelector(".hp .bar") || stripOf(seat),
+        sleep, reduceMotion, COLOR, tileAt, centerOf, sideOf, monOf, hitOf,
+        hpBarOf: (seat) => hudOf(seat).querySelector(".hp .bar") || hudOf(seat),
         board: () => $("board"),
         banner: () => $("turnBanner"),
         fly, burst,
         bump: (el, scale, dur) => { bump(el, scale, dur); },
         floatText, land, setTile, playStep,
         charge: chargeBy,
+        pose,
         shuffle: () => shuffleBoard(),
       };
       const animators = () => window.MM_ANIMATORS;
 
-      /** A monster stepping up: lunge, spend its charge, and (unless it's a follow-up) the cast card. */
+      /** A monster stepping up: spend its charge and (unless it's a follow-up) take the stage. */
       async function castIntro(cast) {
+        if (cast.via === "followUp") return pose(cast.by, cast.monsterId, "cast");
         const chip = chipOf(cast.by, cast.monsterId);
-        if (chip && chip.el && !reduceMotion) {
-          const dir = cast.by === room.seat ? -1 : 1;
-          chip.el.animate(
-            [{ transform: "none" }, { transform: `translateY(${dir * 10}px) scale(1.08)`, offset: 0.4 }, { transform: "none" }],
-            { duration: 360, easing: "cubic-bezier(0.3, 1.5, 0.5, 1)" },
-          );
-        }
-        if (cast.via === "followUp") return sleep(160);
         if (chip && disp) { const d = disp[cast.by]; d.charge[chip.idx] = Math.max(0, d.charge[chip.idx] - d.cost[chip.idx]); drawCharge(cast.by, chip.idx); }
         await showCastCard(cast);
       }
 
-      function evolveFx(chip) {
-        bump(chip, 1.12, 420);
-        if (!reduceMotion) chip.animate([{ filter: "brightness(1)" }, { filter: "brightness(2)" }, { filter: "brightness(1)" }], { duration: 520 });
-        const at = centerOf(chip.querySelector(".ring") || chip);
-        burst(at, "#ffd23c", 12, 46);
-        burst(at, "#fff6c2", 6, 28);
+      /** Evolution: the monster glows white, swaps to its next stage mid-flash and pops out bigger. */
+      async function evolveFx(seat, monsterId) {
+        const white = "brightness(0) invert(1)";
+        const old = chipOf(seat, monsterId)?.el;
+        let glow = null;
+        if (old && !reduceMotion) {
+          old.classList.add("spot");
+          glow = old.querySelector(".rig").animate(
+            [{ filter: "none", transform: "none" }, { filter: white, transform: "scale(1.06, 0.94)", offset: 0.6 }, { filter: white, transform: "scale(0.9, 1.1)" }],
+            { duration: 460, easing: "ease-in", fill: "forwards" },
+          );
+          await glow.finished.catch(() => {});
+        }
+        await refresh();
+        glow?.cancel(); // in case the old sprite survived the refresh
+        const f = chipOf(seat, monsterId)?.el;
+        if (!f) return;
+        const at = centerOf(f.querySelector(".core") || f);
+        if (!reduceMotion) {
+          f.querySelector(".rig").animate(
+            [{ filter: white, transform: "scale(0.8)" }, { filter: white, transform: "scale(1.15)", offset: 0.35 }, { filter: "none", transform: "scale(1)" }],
+            { duration: 640, easing: "cubic-bezier(0.2, 1.4, 0.4, 1)" },
+          );
+        }
+        burst(at, "#ffd23c", 12, 52);
+        burst(at, "#fff6c2", 6, 30);
+        floatText(f.querySelector(".stage"), "★".repeat(state.players[seat].monsters.find((m) => m.id === monsterId)?.evolution || 1), "#ffe14d");
+        await sleep(reduceMotion ? 200 : 700);
+        f.classList.remove("spot");
       }
 
       /** Tiles that just turned to stone or iced get their own entrance. */
@@ -1455,7 +1680,7 @@
           const playedSteps = new Set();
           for (const cast of data.casts || []) {
             await castIntro(cast);
-            const ctx = { fx, cast, data, source: ringOf(cast.by, cast.monsterId), playedSteps };
+            const ctx = { fx, cast, data, source: monOf(cast.by, cast.monsterId), playedSteps };
             for (const e of cast.effects || []) await A.effects[e.kind]?.animate(e, ctx);
             await settle();
           }

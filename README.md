@@ -67,6 +67,12 @@ the same teams, and the loser goes first.
 
 ### How a match plays
 
+The screen is an arena on top (the rival's two monsters at the back, yours up
+front, each with its element and charge under it) and the gem board below.
+Monsters are rigged pixel sprites: they idle, lunge when they hit, flinch when
+hit, cheer on heals and shields, get dizzy when slowed, and transform on the
+spot when they evolve. Tap one for its move, passive and evolution line.
+
 - Tap a tile, then a neighbour, to swap. Any swap is allowed: one that makes no
   match just moves the tile (handy for setting up a combo) and still uses a move,
   so the board can never lock you in.

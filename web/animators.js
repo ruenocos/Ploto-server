@@ -26,6 +26,7 @@
 
 /** @typedef {{ x: number, y: number }} Pt */
 /** @typedef {"attack" | "heal" | "shield" | "burn" | "poison" | "burn-tick" | "poison-tick" | "fatigue"} LandKind */
+/** @typedef {"attack" | "cast" | "hurt" | "cheer" | "charge" | "dizzy" | "faint"} Pose */
 
 /**
  * The drawing primitives index.html hands to every animator.
@@ -35,8 +36,9 @@
  * @property {Record<string, string>} COLOR  colour per element / berry / stone
  * @property {(x: number, y: number) => HTMLElement | null} tileAt
  * @property {(el: Element) => Pt} centerOf
- * @property {(seat: 0 | 1) => HTMLElement} stripOf
- * @property {(seat: 0 | 1, monsterId: string) => HTMLElement | null} ringOf   a monster's charge ring
+ * @property {(seat: 0 | 1) => HTMLElement} sideOf   a player's half of the arena
+ * @property {(seat: 0 | 1, monsterId: string) => HTMLElement | null} monOf   a monster's body centre on the battlefield
+ * @property {(seat: 0 | 1) => Pt} hitOf   where hits on a player land (between their monsters)
  * @property {(seat: 0 | 1) => HTMLElement} hpBarOf
  * @property {() => HTMLElement} board
  * @property {() => HTMLElement} banner
@@ -48,6 +50,7 @@
  * @property {(seat: 0 | 1, monsterId: string, delta: number) => void} charge   move a monster's shown charge
  * @property {(x: number, y: number, gem: Gem, cls?: string) => void} setTile   change one tile (with an entrance class)
  * @property {(step: CascadeStep, opts: { mover: 0 | 1 | null, combo?: number }) => Promise<void>} playStep
+ * @property {(seat: 0 | 1, monsterId: string | null, pose: Pose) => Promise<void>} pose   body language (null = both monsters); `land` already flinches/cheers
  * @property {() => Promise<void>} shuffle
  */
 
@@ -57,7 +60,7 @@
  * @property {Fx} fx
  * @property {CastEvent} cast
  * @property {MoveResult} data
- * @property {HTMLElement | null} source  the caster's charge ring
+ * @property {HTMLElement | null} source  the caster's body centre
  * @property {Set<number>} playedSteps  effectSteps already animated
  */
 
@@ -68,10 +71,16 @@
 
 const other = (/** @type {0 | 1} */ seat) => /** @type {0 | 1} */ (seat === 0 ? 1 : 0);
 
-/** Send an orb from the caster to a player's HP bar (skipped if there's no source). */
+/** Send an orb from the caster to a player's monsters (skipped if there's no source). */
 async function orbTo(/** @type {CastCtx} */ ctx, /** @type {0 | 1} */ seat, /** @type {string} */ color, dur = 300) {
   const { fx, source } = ctx;
-  if (source) await fx.fly("orb", fx.centerOf(source), fx.centerOf(fx.hpBarOf(seat)), color, { dur, arc: 30 });
+  if (source) await fx.fly("orb", fx.centerOf(source), fx.hitOf(seat), color, { dur, arc: 30 });
+}
+
+/** The caster lunges at the rival row; the orb leaves at the peak of the lunge. */
+async function lunge(/** @type {CastCtx} */ ctx) {
+  void ctx.fx.pose(ctx.cast.by, ctx.cast.monsterId, "attack");
+  await ctx.fx.sleep(ctx.fx.reduceMotion ? 0 : 190);
 }
 
 /** Motes from the caster to each cell, then `onArrive` per cell. */
@@ -91,6 +100,7 @@ const EFFECTS = {
   damage: {
     async animate(e, ctx) {
       const color = ctx.fx.COLOR[ctx.cast.element] ?? "#ff6a4d";
+      await lunge(ctx);
       await orbTo(ctx, e.target, color);
       ctx.fx.land(e.target, "attack", e.amount, color);
       await ctx.fx.sleep(90);
@@ -110,7 +120,7 @@ const EFFECTS = {
       const { fx } = ctx;
       await orbTo(ctx, e.target, "#7fd0ff");
       if (e.amount > 0) fx.land(e.target, "shield", e.amount);
-      else fx.floatText(fx.stripOf(e.target), "🛡 max", "#7fd0ff");
+      else fx.floatText(fx.sideOf(e.target), "🛡 max", "#7fd0ff");
       await fx.sleep(90);
     },
   },
@@ -120,10 +130,12 @@ const EFFECTS = {
     async animate(e, ctx) {
       const { fx } = ctx;
       const color = fx.COLOR[ctx.cast.element] ?? "#ff6a4d";
+      await lunge(ctx);
       await orbTo(ctx, e.target, color);
       fx.land(e.target, "attack", e.amount, color);
       const caster = other(e.target);
-      await fx.fly("orb", fx.centerOf(fx.hpBarOf(e.target)), fx.centerOf(fx.hpBarOf(caster)), "#4fd17a", { dur: 380, arc: 50 });
+      const home = ctx.source ? fx.centerOf(ctx.source) : fx.hitOf(caster);
+      await fx.fly("orb", fx.hitOf(e.target), home, "#4fd17a", { dur: 380, arc: 50 });
       fx.land(caster, "heal", e.amount);
       await fx.sleep(90);
     },
@@ -132,6 +144,7 @@ const EFFECTS = {
   dot: {
     async animate(e, ctx) {
       const color = e.dot === "burn" ? "#ff9a3c" : "#8be27f";
+      await lunge(ctx);
       await orbTo(ctx, e.target, color);
       ctx.fx.land(e.target, e.dot, e.amount, color);
       await ctx.fx.sleep(90);
@@ -174,7 +187,8 @@ const EFFECTS = {
         await Promise.all(flights);
       }
       board.animate([{ filter: "none" }, { filter: "brightness(1.25) saturate(0.4) hue-rotate(160deg)" }, { filter: "none" }], { duration: 420 });
-      fx.floatText(fx.stripOf(e.target), `❄ ${e.count} next turn`, "#bfe9ff");
+      fx.floatText(fx.sideOf(e.target), `❄ ${e.count} next turn`, "#bfe9ff");
+      void fx.pose(e.target, null, "hurt");
       await fx.sleep(300);
     },
   },
@@ -200,31 +214,34 @@ const EFFECTS = {
     },
   },
 
-  // Charge leaks out of the rival's rings and streams to the caster.
+  // Charge leaks out of the rival monsters and streams into the caster.
   sap: {
     async animate(e, ctx) {
       const { fx, source, cast } = ctx;
+      const color = fx.COLOR[cast.element] ?? "#3aa0ff";
       const flights = Object.entries(e.drained).map(([monsterId, n]) => {
-        const ring = fx.ringOf(e.target, monsterId);
+        const mon = fx.monOf(e.target, monsterId);
         fx.charge(e.target, monsterId, -n);
-        if (!ring) return Promise.resolve();
-        fx.burst(fx.centerOf(ring), fx.COLOR[cast.element] ?? "#3aa0ff", 6, 22);
-        return source ? fx.fly("mote", fx.centerOf(ring), fx.centerOf(source), fx.COLOR[cast.element] ?? "#3aa0ff", { dur: 460 }) : Promise.resolve();
+        void fx.pose(e.target, monsterId, "hurt");
+        if (!mon) return Promise.resolve();
+        fx.burst(fx.centerOf(mon), color, 6, 22);
+        return source ? fx.fly("mote", fx.centerOf(mon), fx.centerOf(source), color, { dur: 460 }) : Promise.resolve();
       });
-      if (!flights.length) fx.floatText(fx.stripOf(e.target), "no charge to drain", "#8f98ad");
+      if (!flights.length) fx.floatText(fx.sideOf(e.target), "no charge to drain", "#8f98ad");
       await Promise.all(flights);
+      if (flights.length) void fx.pose(cast.by, cast.monsterId, "charge");
       await fx.sleep(120);
     },
   },
 
+  // The rival's monsters get the spins.
   slow: {
     async animate(e, ctx) {
       const { fx } = ctx;
-      const strip = fx.stripOf(e.target);
       await orbTo(ctx, e.target, fx.COLOR.water ?? "#3aa0ff");
-      if (!fx.reduceMotion) strip.animate([{ transform: "none" }, { transform: "scaleY(0.94) translateY(3px)" }, { transform: "none" }], { duration: 380, easing: "ease-out" });
-      fx.floatText(strip, e.count > 0 ? `🐌 −${e.count} move next turn` : "🐌 already slowed", "#9bf6ff");
-      await fx.sleep(320);
+      void fx.pose(e.target, null, "dizzy");
+      fx.floatText(fx.sideOf(e.target), e.count > 0 ? `🐌 −${e.count} move next turn` : "🐌 already slowed", "#9bf6ff");
+      await fx.sleep(420);
     },
   },
 
@@ -232,21 +249,23 @@ const EFFECTS = {
   seal: {
     async animate(e, ctx) {
       const { fx } = ctx;
-      const ring = e.monsterId ? fx.ringOf(e.target, e.monsterId) : null;
-      const chip = ring?.closest(".mchip");
-      if (ring && ctx.source) await fx.fly("orb", fx.centerOf(ctx.source), fx.centerOf(ring), "#b39dff", { dur: 320 });
-      if (chip instanceof HTMLElement) {
+      const mon = e.monsterId ? fx.monOf(e.target, e.monsterId) : null;
+      const fighter = mon?.closest(".fighter");
+      const stage = fighter?.querySelector(".stage");
+      if (mon && ctx.source) await fx.fly("orb", fx.centerOf(ctx.source), fx.centerOf(mon), "#b39dff", { dur: 320 });
+      if (fighter instanceof HTMLElement && stage instanceof HTMLElement && e.monsterId) {
         const stamp = document.createElement("div");
         stamp.className = "stamp";
         stamp.textContent = "🔒";
-        chip.appendChild(stamp);
+        stage.appendChild(stamp);
         stamp.animate(
           fx.reduceMotion ? [{ opacity: 0 }, { opacity: 1 }] : [{ transform: "translate(-50%, -50%) scale(2.6)", opacity: 0 }, { transform: "translate(-50%, -50%) scale(0.9)", opacity: 1, offset: 0.6 }, { transform: "translate(-50%, -50%) scale(1)", opacity: 1 }],
           { duration: 360, easing: "cubic-bezier(0.3, 0, 0.3, 1)", fill: "forwards" },
         );
-        if (!fx.reduceMotion) chip.animate([{ transform: "none" }, { transform: "translateY(2px) scale(0.97)" }, { transform: "none" }], { duration: 260, delay: 220 });
-        chip.animate([{ filter: "none" }, { filter: "grayscale(0.8) brightness(0.8)" }], { duration: 400, fill: "forwards" });
-        fx.floatText(chip, `sealed ${e.turns}`, "#b39dff");
+        void fx.pose(e.target, e.monsterId, "hurt");
+        fighter.classList.add("sealed"); // the next render keeps it in sync with the real state
+        fighter.classList.remove("ready");
+        fx.floatText(stage, `sealed ${e.turns}`, "#b39dff");
         await fx.sleep(650);
         stamp.remove();
       } else {
@@ -257,11 +276,12 @@ const EFFECTS = {
 
   haste: {
     async animate(_e, ctx) {
-      const { fx } = ctx;
+      const { fx, cast } = ctx;
       const banner = fx.banner();
       const r = banner.getBoundingClientRect();
       fx.burst({ x: r.right - 34, y: r.top + r.height / 2 }, "#ffd23c", 10, 30);
       fx.bump(banner, 1.04, 300);
+      void fx.pose(cast.by, null, "cheer");
       await fx.sleep(320); // the bonus pip itself pops in when the turn re-renders
     },
   },
@@ -269,31 +289,37 @@ const EFFECTS = {
   cleanse: {
     async animate(e, ctx) {
       const { fx, cast } = ctx;
-      const strip = fx.stripOf(cast.by);
-      const r = strip.getBoundingClientRect();
-      for (let i = 0; i < 5; i++) fx.burst({ x: r.left + (r.width * (i + 0.5)) / 5, y: r.top + r.height * 0.35 }, "#fff6c2", 5, 22);
-      if (e.removed > 0) fx.floatText(strip, "✨ cleansed", "#fff6c2");
+      const side = fx.sideOf(cast.by);
+      for (const f of side.querySelectorAll(".fighter .core")) {
+        const c = fx.centerOf(f);
+        fx.burst(c, "#fff6c2", 7, 26);
+      }
+      void fx.pose(cast.by, null, "cheer");
+      if (e.removed > 0) fx.floatText(side, "✨ cleansed", "#fff6c2");
       await fx.sleep(360);
     },
   },
 
-  // Motes stream from the caster into its partner's ring.
+  // Motes stream from the caster into its partner.
   empower: {
     async animate(e, ctx) {
       const { fx, source, cast } = ctx;
       await Promise.all(
         e.monsterIds.map((id) => {
-          const ring = fx.ringOf(cast.by, id);
-          if (!ring || !source) {
+          const mon = fx.monOf(cast.by, id);
+          if (!mon || !source) {
             fx.charge(cast.by, id, e.count);
             return Promise.resolve();
           }
           const color = fx.COLOR[cast.element] ?? "#ffd23c";
           return Promise.all(
             Array.from({ length: Math.min(6, e.count) }, (_, i) =>
-              fx.fly("mote", fx.centerOf(source), fx.centerOf(ring), color, { delay: i * 60, dur: 420 }),
+              fx.fly("mote", fx.centerOf(source), fx.centerOf(mon), color, { delay: i * 60, dur: 420 }),
             ),
-          ).then(() => fx.charge(cast.by, id, e.count));
+          ).then(() => {
+            fx.charge(cast.by, id, e.count);
+            void fx.pose(cast.by, id, "cheer");
+          });
         }),
       );
       await fx.sleep(120);

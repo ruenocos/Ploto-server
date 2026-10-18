@@ -23,13 +23,13 @@ export interface Board {
 /** Starting / maximum HP for every player. */
 export const STARTING_HP = 100;
 
-export type AbilityType = "attack" | "heal" | "shield" | "burn";
+export type AbilityType = "attack" | "heal" | "shield" | "burn" | "poison";
 
 export interface Ability {
   readonly type: AbilityType;
-  /** Damage dealt (attack/burn-per-turn), HP restored (heal), or shield gained. */
+  /** Damage (attack / burn / poison per turn), HP restored (heal), or shield gained. */
   readonly amount: number;
-  /** For `burn`: how many of the victim's turns it ticks. */
+  /** For `burn`/`poison`: how many of the victim's turns it ticks. */
   readonly turns?: number;
   readonly description: string;
 }
@@ -49,9 +49,12 @@ export interface MonsterState {
   charge: number;
 }
 
-export interface Burn {
+/** A damage-over-time effect (burn or poison) on a player. */
+export interface Dot {
   amount: number;
   turns: number;
+  kind: "burn" | "poison";
+  element: Element;
 }
 
 export interface PlayerState {
@@ -60,7 +63,7 @@ export interface PlayerState {
   hp: number;
   readonly maxHp: number;
   shield: number;
-  burns: Burn[];
+  dots: Dot[];
   monsters: MonsterState[];
 }
 
@@ -98,7 +101,7 @@ export interface AbilityEvent {
   readonly monsterId: string;
   readonly monsterName: string;
   readonly element: Element;
-  readonly type: AbilityType | "burn-tick";
+  readonly type: AbilityType | "burn-tick" | "poison-tick";
   readonly amount: number;
   /** Player index the effect landed on (foe for attack/burn, self for heal/shield). */
   readonly targetPlayer: 0 | 1;

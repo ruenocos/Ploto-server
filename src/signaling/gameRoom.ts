@@ -95,7 +95,7 @@ function serializePlayer(p: PlayerState) {
     hp: p.hp,
     maxHp: p.maxHp,
     shield: p.shield,
-    burns: p.burns,
+    dots: p.dots,
     monsters: p.monsters.map(serializeMonster),
   };
 }

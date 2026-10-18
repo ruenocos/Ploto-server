@@ -212,28 +212,34 @@ function fireAbility(
       events.push(evt(mon.def, "shield", ab.amount, attackerIdx));
       break;
     case "burn":
-      defender.burns.push({ amount: ab.amount, turns: ab.turns ?? 3 });
-      events.push(evt(mon.def, "burn", ab.amount, defenderIdx));
+    case "poison":
+      defender.dots.push({
+        amount: ab.amount,
+        turns: ab.turns ?? 3,
+        kind: ab.type,
+        element: mon.def.element,
+      });
+      events.push(evt(mon.def, ab.type, ab.amount, defenderIdx));
       break;
   }
 }
 
 function tickBurns(player: PlayerState, playerIdx: 0 | 1, events: AbilityEvent[]): void {
-  if (player.burns.length === 0) return;
-  const remaining: typeof player.burns = [];
-  for (const b of player.burns) {
-    player.hp = Math.max(0, player.hp - b.amount); // burn ignores shields
+  if (player.dots.length === 0) return;
+  const remaining: typeof player.dots = [];
+  for (const d of player.dots) {
+    player.hp = Math.max(0, player.hp - d.amount); // DoTs ignore shields
     events.push({
-      monsterId: "burn",
-      monsterName: "Burn",
-      element: "fire",
-      type: "burn-tick",
-      amount: b.amount,
+      monsterId: d.kind,
+      monsterName: d.kind === "poison" ? "Poison" : "Burn",
+      element: d.element,
+      type: d.kind === "poison" ? "poison-tick" : "burn-tick",
+      amount: d.amount,
       targetPlayer: playerIdx,
     });
-    if (b.turns - 1 > 0) remaining.push({ amount: b.amount, turns: b.turns - 1 });
+    if (d.turns - 1 > 0) remaining.push({ ...d, turns: d.turns - 1 });
   }
-  player.burns = remaining;
+  player.dots = remaining;
 }
 
 function dealDamage(player: PlayerState, amount: number): void {
@@ -262,7 +268,7 @@ function toPlayerState(p: PlayerSetup, hp: number): PlayerState {
     hp,
     maxHp: hp,
     shield: 0,
-    burns: [],
+    dots: [],
     monsters: p.monsters.map((def): MonsterState => ({ def, charge: 0 })),
   };
 }

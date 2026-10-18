@@ -144,6 +144,7 @@
       .float-heal { color: var(--good) !important; }
       .float-shield { color: #7fd0ff !important; }
       .float-burn { color: #ff9a3c !important; }
+      .float-poison { color: #8be27f !important; }
       #board {
         display: grid;
         gap: 5px;
@@ -481,14 +482,19 @@
       function renderPlayer(container, p) {
         container.innerHTML = "";
         const hpPct = Math.max(0, Math.round((p.hp / p.maxHp) * 100));
-        const burnTotal = (p.burns || []).reduce((s, b) => s + b.amount, 0);
+        const dots = p.dots || [];
+        const dotTotal = dots.reduce((s, d) => s + d.amount, 0);
+        const hasPoison = dots.some((d) => d.kind === "poison");
+        const hasBurn = dots.some((d) => d.kind !== "poison");
+        const dotIcon = hasPoison && hasBurn ? "🔥☠️" : hasPoison ? "☠️" : "🔥";
+        const dotWord = hasPoison && !hasBurn ? "poisoned" : "burning";
         const health = document.createElement("div");
         health.className = "phealth";
         health.innerHTML =
           `<div class="hd"><span>❤️ ${p.hp}/${p.maxHp}</span>` +
           (p.shield > 0 ? `<span class="shield-badge">🛡️ ${p.shield}</span>` : "") +
           `</div><div class="bar big"><div class="fill hpfill" style="width:${hpPct}%"></div></div>` +
-          (burnTotal > 0 ? `<div class="burns">🔥 burning ${burnTotal}/turn</div>` : "");
+          (dotTotal > 0 ? `<div class="burns">${dotIcon} ${dotWord} ${dotTotal}/turn</div>` : "");
         container.appendChild(health);
 
         for (const mon of p.monsters) {
@@ -570,7 +576,7 @@
         // Aggregate by (player, kind) so a big turn doesn't spam numbers.
         const agg = {}; // key: `${seat}|${kind}` -> amount
         for (const a of abilities) {
-          const kind = a.type === "burn" ? "burn" : a.type === "burn-tick" ? "burn" : a.type;
+          const kind = a.type.replace("-tick", ""); // attack|heal|shield|burn|poison
           const key = a.targetPlayer + "|" + kind;
           agg[key] = (agg[key] || 0) + a.amount;
         }
@@ -580,8 +586,8 @@
           const card = Number(seatStr) === mySeat ? $("teamMe") : $("teamFoe");
           const amt = agg[key];
           const f = document.createElement("div");
-          const sign = kind === "attack" || kind === "burn" ? "-" : "+";
-          const icon = kind === "shield" ? "🛡️" : kind === "burn" ? "🔥" : kind === "heal" ? "✚" : "";
+          const sign = kind === "attack" || kind === "burn" || kind === "poison" ? "-" : "+";
+          const icon = kind === "shield" ? "🛡️" : kind === "burn" ? "🔥" : kind === "poison" ? "☠️" : kind === "heal" ? "✚" : "";
           f.className = "dmg-float" + (kind !== "attack" ? " float-" + kind : "");
           f.textContent = `${icon}${sign}${amt}`.trim();
           f.style.top = 6 + offset + "px";

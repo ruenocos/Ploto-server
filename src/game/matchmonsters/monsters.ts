@@ -21,6 +21,9 @@ function shield(amount: number): Ability {
 function burn(amount: number, turns: number): Ability {
   return { type: "burn", amount, turns, description: `Burn ${amount}/turn for ${turns} turns` };
 }
+function poison(amount: number, turns: number): Ability {
+  return { type: "poison", amount, turns, description: `Poison ${amount}/turn for ${turns} turns` };
+}
 
 function m(id: string, name: string, element: Element, chargeCost: number, ability: Ability): Monster {
   return { id, name, element, chargeCost, ability };
@@ -46,8 +49,8 @@ export const MONSTERS: Record<string, Monster> = {
   crystal_ox: m("crystal_ox", "Crystal Ox", "earth", 12, heal(22)),
 
   // 🌿 nature — healing & poison
-  thorn_sprite: m("thorn_sprite", "Thorn Sprite", "nature", 8, burn(5, 3)),
-  vine_lurker: m("vine_lurker", "Vine Lurker", "nature", 10, burn(7, 3)),
+  thorn_sprite: m("thorn_sprite", "Thorn Sprite", "nature", 8, poison(5, 3)),
+  vine_lurker: m("vine_lurker", "Vine Lurker", "nature", 10, poison(7, 3)),
   shroom_knight: m("shroom_knight", "Shroom Knight", "nature", 10, heal(18)),
   petal_fawn: m("petal_fawn", "Petal Fawn", "nature", 7, heal(12)),
 
@@ -55,7 +58,7 @@ export const MONSTERS: Record<string, Monster> = {
   prism_owl: m("prism_owl", "Prism Owl", "light", 9, atk(20)),
   dawn_sprite: m("dawn_sprite", "Dawn Sprite", "light", 9, heal(16)),
   lumen_stag: m("lumen_stag", "Lumen Stag", "light", 12, atk(26)),
-  halo_moth: m("halo_moth", "Halo Moth", "light", 10, burn(6, 4)),
+  halo_moth: m("halo_moth", "Halo Moth", "light", 10, atk(22)),
 };
 
 export const ELEMENT_EMOJI: Record<Element, string> = {

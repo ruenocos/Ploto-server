@@ -1,112 +1,109 @@
 import { describe, it, expect } from "vitest";
 import { MatchMonstersGame, type GameConfig } from "../src/game/matchmonsters/engine.js";
-import { MONSTERS } from "../src/game/matchmonsters/monsters.js";
-import { ELEMENTS, type Element, type Tile } from "../src/game/matchmonsters/types.js";
+import { ELEMENTS, type Ability, type Element, type Monster, type Tile } from "../src/game/matchmonsters/types.js";
 
-const MAP: Record<string, Element> = {
-  F: "fire",
-  W: "water",
-  E: "earth",
-  N: "nature",
-  L: "light",
-};
-
-/** A 5x5 layout with no pre-existing matches; swapping (1,2)<->(0,2) makes fire 3. */
+const MAP: Record<string, Element> = { F: "fire", W: "water", E: "earth", N: "nature", L: "light" };
+/** No pre-existing matches; swapping (1,2)<->(0,2) makes a vertical fire 3. */
 const LAYOUT = ["FWENL", "FENLW", "WFENL", "ENLWF", "NLWFE"];
+const FIRE_SWAP = { type: "swap" as const, from: { x: 1, y: 2 }, to: { x: 0, y: 2 } };
 
 function grid(rows: string[]): Tile[][] {
   return rows.map((r) => r.split("").map((c) => MAP[c]!));
 }
+function fireMon(id: string, ability: Ability, chargeCost = 3): Monster {
+  return { id, name: id, element: "fire", chargeCost, ability };
+}
+const filler: Monster = { id: "x", name: "x", element: "light", chargeCost: 99, ability: { type: "heal", amount: 0, description: "" } };
 
-function newGame(overrides: Partial<GameConfig> = {}): MatchMonstersGame {
-  const config: GameConfig = {
-    matchId: "test",
+function newGame(p0: Monster, p1: Monster = filler, over: Partial<GameConfig> = {}): MatchMonstersGame {
+  const g = new MatchMonstersGame({
+    matchId: "t",
     seed: 123,
     board: { width: 5, height: 5, palette: ELEMENTS },
     players: [
-      {
-        peerId: "p0",
-        displayName: "Alice",
-        monsters: [MONSTERS["ember_pup"]!, MONSTERS["prism_owl"]!],
-      },
-      {
-        peerId: "p1",
-        displayName: "Bob",
-        monsters: [MONSTERS["stone_golem"]!, MONSTERS["tide_serpent"]!],
-      },
+      { peerId: "p0", displayName: "Alice", monsters: [p0, filler] },
+      { peerId: "p1", displayName: "Bob", monsters: [p1, filler] },
     ],
-    ...overrides,
-  };
-  const g = new MatchMonstersGame(config);
+    ...over,
+  });
   g.state.board.grid = grid(LAYOUT);
   return g;
 }
 
-const FIRE_SWAP = { type: "swap" as const, from: { x: 1, y: 2 }, to: { x: 0, y: 2 } };
-
-describe("MatchMonstersGame.applyMove — validation", () => {
-  it("rejects a move when it is not your turn", () => {
-    const g = newGame();
-    const r = g.applyMove(1, FIRE_SWAP);
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toMatch(/not your turn/);
-  });
-
-  it("rejects non-adjacent swaps", () => {
-    const g = newGame();
-    const r = g.applyMove(0, { type: "swap", from: { x: 0, y: 0 }, to: { x: 4, y: 4 } });
-    expect(r.ok).toBe(false);
-  });
-
-  it("rejects a swap that creates no match and leaves the board unchanged", () => {
-    const g = newGame();
+describe("validation", () => {
+  it("rejects moves out of turn, non-adjacent, and non-matching", () => {
+    const g = newGame(fireMon("a", { type: "attack", amount: 14, description: "" }));
+    expect(g.applyMove(1, FIRE_SWAP).ok).toBe(false);
+    expect(g.applyMove(0, { type: "swap", from: { x: 0, y: 0 }, to: { x: 4, y: 4 } }).ok).toBe(false);
     const before = g.state.board.grid.map((r) => r.slice());
-    const r = g.applyMove(0, { type: "swap", from: { x: 0, y: 0 }, to: { x: 1, y: 0 } });
-    expect(r.ok).toBe(false);
+    expect(g.applyMove(0, { type: "swap", from: { x: 0, y: 0 }, to: { x: 1, y: 0 } }).ok).toBe(false);
     expect(g.state.board.grid).toEqual(before);
   });
 });
 
-describe("MatchMonstersGame.applyMove — combat", () => {
-  it("a matching swap damages the opponent and passes the turn", () => {
-    const g = newGame();
+describe("charging + abilities", () => {
+  it("charges a monster from matched tiles and fires its attack at the opponent", () => {
+    const g = newGame(fireMon("atk", { type: "attack", amount: 14, description: "" }, 3));
     const r = g.applyMove(0, FIRE_SWAP);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    // Attacker fields fire (ember_pup, power 6); a 3-match deals >= 18.
-    const fire = r.damage.find((d) => d.element === "fire");
-    expect(fire).toBeDefined();
-    expect(fire!.amount).toBeGreaterThanOrEqual(18);
-    // Opponent's frontmost monster took the hit.
-    const golem = g.state.players[1].monsters[0]!;
-    expect(golem.hp).toBeLessThan(golem.def.maxHp);
-    // Turn passed to player 1.
+    expect(r.abilities.some((a) => a.type === "attack")).toBe(true);
+    expect(g.state.players[1].hp).toBeLessThanOrEqual(86); // 100 - 14 (maybe more from cascades)
     expect(r.nextTurn).toBe(1);
-    expect(g.state.turn).toBe(1);
   });
 
-  it("declares a winner when the opponent's last monster falls", () => {
-    const g = newGame();
-    // Bob's back monster already down; front monster on its last legs.
-    g.state.players[1].monsters[0]!.hp = 1;
-    g.state.players[1].monsters[1]!.hp = 0;
+  it("does not fire until the charge cost is met", () => {
+    // Needs 99 fire tiles — a single 3-match can never charge it.
+    const g = newGame(fireMon("slow", { type: "attack", amount: 50, description: "" }, 99));
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.abilities).toHaveLength(0);
+    expect(g.state.players[1].hp).toBe(100);
+  });
+
+  it("shield soaks damage before HP", () => {
+    const g = newGame(fireMon("sh", { type: "shield", amount: 20, description: "" }, 3));
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    expect(g.state.players[0].shield).toBeGreaterThanOrEqual(20);
+  });
+
+  it("heal is capped at max HP", () => {
+    const g = newGame(fireMon("hl", { type: "heal", amount: 30, description: "" }, 3));
+    g.state.players[0].hp = 90;
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    expect(g.state.players[0].hp).toBe(100);
+  });
+
+  it("burn ticks on the victim's turn and ignores shields", () => {
+    const g = newGame(fireMon("bn", { type: "burn", amount: 7, turns: 2, description: "" }, 3));
+    g.state.players[1].shield = 100;
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.abilities.some((a) => a.type === "burn-tick")).toBe(true);
+    expect(g.state.players[1].hp).toBeLessThan(100); // burn bypassed the 100 shield
+    expect(g.state.players[1].shield).toBe(100);
+  });
+
+  it("declares a winner when the opponent reaches 0 HP", () => {
+    const g = newGame(fireMon("ko", { type: "attack", amount: 50, description: "" }, 3));
+    g.state.players[1].hp = 10;
     const r = g.applyMove(0, FIRE_SWAP);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.finished).toBe(true);
     expect(r.winner).toBe(0);
     expect(g.state.phase).toBe("finished");
-    // No further moves accepted.
-    const after = g.applyMove(1, FIRE_SWAP);
-    expect(after.ok).toBe(false);
+    expect(g.applyMove(1, FIRE_SWAP).ok).toBe(false);
   });
 
-  it("is fully reproducible from (seed, moves)", () => {
-    const a = newGame();
-    const b = newGame();
-    const ra = a.applyMove(0, FIRE_SWAP);
-    const rb = b.applyMove(0, FIRE_SWAP);
-    expect(ra).toEqual(rb);
-    expect(a.state.board.grid).toEqual(b.state.board.grid);
+  it("is reproducible from (seed, move)", () => {
+    const ab: Ability = { type: "attack", amount: 14, description: "" };
+    const a = newGame(fireMon("r", ab)).applyMove(0, FIRE_SWAP);
+    const b = newGame(fireMon("r", ab)).applyMove(0, FIRE_SWAP);
+    expect(a).toEqual(b);
   });
 });

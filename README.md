@@ -56,9 +56,11 @@ use `http://localhost:8080/play`). Each picks two monsters, then either:
   pre-filled, they pick monsters and hit **Join** and you're both dropped into
   the same match. No queue, no accounts.
 
-In the match: tap a tile then an adjacent one to swap, match 3+ of your monster's
-element to attack, last team standing wins. Works on phones on the same Wi-Fi.
-20 monsters across five elements in the picker.
+In the match: tap a tile then an adjacent one to swap. Matching tiles **charges**
+your monsters of that element; when a monster hits its charge cost it **fires its
+ability** — attack, heal, shield, or burn — at the rival. Each player has one HP
+pool; drop your rival to 0 to win. Works on phones on the same Wi-Fi. 20 monsters
+across five elements, each with its own ability and charge cost, in the picker.
 
 (Want it reachable off-LAN? Put it behind any TLS reverse proxy / tunnel and the
 same `/play` page works.)
@@ -103,14 +105,17 @@ cleanest source is your own device's app cache while the service is up.
 ## The Match Monsters engine
 
 `src/game/matchmonsters` is a self-contained, server-authoritative match-3
-battler built from the public rules: two monsters per player, match 3+ tiles of a
-monster's element to attack, cascades grant a combo multiplier, and a player wins
-when both of the opponent's monsters fall. All randomness runs through a seeded
-PRNG, so a match is fully reproducible from `(seed, moves)` — which is how the
-engine is unit-tested and how matches can be replayed.
+battler built from the public rules: each player has one HP pool and fields two
+monsters. Matching tiles of a monster's element adds **charge**; when a monster
+reaches its **charge cost** it fires its **ability** — `attack` (damage),
+`heal` (restore HP), `shield` (soak incoming damage), or `burn` (damage each
+turn, ignoring shields). Reduce the opponent to 0 HP to win. All randomness runs
+through a seeded PRNG, so a match is fully reproducible from `(seed, moves)` —
+which is how the engine is unit-tested and how matches can be replayed.
 
-The monster roster in `monsters.ts` is our own placeholder set so the game is
-playable now; the real roster/art/tuning slot in from the game bundle later.
+The monster roster in `monsters.ts` (abilities + charge costs) is our own set so
+the game is playable now; the real roster/art/tuning slot in from the game bundle
+later.
 
 ## Scope & intent
 

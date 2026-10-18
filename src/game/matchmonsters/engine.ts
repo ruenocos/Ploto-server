@@ -1,23 +1,24 @@
 /**
  * Match Monsters turn engine.
  *
- * Rules (clean-room, from the public description):
- *  - Two players, each fielding two monsters. Each monster has an element.
- *  - On your turn you swap two adjacent tiles; the swap must create at least one
- *    match (3+ in a line), otherwise it is rejected.
- *  - Matched tiles clear, the board collapses and refills, which may cascade.
- *  - For each element cleared, if YOU field a monster of that element, that
- *    monster attacks: damage = tilesOfElement * monster.power * comboMultiplier,
- *    where the multiplier grows with each cascade step. Elements you don't field
- *    still clear the board but deal no damage.
- *  - Damage lands on the opponent's frontmost living monster. When both of an
- *    opponent's monsters are defeated, you win.
- *  - Turn then passes to the other player.
+ * Rules (clean-room, like the real game):
+ *  - Each player has one HP pool and fields two monsters. A monster has an
+ *    element, a charge cost, and an ability.
+ *  - On your turn you swap two adjacent tiles; the swap must create a match.
+ *  - Matched tiles clear, the board collapses and refills (cascades). For each
+ *    tile of a monster's element you matched, that monster gains 1 charge.
+ *  - After the board settles, every monster that reached its charge cost fires
+ *    its ability (and can fire repeatedly if it banked enough), spending the
+ *    cost each time:
+ *      attack → damage the opponent   heal → restore your HP
+ *      shield → gain a damage buffer   burn → damage the opponent each turn
+ *  - Shields soak damage before HP. Burns tick at the start of the victim's turn
+ *    and ignore shields. Reduce the opponent to 0 HP to win.
  */
 import type {
+  AbilityEvent,
   Board,
   CascadeStep,
-  DamageEvent,
   Element,
   GameState,
   Monster,
@@ -28,6 +29,7 @@ import type {
   PlayerState,
   Tile,
 } from "./types.js";
+import { STARTING_HP } from "./types.js";
 import { Rng } from "./rng.js";
 import {
   collapseAndRefill,
@@ -40,7 +42,6 @@ import {
 export interface PlayerSetup {
   readonly peerId: string;
   readonly displayName: string;
-  /** Exactly two monsters. */
   readonly monsters: [Monster, Monster];
 }
 
@@ -49,13 +50,8 @@ export interface GameConfig {
   readonly seed: number;
   readonly board?: BoardOptions;
   readonly players: [PlayerSetup, PlayerSetup];
-  /** Which player moves first (default 0). */
   readonly firstTurn?: 0 | 1;
-}
-
-/** Combo multiplier for the Nth cascade step (0-based): 1x, 1.5x, 2x, 2.5x, … */
-function comboMultiplier(step: number): number {
-  return 1 + step * 0.5;
+  readonly startingHp?: number;
 }
 
 export class MatchMonstersGame {
@@ -68,9 +64,10 @@ export class MatchMonstersGame {
     this.rng = new Rng(config.seed);
     this.boardOpts = config.board ?? DEFAULT_BOARD;
     this.palette = this.boardOpts.palette;
+    const hp = config.startingHp ?? STARTING_HP;
 
     const board = generateBoard(this.boardOpts, this.rng);
-    const players = config.players.map(toPlayerState) as [PlayerState, PlayerState];
+    const players = config.players.map((p) => toPlayerState(p, hp)) as [PlayerState, PlayerState];
 
     this.state = {
       matchId: config.matchId,
@@ -83,7 +80,6 @@ export class MatchMonstersGame {
     };
   }
 
-  /** Apply a move made by `by` (0 or 1). Pure w.r.t. the injected RNG stream. */
   applyMove(by: 0 | 1, move: Move): MoveResult | MoveRejection {
     const s = this.state;
     if (s.phase === "finished") return reject("game is finished");
@@ -92,83 +88,75 @@ export class MatchMonstersGame {
 
     const { from, to } = move;
     if (!isAdjacent(from, to)) return reject("tiles are not adjacent");
-    if (!onBoard(s.board, from) || !onBoard(s.board, to))
-      return reject("tile out of bounds");
+    if (!onBoard(s.board, from) || !onBoard(s.board, to)) return reject("tile out of bounds");
 
-    // Tentatively swap.
     swap(s.board, from, to);
     if (findMatches(s.board).length === 0) {
-      swap(s.board, from, to); // revert — illegal move in match-3.
+      swap(s.board, from, to);
       return reject("swap does not create a match");
     }
 
-    // Resolve cascades.
+    // Resolve cascades and tally matched tiles per element.
     const cascades: CascadeStep[] = [];
-    const damageByKey = new Map<string, DamageEvent>();
-    const attacker = s.players[by];
-
-    for (let step = 0; ; step++) {
+    const charged: Partial<Record<Element, number>> = {};
+    for (;;) {
       const matches = findMatches(s.board);
       if (matches.length === 0) break;
-
       const countsByElement: Partial<Record<Element, number>> = {};
-      for (const m of matches) {
-        countsByElement[m.element] = (countsByElement[m.element] ?? 0) + 1;
+      for (const mtch of matches) {
+        countsByElement[mtch.element] = (countsByElement[mtch.element] ?? 0) + 1;
+        charged[mtch.element] = (charged[mtch.element] ?? 0) + 1;
       }
       cascades.push({
-        cleared: matches.map((m) => ({ x: m.x, y: m.y, element: m.element })),
+        cleared: matches.map((mt) => ({ x: mt.x, y: mt.y, element: mt.element })),
         countsByElement,
       });
-
-      // Accumulate damage for elements the attacker fields.
-      const mult = comboMultiplier(step);
-      for (const el of Object.keys(countsByElement) as Element[]) {
-        const monster = attacker.monsters.find((m) => m.def.element === el);
-        if (!monster) continue;
-        const amount = Math.round(countsByElement[el]! * monster.def.power * mult);
-        const key = monster.def.id;
-        const prev = damageByKey.get(key);
-        if (prev) {
-          damageByKey.set(key, { ...prev, amount: prev.amount + amount });
-        } else {
-          damageByKey.set(key, {
-            targetPlayer: other(by),
-            monsterId: monster.def.id,
-            amount,
-            element: el,
-          });
-        }
-      }
-
       collapseAndRefill(
         s.board,
-        matches.map((m) => ({ x: m.x, y: m.y })),
+        matches.map((mt) => ({ x: mt.x, y: mt.y })),
         this.palette,
         this.rng,
       );
     }
 
-    // Apply damage to the opponent's frontmost living monster.
+    const attacker = s.players[by];
     const defender = s.players[other(by)];
-    const damage: DamageEvent[] = [];
-    const defeated: { player: 0 | 1; monsterId: string }[] = [];
-    for (const dmg of damageByKey.values()) {
-      const target = frontmostAlive(defender);
-      if (!target) break;
-      target.hp = Math.max(0, target.hp - dmg.amount);
-      damage.push({ ...dmg, monsterId: dmg.monsterId });
-      if (target.hp === 0) {
-        defeated.push({ player: other(by), monsterId: target.def.id });
+    const abilities: AbilityEvent[] = [];
+
+    // Feed charges to the attacker's monsters.
+    for (const mon of attacker.monsters) {
+      const gained = charged[mon.def.element] ?? 0;
+      if (gained > 0) mon.charge += gained;
+    }
+
+    // Fire every ability that is now fully charged (repeatedly if over-charged).
+    for (const mon of attacker.monsters) {
+      while (mon.charge >= mon.def.chargeCost && defender.hp > 0) {
+        mon.charge -= mon.def.chargeCost;
+        fireAbility(mon, by, attacker, defender, other(by), abilities);
       }
     }
 
-    // Win check.
-    const finished = defender.monsters.every((m) => m.hp === 0);
+    let finished = defender.hp <= 0;
+    let nextTurn: 0 | 1 = by;
+
+    if (!finished) {
+      // Pass the turn; the incoming player's burns tick now.
+      nextTurn = other(by);
+      const incoming = s.players[nextTurn];
+      tickBurns(incoming, nextTurn, abilities);
+      if (incoming.hp <= 0) {
+        finished = true; // attacker still wins — opponent burned down
+      }
+    }
+
     if (finished) {
       s.phase = "finished";
       s.winner = by;
+      nextTurn = s.turn;
+    } else {
+      s.turn = nextTurn;
     }
-    s.turn = finished ? s.turn : other(by);
     s.moveNumber += 1;
 
     return {
@@ -176,9 +164,9 @@ export class MatchMonstersGame {
       move,
       by,
       cascades,
-      damage,
-      defeated,
-      nextTurn: s.turn,
+      charged,
+      abilities,
+      nextTurn,
       finished,
       winner: s.winner,
       board: cloneGrid(s.board),
@@ -186,42 +174,101 @@ export class MatchMonstersGame {
   }
 }
 
-function toPlayerState(p: PlayerSetup): PlayerState {
+function fireAbility(
+  mon: MonsterState,
+  attackerIdx: 0 | 1,
+  attacker: PlayerState,
+  defender: PlayerState,
+  defenderIdx: 0 | 1,
+  events: AbilityEvent[],
+): void {
+  const ab = mon.def.ability;
+  switch (ab.type) {
+    case "attack":
+      dealDamage(defender, ab.amount);
+      events.push(evt(mon.def, "attack", ab.amount, defenderIdx));
+      break;
+    case "heal":
+      attacker.hp = Math.min(attacker.maxHp, attacker.hp + ab.amount);
+      events.push(evt(mon.def, "heal", ab.amount, attackerIdx));
+      break;
+    case "shield":
+      attacker.shield += ab.amount;
+      events.push(evt(mon.def, "shield", ab.amount, attackerIdx));
+      break;
+    case "burn":
+      defender.burns.push({ amount: ab.amount, turns: ab.turns ?? 3 });
+      events.push(evt(mon.def, "burn", ab.amount, defenderIdx));
+      break;
+  }
+}
+
+function tickBurns(player: PlayerState, playerIdx: 0 | 1, events: AbilityEvent[]): void {
+  if (player.burns.length === 0) return;
+  const remaining: typeof player.burns = [];
+  for (const b of player.burns) {
+    player.hp = Math.max(0, player.hp - b.amount); // burn ignores shields
+    events.push({
+      monsterId: "burn",
+      monsterName: "Burn",
+      element: "fire",
+      type: "burn-tick",
+      amount: b.amount,
+      targetPlayer: playerIdx,
+    });
+    if (b.turns - 1 > 0) remaining.push({ amount: b.amount, turns: b.turns - 1 });
+  }
+  player.burns = remaining;
+}
+
+function dealDamage(player: PlayerState, amount: number): void {
+  let dmg = amount;
+  if (player.shield > 0) {
+    const absorbed = Math.min(player.shield, dmg);
+    player.shield -= absorbed;
+    dmg -= absorbed;
+  }
+  player.hp = Math.max(0, player.hp - dmg);
+}
+
+function evt(
+  def: Monster,
+  type: AbilityEvent["type"],
+  amount: number,
+  targetPlayer: 0 | 1,
+): AbilityEvent {
+  return { monsterId: def.id, monsterName: def.name, element: def.element, type, amount, targetPlayer };
+}
+
+function toPlayerState(p: PlayerSetup, hp: number): PlayerState {
   return {
     peerId: p.peerId,
     displayName: p.displayName,
-    monsters: p.monsters.map(
-      (def): MonsterState => ({ def, hp: def.maxHp }),
-    ),
+    hp,
+    maxHp: hp,
+    shield: 0,
+    burns: [],
+    monsters: p.monsters.map((def): MonsterState => ({ def, charge: 0 })),
   };
-}
-
-function frontmostAlive(p: PlayerState): MonsterState | undefined {
-  return p.monsters.find((m) => m.hp > 0);
 }
 
 function isAdjacent(a: { x: number; y: number }, b: { x: number; y: number }): boolean {
   return Math.abs(a.x - b.x) + Math.abs(a.y - b.y) === 1;
 }
-
 function onBoard(b: Board, p: { x: number; y: number }): boolean {
   return p.x >= 0 && p.y >= 0 && p.x < b.width && p.y < b.height;
 }
-
 function swap(b: Board, a: { x: number; y: number }, c: { x: number; y: number }): void {
   const tmp = b.grid[a.y]![a.x]!;
   b.grid[a.y]![a.x] = b.grid[c.y]![c.x]!;
   b.grid[c.y]![c.x] = tmp;
 }
-
 function cloneGrid(b: Board): Tile[][] {
   return b.grid.map((row) => row.slice());
 }
-
 function other(i: 0 | 1): 0 | 1 {
   return i === 0 ? 1 : 0;
 }
-
 function reject(reason: string): MoveRejection {
   return { ok: false, reason };
 }

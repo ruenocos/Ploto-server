@@ -1,47 +1,66 @@
 /**
  * Match Monsters — domain types.
  *
- * Clean-room model built from the publicly described rules: a match-3 board of
- * elemental tiles, each player fields two monsters, and matching 3+ tiles of a
- * monster's element powers an attack with that monster. Server-authoritative.
+ * Model (like the real game): a match-3 board of elemental tiles. Each player has
+ * a single HP pool and fields two monsters. Matching 3+ tiles of a monster's
+ * element charges that monster; when its charge reaches the monster's cost, its
+ * ability fires (damage / heal / shield / burn) and the charge is spent. Reduce
+ * the opponent's HP to zero to win. Server-authoritative.
  */
 
-/** Elemental types a tile/monster can belong to. Kept small for strategic play. */
 export const ELEMENTS = ["fire", "water", "earth", "nature", "light"] as const;
 export type Element = (typeof ELEMENTS)[number];
 
 /** A board cell. `null` is a transient empty cell during resolution. */
 export type Tile = Element | null;
 
-/** A rectangular board, row-major: `grid[y][x]`. */
 export interface Board {
   readonly width: number;
   readonly height: number;
   grid: Tile[][];
 }
 
+/** Starting / maximum HP for every player. */
+export const STARTING_HP = 100;
+
+export type AbilityType = "attack" | "heal" | "shield" | "burn";
+
+export interface Ability {
+  readonly type: AbilityType;
+  /** Damage dealt (attack/burn-per-turn), HP restored (heal), or shield gained. */
+  readonly amount: number;
+  /** For `burn`: how many of the victim's turns it ticks. */
+  readonly turns?: number;
+  readonly description: string;
+}
+
 export interface Monster {
   readonly id: string;
   readonly name: string;
   readonly element: Element;
-  /** Max/starting hit points. */
-  readonly maxHp: number;
-  /**
-   * Damage dealt per matched tile of this monster's element, before bonuses.
-   * A 3-match therefore deals `3 * power`; longer matches scale linearly plus a
-   * combo bonus applied by the engine.
-   */
-  readonly power: number;
+  /** Tiles of this monster's element that must be matched to fire its ability. */
+  readonly chargeCost: number;
+  readonly ability: Ability;
 }
 
 export interface MonsterState {
   readonly def: Monster;
-  hp: number;
+  /** Accumulated matched tiles of the monster's element, spent when it fires. */
+  charge: number;
+}
+
+export interface Burn {
+  amount: number;
+  turns: number;
 }
 
 export interface PlayerState {
   readonly peerId: string;
   readonly displayName: string;
+  hp: number;
+  readonly maxHp: number;
+  shield: number;
+  burns: Burn[];
   monsters: MonsterState[];
 }
 
@@ -51,52 +70,46 @@ export interface GameState {
   readonly matchId: string;
   board: Board;
   players: [PlayerState, PlayerState];
-  /** Index (0 or 1) of the player whose turn it is. */
   turn: 0 | 1;
   phase: Phase;
-  /** Index of the winning player once `phase === "finished"`, else null. */
   winner: 0 | 1 | null;
-  /** Monotonic counter; increments once per resolved move. */
   moveNumber: number;
 }
 
-/** A player's move: swap two orthogonally-adjacent tiles. */
 export interface SwapMove {
   readonly type: "swap";
   readonly from: { x: number; y: number };
   readonly to: { x: number; y: number };
 }
-
 export type Move = SwapMove;
 
-/** One cascade step produced while resolving a move (for client animation/replay). */
 export interface CascadeStep {
-  /** Coordinates cleared in this step. */
   cleared: { x: number; y: number; element: Element }[];
-  /** Per-element tile counts cleared in this step. */
   countsByElement: Partial<Record<Element, number>>;
 }
 
-/** Damage applied to one monster as a result of a move. */
-export interface DamageEvent {
-  readonly targetPlayer: 0 | 1;
+/** Something an ability did, for UI floats and logging. */
+export interface AbilityEvent {
   readonly monsterId: string;
-  readonly amount: number;
+  readonly monsterName: string;
   readonly element: Element;
+  readonly type: AbilityType | "burn-tick";
+  readonly amount: number;
+  /** Player index the effect landed on (foe for attack/burn, self for heal/shield). */
+  readonly targetPlayer: 0 | 1;
 }
 
-/** Full, serialisable result of applying one move — the unit the server emits. */
 export interface MoveResult {
   readonly ok: true;
   readonly move: Move;
   readonly by: 0 | 1;
   readonly cascades: CascadeStep[];
-  readonly damage: DamageEvent[];
-  readonly defeated: { player: 0 | 1; monsterId: string }[];
+  /** Total tiles matched per element this move (what fed the charges). */
+  readonly charged: Partial<Record<Element, number>>;
+  readonly abilities: AbilityEvent[];
   readonly nextTurn: 0 | 1;
   readonly finished: boolean;
   readonly winner: 0 | 1 | null;
-  /** Board after full resolution. */
   readonly board: Tile[][];
 }
 

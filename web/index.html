@@ -122,6 +122,23 @@
       .hp .bar { height: 7px; background: #0d0f15; border-radius: 4px; overflow: hidden; }
       .hp .fill { height: 100%; background: var(--good); transition: width 0.3s ease; }
       .hp.dead { opacity: 0.4; }
+      .phealth { margin-bottom: 10px; }
+      .phealth .hd { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+      .bar.big { height: 11px; }
+      .fill.hpfill { background: linear-gradient(90deg, #4ccb6b, #8be27f); }
+      .shield-badge { color: #7fd0ff; font-weight: 700; }
+      .burns { font-size: 11px; color: var(--fire); margin-top: 4px; }
+      .mrow { margin-top: 8px; padding: 6px; border-radius: 8px; background: var(--panel2); }
+      .mrow.ready { box-shadow: 0 0 0 1px var(--accent) inset; }
+      .mhd { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px; }
+      .mcost { color: var(--muted); font-variant-numeric: tabular-nums; }
+      .mrow.ready .mcost { color: #c9bcff; font-weight: 700; }
+      .fill.chg { background: #5a617a; }
+      .mrow.ready .fill.chg { background: linear-gradient(90deg, var(--accent), #a98bff); }
+      .ability { font-size: 11px; color: var(--muted); margin-top: 3px; }
+      .float-heal { color: var(--good) !important; }
+      .float-shield { color: #7fd0ff !important; }
+      .float-burn { color: #ff9a3c !important; }
       #board {
         display: grid;
         gap: 5px;
@@ -178,7 +195,7 @@
   <body>
     <main>
       <h1>Match Monsters</h1>
-      <p class="sub">Pick two monsters, match 3+ of their element to attack. Last team standing wins.</p>
+      <p class="sub">Pick two monsters. Match their element to charge them — a charged monster unleashes its ability. Drop your rival to 0 HP to win.</p>
 
       <!-- Lobby -->
       <section id="lobby" class="card">
@@ -294,7 +311,8 @@
           el.dataset.id = mon.id;
           el.innerHTML = `<div class="emoji">${EMOJI[mon.element]}</div>
             <div class="n">${mon.name}</div>
-            <div class="s">${mon.maxHp} HP · ${mon.power} PWR</div>`;
+            <div class="s">${mon.ability.description}</div>
+            <div class="s">⚡ charge ${mon.chargeCost}</div>`;
           el.addEventListener("click", () => togglePick(mon.id));
           picker.appendChild(el);
         }
@@ -422,8 +440,8 @@
         const foe = state.players[mySeat === 0 ? 1 : 0];
         $("meName").textContent = me.displayName + " (you)";
         $("foeName").textContent = foe.displayName;
-        renderTeam($("meTeam"), me.monsters);
-        renderTeam($("foeTeam"), foe.monsters);
+        renderPlayer($("meTeam"), me);
+        renderPlayer($("foeTeam"), foe);
 
         const banner = $("turnBanner");
         banner.textContent = myTurn() ? "Your turn — make a match" : `${foe.displayName}'s turn…`;
@@ -448,15 +466,32 @@
         });
       }
 
-      function renderTeam(container, monsters) {
+      function renderPlayer(container, p) {
         container.innerHTML = "";
-        for (const mon of monsters) {
-          const pct = Math.max(0, Math.round((mon.hp / mon.maxHp) * 100));
-          const wrap = document.createElement("div");
-          wrap.className = "hp" + (mon.hp <= 0 ? " dead" : "");
-          wrap.innerHTML = `<div class="hd"><span>${EMOJI[mon.element]} ${mon.name}</span><span>${mon.hp}/${mon.maxHp}</span></div>
-            <div class="bar"><div class="fill" style="width:${pct}%"></div></div>`;
-          container.appendChild(wrap);
+        const hpPct = Math.max(0, Math.round((p.hp / p.maxHp) * 100));
+        const burnTotal = (p.burns || []).reduce((s, b) => s + b.amount, 0);
+        const health = document.createElement("div");
+        health.className = "phealth";
+        health.innerHTML =
+          `<div class="hd"><span>❤️ ${p.hp}/${p.maxHp}</span>` +
+          (p.shield > 0 ? `<span class="shield-badge">🛡️ ${p.shield}</span>` : "") +
+          `</div><div class="bar big"><div class="fill hpfill" style="width:${hpPct}%"></div></div>` +
+          (burnTotal > 0 ? `<div class="burns">🔥 burning ${burnTotal}/turn</div>` : "");
+        container.appendChild(health);
+
+        for (const mon of p.monsters) {
+          const cost = mon.chargeCost;
+          const shown = Math.min(mon.charge, cost);
+          const pct = Math.min(100, Math.round((mon.charge / cost) * 100));
+          const ready = mon.charge >= cost;
+          const row = document.createElement("div");
+          row.className = "mrow" + (ready ? " ready" : "");
+          row.innerHTML =
+            `<div class="mhd"><span>${EMOJI[mon.element]} ${mon.name}</span>` +
+            `<span class="mcost">${ready ? "READY" : shown + "/" + cost}</span></div>` +
+            `<div class="bar"><div class="fill chg" style="width:${pct}%"></div></div>` +
+            `<div class="ability">${mon.ability.description}</div>`;
+          container.appendChild(row);
         }
       }
 
@@ -500,10 +535,10 @@
           for (const c of step0.cleared) tileAt(c.x, c.y)?.classList.add("pop");
           await sleep(360);
         }
-        // 3) settle to the final board + float the damage dealt
+        // 3) settle to the final board + float the ability effects
         state.board = data.board;
         render();
-        showDamage(data);
+        showAbilityFloats(data.abilities);
         // 4) sync authoritative HP / turn / phase from the server
         await refresh();
         animating = false;
@@ -516,17 +551,29 @@
         g[b.y][b.x] = t;
       }
 
-      function showDamage(data) {
-        if (!data.damage || !data.damage.length) return;
-        const totals = {};
-        for (const d of data.damage) totals[d.targetPlayer] = (totals[d.targetPlayer] || 0) + d.amount;
-        for (const seat of Object.keys(totals)) {
-          const card = Number(seat) === mySeat ? $("teamMe") : $("teamFoe");
+      function showAbilityFloats(abilities) {
+        if (!abilities || !abilities.length) return;
+        // Aggregate by (player, kind) so a big turn doesn't spam numbers.
+        const agg = {}; // key: `${seat}|${kind}` -> amount
+        for (const a of abilities) {
+          const kind = a.type === "burn" ? "burn" : a.type === "burn-tick" ? "burn" : a.type;
+          const key = a.targetPlayer + "|" + kind;
+          agg[key] = (agg[key] || 0) + a.amount;
+        }
+        let offset = 0;
+        for (const key of Object.keys(agg)) {
+          const [seatStr, kind] = key.split("|");
+          const card = Number(seatStr) === mySeat ? $("teamMe") : $("teamFoe");
+          const amt = agg[key];
           const f = document.createElement("div");
-          f.className = "dmg-float";
-          f.textContent = "-" + totals[seat];
+          const sign = kind === "attack" || kind === "burn" ? "-" : "+";
+          const icon = kind === "shield" ? "🛡️" : kind === "burn" ? "🔥" : kind === "heal" ? "✚" : "";
+          f.className = "dmg-float" + (kind !== "attack" ? " float-" + kind : "");
+          f.textContent = `${icon}${sign}${amt}`.trim();
+          f.style.top = 6 + offset + "px";
           card.appendChild(f);
-          setTimeout(() => f.remove(), 950);
+          offset += 22;
+          setTimeout(() => f.remove(), 1000);
         }
       }
 

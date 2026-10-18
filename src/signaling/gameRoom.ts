@@ -9,7 +9,7 @@
  * and transport stay put. (Marked ⏳ in docs/PROTOCOL.md.)
  */
 import { MatchMonstersGame, type GameConfig } from "../game/matchmonsters/engine.js";
-import type { Move, Element, MonsterState } from "../game/matchmonsters/types.js";
+import type { Move, MonsterState, PlayerState } from "../game/matchmonsters/types.js";
 
 /** Minimal view of a protoo peer, so rooms are testable without a live socket. */
 export interface PeerLike {
@@ -17,13 +17,6 @@ export interface PeerLike {
   notify(method: string, data: unknown): void;
 }
 
-interface SerializedMonster {
-  id: string;
-  name: string;
-  element: Element;
-  hp: number;
-  maxHp: number;
-}
 
 export class GameRoom {
   private readonly game: MatchMonstersGame;
@@ -85,11 +78,7 @@ export class GameRoom {
       phase: s.phase,
       winner: s.winner,
       moveNumber: s.moveNumber,
-      players: s.players.map((p) => ({
-        peerId: p.peerId,
-        displayName: p.displayName,
-        monsters: p.monsters.map(serializeMonster),
-      })),
+      players: s.players.map(serializePlayer),
     };
   }
 
@@ -98,13 +87,26 @@ export class GameRoom {
   }
 }
 
-function serializeMonster(m: MonsterState): SerializedMonster {
+function serializePlayer(p: PlayerState) {
+  return {
+    peerId: p.peerId,
+    displayName: p.displayName,
+    hp: p.hp,
+    maxHp: p.maxHp,
+    shield: p.shield,
+    burns: p.burns,
+    monsters: p.monsters.map(serializeMonster),
+  };
+}
+
+function serializeMonster(m: MonsterState) {
   return {
     id: m.def.id,
     name: m.def.name,
     element: m.def.element,
-    hp: m.hp,
-    maxHp: m.def.maxHp,
+    charge: m.charge,
+    chargeCost: m.def.chargeCost,
+    ability: m.def.ability,
   };
 }
 

@@ -17,11 +17,11 @@ in *outline*, not just in size or interior detail.
 
 | | Base (baby) | ★ (adolescent) | ★★ (adult) |
 |---|---|---|---|
-| Height in design px (of 32; the rig scales it ×1.0 / ×1.2 / ×1.38) | ~18–22 | ~24–27 | ~29–32 |
+| Height in design px (of 32; the rig scales it ×1.0 / ×1.2 / ×1.38) | ~23–26 (drawn at ×1.0, so pixel-crisp) | ~24–27 | ~29–32 |
 | Head share of total height | 50–60% | 35–45% | 25–35% |
 | Posture | sitting, curled or low on all fours | standing up, neck or limbs lengthen | a new stance: upright/biped, rearing, airborne, armoured |
 | Shape language | circles; soft, compact | round body with first sharp accents | triangles and blocks; spikes, horns, plates, claws |
-| Eyes | big and round (2×3 px and up, with a shine) | narrower, a brow line | small, sharp, with a brow; can glow |
+| Eyes (`eyes()`, see below) | `round` | `bright` | `sharp` |
 | Signature motif | a tiny hint (a flame tip, one leaf, one crystal) | the motif grows **and** one new feature appears | the motif becomes the main shape (flame → wings, leaf → frond crown, crystal → armour) |
 | Palette | the family ramp, a touch lighter | the family ramp | the family ramp plus one accent (darker shell, gold trim, glowing marks) |
 
@@ -36,6 +36,27 @@ Rules of thumb:
   one. 50/50 masses compete with each other.
 - **Growing up:** proportions move from baby to adult (smaller head relative to
   the body, longer limbs) rather than everything scaling together.
+
+## Eyes
+
+Every monster's eyes come from one helper, `rigkit.eyes(r, cx, y, gap, …)`, so
+they follow one set of rules:
+
+- Sizes are in **canvas** pixels, so eyes never come out lopsided at the ×1.2 /
+  ×1.38 stage scales.
+- They're mirrored around the face's centre line, so both eyes always match.
+- The shine is always the **outer top pixel**.
+
+| Style | Default for | Shape |
+|---|---|---|
+| `round` | Base | 2×3 ink, shine |
+| `bright` | ★ | 2×2 ink, shine, a flat brow two rows above |
+| `sharp` | ★★ | 2×2, inner top pixel lidded, brow slanting down to the nose; give `iris=` a glow material to light it |
+| `closed` | any (sleepy, squinting) | a 3-px arc |
+
+Allowed exceptions go through the helper's parameters, never through
+hand-placed eye pixels. For example, an owl's coloured iris ring is drawn
+under the helper's eyes, and a shadowed face passes a glowing `iris`.
 
 ## Rig conventions (unchanged)
 

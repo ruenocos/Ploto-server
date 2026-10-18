@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from common import CREAM, GOLD, base_materials
 from pixelkit import Material
-from rigkit import Rig, dot_eyes, mirror_poly, mirror_pts, sparkle, star_points
+from rigkit import Rig, eyes, mirror_poly, mirror_pts, sparkle, star_points
 
 PRISM = ["#ff6b8a", "#ffb84a", "#8ce06a", "#5ac8ff", "#b48aff"]
 RAY = ["#a85a08", "#d98a14", "#f0b22a", "#ffd860"]
@@ -35,26 +35,24 @@ def lumowl(stage: int) -> Rig:
                                      talon=Material(["#ff9a2e"], flat=True), **{f"p{i}": Material([c], flat=True) for i, c in enumerate(PRISM)}), "#160c02", stage)
     if stage == 0:  # owlet: one round ball of fluff, all face
         r.part("feet", "legs", pivot=(16, 30), z=1)
-        r.pxs("talon", [(13, 30), (14, 30), (17, 30), (18, 30)])
-        for side, cx in (("wing-l", 6.9), ("wing-r", 25.1)):
-            r.part(side, side, pivot=(cx + (2 if side == "wing-l" else -2), 21), z=-1)
-            r.ellipse(cx, 24, 2, 3.4, "wing")
+        r.pxs("talon", [(12, 30), (13, 30), (14, 30), (17, 30), (18, 30), (19, 30)])
+        for side, cx in (("wing-l", 5.4), ("wing-r", 26.6)):
+            r.part(side, side, pivot=(cx + (2 if side == "wing-l" else -2), 19), z=-1)
+            r.ellipse(cx, 23.4, 2.4, 4.2, "wing")
         r.part("body", "body", pivot=(16, 30))
-        r.ellipse(16, 22, 9, 8.6, "feather")
-        r.ellipse(16, 27, 5.2, 3.4, "down")
-        r.pxs("feather", [(16, 12), (17, 11)])  # the one curl of baby fluff
-        for cx in (12.4, 19.6):
-            r.ellipse(cx, 20.2, 3.8, 3.8, "face")
-        for cx, pc in ((12.6, 12.9), (19.4, 19.1)):
-            r.ellipse(cx, 20.4, 2.5, 2.6, "iris")
-            r.ellipse(pc, 20.7, 1.5, 1.7, "ink")
-        r.pxs("shine", [(12, 19), (18, 19)])
-        r.pxs("beak", [(15, 23), (16, 23), (15, 24), (16, 24)])
-        r.pxs("mark", [(13, 27), (14, 28), (18, 27), (17, 28)])
-        r.pxs("blush", [(9, 23), (22, 23)])
+        r.ellipse(16, 20.2, 10.8, 10.4, "feather")
+        r.ellipse(16, 26.4, 6.2, 4, "down")
+        r.pxs("feather", [(16, 9), (17, 8)])  # the one curl of baby fluff
+        for cx in (11.6, 20.4):
+            r.ellipse(cx, 18.6, 4.6, 4.6, "face")
+            r.ellipse(cx, 18.6, 3, 3.1, "iris")  # orange ring under the house eyes
+        eyes(r, 16, 17, 6)
+        r.pxs("beak", [(15, 22), (16, 22), (15, 23), (16, 23)])
+        r.pxs("mark", [(12, 26), (13, 27), (19, 26), (18, 27)])
+        r.pxs("blush", [(7, 23), (24, 23)])
         for side in ("ear-l", "ear-r"):
-            r.part(side, side, pivot=(11, 15) if side == "ear-l" else (21, 15), parent="body", z=-1)
-            pts = [(9.6, 15.6), (9, 10.8), (13.4, 14)]
+            r.part(side, side, pivot=(10, 12) if side == "ear-l" else (22, 12), parent="body", z=-1)
+            pts = [(8.4, 13.6), (7.2, 6.2), (12.8, 10.8)]
             r.poly(pts if side == "ear-l" else mirror_poly(pts), "feather")
         return r
 
@@ -75,11 +73,8 @@ def lumowl(stage: int) -> Rig:
         r.ellipse(16, 13.4, 7.4, 6, "feather")
         for cx in (12.8, 19.2):
             r.ellipse(cx, 13.8, 3.2, 3.2, "face")
-        for cx, pc in ((13, 13.2), (19, 18.8)):
-            r.ellipse(cx, 14, 2, 2.1, "iris")
-            r.ellipse(pc, 14.2, 1.2, 1.4, "ink")
-        r.pxs("shine", [(12, 13), (18, 13)])
-        r.pxs("mark", [(11, 10), (12, 10), (13, 11), (18, 11), (19, 10), (20, 10)])  # brows
+            r.ellipse(cx, 14, 2.1, 2.1, "iris")
+        eyes(r, 16, 13.5, 5)
         r.pxs("beak", [(15, 16), (16, 16), (15, 17), (16, 17)])
         for side in ("ear-l", "ear-r"):
             r.part(side, side, pivot=(11, 10) if side == "ear-l" else (21, 10), parent="head", z=-1)
@@ -112,8 +107,7 @@ def lumowl(stage: int) -> Rig:
     r.ellipse(16, 10.4, 6, 5, "feather")
     for cx in (13.2, 18.8):
         r.ellipse(cx, 10.8, 2.6, 2.4, "face")
-    r.pxs("iris", [(12, 11), (13, 11), (18, 11), (19, 11)])
-    r.pxs("ink", [(13, 11), (18, 11), (11, 9), (12, 9), (13, 10), (14, 10), (17, 10), (18, 10), (19, 9), (20, 9)])
+    eyes(r, 16, 10.7, 4.4, iris="iris")
     r.pxs("beak", [(15, 12), (16, 12), (15, 13), (16, 13), (16, 14)])
     for side in ("ear-l", "ear-r"):
         r.part(side, side, pivot=(12, 7) if side == "ear-l" else (20, 7), parent="head", z=-1)
@@ -129,14 +123,14 @@ def glintling(stage: int) -> Rig:
                                         spark=Material(["#fff8c8"], flat=True, floating=True)), "#2a1a02", stage)
     if stage == 0:  # a chubby star sitting on its two lower points
         r.part("body", "body", pivot=(16, 30))
-        r.poly(star_points(16, 22, 10, 6.4), "star")
-        r.ellipse(16, 23, 6.8, 6.2, "star")
-        dot_eyes(r, 12, 20, 18, h=3)
-        r.pxs("ink", [(14, 24), (15, 25), (16, 25), (17, 24)])
-        r.pxs("blush", [(11, 24), (20, 24)])
+        r.poly(star_points(16, 20.6, 12.8, 8), "star")
+        r.ellipse(16, 21.6, 8, 7.4, "star")
+        eyes(r, 16, 18, 6)
+        r.pxs("ink", [(14, 23), (15, 24), (16, 24), (17, 23)])
+        r.pxs("blush", [(9, 23), (22, 23)])
         r.part("sparkles", "fx", pivot=(16, 20), z=2)
-        sparkle(r, 27, 13)
-        r.pxs("spark", [(4, 15)])
+        sparkle(r, 28, 10)
+        r.pxs("spark", [(3, 13)])
         return r
 
     if stage == 1:  # a comet: the star lifts off on a curling tail
@@ -147,8 +141,8 @@ def glintling(stage: int) -> Rig:
         r.part("body", "body", pivot=(16, 20))
         r.poly(star_points(16, 12.6, 8.8, 5.2), "star")
         r.ellipse(16, 13, 5.6, 5.2, "star")
-        dot_eyes(r, 12, 12, 18)
-        r.pxs("ink", [(12, 10), (13, 10), (18, 10), (19, 10), (14, 15), (15, 16), (16, 16), (17, 15)])
+        eyes(r, 16, 12, 5)
+        r.pxs("ink", [(14, 15), (15, 16), (16, 16), (17, 15)])
         r.pxs("blush", [(11, 14), (20, 14)])
         r.part("sparkles", "fx", pivot=(16, 14), z=2)
         r.poly(star_points(4.4, 20, 2.6, 1.2), "star")
@@ -172,7 +166,8 @@ def glintling(stage: int) -> Rig:
     r.part("head", "head", pivot=(16, 14), parent="body", z=1)
     r.poly(star_points(16, 9.4, 6.4, 3.8), "trail")
     r.ellipse(16, 10, 4, 3.6, "trail")
-    r.pxs("ink", [(14, 9), (14, 10), (17, 9), (17, 10), (13, 8), (18, 8), (15, 12), (16, 12)])
+    eyes(r, 16, 9, 1.4)
+    r.pxs("ink", [(15, 12), (16, 12)])
     r.part("sparkles", "fx", pivot=(16, 16), z=2)
     sparkle(r, 2, 20)
     sparkle(r, 29, 21)
@@ -188,26 +183,26 @@ def lumistag(stage: int) -> Rig:
                                        eyeglow=Material(["#ffcf3a"], flat=True), spark=Material(["#fff8c8"], flat=True, floating=True)), "#1e1606", stage)
     if stage == 0:  # fawn: front view, a huge head, floppy ears, two antler buds
         r.part("legs", "legs", pivot=(16, 30), z=-1)
-        for x in (13, 19):
-            r.stroke([(x, 26), (x, 30.6)], 1.8, "fur")
+        for x in (12.8, 19.2):
+            r.stroke([(x, 25.4), (x, 30.6)], 2, "fur")
         r.pxs("hoof", [(12, 30), (13, 30), (18, 30), (19, 30)])
         r.part("body", "body", pivot=(16, 29))
-        r.ellipse(16, 25, 5.8, 4, "fur")
-        r.pxs("glow", [(11, 24), (13, 26), (20, 24), (18, 26)])
+        r.ellipse(16, 24.4, 6.8, 4.6, "fur")
+        r.pxs("glow", [(10, 24), (12, 26), (21, 24), (19, 26)])
         r.part("head", "head", pivot=(16, 21), parent="body", z=1)
-        r.ellipse(16, 16.4, 6.2, 5.6, "fur")
-        r.ellipse(16, 19.6, 3, 2, "muzzle")
-        r.pxs("ink", [(15, 19), (16, 19)])
-        dot_eyes(r, 12, 15, 18, h=3)
-        r.pxs("blush", [(11, 18), (20, 18)])
-        r.pxs("gem", [(15, 12), (16, 12)])
+        r.ellipse(16, 15.2, 7.4, 6.6, "fur")
+        r.ellipse(16, 19.2, 3.4, 2.2, "muzzle")
+        r.pxs("ink", [(15, 18), (16, 18)])
+        eyes(r, 16, 13, 6)
+        r.pxs("blush", [(10, 17), (21, 17)])
+        r.pxs("gem", [(15, 10), (16, 10)])
         for side in ("ear-l", "ear-r"):
-            r.part(side, side, pivot=(11, 15) if side == "ear-l" else (21, 15), parent="head", z=-1)
-            pts = [(11, 14.4), (4.6, 15.4), (6.6, 17.8), (10.8, 17.2)]
+            r.part(side, side, pivot=(10, 14) if side == "ear-l" else (22, 14), parent="head", z=-1)
+            pts = [(10.2, 13.2), (2.8, 14.4), (5.2, 17.4), (10, 16.6)]
             r.poly(pts if side == "ear-l" else mirror_poly(pts), "fur")
-        r.part("buds", "fx", pivot=(16, 11), parent="head", z=-1)
-        r.ellipse(13, 11, 1.5, 1.9, "antler")
-        r.ellipse(19, 11, 1.5, 1.9, "antler")
+        r.part("buds", "fx", pivot=(16, 9), parent="head", z=-1)
+        r.ellipse(12.6, 8.6, 1.7, 2.2, "antler")
+        r.ellipse(19.4, 8.6, 1.7, 2.2, "antler")
         return r
 
     if stage == 1:  # yearling: three-quarter view, long legs, a neck, forked antlers
@@ -222,10 +217,10 @@ def lumistag(stage: int) -> Rig:
         r.pxs("glow", [(17, 18), (20, 18), (23, 19), (21, 21), (15, 20)])
         r.part("head", "head", pivot=(12, 18), parent="body", z=1)
         r.poly([(10.4, 19), (14.8, 19.4), (13.6, 12), (10.4, 12)], "fur")
-        r.ellipse(11.6, 10.6, 3.8, 3.3, "fur")
-        r.ellipse(9.4, 12.4, 2.4, 1.7, "muzzle")
+        r.ellipse(11.6, 10.3, 4, 3.9, "fur")
+        r.ellipse(9.4, 12.6, 2.4, 1.7, "muzzle")
         r.pxs("ink", [(7, 12)])
-        dot_eyes(r, 9, 9, 12)
+        eyes(r, 11.2, 10, 1.6)
         r.pxs("gem", [(11, 7)])
         for side, pts in (("ear-l", [(9.2, 9), (4.6, 7.6), (7.6, 10.6)]), ("ear-r", [(14, 8.4), (18.4, 6.6), (16, 10)])):
             r.part(side, side, pivot=(9, 9) if side == "ear-l" else (14, 8), parent="head", z=-1)
@@ -250,8 +245,8 @@ def lumistag(stage: int) -> Rig:
     r.poly([(9, 16), (14.6, 15.4), (15.4, 20.6), (12.6, 23.2), (9.6, 21.4)], "mane")
     r.ellipse(11.6, 8, 3.6, 3, "fur")
     r.ellipse(9.4, 9.8, 2.3, 1.6, "muzzle")
-    r.pxs("ink", [(7, 9), (9, 7), (10, 7), (12, 7), (13, 7), (9, 6), (13, 6)])
-    r.pxs("eyeglow", [(10, 7), (12, 7)])
+    r.pxs("ink", [(7, 9)])
+    eyes(r, 11, 6.5, 1.4, iris="eyeglow")
     r.pxs("gem", [(11, 4), (11, 5)])
     for side, pts in (("ear-l", [(9.4, 6.8), (5, 5.6), (8, 8.4)]), ("ear-r", [(13.8, 6.2), (18, 4.6), (15.8, 7.8)])):
         r.part(side, side, pivot=(9, 7) if side == "ear-l" else (14, 6), parent="head", z=-1)
@@ -276,22 +271,22 @@ def lumoth(stage: int) -> Rig:
                                      eye=Material(["#140a1e"], flat=True), eyeglow=Material(["#ffd23c"], flat=True)), "#2a1606", stage)
     if stage == 0:  # larva: a fuzzy caterpillar rearing its big head, a tiny halo
         r.part("legs", "legs", pivot=(20, 30), z=1)
-        r.pxs("leg", [(17, 29), (19, 30), (22, 30)])
+        r.pxs("leg", [(16, 30), (19, 30), (23, 30)])
         r.part("body", "body", pivot=(20, 30))
-        r.ellipse(25.6, 28.9, 2.6, 2.2, "body")
-        r.ellipse(22, 27.6, 3.3, 3.2, "band")
-        r.ellipse(18, 25.6, 3.9, 3.7, "body")
-        r.ellipse(14.2, 23.4, 3.2, 2.8, "fuzz")
-        r.pxs("vein", [(25, 28), (18, 24), (17, 25), (19, 24)])
-        r.part("head", "head", pivot=(12, 24), parent="body", z=1)
-        r.ellipse(11.4, 18.6, 6, 5.6, "fuzz")
-        dot_eyes(r, 8, 17, 13, h=3)
-        r.pxs("ink", [(10, 22), (11, 22)])
-        r.pxs("blush", [(7, 20), (15, 20)])
-        r.part("antennae", "fx", pivot=(11, 13), parent="head", z=-1)
-        r.pxs("ant", [(8, 14), (7, 13), (7, 12), (14, 14), (15, 13), (15, 12)])
-        r.part("halo", "fx", pivot=(11, 10), parent="head", z=2)
-        r.pxs("halo", [(8, 11), (9, 10), (10, 10), (11, 10), (12, 10), (13, 10), (14, 11)])
+        r.ellipse(26.4, 28.6, 3, 2.6, "body")
+        r.ellipse(22.2, 27, 3.8, 3.7, "band")
+        r.ellipse(17.6, 24.6, 4.5, 4.3, "body")
+        r.ellipse(13.4, 21.8, 3.7, 3.3, "fuzz")
+        r.pxs("vein", [(26, 28), (17, 23), (16, 24), (18, 23)])
+        r.part("head", "head", pivot=(11, 23), parent="body", z=1)
+        r.ellipse(10.8, 16.4, 7, 6.6, "fuzz")
+        eyes(r, 11, 14, 6)
+        r.pxs("ink", [(10, 20), (11, 20)])
+        r.pxs("blush", [(5, 19), (16, 19)])
+        r.part("antennae", "fx", pivot=(11, 10), parent="head", z=-1)
+        r.pxs("ant", [(7, 10), (6, 9), (6, 8), (14, 10), (15, 9), (15, 8)])
+        r.part("halo", "fx", pivot=(11, 6), parent="head", z=2)
+        r.pxs("halo", [(7, 7), (8, 6), (9, 6), (10, 6), (11, 6), (12, 6), (13, 6), (14, 7)])
         return r
 
     if stage == 1:  # young moth: upright, a fluffy collar, one pair of small round wings
@@ -310,8 +305,7 @@ def lumoth(stage: int) -> Rig:
         r.ellipse(16, 16.8, 5.4, 2.8, "fuzz")
         r.part("head", "head", pivot=(16, 16), parent="body", z=1)
         r.ellipse(16, 12.6, 4.8, 4.2, "fuzz")
-        r.pxs("eye", [(13, 12), (14, 12), (13, 13), (14, 13), (17, 12), (18, 12), (17, 13), (18, 13)])
-        r.pxs("shine", [(13, 12), (17, 12)])
+        eyes(r, 16, 12, 3.4, iris="eye", shine=True)
         r.pxs("blush", [(12, 14), (19, 14)])
         r.part("antennae", "fx", pivot=(16, 8), parent="head", z=-1)
         r.pxs("ant", mirror_pts([(13, 9), (12, 8), (11, 7), (10, 6), (9, 6), (11, 6), (10, 8)]))
@@ -342,8 +336,7 @@ def lumoth(stage: int) -> Rig:
     r.ellipse(16, 14.6, 4.6, 2.2, "fuzz")
     r.part("head", "head", pivot=(16, 14), parent="body", z=1)
     r.ellipse(16, 10.8, 4, 3.6, "fuzz")
-    r.pxs("eye", [(13, 10), (14, 10), (17, 10), (18, 10), (13, 9), (18, 9)])
-    r.pxs("eyeglow", [(14, 10), (17, 10)])
+    eyes(r, 16, 9.5, 2.9, iris="eyeglow", lid="eye")
     r.part("antennae", "fx", pivot=(16, 7), parent="head", z=-1)
     r.pxs("ant", mirror_pts([(13, 8), (12, 7), (11, 6), (10, 6), (9, 5), (8, 5), (7, 4), (6, 4), (10, 5), (8, 4), (11, 7), (9, 6)]))
     r.part("halo", "fx", pivot=(16, 3), parent="head", z=2)

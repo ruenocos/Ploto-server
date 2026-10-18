@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from common import CREAM, GOLD, LEAF, base_materials
 from pixelkit import Material
-from rigkit import Rig, dot_eyes, mirror_poly, mirror_pts, sym_poly
+from rigkit import Rig, eyes, mirror_poly, mirror_pts, sym_poly
 
 GREEN = ["#2a6a24", "#4aa03a", "#86d65a", "#c8f29a"]
 VINE = ["#173d1c", "#2b6e30", "#45a34a", "#82d36a"]
@@ -27,21 +27,21 @@ def thornkin(stage: int) -> Rig:
     if stage == 0:
         # A seedling: one round bean that is all head, two leaf ears and a sprout.
         r.part("feet", "legs", pivot=(16, 30), z=-1)
-        r.ellipse(12.8, 30, 2, 1.3, "vine")
-        r.ellipse(19.2, 30, 2, 1.3, "vine")
+        r.ellipse(12.4, 30.2, 2.4, 1.5, "vine")
+        r.ellipse(19.6, 30.2, 2.4, 1.5, "vine")
         r.part("body", "body", pivot=(16, 30))
-        sym_poly(r, [(9.6, 22), (7, 21.4), (9.6, 24.2)], "thorn")
-        r.ellipse(16, 23.6, 7.2, 6.8, "body")
-        dot_eyes(r, 12, 21, 18, h=3)
-        r.pxs("ink", [(15, 26), (16, 26)])
-        r.pxs("blush", [(10, 25), (11, 25), (20, 25), (21, 25)])
+        sym_poly(r, [(8.2, 20.4), (5, 19.4), (8, 23.2)], "thorn")
+        r.ellipse(16, 22.4, 8.8, 8.4, "body")
+        eyes(r, 16, 19, 6)
+        r.pxs("ink", [(15, 24), (16, 24)])
+        r.pxs("blush", [(10, 23), (11, 23), (20, 23), (21, 23)])
         for side in ("ear-l", "ear-r"):
-            r.part(side, side, pivot=(12, 18) if side == "ear-l" else (20, 18), parent="body", z=-1)
-            pts = [(14, 18.4), (9.6, 14.2), (6, 15.2), (9.4, 18.6)]
+            r.part(side, side, pivot=(11, 15) if side == "ear-l" else (21, 15), parent="body", z=-1)
+            pts = [(13, 15.2), (8, 10.2), (3.6, 11.6), (8, 15.8)]
             r.poly(pts if side == "ear-l" else mirror_poly(pts), "leaf")
-        r.part("sprout", "fx", pivot=(16, 17), parent="body", z=1)
-        r.pxs("stem", [(16, 14), (16, 15), (16, 16)])
-        r.pxs("leaf", [(13, 12), (14, 12), (14, 13), (15, 13), (17, 12), (18, 12), (18, 11), (19, 11)])
+        r.part("sprout", "fx", pivot=(16, 14), parent="body", z=1)
+        r.pxs("stem", [(16, 10), (16, 11), (16, 12), (16, 13)])
+        r.pxs("leaf", [(12, 7), (13, 7), (13, 8), (14, 8), (15, 9), (17, 9), (18, 8), (19, 8), (19, 7), (20, 7)])
     elif stage == 1:
         # Stands up on stubby legs, grows twig arms and a closed flower bud.
         r.part("legs", "legs", pivot=(16, 26), z=-1)
@@ -60,8 +60,8 @@ def thornkin(stage: int) -> Rig:
         r.poly([(12, 25), (20, 25), (21, 27.6), (16, 26.6), (11, 27.6)], "leaf")
         r.part("head", "head", pivot=(16, 18.6), parent="body", z=1)
         r.ellipse(16, 13.8, 5.6, 5.2, "body")
-        dot_eyes(r, 13, 13, 18)
-        r.pxs("ink", [(12, 11), (13, 11), (18, 11), (19, 11), (15, 16), (16, 16)])
+        eyes(r, 16, 13, 4)
+        r.pxs("ink", [(15, 16), (16, 16)])
         r.pxs("blush", [(11, 15), (20, 15)])
         for side in ("ear-l", "ear-r"):
             r.part(side, side, pivot=(12, 11) if side == "ear-l" else (20, 11), parent="head", z=-1)
@@ -98,8 +98,8 @@ def thornkin(stage: int) -> Rig:
         r.ellipse(16, 9.4, 4.4, 4.4, "petal")
         r.part("head", "head", pivot=(16, 14), parent="body", z=1)
         r.ellipse(16, 10.6, 4.2, 3.9, "body")
-        r.pxs("pollen", [(13, 10), (14, 10), (13, 11), (17, 10), (18, 10), (18, 11)])
-        r.pxs("ink", [(14, 11), (17, 11), (12, 9), (13, 9), (14, 10), (19, 9), (18, 9), (17, 10), (15, 13), (16, 13)])
+        eyes(r, 16, 10, 3, iris="pollen")
+        r.pxs("ink", [(15, 13), (16, 13)])
         r.part("crown", "fx", pivot=(16, 7), parent="head", z=1)
         sym_poly(r, [(12.6, 8.2), (11, 3.6), (14.2, 7.2)], "thorn")
         r.poly([(14.8, 7.2), (16, 2.6), (17.2, 7.2)], "thorn")
@@ -114,20 +114,21 @@ def vinecoil(stage: int) -> Rig:
                                        vein=Material(["#4c7a1a"], flat=True), hood=Material(["#3a5a12", "#5e8a1e", "#8cbc32", "#c4e46a"])), "#08170a", stage)
     if stage == 0:
         # A plump sprout-worm curled into a spiral, big head resting on it.
-        r.part("tail", "tail", pivot=(22, 27), z=-1)
-        r.poly([(25.6, 25), (29, 23.4), (27, 27)], "leaf")
+        r.part("tail", "tail", pivot=(26, 26), z=-1)
+        r.poly([(27.4, 24.4), (31.4, 22.2), (29, 27.2)], "leaf")
         r.part("body", "body", pivot=(18, 30))
-        r.stroke([(10, 29.4), (16, 30.2), (22, 29.6), (25, 26.6), (23.4, 23.2), (19, 22.6), (17, 25), (19, 26.8)], 4.4, "body")
-        r.pxs("leaf", [(14, 31), (15, 31), (16, 31), (17, 31), (18, 31), (19, 31), (20, 31), (24, 29), (26, 27), (26, 26)])
-        r.pxs("ink", [(20, 25), (21, 25), (21, 26)])
-        r.part("head", "head", pivot=(10, 27), parent="body", z=1)
-        r.ellipse(10, 23.4, 5.2, 4.6, "body")
-        dot_eyes(r, 7, 21, 11, h=3)
-        r.pxs("tongue", [(10, 26), (9, 27), (11, 27)])
-        r.pxs("blush", [(6, 25), (13, 25)])
-        r.part("flower", "fx", pivot=(10, 19), parent="head", z=1)
-        r.pxs("petal", [(10, 16), (9, 17), (11, 17), (10, 18)])
-        r.pxs("pollen", [(10, 17)])
+        r.stroke([(9, 29), (16, 30), (23, 29.4), (27, 26), (25.6, 21.4), (20.4, 20.6), (17.6, 23.6), (20.2, 26.2)], 5.4, "body")
+        r.pxs("leaf", [(13, 31), (14, 31), (15, 31), (16, 31), (17, 31), (18, 31), (19, 31), (20, 31), (21, 31), (26, 29), (28, 27), (28, 26)])
+        r.pxs("ink", [(21, 24), (22, 24), (22, 25)])
+        r.part("head", "head", pivot=(10, 26), parent="body", z=1)
+        r.ellipse(10, 19.6, 6.6, 5.8, "body")
+        eyes(r, 10, 17, 5)
+        r.pxs("ink", [(9, 22), (10, 22)])
+        r.pxs("tongue", [(10, 23)])
+        r.pxs("blush", [(5, 21), (14, 21)])
+        r.part("flower", "fx", pivot=(10, 14), parent="head", z=1)
+        r.pxs("petal", [(11, 9), (10, 10), (12, 10), (11, 11)])
+        r.pxs("pollen", [(11, 10)])
     elif stage == 1:
         # Rears up like a cobra; a pair of leaves frames the head, the flower opens.
         r.part("leaves", "fx", pivot=(16, 26), z=1)
@@ -141,8 +142,7 @@ def vinecoil(stage: int) -> Rig:
             r.poly(pts if side == "ear-l" else mirror_poly(pts), "leaf")
         r.part("head", "head", pivot=(16, 13), parent="body", z=1)
         r.ellipse(16, 9.4, 5, 4.2, "body")
-        dot_eyes(r, 13, 8, 17)
-        r.pxs("ink", [(12, 7), (19, 7)])
+        eyes(r, 16, 8, 4)
         r.pxs("tongue", [(16, 13), (16, 14), (15, 15), (17, 15)])
         r.part("flower", "fx", pivot=(16, 5), parent="head", z=1)
         r.pxs("petal", [(16, 2), (15, 3), (17, 3), (14, 4), (18, 4), (15, 5), (17, 5), (16, 3), (16, 4)])
@@ -165,8 +165,7 @@ def vinecoil(stage: int) -> Rig:
         r.ellipse(16, 12.4, 5, 2.4, "body")
         r.ellipse(16, 9.8, 4.6, 1.8, "jaw")
         r.pxs("teeth", [(12, 9), (14, 9), (16, 9), (18, 9), (20, 9), (13, 11), (15, 11), (17, 11), (19, 11)])
-        r.pxs("pollen", [(13, 6), (18, 6)])
-        r.pxs("ink", [(12, 5), (13, 5), (18, 5), (19, 5)])
+        eyes(r, 16, 5.4, 6, iris="pollen")
     return r
 
 
@@ -184,23 +183,24 @@ def myconite(stage: int) -> Rig:
     if stage == 0:
         # A button mushroom: a cap wider than it is, a tiny stem body, a toothpick sword.
         r.part("feet", "legs", pivot=(16, 30), z=-1)
-        r.ellipse(13.2, 30.2, 1.8, 1.2, "gill")
-        r.ellipse(18.8, 30.2, 1.8, 1.2, "gill")
-        r.part("arm-r", "arm-r", pivot=(21, 27), z=1)
-        r.stroke([(22.4, 22.6), (22.4, 27.4)], 1, "blade")
-        r.pxs("hilt", [(21, 27), (22, 27), (23, 27), (22, 28)])
+        r.ellipse(12.8, 30.4, 2.2, 1.3, "gill")
+        r.ellipse(19.2, 30.4, 2.2, 1.3, "gill")
+        r.part("arm-r", "arm-r", pivot=(23, 27), z=1)
+        r.stroke([(24.4, 20.4), (24.4, 27)], 1, "blade")
+        r.pxs("hilt", [(23, 27), (24, 27), (25, 27), (24, 28)])
         r.part("body", "body", pivot=(16, 30))
-        r.ellipse(16, 26.6, 4.8, 4.4, "stem")
-        dot_eyes(r, 13, 24, 17, h=3)
-        r.pxs("ink", [(15, 28)])
-        r.pxs("blush", [(12, 27), (19, 27)])
-        r.part("cap", "head", pivot=(16, 22), parent="body", z=1)
-        r.ellipse(16, 19, 8.6, 6.6, "cap")
-        cut_below(23)
-        r.pxs("gill", [(x, 22) for x in range(6, 27) if r.mat_at(x, 22) == "cap"])
-        r.pxs("spot", [(11, 16), (12, 16), (11, 17), (12, 17), (17, 14), (18, 14), (17, 15), (18, 15), (21, 18), (22, 18), (14, 19)])
-        r.part("spores", "fx", pivot=(16, 18), z=3)
-        r.pxs("spore", [(5, 14), (27, 12), (28, 22)])
+        r.ellipse(16, 25.4, 6, 5.6, "stem")
+        eyes(r, 16, 22, 4)
+        r.pxs("ink", [(15, 26), (16, 26)])
+        r.pxs("blush", [(11, 26), (20, 26)])
+        r.part("cap", "head", pivot=(16, 19), parent="body", z=1)
+        r.ellipse(16, 14.6, 10.8, 7.8, "cap")
+        cut_below(20)
+        r.pxs("gill", [(x, 19) for x in range(3, 30) if r.mat_at(x, 19) == "cap"])
+        r.pxs("spot", [(9, 12), (10, 12), (9, 13), (10, 13), (16, 9), (17, 9), (16, 10), (17, 10),
+                       (22, 13), (23, 13), (22, 14), (23, 14), (13, 16), (14, 16), (19, 17)])
+        r.part("spores", "fx", pivot=(16, 15), z=3)
+        r.pxs("spore", [(2, 10), (29, 7), (30, 19)])
     elif stage == 1:
         # A squire: it stands on legs, the cap becomes a kettle helm, sword raised, leaf shield.
         r.part("legs", "legs", pivot=(16, 24), z=-1)
@@ -217,8 +217,8 @@ def myconite(stage: int) -> Rig:
         r.part("body", "body", pivot=(16, 24))
         r.ellipse(16, 18.8, 4.8, 5.4, "stem")
         r.pxs("gill", [(x, 22) for x in range(12, 21)])
-        dot_eyes(r, 13, 16, 17)
-        r.pxs("ink", [(13, 15), (14, 15), (17, 15), (18, 15), (15, 19), (16, 19)])
+        eyes(r, 16, 16, 3)
+        r.pxs("ink", [(15, 19), (16, 19)])
         r.part("cap", "head", pivot=(16, 13), parent="body", z=1)
         r.ellipse(16, 10.6, 6.6, 5, "cap")
         cut_below(13)
@@ -250,7 +250,7 @@ def myconite(stage: int) -> Rig:
         r.pxs("spot", [(10, 13), (21, 13)])
         r.part("cap", "head", pivot=(16, 11), parent="body", z=1)
         r.ellipse(16, 12.4, 3.8, 2.4, "ink")
-        r.pxs("glowspot", [(14, 12), (17, 12)])
+        eyes(r, 16, 12.8, 3, iris="glowspot")
         r.poly([(8.6, 9.4), (12.4, 4), (16, 0.6), (19.6, 4), (23.4, 9.4)], "cap")
         r.ellipse(16, 9.4, 12, 2.1, "cap")
         r.pxs("gill", [(x, 11) for x in range(7, 25) if r.mat_at(x, 10) == "cap"])
@@ -279,29 +279,27 @@ def petalope(stage: int) -> Rig:
     if stage == 0:
         # A fawn sitting with its legs folded: big head, big ears, two antler nubs, one bloom.
         r.part("legs", "legs", pivot=(16, 30), z=1)
-        r.ellipse(13.4, 30, 1.8, 1.2, "fur")
-        r.ellipse(18.6, 30, 1.8, 1.2, "fur")
+        r.ellipse(13, 30.2, 2.2, 1.3, "fur")
+        r.ellipse(19, 30.2, 2.2, 1.3, "fur")
         r.pxs("hoof", [(13, 30), (18, 30)])
         r.part("body", "body", pivot=(16, 30))
-        r.ellipse(16, 26.4, 5.8, 4.4, "fur")
-        r.ellipse(16, 25.6, 2.8, 2.6, "cream")
-        r.pxs("spot", [(11, 26), (12, 28), (20, 27), (19, 25)])
-        r.part("head", "head", pivot=(16, 22), parent="body", z=1)
-        r.ellipse(16, 17.4, 6, 5.2, "fur")
-        r.ellipse(16, 20.6, 2.9, 1.8, "cream")
-        r.ellipse(12.8, 16.8, 1.4, 2, "ink")
-        r.ellipse(19.2, 16.8, 1.4, 2, "ink")
-        r.pxs("shine", [(12, 16), (18, 16)])
-        r.pxs("ink", [(15, 20), (16, 20)])
-        r.pxs("blush", [(10, 19), (21, 19)])
+        r.ellipse(16, 25.8, 7, 5.2, "fur")
+        r.ellipse(16, 25, 3.4, 3, "cream")
+        r.pxs("spot", [(10, 26), (11, 28), (21, 27), (20, 25)])
+        r.part("head", "head", pivot=(16, 21), parent="body", z=1)
+        r.ellipse(16, 15.4, 7.4, 6.2, "fur")
+        r.ellipse(16, 19.2, 3.4, 2.2, "cream")
+        eyes(r, 16, 13, 6)
+        r.pxs("ink", [(15, 18), (16, 18)])
+        r.pxs("blush", [(10, 18), (21, 18)])
         for side in ("ear-l", "ear-r"):
-            r.part(side, side, pivot=(11, 15) if side == "ear-l" else (21, 15), parent="head", z=-1)
-            pts = [(11.6, 14.6), (3.8, 12.2), (5.4, 15.8), (10.8, 17.2)]
+            r.part(side, side, pivot=(10, 13) if side == "ear-l" else (22, 13), parent="head", z=-1)
+            pts = [(10.6, 12.4), (1.4, 9.6), (3.2, 14.2), (9.8, 15.6)]
             r.poly(pts if side == "ear-l" else mirror_poly(pts), "fur")
-            r.pxs("ear", [(6, 14), (7, 14), (8, 15)] if side == "ear-l" else [(25, 14), (24, 14), (23, 15)])
-        r.part("antlers", "fx", pivot=(16, 12), parent="head", z=-2)
-        r.pxs("antler", mirror_pts([(12, 12), (12, 11)]))
-        bloom(12, 10)
+            r.pxs("ear", [(4, 11), (5, 11), (6, 12)] if side == "ear-l" else [(27, 11), (26, 11), (25, 12)])
+        r.part("antlers", "fx", pivot=(16, 10), parent="head", z=-2)
+        r.pxs("antler", mirror_pts([(12, 9), (12, 8)]))
+        bloom(12, 7)
     elif stage == 1:
         # A young deer up on four legs, a neck, small two-tine antlers in bud.
         r.part("backlegs", "legs", pivot=(16, 24), z=-2)
@@ -320,8 +318,8 @@ def petalope(stage: int) -> Rig:
         r.part("head", "head", pivot=(16, 15), parent="body", z=1)
         r.ellipse(16, 11.4, 4.4, 3.8, "fur")
         r.ellipse(16, 13.8, 2.3, 1.5, "cream")
-        r.pxs("ink", [(13, 10), (14, 10), (13, 11), (14, 11), (17, 10), (18, 10), (17, 11), (18, 11), (12, 9), (19, 9), (15, 13), (16, 13)])
-        r.pxs("shine", [(13, 10), (17, 10)])
+        eyes(r, 16, 10, 3)
+        r.pxs("ink", [(15, 13), (16, 13)])
         for side in ("ear-l", "ear-r"):
             r.part(side, side, pivot=(12, 10) if side == "ear-l" else (20, 10), parent="head", z=-1)
             pts = [(12.4, 9.8), (6.6, 8), (9.6, 11.6)]
@@ -359,7 +357,8 @@ def petalope(stage: int) -> Rig:
         r.part("head", "head", pivot=(16, 12.6), parent="body", z=2)
         r.ellipse(16, 9.6, 3.8, 3.4, "fur")
         r.ellipse(16, 11.8, 2, 1.4, "cream")
-        r.pxs("ink", [(13, 9), (14, 9), (17, 9), (18, 9), (12, 8), (19, 8), (15, 11), (16, 11)])
+        eyes(r, 16, 9, 3)
+        r.pxs("ink", [(15, 11), (16, 11)])
         for side in ("ear-l", "ear-r"):
             r.part(side, side, pivot=(12.6, 9) if side == "ear-l" else (19.4, 9), parent="head", z=-1)
             pts = [(12.8, 8.6), (8, 8.2), (10.6, 10.4)]

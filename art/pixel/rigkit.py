@@ -149,6 +149,52 @@ def dot_eyes(r: Rig, lx: int, ly: int, rx: int, h: int = 2) -> None:
         r.px(x0, ly, "shine")
 
 
+#: The house eye per stage (see EVOLUTION.md, "Eyes"): Base round, ★ bright, ★★ sharp.
+EYE_FOR_STAGE = ("round", "bright", "sharp")
+
+
+def eyes(r: Rig, cx: float, y: float, gap: float, style: str | None = None, iris: str = "ink", lid: str = "ink",
+         brow: bool | None = None, shine: bool | None = None) -> None:
+    """A pair of eyes in the house style, mirrored around design x = `cx`, top
+    edge at design y = `y`, `gap` design px between the inner edges.
+
+    Sizes are in canvas pixels, so eyes stay the same crisp size at every stage
+    scale (hand-placed design pixels come out 1 or 2 px wide at x1.2 / x1.38).
+    The shine sits on the outer top pixel, so both eyes catch the light the same.
+
+    style  round   2x3, shine                       (Base: big and soft)
+           bright  2x2, shine, a flat brow above    (★: alert)
+           sharp   2x2, inner top pixel lidded, brow slanting down to the nose;
+                   pass `iris` a glow material to light it            (★★)
+           closed  a 3-px arc                       (sleeping or squinting)
+    Defaults to the stage's style (EYE_FOR_STAGE).
+    """
+    style = style or EYE_FOR_STAGE[r.stage]
+    X, Y = r.T(cx, y)
+    axis, top = round(X), round(Y)
+    g = max(1, round(gap * r.k / 2))
+    brow = style in ("bright", "sharp") if brow is None else brow
+    shine = iris == "ink" and style != "closed" if shine is None else shine
+    for left in (True, False):
+        w = 3 if style == "closed" else 2
+        x0 = axis - g - w if left else axis + g
+        inner, outer = (w - 1, 0) if left else (0, w - 1)  # columns nearest / furthest from the nose
+        if style == "round":
+            dots = [(dx, dy, iris) for dx in (0, 1) for dy in range(3)]
+        elif style == "bright":
+            dots = [(dx, dy, iris) for dx in (0, 1) for dy in range(2)] + ([(0, -2, lid), (1, -2, lid)] if brow else [])
+        elif style == "sharp":
+            dots = [(dx, dy, iris) for dx in (0, 1) for dy in range(2)] + [(inner, 0, lid)] + ([(outer, -1, lid)] if brow else [])
+        elif style == "closed":
+            dots = [(0, 1, lid), (1, 0, lid), (2, 1, lid)]
+        else:
+            raise ValueError(style)
+        if shine and style != "closed":
+            dots.append((outer, 0, "shine"))
+        for dx, dy, mat in dots:
+            r.cur.px(x0 + dx, top + dy, mat)
+
+
 def happy_eyes(r: Rig, lx: int, y: int, rx: int) -> None:
     for x0 in (lx, rx):
         r.pxs("ink", [(x0, y), (x0 + 1, y - 1), (x0 + 2, y)])

@@ -6,7 +6,7 @@ Build every pixel asset and the game's art module.
 Writes PNGs to art/pixel/out/ and web/pixelart.js, which the client loads:
 
   window.PIXELART = {
-    monsters: { <id>: { icon, stages: [ { flat, parts: [ {n, role, parent, z, pivot:[x,y], at:[x,y], size:[w,h], src} ] } x3 ] } },
+    monsters: { <id>: { icon, stages: [ { flat, core:[x,y], parts: [ {n, role, parent, z, pivot:[x,y], at:[x,y], size:[w,h], src} ] } x3 ] } },
     gems: { fire, water, earth, nature, light, berry, stone },
     arena, platform,
   }
@@ -66,7 +66,9 @@ def main() -> None:
                      "pivot": [round(info.pivot[0], 1), round(info.pivot[1], 1)], "at": list(off), "size": list(img.size), "src": data_url(img)}
                     for info, img, off in rig.render_parts()
                 ]
-                stages.append({"flat": data_url(flat), "parts": parts})
+                # Body centre (where charge motes and orbs aim): middle of the sprite's bounding box.
+                x0, y0, x1, y1 = flat.getchannel("A").getbbox()
+                stages.append({"flat": data_url(flat), "parts": parts, "core": [round((x0 + x1) / 2, 1), round((y0 + y1) / 2 + (y1 - y0) * 0.08, 1)]})
                 if stage == 0:
                     icon = flat.crop((8, 16, 40, 48))  # design space of the base form = the old 32x32 frame
                     icon.save(OUT / f"{rig.name}-icon.png")

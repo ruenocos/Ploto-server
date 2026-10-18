@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from common import BONE, FIRE, FLAME, GOLD, INK, PEACH, base_materials, star_points
 from pixelkit import Material
-from rigkit import Rig, dot_eyes, mirror_poly, mirror_pts, sym_poly
+from rigkit import Rig, eyes, mirror_poly, mirror_pts, sym_poly
 
 OUT_FIRE = "#1a0606"
 FIRE_SOFT = ["#9a2a14", "#d2481f", "#f7703a", "#ffab6e"]  # babies: a touch lighter
@@ -26,27 +26,27 @@ def pyrup(stage: int) -> Rig:
     if stage == 0:
         # Fox kit: oversized ears and a bushy tail with an ember tip (Scorchpaw's cub has round ears and a mane tuft).
         r.part("tail", "tail", pivot=(11, 27), z=-2)
-        r.poly([(12, 29.6), (7.4, 29), (4.4, 25.6), (4.2, 21.4), (6.6, 23.6), (9.4, 25.8), (12.4, 26.4)], "fur")
-        r.poly([(4.2, 21.4), (3.4, 18.2), (5, 19.6), (5.4, 17), (7.2, 21), (6.6, 23.6)], "flame")
+        r.poly([(11.4, 29.8), (6, 29), (2.6, 25), (2.4, 20), (5.2, 22.6), (8.4, 25.2), (11.6, 26)], "fur")
+        r.poly([(2.4, 20), (1.4, 16.2), (3.4, 17.8), (3.8, 14.6), (6, 19.4), (5.2, 22.6)], "flame")
         r.part("feet", "legs", pivot=(16, 30), z=1)
-        r.ellipse(12.6, 30, 2.3, 1.4, "fur")
-        r.ellipse(19.4, 30, 2.3, 1.4, "fur")
+        r.ellipse(11.8, 30, 2.8, 1.6, "fur")
+        r.ellipse(20.2, 30, 2.8, 1.6, "fur")
         r.part("body", "body", pivot=(16, 30))
-        r.ellipse(16, 26.4, 5.6, 4.3, "fur")
-        r.ellipse(16, 27.4, 3, 2.7, "belly")
-        r.part("head", "head", pivot=(16, 23), parent="body", z=1)
-        r.ellipse(16, 18.6, 7, 5.6, "fur")
-        r.poly([(9.4, 19), (12.6, 19.6), (16, 22.6), (19.4, 19.6), (22.6, 19), (21.4, 22.4), (16, 24.4), (10.6, 22.4)], "belly")
-        dot_eyes(r, 12, 17, 18, h=3)
-        r.pxs("ink", [(15, 21), (16, 21)])
-        r.pxs("blush", [(10, 20), (21, 20)])
-        for side, piv in (("ear-l", (12, 15)), ("ear-r", (20, 15))):
+        r.ellipse(16, 25.6, 7, 5.2, "fur")
+        r.ellipse(16, 26.8, 3.8, 3.4, "belly")
+        r.part("head", "head", pivot=(16, 22), parent="body", z=1)
+        r.ellipse(16, 17.4, 8.6, 6.8, "fur")
+        r.poly([(8, 18), (12, 18.8), (16, 22.2), (20, 18.8), (24, 18), (22.6, 22.2), (16, 24.6), (9.4, 22.2)], "belly")
+        eyes(r, 16, 15, 6)
+        r.pxs("ink", [(15, 20), (16, 20)])
+        r.pxs("blush", [(9, 19), (10, 19), (21, 19), (22, 19)])
+        for side, piv in (("ear-l", (11, 13)), ("ear-r", (21, 13))):
             r.part(side, side, pivot=piv, parent="head", z=-1)
-            pts = [(9.4, 15.6), (7.6, 7.4), (14.6, 13.4)]
+            pts = [(8, 14.4), (6.2, 5.6), (14, 11.4)]
             r.poly(pts if side == "ear-l" else mirror_poly(pts), "fur")
-            inner = [(9, 10), (9, 11), (10, 11), (10, 12), (11, 12)]
+            inner = [(8, 9), (8, 10), (9, 10), (9, 11), (10, 11)]
             r.pxs("belly", inner if side == "ear-l" else _mirror_px(inner))
-            r.pxs("flame", [(8, 8)] if side == "ear-l" else [(23, 8)])
+            r.pxs("flame", [(7, 6), (7, 7)] if side == "ear-l" else [(24, 6), (24, 7)])
         return r
 
     if stage == 1:
@@ -69,9 +69,7 @@ def pyrup(stage: int) -> Rig:
         r.part("head", "head", pivot=(16, 17), parent="body", z=1)
         r.ellipse(16, 13, 5.6, 4.6, "fur")
         r.ellipse(16, 16, 3, 2, "belly")
-        r.pxs("iris", [(12, 12), (13, 12), (18, 12), (19, 12)])
-        r.pxs("ink", [(13, 12), (18, 12), (12, 13), (13, 13), (18, 13), (19, 13)])
-        r.pxs("brow", [(11, 11), (12, 11), (19, 11), (20, 11)])
+        eyes(r, 16, 12, 4, lid="brow")
         r.pxs("ink", [(15, 15), (16, 15)])
         for side, piv in (("ear-l", (12, 10)), ("ear-r", (20, 10))):
             r.part(side, side, pivot=piv, parent="head", z=-1)
@@ -107,10 +105,8 @@ def pyrup(stage: int) -> Rig:
     sym_poly(r, [(11.4, 8.6), (8.4, 11.8), (12.6, 11.4)], "fur")  # cheek fluff
     r.poly([(13.4, 10.2), (18.6, 10.2), (16, 13.4)], "belly")
     r.pxs("ink", [(15, 12), (16, 12)])
-    r.pxs("iris", [(11, 8), (12, 8), (19, 8), (20, 8)])
-    r.pxs("ink", [(13, 8), (18, 8)])
-    r.pxs("brow", [(11, 7), (12, 7), (13, 7), (18, 7), (19, 7), (20, 7)])
-    r.pxs("mark", [(16, 6), (15, 7), (16, 7), (17, 7)])
+    eyes(r, 16, 8, 4, iris="iris", lid="brow")
+    r.pxs("mark", [(16, 5), (15, 6), (16, 6), (17, 6)])
     for side, piv in (("ear-l", (13, 6)), ("ear-r", (19, 6))):
         r.part(side, side, pivot=piv, parent="head", z=-1)
         pts = [(11.4, 7.4), (8.2, -1.6), (15, 5.4)]
@@ -136,28 +132,28 @@ def scorchpaw(stage: int) -> Rig:
         OUT_FIRE, stage,
     )
     if stage == 0:
-        r.part("tail", "tail", pivot=(20, 28), z=-2)
-        r.stroke([(20, 29), (23.6, 28.6), (25.6, 26)], 1.4, "fur")
-        r.poly([(24.6, 26.6), (24.8, 22.6), (26.2, 24.4), (27.4, 22), (28.2, 25.6), (27, 27.6)], "flame")
+        r.part("tail", "tail", pivot=(21, 28), z=-2)
+        r.stroke([(20.6, 29), (24.8, 28.4), (27.2, 25.4)], 1.6, "fur")
+        r.poly([(26, 26), (26.2, 21.4), (27.8, 23.4), (29.2, 20.6), (30, 24.8), (28.6, 27.2)], "flame")
         r.part("paws", "legs", pivot=(16, 30), z=1)
-        r.ellipse(12.6, 30, 2.4, 1.5, "fur")
-        r.ellipse(19.4, 30, 2.4, 1.5, "fur")
+        r.ellipse(12, 30, 2.8, 1.7, "fur")
+        r.ellipse(20, 30, 2.8, 1.7, "fur")
         r.part("body", "body", pivot=(16, 30))
-        r.ellipse(16, 26.4, 5.4, 4.1, "fur")
-        r.ellipse(16, 27.4, 2.8, 2.6, "belly")
-        r.part("head", "head", pivot=(16, 23), parent="body", z=1)
-        r.ellipse(16, 18.4, 7.2, 6.2, "fur")
-        r.ellipse(16, 21.4, 3.3, 2.2, "belly")
-        dot_eyes(r, 12, 16, 18, h=3)
-        r.pxs("nose", [(15, 20), (16, 20)])
-        r.pxs("pupil", [(15, 22), (16, 22)])
-        r.pxs("blush", [(10, 20), (21, 20)])
-        for side, c in (("ear-l", (10.6, 13.6)), ("ear-r", (21.4, 13.6))):
+        r.ellipse(16, 25.8, 6.4, 4.8, "fur")
+        r.ellipse(16, 27, 3.3, 3, "belly")
+        r.part("head", "head", pivot=(16, 22), parent="body", z=1)
+        r.ellipse(16, 17.4, 8.4, 7.2, "fur")
+        r.ellipse(16, 20.8, 3.8, 2.5, "belly")
+        eyes(r, 16, 15, 6)
+        r.pxs("nose", [(15, 19), (16, 19)])
+        r.pxs("pupil", [(15, 21), (16, 21)])
+        r.pxs("blush", [(9, 19), (10, 19), (21, 19), (22, 19)])
+        for side, c in (("ear-l", (9.4, 12)), ("ear-r", (22.6, 12))):
             r.part(side, side, pivot=c, parent="head", z=-1)
-            r.ellipse(c[0], c[1], 2.1, 2.1, "fur")
-        r.part("mane", "fx", pivot=(16, 13), parent="head", z=1)
-        r.poly([(12.8, 13.8), (13.6, 10.4), (15, 12.4), (16.2, 9.4), (17.6, 12.4), (19.2, 10.8), (19.2, 14)], "mane")
-        r.pxs("flame", [(16, 10)])
+            r.ellipse(c[0], c[1], 2.4, 2.4, "fur")
+        r.part("mane", "fx", pivot=(16, 12), parent="head", z=1)
+        r.poly([(12.4, 12.6), (13.2, 8.6), (14.8, 11), (16.2, 7.6), (17.8, 11), (19.6, 9.2), (19.6, 12.8)], "mane")
+        r.pxs("flame", [(16, 8), (13, 9)])
         return r
 
     if stage == 1:
@@ -186,9 +182,7 @@ def scorchpaw(stage: int) -> Rig:
         r.part("head", "head", pivot=(16, 17), parent="body", z=1)
         r.ellipse(16, 13.4, 5.4, 4.6, "fur")
         r.ellipse(16, 16.2, 3, 2, "belly")
-        r.pxs("brow", mirror_pts([(11, 11), (12, 11), (13, 12)]))
-        r.pxs("eye", mirror_pts([(12, 12), (13, 13), (12, 13)]))
-        r.pxs("pupil", mirror_pts([(13, 13)]))
+        eyes(r, 16, 12, 4, lid="brow")
         r.pxs("nose", [(15, 15), (16, 15)])
         r.pxs("pupil", [(15, 17), (16, 17)])
         r.pxs("fang", [(14, 17), (17, 17)])
@@ -227,9 +221,7 @@ def scorchpaw(stage: int) -> Rig:
     r.part("head", "head", pivot=(16, 13), parent="body", z=2)
     r.ellipse(16, 8.8, 4.8, 4.2, "fur")
     r.ellipse(16, 11.4, 2.9, 1.8, "belly")
-    r.pxs("brow", mirror_pts([(11, 6), (12, 7), (13, 7), (14, 8)]))
-    r.pxs("eye", mirror_pts([(12, 8), (13, 8)]))
-    r.pxs("pupil", mirror_pts([(13, 8)]))
+    eyes(r, 16, 8, 4, iris="eye", lid="brow")
     r.pxs("nose", [(15, 10), (16, 10)])
     r.pxs("pupil", [(14, 12), (15, 12), (16, 12), (17, 12), (15, 13), (16, 13)])
     r.pxs("fang", [(14, 12), (17, 12)])
@@ -244,26 +236,25 @@ def magmaul(stage: int) -> Rig:
             basalt=Material(["#1e100e", "#3a1c17", "#5c2c22", "#86412f"]), arm=Material(["#1a0d0b", "#311712", "#4e241c", "#73382a"]),
             horn=Material(BONE), lava=Material(["#ffa12c"], flat=True), core=Material(["#fff1a0"], flat=True),
             magma=Material(FLAME), ember=Material(["#ffd36a"], flat=True, floating=True), smoke=Material(["#6b5a58"], flat=True, floating=True),
+            shine=Material(["#fff1a0"], flat=True),  # its eyes are lava: the highlight is molten, not white
         ),
         "#0e0504", stage,
     )
     if stage == 0:
         r.part("feet", "legs", pivot=(16, 30), z=-1)
-        r.ellipse(12.4, 30.2, 2.1, 1.3, "arm")
-        r.ellipse(19.6, 30.2, 2.1, 1.3, "arm")
-        for side, c in (("arm-l", (8.6, 25)), ("arm-r", (23.4, 25))):
-            r.part(side, side, pivot=(c[0] + (1 if side == "arm-l" else -1), 23), z=1)
-            r.ellipse(c[0], c[1], 2, 2.4, "arm")
+        r.ellipse(11.6, 30.2, 2.6, 1.3, "arm")
+        r.ellipse(20.4, 30.2, 2.6, 1.3, "arm")
+        for side, c in (("arm-l", (4.4, 23)), ("arm-r", (27.6, 23))):
+            r.part(side, side, pivot=(c[0] + (1.4 if side == "arm-l" else -1.4), 20.6), z=1)
+            r.ellipse(c[0], c[1], 2.6, 3.2, "arm")
         r.part("body", "body", pivot=(16, 30))
-        r.poly([(9.6, 17.6), (12.4, 15.4), (19.6, 15.4), (22.4, 17.6), (24, 23), (22.6, 28.6), (19, 30.2), (13, 30.2), (9.4, 28.6), (8, 23)], "basalt")
-        r.ellipse(16, 16.6, 3.6, 1.2, "lava")
-        r.pxs("core", [(15, 16), (16, 16)])
-        r.pxs("lava", [(21, 20), (21, 21), (22, 22), (10, 25), (11, 26), (11, 27), (17, 28), (18, 28)])
+        r.poly([(7, 12.2), (11, 9.2), (21, 9.2), (25, 12.2), (27.2, 19.8), (25.2, 27.6), (20.2, 29.9), (11.8, 29.9), (6.8, 27.6), (4.8, 19.8)], "basalt")
+        r.ellipse(16, 10.6, 4.8, 1.5, "lava")
+        r.pxs("core", [(15, 10), (16, 10), (17, 10)])
+        r.pxs("lava", [(22, 14), (23, 15), (23, 16), (24, 17), (8, 21), (8, 22), (9, 23), (18, 26), (19, 26), (20, 27)])
         # Big glowing eyes and a small mouth.
-        for x0 in (12, 18):
-            r.pxs("lava", [(x0, 21), (x0 + 1, 21), (x0, 22), (x0 + 1, 22)])
-            r.px(x0, 21, "core")
-        r.pxs("lava", [(15, 24), (16, 24)])
+        eyes(r, 16, 16, 6, iris="lava", shine=True)
+        r.pxs("lava", [(15, 22), (16, 22)])
         return r
 
     if stage == 1:
@@ -284,8 +275,8 @@ def magmaul(stage: int) -> Rig:
         r.pxs("core", [(13, 17), (20, 16), (16, 21)])
         r.part("head", "head", pivot=(16, 12), parent="body", z=1)
         r.poly([(12, 6.4), (20, 6.4), (21.2, 9.6), (19.6, 12.6), (12.4, 12.6), (10.8, 9.6)], "basalt")
-        r.pxs("lava", [(13, 9), (14, 9), (17, 9), (18, 9), (14, 11), (15, 11), (16, 11), (17, 11)])
-        r.pxs("core", [(13, 9), (18, 9)])
+        eyes(r, 16, 9, 2, iris="lava", shine=True)
+        r.pxs("lava", [(14, 11), (15, 11), (16, 11), (17, 11)])
         r.part("horns", "fx", pivot=(16, 7), parent="head", z=-1)
         sym_poly(r, [(12, 7.4), (10.8, 3.6), (14.2, 6.4)], "horn")
         return r
@@ -318,8 +309,8 @@ def magmaul(stage: int) -> Rig:
     r.part("head", "head", pivot=(16, 14), parent="body", z=2)
     r.poly([(12.6, 9.4), (19.4, 9.4), (20.6, 12.4), (18.8, 15.6), (13.2, 15.6), (11.4, 12.4)], "arm")
     r.pxs("horn", [(12, 10), (13, 10), (14, 11), (19, 10), (18, 10), (17, 11)])
-    r.pxs("lava", [(13, 12), (14, 12), (17, 12), (18, 12), (14, 14), (15, 14), (16, 14), (17, 14)])
-    r.pxs("core", [(14, 12), (17, 12)])
+    eyes(r, 16, 12, 2, iris="lava", brow=False)
+    r.pxs("lava", [(14, 14), (15, 14), (16, 14), (17, 14)])
     return r
 
 
@@ -335,20 +326,20 @@ def emberwing(stage: int) -> Rig:
     )
     if stage == 0:
         r.part("feet", "legs", pivot=(16, 30), z=-1)
-        r.pxs("beak", [(13, 30), (14, 30), (12, 31), (14, 31), (17, 30), (18, 30), (17, 31), (19, 31)])
-        for side, c in (("wing-l", (9.4, 24.4)), ("wing-r", (22.6, 24.4))):
-            r.part(side, side, pivot=(c[0] + (1.2 if side == "wing-l" else -1.2), 22.4), z=1)
-            r.ellipse(c[0], c[1], 2, 2.8, "wing")
+        r.pxs("beak", [(12, 30), (13, 30), (11, 31), (13, 31), (18, 30), (19, 30), (18, 31), (20, 31)])
+        for side, c in (("wing-l", (7.4, 22.4)), ("wing-r", (24.6, 22.4))):
+            r.part(side, side, pivot=(c[0] + (1.4 if side == "wing-l" else -1.4), 19.8), z=1)
+            r.ellipse(c[0], c[1], 2.6, 3.6, "wing")
         r.part("body", "body", pivot=(16, 30))
-        r.ellipse(16, 23.6, 7.2, 6.6, "fur")
-        r.poly([(9.4, 21), (7.6, 20.4), (8.8, 22.6)], "fur")
-        r.poly([(22.6, 21), (24.4, 20.4), (23.2, 22.6)], "fur")
-        r.ellipse(16, 26.2, 4.2, 3.7, "belly")
-        dot_eyes(r, 12, 19, 18, h=3)
-        r.poly([(14.8, 23), (17.2, 23), (16, 24.8)], "beak")
-        r.pxs("blush", [(11, 23), (20, 23)])
-        r.part("crest", "fx", pivot=(16, 17), parent="body", z=1)
-        r.poly([(14.8, 17.6), (16, 12.6), (17.4, 17.6)], "flame")
+        r.ellipse(16, 21.4, 9.2, 8.5, "fur")
+        r.poly([(7.4, 18), (5, 17.2), (6.6, 20)], "fur")
+        r.poly([(24.6, 18), (27, 17.2), (25.4, 20)], "fur")
+        r.ellipse(16, 24.8, 5.4, 4.8, "belly")
+        eyes(r, 16, 16, 6)
+        r.poly([(14.4, 20.6), (17.6, 20.6), (16, 23)], "beak")
+        r.pxs("blush", [(9, 21), (10, 21), (21, 21), (22, 21)])
+        r.part("crest", "fx", pivot=(16, 13), parent="body", z=1)
+        r.poly([(14.4, 13.6), (16, 7), (17.8, 13.6)], "flame")
         return r
 
     if stage == 1:
@@ -371,9 +362,7 @@ def emberwing(stage: int) -> Rig:
         r.part("head", "head", pivot=(16, 15), parent="body", z=2)
         r.ellipse(16, 12, 4.4, 3.8, "fur")
         r.poly([(14.6, 13), (17.4, 13), (16, 15.4)], "beak")
-        r.pxs("iris", [(13, 11), (18, 11)])
-        r.pxs("ink", [(14, 11), (17, 11), (13, 12), (14, 12), (17, 12), (18, 12)])
-        r.pxs("brow", [(13, 10), (14, 10), (17, 10), (18, 10)])
+        eyes(r, 16, 11, 2, lid="brow")
         r.part("crest", "fx", pivot=(16, 9), parent="head", z=-1)
         for f in ([(13.4, 9.4), (12.6, 5.2), (15, 8)], [(15, 8.6), (16, 4.4), (17.2, 8.6)], [(17, 8), (19.4, 5.2), (18.6, 9.4)]):
             r.poly(f, "flame")
@@ -404,9 +393,7 @@ def emberwing(stage: int) -> Rig:
     r.part("head", "head", pivot=(16, 11), parent="body", z=2)
     r.ellipse(16, 8.2, 3.5, 3.1, "fur")
     r.poly([(14.8, 9.2), (17.4, 9.2), (16.4, 11.8), (15.6, 11.2)], "beak")
-    r.pxs("iris", [(14, 8), (17, 8)])
-    r.pxs("ink", [(15, 8), (16, 8)])
-    r.pxs("brow", [(13, 7), (14, 7), (17, 7), (18, 7)])
+    eyes(r, 16, 8, 0, iris="iris", lid="brow")
     r.part("crest", "fx", pivot=(16, 6), parent="head", z=-1)
     r.poly([(14.4, 6.4), (11.8, 0.6), (12.8, -2.6), (15, 2), (16, -3), (17, 2), (19.2, -2.6), (20.2, 0.6), (17.6, 6.4)], "flame")
     r.part("embers", "fx", pivot=(16, 16), z=2)

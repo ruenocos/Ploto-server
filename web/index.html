@@ -754,6 +754,8 @@
        * canvas, at `u` CSS px per sprite pixel (whole device pixels at 2 / 3).
        */
       const CARD_CROP = [6, 14, 36, 34]; // the Base forms sit in the bottom of the canvas
+      /** Evolution-line scale: ~1.5 sprite px, snapped to whole device pixels, so a ★★ there stays smaller than the 3× hero above it. */
+      const lineUnit = () => { const dpr = window.devicePixelRatio || 1; return Math.max(1, Math.round(1.5 * dpr)) / dpr; };
       function rigView(id, stage, u, crop = [0, 0, 48, 48]) {
         if (!pxMon(id)) return art(id, 32 * u);
         const [x, y, w, h] = crop;
@@ -890,7 +892,7 @@
           `<div class="s-sub">${gemIcon(mon.element, 16)} ${EL_LABEL[mon.element]}${arch ? ` · ${esc(arch)}` : ""}</div>` +
           (pxMon(mon.id)
             ? `<div class="evo-line" aria-label="Evolution line">` +
-              [0, 1, 2].map((st) => `<div class="evo-st${st === 0 ? " cur" : ""}">${rigView(mon.id, st, window.innerWidth >= 400 ? 2 : 1)}<span>${st ? "★".repeat(st) : "Base"}</span></div>`)
+              [0, 1, 2].map((st) => `<div class="evo-st${st === 0 ? " cur" : ""}">${rigView(mon.id, st, lineUnit())}<span>${st ? "★".repeat(st) : "Base"}</span></div>`)
                 .join(`<span class="arrow">›</span>`) + `</div>`
             : "") +
           `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">⚡ ${mon.chargeCost} charge</span></div>` +
@@ -1388,7 +1390,7 @@
           (pxMon(mon.id)
             ? `<div class="evo-line" aria-label="Evolution line">` +
               [0, 1, 2].map((s) =>
-                `<div class="evo-st${s === evo ? " cur" : s > evo ? " locked" : ""}">${rigView(mon.id, s, window.innerWidth >= 400 ? 2 : 1)}<span>${s ? "★".repeat(s) : "Base"}</span></div>`,
+                `<div class="evo-st${s === evo ? " cur" : s > evo ? " locked" : ""}">${rigView(mon.id, s, lineUnit())}<span>${s ? "★".repeat(s) : "Base"}</span></div>`,
               ).join(`<span class="arrow">›</span>`) + `</div>`
             : "") +
           `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">⚡ ${mon.chargeCost} charge</span></div>` +

@@ -264,7 +264,9 @@
       .rig { position: absolute; inset: 0; transform-origin: 50% 98%; }
       .rig .part { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
       .rig .part > img { position: absolute; display: block; image-rendering: pixelated; }
-      .core { position: absolute; width: 0; height: 0; } /* body centre: where motes and orbs aim */
+      .core { position: absolute; width: 0; height: 0; }
+      .rig-view { position: relative; overflow: hidden; flex: none; max-width: 100%; }
+      .rig-canvas { position: absolute; width: calc(var(--u) * 48); height: calc(var(--u) * 48); } /* body centre: where motes and orbs aim */
       .fighter.sealed .rig { filter: grayscale(0.85) brightness(0.8); }
       .fighter.fainted .stage { opacity: 0.35; filter: grayscale(1); }
       /* idle motion, per part role */
@@ -447,6 +449,7 @@
       .end-card { width: min(92vw, 380px); padding: 24px; text-align: center; margin: auto; }
       .end-team { display: flex; justify-content: center; gap: 8px; margin: -8px 0 0; }
       .end-team.lost img { filter: grayscale(1) brightness(0.7); }
+      .end-team.lost .rig .part { animation: none; } /* a defeated team doesn't idle */
       .end-card .big { font: 700 var(--fs-xxl)/1 var(--f-label); margin: 8px 0 8px; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
       .end-card p { color: var(--c-mute); margin: 0 0 16px; }
       .end-actions { display: grid; gap: 8px; }
@@ -745,6 +748,19 @@
        * Children with z < 0 paint behind their parent, the rest in front, like
        * rigkit.tree_order. Sizes are in sprite pixels times --u.
        */
+      /**
+       * A live, idling rig outside the arena (lobby cards, sheets, end card): the
+       * monster's own parts moving, cropped to a window [x, y, w, h] of its 48px
+       * canvas, at `u` CSS px per sprite pixel (whole device pixels at 2 / 3).
+       */
+      const CARD_CROP = [6, 14, 36, 34]; // the Base forms sit in the bottom of the canvas
+      function rigView(id, stage, u, crop = [0, 0, 48, 48]) {
+        if (!pxMon(id)) return art(id, 32 * u);
+        const [x, y, w, h] = crop;
+        return `<div class="rig-view" style="--u:${u}px;width:${w * u}px;height:${h * u}px">` +
+          `<div class="rig-canvas" style="left:${-x * u}px;top:${-y * u}px">${rigHtml(id, stage)}</div></div>`;
+      }
+
       function rigHtml(id, stage) {
         const px = pxMon(id);
         if (!px) return `<div class="rig">${art(id, 64)}</div>`;
@@ -850,7 +866,7 @@
             card.dataset.id = mon.id;
             card.style.setProperty("--el", `var(--${el})`);
             card.setAttribute("aria-label", `${mon.name}, details`);
-            card.innerHTML = `<div class="art bob">${art(mon.id, 64)}</div><div class="pname${mon.name.length >= 9 ? " long" : ""}">${esc(mon.name)}</div>`;
+            card.innerHTML = `<div class="art">${rigView(mon.id, 0, 2, CARD_CROP)}</div><div class="pname${mon.name.length >= 9 ? " long" : ""}">${esc(mon.name)}</div>`;
             card.addEventListener("click", () => openPickSheet(mon));
             grid.appendChild(card);
           }
@@ -869,12 +885,12 @@
         const arch = mon.archetype?.title;
         sheet.innerHTML =
           `<div class="sheet" style="--el: var(--${mon.element})">` +
-          `<div class="s-art bob">${stageArt(mon.id, 0, 3)}</div>` +
+          `<div class="s-art">${rigView(mon.id, 0, 3)}</div>` +
           `<h2>${esc(mon.name)}</h2>` +
           `<div class="s-sub">${gemIcon(mon.element, 16)} ${EL_LABEL[mon.element]}${arch ? ` · ${esc(arch)}` : ""}</div>` +
           (pxMon(mon.id)
             ? `<div class="evo-line" aria-label="Evolution line">` +
-              [0, 1, 2].map((st) => `<div class="evo-st${st === 0 ? " cur" : ""}">${stageArt(mon.id, st, window.innerWidth >= 400 ? 2 : 1)}<span>${st ? "★".repeat(st) : "Base"}</span></div>`)
+              [0, 1, 2].map((st) => `<div class="evo-st${st === 0 ? " cur" : ""}">${rigView(mon.id, st, window.innerWidth >= 400 ? 2 : 1)}<span>${st ? "★".repeat(st) : "Base"}</span></div>`)
                 .join(`<span class="arrow">›</span>`) + `</div>`
             : "") +
           `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">⚡ ${mon.chargeCost} charge</span></div>` +
@@ -1366,13 +1382,13 @@
         const evo = mon.evolution || 0;
         sheet.innerHTML =
           `<div class="sheet" style="--el: var(--${mon.element})">` +
-          `<div class="s-art bob">${stageArt(mon.id, evo, 3)}</div>` +
+          `<div class="s-art">${rigView(mon.id, evo, 3)}</div>` +
           `<h2>${esc(mon.name)}${evo ? " " + "★".repeat(evo) : ""}</h2>` +
           `<div class="s-sub">${gemIcon(mon.element, 16)} ${EL_LABEL[mon.element]}${evo ? ` · Evolution ${evo}/${MAX_EVOLUTION}` : ""}</div>` +
           (pxMon(mon.id)
             ? `<div class="evo-line" aria-label="Evolution line">` +
               [0, 1, 2].map((s) =>
-                `<div class="evo-st${s === evo ? " cur" : s > evo ? " locked" : ""}">${stageArt(mon.id, s, window.innerWidth >= 400 ? 2 : 1)}<span>${s ? "★".repeat(s) : "Base"}</span></div>`,
+                `<div class="evo-st${s === evo ? " cur" : s > evo ? " locked" : ""}">${rigView(mon.id, s, window.innerWidth >= 400 ? 2 : 1)}<span>${s ? "★".repeat(s) : "Base"}</span></div>`,
               ).join(`<span class="arrow">›</span>`) + `</div>`
             : "") +
           `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">⚡ ${mon.chargeCost} charge</span></div>` +
@@ -2108,7 +2124,7 @@
       }
 
       /** Your monsters at their final stage, for the end card. */
-      const endTeam = () => (state ? state.players[room.seat].monsters.map((m) => `<div class="bob">${stageArt(m.id, m.evolution || 0, 2)}</div>`).join("") : "");
+      const endTeam = () => (state ? state.players[room.seat].monsters.map((m) => rigView(m.id, m.evolution || 0, 2)).join("") : "");
 
       /** Re-draw the end card from endInfo + rivalOnline (votes and presence change it live). */
       function renderEnd() {

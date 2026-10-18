@@ -48,5 +48,7 @@ sources here are out of date, so pick one workflow per sprite).
 - Sprites are drawn at whole-number device-pixel scales only (`--u` = one
   sprite pixel, `image-rendering: pixelated`), and the board snaps its tile
   size to multiples of the gem sprite, so every pixel is the same size.
-- Lobby cards use the 32×32 icon; the monster sheet shows the current stage at
-  3× plus the whole evolution line.
+- Everywhere a monster appears (lobby cards, the detail sheet and its
+  evolution line, the end card) it's the live rig, idling with its own parts,
+  not a static image. The 32×32 icon is only for small chips (team slots,
+  invites).

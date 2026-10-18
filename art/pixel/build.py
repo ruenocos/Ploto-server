@@ -23,7 +23,8 @@ from pathlib import Path
 
 import arena
 import gems
-import rigs_earth_nature
+import rigs_earth
+import rigs_nature
 import rigs_fire
 import rigs_light
 import rigs_water
@@ -53,7 +54,7 @@ def main() -> None:
     for old in OUT.glob("*.png"):
         old.unlink()
     monsters: dict[str, dict] = {}
-    for module in (rigs_fire, rigs_water, rigs_earth_nature, rigs_light):
+    for module in (rigs_fire, rigs_water, rigs_earth, rigs_nature, rigs_light):
         for make in module.RIGS:
             stages = []
             for stage in range(3):

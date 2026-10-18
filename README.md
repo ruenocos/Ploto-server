@@ -50,6 +50,31 @@ npm run dev       # status on :8080, signaling on :8443
 Environment variables: `PLOTO_HOST`, `PLOTO_STATUS_PORT`, `PLOTO_SIGNALING_PORT`,
 `PLOTO_DOWNTIME` (`1` for maintenance), `PLOTO_MAINTENANCE_REASON`.
 
+## Getting a game bundle (the dumper)
+
+Games are HTML5 `client.zip` bundles. To finish the in-game protocol we read one
+bundle's JS. `src/tools/bundleDumper` extracts a bundle and reports what it says
+about networking:
+
+```bash
+npm run dump -- ./client.zip              # a bundle you already have
+npm run dump -- https://host/client.zip   # an exact URL you already know
+```
+
+It writes `manifest.json` (every file + sha256) and `protocol-report.json`
+(URLs, ws endpoints, protoo method names, event-like strings) next to the
+extracted files. Extraction is zip-slip-safe.
+
+**Why it doesn't fetch the bundle for you from the config server.** The app does
+`config request → bundle URL → download`, and in principle we could do the same.
+But that first call is not a plain anonymous GET: the API host isn't a literal in
+the app (it's assembled / delivered via Firebase Remote Config), and the call
+carries an `X-API-Key` plus an anonymous device-session token
+(`ANONYMOUS`/`deviceId`/`anonymousId`). Replicating that is a real client
+bootstrap against Plato prod — a separate decision from downloading a public
+file — so the dumper stays deliberately scoped to a bundle you supply. The
+cleanest source is your own device's app cache while the service is up.
+
 ## The Match Monsters engine
 
 `src/game/matchmonsters` is a self-contained, server-authoritative match-3

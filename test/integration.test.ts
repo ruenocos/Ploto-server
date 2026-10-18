@@ -116,7 +116,8 @@ describe("matchmaking + room over protoo", () => {
     await delay(20);
     const matched = a.notifications.find((n) => n.method === "mm:matched");
     expect(matched).toBeDefined();
-    expect((matched!.data as { roomId: string }).roomId).toBe(roomId);
+    const matchData = matched!.data as { roomId: string; firstTurn: 0 | 1 };
+    expect(matchData.roomId).toBe(roomId);
 
     // Both reconnect to the game room and fetch state.
     const ga = new TestClient(port, roomId, "alice");
@@ -129,7 +130,9 @@ describe("matchmaking + room over protoo", () => {
       data: { turn: number; players: { displayName: string }[] };
     };
     expect(state.ok).toBe(true);
-    expect(state.data.turn).toBe(0);
+    // firstTurn is chosen by the matchmaker; state must agree with what the
+    // players were told in mm:matched.
+    expect(state.data.turn).toBe(matchData.firstTurn);
     expect(state.data.players.map((p) => p.displayName)).toEqual(["Alice", "Bob"]);
 
     a.close();

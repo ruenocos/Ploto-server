@@ -13,10 +13,12 @@
     "start": "node dist/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "dump": "tsx src/tools/bundleDumper/cli.ts"
   },
   "dependencies": {
     "fastify": "^5.1.0",
+    "fflate": "^0.8.2",
     "pino": "^9.5.0",
     "ws": "^8.18.0"
   },

@@ -26,7 +26,7 @@
 
 /** @typedef {{ x: number, y: number }} Pt */
 /** @typedef {"attack" | "heal" | "shield" | "burn" | "poison" | "burn-tick" | "poison-tick" | "fatigue"} LandKind */
-/** @typedef {"attack" | "cast" | "hurt" | "cheer" | "charge" | "dizzy" | "faint"} Pose */
+/** @typedef {"attack" | "cast" | "hurt" | "cheer" | "charge" | "dizzy" | "faint" | "evolveOut" | "evolveIn"} Pose  each maps to a stock Animate.css preset (POSES in index.html) */
 
 /**
  * The drawing primitives index.html hands to every animator.
@@ -44,7 +44,8 @@
  * @property {() => HTMLElement} banner
  * @property {(cls: "mote" | "orb", from: Pt, to: Pt, color: string, opts?: { delay?: number, dur?: number, arc?: number }) => Promise<void>} fly
  * @property {(at: Pt, color: string, count?: number, spread?: number) => void} burst
- * @property {(el: Element | null, scale?: number, dur?: number) => void} bump
+ * @property {(el: Element | null) => void} bump   a quick stock pulse ("this changed")
+ * @property {(el: Element | null, preset: string, opts?: { speed?: "" | "fast" | "faster" | "slow" | "slower", keep?: boolean }) => Promise<void>} play   play an Animate.css preset (name without the animate__ prefix)
  * @property {(host: HTMLElement, text: string, color: string) => void} floatText
  * @property {(seat: 0 | 1, kind: LandKind, amount: number, color?: string) => void} land   apply + show a number on a player
  * @property {(seat: 0 | 1, monsterId: string, delta: number) => void} charge   move a monster's shown charge
@@ -77,7 +78,7 @@ async function orbTo(/** @type {CastCtx} */ ctx, /** @type {0 | 1} */ seat, /** 
   if (source) await fx.fly("orb", fx.centerOf(source), fx.hitOf(seat), color, { dur, arc: 30 });
 }
 
-/** The caster lunges at the rival row; the orb leaves at the peak of the lunge. */
+/** The caster throws its hit (the attack pose); the orb leaves mid-motion. */
 async function lunge(/** @type {CastCtx} */ ctx) {
   void ctx.fx.pose(ctx.cast.by, ctx.cast.monsterId, "attack");
   await ctx.fx.sleep(ctx.fx.reduceMotion ? 0 : 190);
@@ -258,10 +259,7 @@ const EFFECTS = {
         stamp.className = "stamp";
         stamp.textContent = "🔒";
         stage.appendChild(stamp);
-        stamp.animate(
-          fx.reduceMotion ? [{ opacity: 0 }, { opacity: 1 }] : [{ transform: "translate(-50%, -50%) scale(2.6)", opacity: 0 }, { transform: "translate(-50%, -50%) scale(0.9)", opacity: 1, offset: 0.6 }, { transform: "translate(-50%, -50%) scale(1)", opacity: 1 }],
-          { duration: 360, easing: "cubic-bezier(0.3, 0, 0.3, 1)", fill: "forwards" },
-        );
+        void fx.play(stamp, "zoomInDown", { speed: "faster" });
         void fx.pose(e.target, e.monsterId, "hurt");
         fighter.classList.add("sealed"); // the next render keeps it in sync with the real state
         fighter.classList.remove("ready");
@@ -280,7 +278,7 @@ const EFFECTS = {
       const banner = fx.banner();
       const r = banner.getBoundingClientRect();
       fx.burst({ x: r.right - 34, y: r.top + r.height / 2 }, "#ffd23c", 10, 30);
-      fx.bump(banner, 1.04, 300);
+      fx.bump(banner);
       void fx.pose(cast.by, null, "cheer");
       await fx.sleep(320); // the bonus pip itself pops in when the turn re-renders
     },
@@ -345,7 +343,7 @@ const BOARD = {
       for (const c of [from, to]) fx.tileAt(c.x, c.y)?.classList.add("swapin");
       // A swap that matched nothing gets a little settle so it doesn't feel ignored.
       if (data.cascades.length === 0) {
-        for (const c of [from, to]) fx.bump(fx.tileAt(c.x, c.y), 1.08, 260);
+        for (const c of [from, to]) fx.bump(fx.tileAt(c.x, c.y));
       }
       await fx.sleep(160);
     },

@@ -7,6 +7,7 @@
  * string puts the app into its maintenance screen.
  */
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import Fastify, { type FastifyInstance } from "fastify";
 import type { ServerConfig } from "../config/env.js";
@@ -73,7 +74,22 @@ export function buildStatusServer(config: ServerConfig): FastifyInstance {
     return loadArtJs();
   });
 
+  // Animate.css (pinned npm dependency): the stock presets monsters react with.
+  app.get("/play/animate.min.css", async (_req, reply) => {
+    reply.header("content-type", "text/css; charset=utf-8");
+    reply.header("cache-control", "public, max-age=86400");
+    return loadAnimateCss();
+  });
+
   return app;
+}
+
+let cachedAnimateCss: string | null = null;
+function loadAnimateCss(): string {
+  if (cachedAnimateCss === null) {
+    cachedAnimateCss = readFileSync(createRequire(import.meta.url).resolve("animate.css/animate.min.css"), "utf8");
+  }
+  return cachedAnimateCss;
 }
 
 let cachedArt: string | null = null;

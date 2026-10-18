@@ -36,8 +36,11 @@ sources here are out of date, so pick one workflow per sprite).
 - The arena rebuilds each rig from its parts: nested full-canvas layers, each
   rotating around its pivot, so the client can animate them separately. Idle
   loops come from the part's role (`.r-body` breathes, `.r-tail` sways, wings
-  flap, ears twitch); poses (attack, cast, hurt, cheer, charge, dizzy, faint)
-  play on top through `fx.pose` in `web/animators.js`.
+  flap, ears twitch). Reactions are stock [Animate.css](https://animate.style)
+  presets played on the whole monster through `fx.pose` (the `POSES` table in
+  `web/index.html` maps each moment to a preset: cast → tada, attack →
+  rubberBand, hurt → shakeX, cheer → bounce, charge → pulse, slowed → wobble,
+  faint → fadeOutDown, evolve → flash then bounceIn).
 - Sprites are drawn at whole-number device-pixel scales only (`--u` = one
   sprite pixel, `image-rendering: pixelated`), and the board snaps its tile
   size to multiples of the gem sprite, so every pixel is the same size.

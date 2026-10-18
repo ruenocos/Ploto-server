@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0f1117" />
     <title>Match Monsters</title>
+    <link rel="stylesheet" href="/play/animate.min.css" />
     <style>
       :root {
         --bg: #0f1117;
@@ -184,24 +185,36 @@
         flex: none; position: relative; isolation: isolate; height: clamp(210px, 38vh, 340px); border-radius: 14px; overflow: hidden;
         background-color: #5cae44; background-position: center bottom; background-repeat: no-repeat; image-rendering: pixelated;
       }
-      .arena::after { content: ""; position: absolute; inset: 0; background: rgba(8, 10, 18, 0); transition: background 0.2s ease; pointer-events: none; z-index: 3; }
+      .arena::after { content: ""; position: absolute; inset: 0; background: rgba(8, 10, 18, 0); transition: background 0.2s ease; pointer-events: none; z-index: 4; }
       .arena.casting::after { background: rgba(8, 10, 18, 0.5); }
       .arena-top { position: absolute; left: 6px; right: 6px; top: 6px; display: flex; gap: 6px; z-index: 6; }
       .arena-top .banner { flex: 1; min-width: 0; }
-      /* --u: one sprite pixel in CSS px (set by sizeArena, whole device pixels); --gu: same for the badge gem */
-      .side { position: absolute; left: 0; right: 0; --u: 2px; --gu: 1px; }
-      .side.foe { top: 10%; height: 40%; }
-      .side.me { bottom: 26px; height: 44%; } /* clear of the board panel tucked under the arena */
       /*
-       * Layers (the arena is the only stacking context, so these compete across both rows):
-       * sprites 1 (front row wins by DOM order) < every badge 2 < cast dimmer 3 < spotlit sprite 4.
+       * Your team on the left, the rival's on the right. Each half has a back
+       * monster (higher, nearer the edge, a step smaller) and a front one nearer
+       * the middle, so the front pair face off. The rival's sprites are mirrored
+       * to face yours (the `scale` property, so it composes with animations).
+       * --u: one sprite pixel in CSS px (whole device pixels, set by sizeArena);
+       * --ub: the same for the back monster; --gu: the badge gem.
+       */
+      .side { position: absolute; top: 15%; bottom: 26px; width: 50%; --u: 2px; --ub: 2px; --gu: 1px; } /* bottom: clear of the board panel */
+      .side.me { left: 0; } .side.foe { right: 0; }
+      /*
+       * Layers (the arena is the only stacking context, so these compete across both halves):
+       * back sprite 1 < front sprite 2 < every badge 3 < cast dimmer 4 < spotlit caster 5.
        * Fighters are centred with a margin, not a transform, so they don't trap their children's z-index.
        */
-      .fighter { position: absolute; bottom: 0; width: calc(var(--u) * 48); margin-left: calc(var(--u) * -24); display: flex; flex-direction: column; align-items: center; cursor: pointer; }
-      .side.me .f0 { left: 25%; } .side.me .f1 { left: 75%; }
-      .side.foe .f0 { left: 34%; } .side.foe .f1 { left: 66%; }
+      .fighter { position: absolute; width: calc(var(--u) * 48); margin-left: calc(var(--u) * -24); display: flex; flex-direction: column; align-items: center; cursor: pointer; pointer-events: none; }
+      /* only the sprite's parts and the badge take taps, so the empty canvas of the front monster doesn't steal the back one's */
+      .fighter .part > img, .fighter .cbadge { pointer-events: auto; }
+      .fighter.f0 { --u: var(--ub); bottom: 38%; }
+      .fighter.f1 { bottom: 0; }
+      .side.me .f0 { left: 32%; } .side.me .f1 { left: 64%; }
+      .side.foe .f0 { left: 68%; } .side.foe .f1 { left: 36%; }
+      .side.foe .rig { scale: -1 1; }
       .stage { position: relative; z-index: 1; width: calc(var(--u) * 48); height: calc(var(--u) * 48); }
-      .fighter.spot .stage, .fighter.spot .cbadge { z-index: 4; }
+      .fighter.f1 .stage { z-index: 2; }
+      .fighter.spot .stage, .fighter.spot .cbadge { z-index: 5; }
       .platform { position: absolute; left: calc(var(--u) * 4); top: calc(var(--u) * 40); width: calc(var(--u) * 40); height: calc(var(--u) * 14); }
       .bounce { position: absolute; inset: 0; transform-origin: 50% 98%; }
       .rig { position: absolute; inset: 0; transform-origin: 50% 98%; }
@@ -235,11 +248,10 @@
       @keyframes earR { 0%, 86%, 100% { transform: rotate(0); } 91% { transform: rotate(14deg); } }
       @keyframes tentL { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(5deg); } }
       @keyframes tentR { 0%, 100% { transform: rotate(4deg); } 50% { transform: rotate(-5deg); } }
-      /* a monster with a full charge can't sit still */
-      .fighter.ready .bounce { animation: readyHop 0.8s steps(1, end) infinite; }
-      @keyframes readyHop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(var(--u) * -2)); } }
+      /* reactions and loops are stock Animate.css presets (see playPreset); a full charge pulses on .rig, one-shot poses play on .bounce */
+      .rig.animate__animated, .bounce.animate__animated { transform-origin: 50% 98%; }
       /* charge badge under each monster: element gem + bar with "charge/cost" */
-      .cbadge { display: flex; align-items: center; margin-top: calc(var(--u) * 2); position: relative; z-index: 2; white-space: nowrap; }
+      .cbadge { display: flex; align-items: center; margin-top: calc(var(--u) * 2); position: relative; z-index: 3; white-space: nowrap; }
       .cbadge > .px { position: relative; z-index: 1; width: calc(var(--gu) * 16); height: calc(var(--gu) * 16); }
       .cbar { position: relative; height: calc(var(--gu) * 11); min-width: calc(var(--gu) * 34); margin-left: calc(var(--gu) * -5); padding: 0 7px 0 calc(var(--gu) * 7);
         background: rgba(10, 12, 20, 0.85); border-radius: 0 999px 999px 0; display: flex; align-items: center; gap: 4px; overflow: hidden; }
@@ -249,9 +261,8 @@
       .fighter.ready .cbar-num { color: #fff6c8; }
       .cbadge .lock, .cbadge .evo { position: absolute; bottom: calc(100% + 2px); font-size: 10px; font-weight: 900; border-radius: 999px; padding: 1px 6px; white-space: nowrap; }
       .cbadge .lock { right: -4px; background: #3a2f55; color: #d8c8ff; }
-      .cbadge .evo { left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; animation: evoNudge 1.2s ease-in-out infinite; }
-      @keyframes evoNudge { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -3px); } }
-      .stamp { position: absolute; left: 50%; top: 55%; z-index: 5; font-size: 30px; pointer-events: none; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6)); }
+      .cbadge .evo { left: 50%; translate: -50% 0; background: var(--accent); color: #fff; }
+      .stamp { position: absolute; left: 50%; top: 55%; translate: -50% -50%; z-index: 5; font-size: 30px; pointer-events: none; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6)); }
 
       .banner { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-weight: 800; padding: 6px 10px; border-radius: 12px; font-size: 13px; position: relative; transition: background 0.25s ease, color 0.25s ease; }
       .icon-btn { flex: none; padding: 0 12px; font-size: 16px; border-radius: 12px; }
@@ -316,7 +327,7 @@
       @keyframes shuffleIn { from { transform: rotate(-200deg) scale(0); opacity: 0; } to { transform: none; opacity: 1; } }
 
       /* cast moment: the arena dims, the caster stays lit, and the move's name slides in between the rows */
-      .cast { position: absolute; left: 0; right: 0; top: 49%; display: none; justify-content: center; pointer-events: none; z-index: 7; }
+      .cast { position: absolute; left: 0; right: 0; top: 24%; display: none; justify-content: center; pointer-events: none; z-index: 7; }
       .cast.show { display: flex; }
       .cast-name {
         font-weight: 900; font-size: 18px; color: #fff; padding: 5px 16px; border-radius: 999px; white-space: nowrap;
@@ -360,7 +371,7 @@
       .bob:nth-child(2n) svg, .bob:nth-child(2n) img { animation-delay: -1.3s; }
       @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px) scale(1.02); } }
       @media (prefers-reduced-motion: reduce) {
-        .bob svg, .bob img, .tile.sel .gem, .board.shuffling .gem, .rig .part, .fighter.ready .bounce, .cbadge .evo { animation: none; }
+        .bob svg, .bob img, .tile.sel .gem, .board.shuffling .gem, .rig .part { animation: none; }
         .float { animation: fadeOnly 1s ease forwards; }
         @keyframes fadeOnly { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
       }
@@ -1075,14 +1086,14 @@
           const ready = mon.charge >= cost;
           const evolvable = canEvolve && evo < MAX_EVOLUTION;
           f.style.setProperty("--el", `var(--${mon.element})`);
-          f.classList.toggle("ready", ready && !(mon.sealed > 0));
+          setReady(f, ready && !(mon.sealed > 0));
           f.classList.toggle("sealed", mon.sealed > 0);
           f.setAttribute("aria-label", `${mon.name}, ${c} of ${cost} charge`);
           f.querySelector(".cbadge").innerHTML =
             (gems[mon.element] ? `<img class="px" src="${gems[mon.element]}" alt="" draggable="false">` : `<span>${EMOJI[mon.element]}</span>`) +
             `<div class="cbar"><div class="cbar-fill" style="width:${Math.round((c / cost) * 100)}%"></div>` +
             `<span class="cbar-num">${c}/${cost}</span>${evo ? `<span class="cbar-stars">${"★".repeat(evo)}</span>` : ""}</div>` +
-            (evolvable ? `<span class="evo">EVOLVE</span>` : "") +
+            (evolvable ? `<span class="evo animate__animated animate__pulse animate__infinite">EVOLVE</span>` : "") +
             (mon.sealed > 0 ? `<span class="lock">🔒 ${mon.sealed}</span>` : "");
           f.onclick = () => openSheet(mon, isMe, evolvable);
         });
@@ -1090,8 +1101,8 @@
 
       /**
        * Pick the sprite scale: the biggest whole number of *device* pixels per
-       * sprite pixel that fits both rows (the back row a step smaller for depth),
-       * and the backdrop at an integer scale that covers the arena.
+       * sprite pixel that fits a half of the arena (the back monster a step
+       * smaller for depth), and the backdrop at an integer scale that covers it.
        */
       function sizeArena() {
         const arena = $("arena");
@@ -1099,13 +1110,14 @@
         const dpr = window.devicePixelRatio || 1;
         const W = arena.clientWidth;
         const snap = (u) => Math.max(1, Math.floor(u * dpr)) / dpr;
-        for (const [id, depth] of [["meSide", 1], ["foeSide", 0.86]]) {
-          const side = $(id);
-          // 40 rows of sprite (the top of the canvas is headroom) + the badge below it.
-          const u = snap(Math.min(side.clientHeight / 52, W / 2 / 52) * depth);
+        const half = $("meSide");
+        // Width: front monster stays on its half, back one inside the edge. Height: the back
+        // monster stands 38% up and its top 40 rows must fit (the rest of the canvas is headroom).
+        const u = snap(Math.min(half.clientWidth / 66, half.clientHeight / 64));
+        for (const side of [half, $("foeSide")]) {
           side.style.setProperty("--u", u + "px");
+          side.style.setProperty("--ub", snap(u * 0.86) + "px");
           side.style.setProperty("--gu", snap(u * 0.55) + "px");
-          side.dataset.u = u;
         }
         if (window.PIXELART) {
           const k = Math.ceil(Math.max(W / 160, arena.clientHeight / 100) * dpr) / dpr;
@@ -1248,37 +1260,69 @@
       };
 
       /**
-       * Monster body language (WAAPI on the sprite, layered over its idle loop).
-       * `monsterId` null poses both of a player's monsters. Distances are in
-       * sprite pixels so the motion scales with the art.
+       * Play a stock Animate.css preset on an element. Resolves when it ends,
+       * when another preset replaces it, or after a timeout if the element left
+       * the page. `keep` leaves the end state in place (exits like fadeOutDown).
+       */
+      function playPreset(el, preset, { speed = "", keep = false } = {}) {
+        if (!el) return Promise.resolve();
+        el._presetDone?.();
+        el.classList.remove(...[...el.classList].filter((c) => c.startsWith("animate__")));
+        void el.offsetWidth; // restart even when it's the same preset again
+        const cls = ["animate__animated", `animate__${preset}`, ...(speed ? [`animate__${speed}`] : [])];
+        el.classList.add(...cls);
+        return new Promise((resolve) => {
+          const done = () => {
+            clearTimeout(timer);
+            el.removeEventListener("animationend", onEnd);
+            el._presetDone = null;
+            if (!keep) el.classList.remove(...cls);
+            resolve();
+          };
+          const onEnd = (e) => { if (e.target === el) done(); };
+          const timer = setTimeout(done, 3200);
+          el._presetDone = done;
+          el.addEventListener("animationend", onEnd);
+        });
+      }
+
+      /**
+       * Monster body language: which Animate.css preset each game moment plays,
+       * on the monster's .bounce wrapper (its idle part loops keep running inside).
        */
       const POSES = {
-        attack: (dir, u) => [[{ transform: "none" }, { transform: `translateY(${-dir * 2 * u}px) scale(1.06, 0.94)`, offset: 0.25 }, { transform: `translateY(${dir * 12 * u}px) scale(0.96, 1.05)`, offset: 0.5 }, { transform: "none" }], { duration: 440, easing: "cubic-bezier(0.3, 0, 0.3, 1)" }],
-        cast: (dir, u) => [[{ transform: "none" }, { transform: `translateY(${-7 * u}px) scale(0.94, 1.08)`, offset: 0.35 }, { transform: `scale(1.1, 0.9)`, offset: 0.7 }, { transform: "none" }], { duration: 460, easing: "ease-out" }],
-        hurt: (dir, u) => [[0, -3, 3, -2, 1, 0].map((x) => ({ transform: `translateX(${x * u}px)` })), { duration: 340, easing: "ease-out" }],
-        cheer: (dir, u) => [[{ transform: "none" }, { transform: `translateY(${-4 * u}px)`, offset: 0.25 }, { transform: "none", offset: 0.5 }, { transform: `translateY(${-3 * u}px)`, offset: 0.75 }, { transform: "none" }], { duration: 560, easing: "ease-in-out" }],
-        charge: () => [[{ transform: "none" }, { transform: "scale(1.07, 0.93)" }, { transform: "none" }], { duration: 170, easing: "ease-out" }],
-        dizzy: () => [[0, -9, 8, -6, 4, 0].map((r) => ({ transform: `rotate(${r}deg)` })), { duration: 700, easing: "ease-in-out" }],
-        faint: (dir, u) => [[{ transform: "none", opacity: 1 }, { transform: `translateY(${-3 * u}px)`, opacity: 1, offset: 0.2 }, { transform: `translateY(${2 * u}px) scale(1.15, 0.15)`, opacity: 0 }], { duration: 620, easing: "ease-in", fill: "forwards" }],
+        cast: { preset: "tada", speed: "fast" },          // stepping up to fire its move
+        attack: { preset: "rubberBand", speed: "faster" }, // throwing a hit
+        hurt: { preset: "shakeX", speed: "faster" },      // taking one
+        cheer: { preset: "bounce", speed: "fast" },       // heals, shields, haste, cleanse, a partner's boost
+        charge: { preset: "pulse", speed: "faster" },     // a charge mote landing
+        dizzy: { preset: "wobble" },                       // slowed
+        faint: { preset: "fadeOutDown", keep: true },      // lost the match
+        evolveOut: { preset: "flash" },                    // about to evolve
+        evolveIn: { preset: "bounceIn" },                  // the new stage arriving
       };
+      /** `monsterId` null poses both of a player's monsters. */
       function pose(seat, monsterId, name) {
         if (reduceMotion || !room) return Promise.resolve();
         const side = sideOf(seat);
-        const u = parseFloat(side.dataset.u) || 2;
-        const dir = seat === room.seat ? -1 : 1; // towards the rival row
         const fighters = monsterId ? [chipOf(seat, monsterId)?.el].filter(Boolean) : [...side.querySelectorAll(".fighter")];
-        const runs = fighters.map((f) => {
-          const [frames, opts] = POSES[name](dir, u);
-          const run = f.querySelector(".bounce").animate(frames, opts);
-          if (name === "hurt") f.querySelector(".rig").animate([{ filter: "none" }, { filter: "brightness(2.4) saturate(0.3)", offset: 0.15 }, { filter: "none" }], { duration: 300 });
-          return run.finished.catch(() => {});
-        });
-        return Promise.all(runs).then(() => {});
+        const { preset, ...opts } = POSES[name];
+        return Promise.all(fighters.map((f) => playPreset(f.querySelector(".bounce"), preset, opts))).then(() => {});
       }
 
       async function faintFx(seat) {
         await pose(seat, null, "faint");
-        for (const f of sideOf(seat).querySelectorAll(".fighter")) f.classList.add("fainted");
+        if (reduceMotion) for (const f of sideOf(seat).querySelectorAll(".fighter")) f.classList.add("fainted");
+      }
+
+      /** A full charge pulses until the monster fires (or is sealed). */
+      function setReady(f, ready) {
+        const rig = f.querySelector(".rig");
+        if (!rig || rig.classList.contains("animate__pulse") === ready) return;
+        rig.classList.toggle("animate__animated", ready);
+        rig.classList.toggle("animate__pulse", ready);
+        rig.classList.toggle("animate__infinite", ready);
+        f.classList.toggle("ready", ready);
       }
 
       /** Something small flying along an arc from a to b; resolves on arrival. */
@@ -1326,8 +1370,8 @@
         }
       }
 
-      const bump = (el, scale = 1.15, dur = 240) =>
-        !reduceMotion && el && el.animate([{ transform: "scale(1)" }, { transform: `scale(${scale})` }, { transform: "scale(1)" }], { duration: dur, easing: "ease-out" });
+      /** A quick stock pulse to say "this changed". */
+      const bump = (el) => { if (!reduceMotion && el) playPreset(el, "pulse", { speed: "faster" }); };
 
       /** Floating label over an element (pip bonus, etc.). */
       function floatText(host, text, color) {
@@ -1370,8 +1414,8 @@
         const fill = f.querySelector(".cbar-fill"), num = f.querySelector(".cbar-num");
         if (fill) fill.style.width = Math.round((c / cost) * 100) + "%";
         if (num) num.textContent = `${c}/${cost}`;
-        f.classList.toggle("ready", d.charge[i] >= cost && !d.sealed[i]);
-        if (gulp) { pose(seat, f.dataset.mon, "charge"); bump(f.querySelector(".cbar"), 1.1, 180); }
+        setReady(f, d.charge[i] >= cost && !d.sealed[i]);
+        if (gulp) { pose(seat, f.dataset.mon, "charge"); bump(f.querySelector(".cbar")); }
       }
 
       /** Where a cleared tile's energy goes for `seat`: into the matching monsters, or the berry stash. */
@@ -1382,7 +1426,7 @@
         const d = disp[seat];
         return (gem) => {
           if (gem === "berry" && berryChip) {
-            return [{ pos: centerOf(berryChip), arrive: () => { d.berries++; const b = berryChip.querySelector("b"); if (b) b.textContent = d.berries; bump(berryChip, 1.25); } }];
+            return [{ pos: centerOf(berryChip), arrive: () => { d.berries++; const b = berryChip.querySelector("b"); if (b) b.textContent = d.berries; bump(berryChip); } }];
           }
           const out = [];
           d.elements.forEach((el, i) => {
@@ -1500,20 +1544,11 @@
         $("arena").classList.add("casting");
         caster?.classList.add("spot");
         const name = el.firstElementChild;
-        const from = cast.by === room.seat ? -60 : 60; // slides in from the caster's side of the screen
-        name.animate(
-          reduceMotion
-            ? [{ opacity: 0 }, { opacity: 1 }]
-            : [
-                { opacity: 0, transform: `translate(${from}px, -50%) scale(0.8)` },
-                { opacity: 1, transform: "translate(0, -50%) scale(1.06)", offset: 0.6 },
-                { opacity: 1, transform: "translate(0, -50%) scale(1)" },
-              ],
-          { duration: 300, easing: "cubic-bezier(0.2, 0.9, 0.3, 1)", fill: "forwards" },
-        );
-        await pose(cast.by, cast.monsterId, "cast");
-        await sleep(reduceMotion ? 500 : 180);
-        name.animate([{ opacity: 1, transform: "translate(0, -50%) scale(1)" }, { opacity: 0, transform: "translate(0, -50%) scale(1.1)" }], { duration: 160, easing: "ease-in", fill: "forwards" });
+        // The name flies in from the caster's side (yours left, theirs right) while the caster winds up.
+        playPreset(name, cast.by === room.seat ? "backInLeft" : "backInRight", { speed: "faster" });
+        pose(cast.by, cast.monsterId, "cast");
+        await sleep(reduceMotion ? 500 : 720);
+        await playPreset(name, "fadeOut", { speed: "faster", keep: true });
         $("arena").classList.remove("casting");
         await sleep(140);
         caster?.classList.remove("spot");
@@ -1554,13 +1589,10 @@
           .finished.catch(() => {}).then(() => flash.remove());
         if (hurt) {
           pose(seat, null, "hurt");
-          if (!reduceMotion) {
-            const amp = Math.min(7, 2 + hurt / 4);
-            hud.animate([0, -amp, amp, -amp * 0.6, amp * 0.4, 0].map((x) => ({ transform: `translateX(${x}px)` })), { duration: 340, easing: "ease-out" });
-          }
+          if (!reduceMotion) playPreset(hud, "headShake", { speed: "faster" });
         } else if (kind === "heal" || kind === "shield") {
           pose(seat, null, "cheer");
-          bump(hud.querySelector(".hp .bar"), 1.06, 260);
+          bump(hud.querySelector(".hp .bar"));
         }
         const f = document.createElement("div");
         f.className = `float ${kind.replace("-tick", "")}`;
@@ -1597,7 +1629,7 @@
         board: () => $("board"),
         banner: () => $("turnBanner"),
         fly, burst,
-        bump: (el, scale, dur) => { bump(el, scale, dur); },
+        bump, play: (el, preset, opts) => playPreset(el, preset, opts),
         floatText, land, setTile, playStep,
         charge: chargeBy,
         pose,
@@ -1613,34 +1645,23 @@
         await showCastCard(cast);
       }
 
-      /** Evolution: the monster glows white, swaps to its next stage mid-flash and pops out bigger. */
+      /** Evolution: the monster flashes, swaps to its next stage and bounces in. */
       async function evolveFx(seat, monsterId) {
-        const white = "brightness(0) invert(1)";
         const old = chipOf(seat, monsterId)?.el;
-        let glow = null;
-        if (old && !reduceMotion) {
+        if (old) {
           old.classList.add("spot");
-          glow = old.querySelector(".rig").animate(
-            [{ filter: "none", transform: "none" }, { filter: white, transform: "scale(1.06, 0.94)", offset: 0.6 }, { filter: white, transform: "scale(0.9, 1.1)" }],
-            { duration: 460, easing: "ease-in", fill: "forwards" },
-          );
-          await glow.finished.catch(() => {});
+          await pose(seat, monsterId, "evolveOut");
         }
         await refresh();
-        glow?.cancel(); // in case the old sprite survived the refresh
         const f = chipOf(seat, monsterId)?.el;
         if (!f) return;
+        f.classList.add("spot");
         const at = centerOf(f.querySelector(".core") || f);
-        if (!reduceMotion) {
-          f.querySelector(".rig").animate(
-            [{ filter: white, transform: "scale(0.8)" }, { filter: white, transform: "scale(1.15)", offset: 0.35 }, { filter: "none", transform: "scale(1)" }],
-            { duration: 640, easing: "cubic-bezier(0.2, 1.4, 0.4, 1)" },
-          );
-        }
+        const arrived = pose(seat, monsterId, "evolveIn");
         burst(at, "#ffd23c", 12, 52);
         burst(at, "#fff6c2", 6, 30);
         floatText(f.querySelector(".stage"), "★".repeat(state.players[seat].monsters.find((m) => m.id === monsterId)?.evolution || 1), "#ffe14d");
-        await sleep(reduceMotion ? 200 : 700);
+        await arrived;
         f.classList.remove("spot");
       }
 

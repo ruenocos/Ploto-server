@@ -20,6 +20,7 @@
     "lab": "node scripts/lab-report.mjs"
   },
   "dependencies": {
+    "animate.css": "4.1.1",
     "fastify": "^5.1.0",
     "fflate": "^0.8.2",
     "ws": "^8.18.0"

@@ -1,14 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { WebSocket } from "ws";
-import { SignalingServer } from "../src/signaling/server.js";
-import { buildStatusServer } from "../src/status/server.js";
+import { startServer, type RunningServer } from "../src/app.js";
 import type { ServerConfig } from "../src/config/env.js";
 import { createRequest, parse, stringify, type ProtooMessage } from "../src/signaling/protoo.js";
 
 const config: ServerConfig = {
   host: "127.0.0.1",
-  statusPort: 0,
-  signalingPort: 0,
+  port: 0,
   downtime: 0,
   maintenanceReason: "",
 };
@@ -42,40 +40,30 @@ class Client {
   close() { this.ws.close(); }
 }
 
-let signaling: SignalingServer;
-let status: ReturnType<typeof buildStatusServer>;
+let server: RunningServer;
 let port: number;
 
 beforeAll(async () => {
-  signaling = new SignalingServer(config);
-  await signaling.listen();
-  port = signaling.port;
-  status = buildStatusServer(config);
-  await status.listen({ host: "127.0.0.1", port: 0 });
+  server = await startServer(config);
+  port = server.port;
 });
 afterAll(async () => {
-  await signaling.close();
-  await status.close();
+  await server.close();
 });
 
-function statusPort(): number {
-  const addr = status.server.address();
-  return typeof addr === "object" && addr ? addr.port : 0;
-}
-
 describe("web client routes", () => {
-  it("serves the play page with the signaling port injected", async () => {
-    const res = await fetch(`http://127.0.0.1:${statusPort()}/play`);
+  it("serves the play page from the same origin as the WebSocket", async () => {
+    const res = await fetch(`http://127.0.0.1:${port}/play`);
     expect(res.headers.get("content-type")).toContain("text/html");
     const html = await res.text();
     expect(html).toContain("Match Monsters");
-    // The configured signaling port is injected in place of the placeholder.
-    expect(html).toContain(`SIGNALING_PORT = "${config.signalingPort}"`);
+    // Client derives the WebSocket URL from its own origin — no port injection.
+    expect(html).toContain("location.host");
     expect(html).not.toContain("__SIGNALING_PORT__");
   });
 
   it("serves the monster roster", async () => {
-    const res = await fetch(`http://127.0.0.1:${statusPort()}/play/monsters`);
+    const res = await fetch(`http://127.0.0.1:${port}/play/monsters`);
     const list = (await res.json()) as { id: string; element: string }[];
     expect(list.length).toBeGreaterThanOrEqual(20);
     expect(list.find((m) => m.id === "ember_pup")).toBeTruthy();

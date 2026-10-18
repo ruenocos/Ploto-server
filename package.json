@@ -19,7 +19,6 @@
   "dependencies": {
     "fastify": "^5.1.0",
     "fflate": "^0.8.2",
-    "pino": "^9.5.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {

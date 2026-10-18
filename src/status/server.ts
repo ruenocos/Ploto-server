@@ -36,10 +36,10 @@ export function buildStatusServer(config: ServerConfig): FastifyInstance {
   app.get("/healthz", async () => ({ status: "ok" }));
 
   // Playable web client: open /play on two devices to battle a friend.
+  // The client connects WebSockets same-origin, so no port needs injecting.
   app.get("/play", async (_req, reply) => {
-    const html = loadClientHtml().replace("__SIGNALING_PORT__", String(config.signalingPort));
     reply.header("content-type", "text/html; charset=utf-8");
-    return html;
+    return loadClientHtml();
   });
 
   // Monster roster for the client's picker.

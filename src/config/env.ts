@@ -1,8 +1,8 @@
 /** Runtime configuration, read from the environment with sane defaults. */
 export interface ServerConfig {
   readonly host: string;
-  readonly statusPort: number;
-  readonly signalingPort: number;
+  /** Single port for HTTP + WebSocket (hosting platforms inject PORT). */
+  readonly port: number;
   /** Value served by the status endpoint: 0 = up, 1 = in maintenance. */
   readonly downtime: 0 | 1;
   readonly maintenanceReason: string;
@@ -18,8 +18,8 @@ function intEnv(name: string, fallback: number): number {
 export function loadConfig(): ServerConfig {
   return {
     host: process.env.PLOTO_HOST ?? "0.0.0.0",
-    statusPort: intEnv("PLOTO_STATUS_PORT", 8080),
-    signalingPort: intEnv("PLOTO_SIGNALING_PORT", 8443),
+    // PORT is the convention on Fly/Railway/Render/Cloud Run; PLOTO_PORT overrides.
+    port: intEnv("PLOTO_PORT", intEnv("PORT", 8080)),
     downtime: process.env.PLOTO_DOWNTIME === "1" ? 1 : 0,
     maintenanceReason: process.env.PLOTO_MAINTENANCE_REASON ?? "",
   };

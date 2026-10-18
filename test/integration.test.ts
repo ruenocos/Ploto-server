@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { WebSocket } from "ws";
-import { SignalingServer } from "../src/signaling/server.js";
-import { buildStatusServer } from "../src/status/server.js";
+import { startServer, type RunningServer } from "../src/app.js";
 import type { ServerConfig } from "../src/config/env.js";
 import {
   createRequest,
@@ -12,8 +11,7 @@ import {
 
 const config: ServerConfig = {
   host: "127.0.0.1",
-  statusPort: 0,
-  signalingPort: 0,
+  port: 0,
   downtime: 0,
   maintenanceReason: "",
 };
@@ -57,30 +55,23 @@ class TestClient {
   }
 }
 
-let signaling: SignalingServer;
-let status: ReturnType<typeof buildStatusServer>;
+let server: RunningServer;
 let port: number;
 
 beforeAll(async () => {
-  signaling = new SignalingServer(config);
-  await signaling.listen();
-  port = signaling.port;
-  status = buildStatusServer(config);
-  await status.listen({ host: "127.0.0.1", port: 0 });
+  server = await startServer(config);
+  port = server.port;
 });
 
 afterAll(async () => {
-  await signaling.close();
-  await status.close();
+  await server.close();
 });
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 describe("status service", () => {
   it("serves the exact maintenance document", async () => {
-    const addr = status.server.address();
-    const p = typeof addr === "object" && addr ? addr.port : 0;
-    const res = await fetch(`http://127.0.0.1:${p}/`);
+    const res = await fetch(`http://127.0.0.1:${port}/`);
     expect(res.headers.get("content-type")).toContain("text/plain");
     expect(await res.text()).toBe('{"downtime":0,"reason":""}');
   });

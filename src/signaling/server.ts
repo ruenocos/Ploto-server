@@ -13,9 +13,8 @@
  * The voice/mediasoup methods (`join`, `createWebRtcTransport`, `produce`, …)
  * attach here too, on the game room connection, once the SFU is wired in.
  */
-import { createServer, type Server as HttpServer } from "node:http";
+import type { Server as HttpServer } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
-import type { ServerConfig } from "../config/env.js";
 import { Matchmaker, type QueueKey, type Ticket } from "../matchmaking/pool.js";
 import { GameRoom } from "./gameRoom.js";
 import { Peer } from "./peer.js";
@@ -26,17 +25,16 @@ const LOBBY = "lobby";
 const PROTOO_SUBPROTOCOL = "protoo";
 
 export class SignalingServer {
-  private readonly http: HttpServer;
   private readonly wss: WebSocketServer;
   private readonly matchmaker = new Matchmaker();
   private readonly rooms = new Map<string, GameRoom>();
   private readonly lobbyPeers = new Map<string, Peer>();
   private readonly picks = new Map<string, [Monster, Monster]>();
 
-  constructor(private readonly config: ServerConfig) {
-    this.http = createServer();
+  /** Attaches WebSocket handling onto an existing HTTP server (shared port). */
+  constructor(httpServer: HttpServer) {
     this.wss = new WebSocketServer({
-      server: this.http,
+      server: httpServer,
       handleProtocols: (protocols) =>
         protocols.has(PROTOO_SUBPROTOCOL) ? PROTOO_SUBPROTOCOL : false,
     });
@@ -52,21 +50,9 @@ export class SignalingServer {
     });
   }
 
-  listen(): Promise<void> {
-    return new Promise((resolve) => {
-      this.http.listen(this.config.signalingPort, this.config.host, () => resolve());
-    });
-  }
-
   async close(): Promise<void> {
     for (const peer of this.lobbyPeers.values()) peer.close();
     await new Promise<void>((resolve) => this.wss.close(() => resolve()));
-    await new Promise<void>((resolve) => this.http.close(() => resolve()));
-  }
-
-  get port(): number {
-    const addr = this.http.address();
-    return typeof addr === "object" && addr ? addr.port : this.config.signalingPort;
   }
 
   private onConnection(socket: WebSocket, roomId: string, peerId: string): void {

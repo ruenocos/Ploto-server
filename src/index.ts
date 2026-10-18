@@ -1,25 +1,18 @@
 /**
- * Entry point: boots the status service and the signaling server.
+ * Entry point: one server, one port — web client, status, and WebSocket signaling.
  */
 import { loadConfig } from "./config/env.js";
-import { buildStatusServer } from "./status/server.js";
-import { SignalingServer } from "./signaling/server.js";
+import { startServer } from "./app.js";
 
 async function main(): Promise<void> {
   const config = loadConfig();
+  const server = await startServer(config);
 
-  const status = buildStatusServer(config);
-  await status.listen({ host: config.host, port: config.statusPort });
   // eslint-disable-next-line no-console
-  console.log(`[status]    http://${config.host}:${config.statusPort}/`);
-
-  const signaling = new SignalingServer(config);
-  await signaling.listen();
-  // eslint-disable-next-line no-console
-  console.log(`[signaling] ws://${config.host}:${config.signalingPort}/ (protoo)`);
+  console.log(`Ploto up on http://${config.host}:${server.port}  —  play at /play`);
 
   const shutdown = async () => {
-    await Promise.allSettled([status.close(), signaling.close()]);
+    await server.close();
     process.exit(0);
   };
   process.on("SIGINT", shutdown);

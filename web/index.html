@@ -171,8 +171,8 @@
     <div id="toast" class="toast"></div>
 
     <script>
-      const SIGNALING_PORT = "__SIGNALING_PORT__";
-      const WS_BASE = `ws://${location.hostname}:${SIGNALING_PORT}`;
+      // Same-origin WebSocket: ws:// locally, wss:// behind HTTPS hosting.
+      const WS_BASE = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
       const EMOJI = { fire: "🔥", water: "💧", earth: "🪨", nature: "🌿", light: "✨" };
 
       const $ = (id) => document.getElementById(id);

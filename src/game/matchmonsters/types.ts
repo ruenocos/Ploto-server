@@ -54,8 +54,11 @@ export type Effect =
   /** Damage the rival and heal yourself the same amount. */
   | { readonly kind: "drain"; readonly amount: number }
   | { readonly kind: "dot"; readonly dot: "burn" | "poison"; readonly amount: number; readonly turns: number }
-  /** Clear a board region; the tiles count as matched for you (charge + berries). */
-  | { readonly kind: "match"; readonly shape: MatchShape }
+  /**
+   * Clear a board region; the tiles count as matched for you (charge + berries).
+   * `size` is lines for row/col (default 1) and the side for area/square (3/2).
+   */
+  | { readonly kind: "match"; readonly shape: MatchShape; readonly size?: number }
   /** Ice random tiles so they can't be swapped for the rival's next turn(s). */
   | { readonly kind: "freeze"; readonly count: number; readonly turns: number }
   /** Turn random tiles into stone blockers. */
@@ -149,6 +152,8 @@ export interface GameState {
   movesLeft: number;
   /** Turns that have ended so far (both players), for sudden death. */
   turnPasses: number;
+  /** Freezes cast this turn; they land on the board when the turn passes. */
+  pendingFreeze: { count: number; turns: number }[];
   phase: Phase;
   winner: 0 | 1 | null;
   moveNumber: number;

@@ -2,12 +2,16 @@ import { describe, it, expect } from "vitest";
 import {
   MatchMonstersGame,
   effectiveCost,
+  evolutionChanges,
   fatigueDamage,
   scaleAmount,
   scaledEffects,
+  scaledPassive,
   type GameConfig,
 } from "../src/game/matchmonsters/engine.js";
 import { findMatches } from "../src/game/matchmonsters/board.js";
+import { MONSTERS } from "../src/game/matchmonsters/monsters.js";
+import { chooseEvolution, chooseMove } from "../src/game/matchmonsters/bot.js";
 import {
   ELEMENTS,
   FATIGUE_AFTER,
@@ -386,5 +390,93 @@ describe("berries + evolution", () => {
     expect(g.evolve(1, "a").ok).toBe(false);
     g.state.players[0].monsters[0]!.evolution = 3;
     expect(g.evolve(0, "a").ok).toBe(false);
+  });
+});
+
+describe("evolution milestones", () => {
+  it("every roster monster gets cheaper and upgrades its move at each level, and stops at ★★★", () => {
+    for (const def of Object.values(MONSTERS)) {
+      for (let evo = 0; evo < 3; evo++) {
+        const changes = evolutionChanges(def, evo);
+        expect(changes.length, `${def.name} ★${evo}`).toBeGreaterThanOrEqual(2);
+        expect(changes.some((c) => c.startsWith("Charge cost")), `${def.name} ★${evo} cost`).toBe(true);
+      }
+      expect(evolutionChanges(def, 3)).toEqual([]);
+    }
+  });
+
+  it("widens blasts and lengthens seals and burns at ★★; adds a haste move at ★★★", () => {
+    const def = fireMon("a", [
+      { kind: "match", shape: "row" },
+      { kind: "seal", turns: 2 },
+      { kind: "dot", dot: "burn", amount: 5, turns: 3 },
+      { kind: "haste", count: 1 },
+    ]);
+    expect(scaledEffects(def, 1)).toMatchObject([{ size: 1 }, { turns: 2 }, { turns: 3 }, { count: 1 }]);
+    expect(scaledEffects(def, 2)).toMatchObject([{ size: 2 }, { turns: 3 }, { turns: 4 }, { count: 1 }]);
+    expect(scaledEffects(def, 3)).toMatchObject([{ size: 2 }, { turns: 3 }, { turns: 4 }, { count: 2 }]);
+    expect(evolutionChanges(def, 1)).toContain("Blast 1 → 2 rows");
+    expect(evolutionChanges(def, 1)).toContain("Seal 2 → 3 turns");
+  });
+
+  it("a ★★ row blast clears two rows", () => {
+    const g = newGame(fireMon("a", [{ kind: "match", shape: "row" }]));
+    g.state.players[0].monsters[0]!.evolution = 2;
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok && r.effectSteps[0]!.cleared.length).toBe(10);
+  });
+
+  it("passives grow with evolution", () => {
+    const def = fireMon("a", [], 3, { followUp: 3, berserk: { threshold: 20, hits: 4, amount: 5 } });
+    expect(scaledPassive(def, 2)).toEqual({ followUp: 5, berserk: { threshold: 30, hits: 4, amount: 7 } });
+    expect(evolutionChanges(def, 0)).toEqual(
+      expect.arrayContaining(["Follow-up 3 → 4", "Berserk strikes 5 → 6", "Berserk at 20 → 25 HP"]),
+    );
+  });
+
+  it("an evolved partner's follow-up hits harder in play", () => {
+    const helper: Monster = { ...fireMon("h", [], 99, { followUp: 3 }), element: "light" };
+    const g = newGame(fireMon("a", [dmg(10)]), filler, {}, helper);
+    g.state.players[0].monsters[1]!.evolution = 3;
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    expect(g.state.players[1].hp).toBe(STARTING_HP - 10 - 6);
+  });
+});
+
+describe("control effects", () => {
+  it("a freeze cast mid-turn waits for the turn to pass", () => {
+    const g = newGame(fireMon("a", [{ kind: "freeze", count: 3, turns: 1 }]));
+    g.applyMove(0, FIRE_SWAP); // first of two moves
+    expect(g.state.turn).toBe(0);
+    expect(g.state.ice.flat().every((v) => v === 0)).toBe(true);
+    expect(g.state.pendingFreeze).toHaveLength(1);
+  });
+
+  it("petrify prefers the rival's element tiles", () => {
+    const water: Monster = { id: "w", name: "w", element: "water", chargeCost: 99, ability: { name: "n", effects: [] } };
+    const g = newGame(fireMon("a", [{ kind: "petrify", count: 2 }]), water);
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    const before = r.cascades.at(-1)!.after; // the board just before the move fired
+    const stoned: Tile[] = [];
+    g.state.board.grid.forEach((row, y) => row.forEach((t, x) => t === "stone" && stoned.push(before[y]![x]!)));
+    expect(stoned).toHaveLength(2);
+    // The rival's side is water (+ a light filler); fire is ours and never stoned.
+    expect(stoned.every((t) => t !== "fire")).toBe(true);
+  });
+});
+
+describe("bot", () => {
+  it("only moves on its own turn, always legally, and evolves when it can", () => {
+    const g = newGame(fireMon("a", [dmg(10)]));
+    expect(chooseMove(g, 1)).toBeNull();
+    for (let i = 0; i < 30 && g.state.phase !== "finished"; i++) {
+      const mv = chooseMove(g, g.state.turn);
+      expect(mv).not.toBeNull();
+      expect(g.applyMove(g.state.turn, mv!).ok).toBe(true);
+    }
+    g.state.players[g.state.turn].berries = 4;
+    expect(chooseEvolution(g, g.state.turn)).not.toBeNull();
   });
 });

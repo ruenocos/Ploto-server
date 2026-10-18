@@ -4,7 +4,9 @@
  * Two kinds of connection, distinguished by the `roomId` query parameter the
  * client opens with (`wss://host/?roomId=…&peerId=…`):
  *
- *   roomId === "lobby"  -> matchmaking. Methods: `mm:enqueue`, `mm:cancel`.
+ *   roomId === "lobby"  -> matchmaking. Methods: `mm:enqueue`, `mm:cancel`,
+ *                          private rooms (`mm:createRoom`/`mm:joinRoom`) and
+ *                          `mm:practice` (a game against the built-in bot).
  *                          On a pair, both peers get an `mm:matched` notification
  *                          carrying the game roomId to reconnect to.
  *   roomId === <uuid>   -> an active game room. Requests are routed to the
@@ -123,7 +125,7 @@ export class SignalingServer {
     if (!room.voteRematch(seat)) return { waiting: true };
     const roomId = randomUUID();
     const seed = (Math.random() * 0xffffffff) >>> 0;
-    this.rooms.set(roomId, new GameRoom(room.rematchConfig(randomUUID(), seed)));
+    this.rooms.set(roomId, new GameRoom(room.rematchConfig(randomUUID(), seed), room.options));
     this.scheduleRoomCleanup(roomId); // cancelled as soon as a player connects
     room.announceRematch(roomId);
     return { roomId };
@@ -135,7 +137,10 @@ export class SignalingServer {
     const timer = setTimeout(() => {
       this.roomTimers.delete(roomId);
       const room = this.rooms.get(roomId);
-      if (room && room.connectedCount() === 0) this.rooms.delete(roomId);
+      if (room && room.connectedCount() === 0) {
+        room.dispose();
+        this.rooms.delete(roomId);
+      }
     }, ROOM_IDLE_MS);
     timer.unref?.();
     this.roomTimers.set(roomId, timer);
@@ -203,6 +208,30 @@ export class SignalingServer {
         };
         const spawned = this.spawnRoom(pending.host, joiner);
         return { roomId: spawned.roomId, matchId: spawned.matchId, seat: 1, firstTurn: spawned.firstTurn };
+      }
+
+      // --- Practice: play the built-in bot (debug shortcuts allowed) ---
+      case "mm:practice": {
+        const req = parseEnqueue(data);
+        const roomId = randomUUID();
+        const matchId = randomUUID();
+        const firstTurn = (Math.random() < 0.5 ? 0 : 1) as 0 | 1;
+        const room = new GameRoom(
+          {
+            matchId,
+            seed: (Math.random() * 0xffffffff) >>> 0,
+            firstTurn,
+            players: [
+              { peerId: peer.id, displayName: req.displayName, monsters: req.monsters },
+              { peerId: `bot:${randomUUID()}`, displayName: "Practice Bot", monsters: randomPicks() },
+            ],
+          },
+          { botSeat: 1 },
+        );
+        this.rooms.set(roomId, room);
+        this.scheduleRoomCleanup(roomId); // cancelled once the player connects
+        this.notifyMatched(peer.id, roomId, matchId, 0, firstTurn);
+        return { roomId, matchId, seat: 0, firstTurn };
       }
 
       case "mm:cancelRoom":
@@ -308,6 +337,14 @@ function resolveMonsters(raw: unknown): [Monster, Monster] {
     if (a && b) return [a, b];
   }
   return defaultPicks();
+}
+
+/** Two different random monsters (the practice bot's team). */
+function randomPicks(): [Monster, Monster] {
+  const all = Object.values(MONSTERS);
+  const a = all[Math.floor(Math.random() * all.length)]!;
+  const rest = all.filter((m) => m !== a);
+  return [a, rest[Math.floor(Math.random() * rest.length)]!];
 }
 
 function defaultPicks(): [Monster, Monster] {

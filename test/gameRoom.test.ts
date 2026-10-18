@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { GameRoom, type PeerLike } from "../src/signaling/gameRoom.js";
 import type { GameConfig } from "../src/game/matchmonsters/engine.js";
 import { MONSTERS } from "../src/game/matchmonsters/monsters.js";
@@ -140,5 +140,42 @@ describe("GameRoom rematch", () => {
       ["stone_golem", "tide_serpent"],
     ]);
     expect(finishedRoom(1).room.rematchConfig("m3", 1).firstTurn).toBe(0);
+  });
+});
+
+describe("GameRoom practice bot", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("plays its own turns once the human is connected", () => {
+    vi.useFakeTimers();
+    const room = new GameRoom({ ...roomConfig(), firstTurn: 1 }, { botSeat: 1 });
+    vi.advanceTimersByTime(10_000);
+    expect(room.game.state.moveNumber).toBe(0); // nobody watching yet
+    const human = new FakePeer("p0");
+    room.join(human);
+    for (let i = 0; i < 10 && room.game.state.turn === 1; i++) vi.advanceTimersByTime(5_000);
+    expect(room.game.state.moveNumber).toBeGreaterThan(0);
+    expect(room.game.state.turn).toBe(0); // handed the turn back
+    expect(human.notifications.some((n) => n.method === "mm:moveResult")).toBe(true);
+    room.dispose();
+  });
+
+  it("shows the bot as connected and agrees to rematches", () => {
+    const room = new GameRoom(roomConfig(), { botSeat: 1 });
+    const snap = room.handleRequest("p0", "mm:getState", {}) as { connected: boolean[]; botSeat: number };
+    expect(snap.connected).toEqual([false, true]);
+    expect(snap.botSeat).toBe(1);
+    (room.game.state as { phase: string }).phase = "finished";
+    expect(room.voteRematch(0)).toBe(true);
+  });
+
+  it("allows debug shortcuts only in practice games", () => {
+    const practice = new GameRoom(roomConfig(), { botSeat: 1 });
+    practice.handleRequest("p0", "mm:debug", { action: "berries" });
+    expect(practice.game.state.players[0].berries).toBe(4);
+    practice.handleRequest("p0", "mm:debug", { action: "charge" });
+    expect(practice.game.state.players[0].monsters.every((m) => m.charge > 0)).toBe(true);
+    const real = new GameRoom(roomConfig());
+    expect(() => real.handleRequest("p0", "mm:debug", { action: "berries" })).toThrow(/practice/);
   });
 });

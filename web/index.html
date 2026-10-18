@@ -54,7 +54,7 @@
       .ell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
       /* ---------------------------------------------------------------- lobby */
-      #lobby { max-width: 980px; margin: 0 auto; padding: 18px 16px 190px; }
+      #lobby { max-width: 980px; margin: 0 auto; padding: 18px 16px 236px; }
       .brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
       .brand h1 { font-size: 26px; margin: 0; letter-spacing: 0.2px; }
       .brand .tag { color: var(--accent2); font-weight: 700; font-size: 13px; }
@@ -94,6 +94,7 @@
       .slot svg { display: block; }
       .team-label { flex: 1; min-width: 0; font-size: 13px; }
       .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .actions .wide { grid-column: 1 / -1; }
       .join-row { display: flex; gap: 8px; }
       .join-row input { text-transform: uppercase; letter-spacing: 3px; font-weight: 800; }
       .join-row button { flex: none; }
@@ -208,6 +209,8 @@
       .float.fatigue { color: #ff9a6b; }
       @keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, 8px); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -28px); } }
 
+      .debug-bar { flex: none; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; }
+      .debug-bar button { padding: 6px 10px; font-size: 12px; }
       .peer-warn { flex: none; text-align: center; font-size: 12px; font-weight: 700; color: #ffcf8a; background: #3a2a14; border-radius: 10px; padding: 6px; }
 
       /* idle bob for creature art */
@@ -234,6 +237,9 @@
       .sheet .s-pass { color: var(--accent2); font-size: 14px; margin: 6px 0; }
       .sheet .s-meta { color: var(--muted); font-size: 13px; margin: 6px 0 14px; }
       .sheet .s-actions { display: grid; gap: 8px; }
+      .sheet .s-next { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin: 0 0 14px; }
+      .sheet .s-next h3 { margin: 0 0 6px; font-size: 13px; color: var(--accent2); }
+      .sheet .s-next ul { margin: 0; padding-left: 18px; font-size: 14px; display: grid; gap: 2px; }
 
       .end-card { width: min(92vw, 380px); background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 24px; text-align: center; margin: auto; }
       .end-card .big { font-size: 30px; font-weight: 900; margin: 4px 0 6px; }
@@ -276,6 +282,7 @@
         <div class="actions">
           <button id="play" disabled>Quick Play</button>
           <button id="create" class="ghost" disabled>Invite a friend</button>
+          <button id="practice" class="ghost small wide" disabled>🤖 Practice vs bot</button>
         </div>
         <div class="join-row">
           <input id="code" type="text" placeholder="CODE" maxlength="8" autocapitalize="characters" autocomplete="off" />
@@ -299,6 +306,11 @@
       <div class="board-wrap" id="boardWrap">
         <div id="board" class="board"></div>
         <div id="callout" class="callout"></div>
+      </div>
+      <div id="debugBar" class="debug-bar hidden">
+        <span class="muted">🛠 Practice</span>
+        <button class="small ghost" data-dbg="berries">+4 🍓</button>
+        <button class="small ghost" data-dbg="charge">⚡ Charge up</button>
       </div>
       <div class="strip" id="meStrip"><div class="s-body"></div><div class="s-fx"></div></div>
     </section>
@@ -459,6 +471,7 @@
         const ready = picks.length === 2;
         $("play").disabled = !ready;
         $("create").disabled = !ready;
+        $("practice").disabled = !ready;
         $("join").disabled = !ready || $("code").value.trim().length < 4;
       }
 
@@ -474,7 +487,7 @@
       }
 
       function setBusy(b) {
-        for (const id of ["play", "create", "join"]) $(id).disabled = b;
+        for (const id of ["play", "create", "practice", "join"]) $(id).disabled = b;
         if (!b) refreshButtons();
       }
 
@@ -490,6 +503,12 @@
         lobbyAction("Finding an opponent…", async (sock) => {
           const res = await sock.request("mm:enqueue", payload());
           $("lobbyStatus").textContent = res.queued ? "Waiting for an opponent… (or invite a friend)" : "Matched! Starting…";
+        });
+
+      const practice = () =>
+        lobbyAction("Summoning the practice bot…", async (sock) => {
+          await sock.request("mm:practice", payload());
+          $("lobbyStatus").textContent = "Starting…";
         });
 
       const createRoom = () =>
@@ -634,6 +653,7 @@
         renderStrip($("foeStrip"), foe, false, state.connected ? state.connected[room.seat === 0 ? 1 : 0] : true);
         $("meStrip").classList.toggle("active", myTurn());
         $("foeStrip").classList.toggle("active", !myTurn() && state.phase === "awaiting-move");
+        $("debugBar").classList.toggle("hidden", state.botSeat == null);
         if (state.connected) {
           rivalOnline = state.connected[room.seat === 0 ? 1 : 0];
           $("peerWarn").classList.toggle("hidden", rivalOnline);
@@ -752,9 +772,15 @@
           (mon.ability.passive ? `<div class="s-pass">✦ ${esc(mon.ability.passive)}</div>` : "") +
           `<div class="s-meta">Charge ${Math.min(mon.charge, mon.chargeCost)}/${mon.chargeCost}` +
           (mon.sealed > 0 ? ` · 🔒 sealed for ${mon.sealed} turn${mon.sealed === 1 ? "" : "s"}` : "") +
-          (evo < MAX_EVOLUTION ? ` · Evolving: +20% power, −1 charge cost` : " · Fully evolved") + `</div>` +
+          (evo >= MAX_EVOLUTION ? " · Fully evolved" : "") + `</div>` +
+          (mon.ability.nextEvolution && mon.ability.nextEvolution.length
+            ? `<div class="s-next"><h3>Next evolution · ${"★".repeat(evo + 1)}</h3><ul>` +
+              mon.ability.nextEvolution.map((c) => `<li>${esc(c)}</li>`).join("") + `</ul></div>`
+            : "") +
           `<div class="s-actions">` +
           (isMine && canEvolve ? `<button id="sheetEvolve">Evolve · 🍓${BERRIES_TO_EVOLVE}</button>` : "") +
+          (isMine && !canEvolve && evo < MAX_EVOLUTION && state.players[room.seat].berries >= BERRIES_TO_EVOLVE
+            ? `<button disabled>Evolve on your turn</button>` : "") +
           `<button class="ghost" id="sheetClose">Close</button></div></div>`;
         sheet.classList.remove("hidden");
         const close = () => sheet.classList.add("hidden");
@@ -984,6 +1010,16 @@
       /* ------------------------------------------------------------ boot */
       $("play").addEventListener("click", quickPlay);
       $("create").addEventListener("click", createRoom);
+      $("practice").addEventListener("click", practice);
+      for (const b of document.querySelectorAll("[data-dbg]")) {
+        b.addEventListener("click", async () => {
+          try {
+            await gameSock.request("mm:debug", { action: b.dataset.dbg });
+            await refresh();
+            toast(b.dataset.dbg === "berries" ? "+4 berries — tap a monster to evolve" : "⚡ Charged — your next match fires both moves");
+          } catch (e) { toast(e.message); }
+        });
+      }
       $("join").addEventListener("click", joinRoom);
       $("code").addEventListener("input", refreshButtons);
       $("code").addEventListener("keydown", (e) => { if (e.key === "Enter" && !$("join").disabled) joinRoom(); });

@@ -181,6 +181,27 @@ export function hasAnyMove(b: Board, ice?: number[][]): boolean {
   return false;
 }
 
+/** Cells (as `y * width + x`) that take part in at least one legal swap. */
+export function moveCells(b: Board, ice?: number[][]): Set<number> {
+  const out = new Set<number>();
+  const trySwap = (x1: number, y1: number, x2: number, y2: number): void => {
+    if (!isMovable(b, x1, y1, ice) || !isMovable(b, x2, y2, ice)) return;
+    swapCells(b, x1, y1, x2, y2);
+    if (findMatches(b).length > 0) {
+      out.add(y1 * b.width + x1);
+      out.add(y2 * b.width + x2);
+    }
+    swapCells(b, x1, y1, x2, y2);
+  };
+  for (let y = 0; y < b.height; y++) {
+    for (let x = 0; x < b.width; x++) {
+      if (x + 1 < b.width) trySwap(x, y, x + 1, y);
+      if (y + 1 < b.height) trySwap(x, y, x, y + 1);
+    }
+  }
+  return out;
+}
+
 /** Replace the board with a fresh one that has no matches and at least one move. */
 export function reshuffle(b: Board, opts: BoardOptions, rng: Rng): void {
   for (let attempt = 0; attempt < 50; attempt++) {

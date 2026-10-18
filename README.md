@@ -53,6 +53,12 @@ Each picks two monsters, then either **Quick Play** (matched with anyone
 queuing) or **Invite a friend** (a 4-character code + a share link,
 `/play?room=CODE`, that pre-fills the code for them). No accounts.
 
+**Solo?** Tap **🤖 Practice vs bot**. The bot picks a random team and plays a
+greedy (occasionally sloppy) game. Practice games add debug shortcuts under
+the board: **+4 🍓** (evolve right away) and **⚡ Charge up** (both your
+monsters fire on your next match). After any game, **Rematch** restarts with
+the same teams, and the loser goes first.
+
 ### How a match plays
 
 - Tap a tile, then a neighbour, to swap. A swap must make a match.
@@ -61,7 +67,10 @@ queuing) or **Invite a friend** (a 4-character code + a share link,
 - Matching tiles **charges** your monsters of that element. At its charge cost a
   monster **fires its move** — damage plus a twist (see below).
 - 🍓 **Berries** appear on the board; collect **4** to **evolve** a monster
-  (+20% power, −1 charge cost, up to ★★★).
+  (up to ★★★). Every level: numbers +20%, tile/charge counts +1, charge
+  cost −1, passives grow. At ★★ blasts widen and seals/burns/poison last a
+  turn longer; at ★★★ haste gives an extra move and ice lasts longer. Tap a
+  monster to see exactly what its next star changes.
 - 🪨 **Stone** tiles can't move and crumble when a neighbour is matched;
   ❄ **frozen** tiles can't be swapped until the ice melts.
 - One HP pool each (80). Shields cap at 30. From round 20, **sudden death**
@@ -72,8 +81,8 @@ queuing) or **Invite a friend** (a 4-character code + a share link,
 | Element | Archetype | Plays like |
 | ------- | --------- | ---------- |
 | 🔥 Fire | Destroyer | big hits, burns, blasts that match a row/column/area (the tiles charge you) |
-| 💧 Water | Controller | freeze tiles, drain rival charge, make the rival lose a move |
-| ⛰️ Earth | Fortress | turn tiles to stone, quakes, big shields and heals |
+| 💧 Water | Controller | freeze the rival's best tiles for their turn, drain rival charge, make the rival lose a move |
+| ⛰️ Earth | Fortress | stone the rival's element tiles, quakes, big shields and heals |
 | 🌿 Nature | Sustain | poison, life-steal, seal a rival monster's charge, overgrowth |
 | ✨ Light | Tempo | burst, extra moves, cleansing, charging its partner |
 
@@ -130,9 +139,12 @@ from the effects, so `monsters.ts` is the single source of truth for numbers.
 All randomness runs through a seeded PRNG, so a match is fully reproducible from
 `(seed, moves)` — which is how the engine is unit-tested and replayed.
 
-Balance is checked with `npm run sim`: a greedy bot plays hundreds of matches
-and reports length, first-player edge and win share per element (last run: 100%
-of matches finish, median 44 moves, first player 53%, every element 0.48–0.53).
+Balance is checked with `npm run sim` (match length, first-player edge, win
+share per element) and `npm run tiers` (per-monster win rate, and what going
+★0 → ★★★ is worth for each). Both use the same greedy bot as practice mode.
+Last run: 100% of matches finish (median 54 moves), every monster wins
+48–55%, and evolving to ★★★ adds +35 to +50 points of win rate for every
+monster.
 
 The roster and art are our own, so the game is playable now; the real
 roster/tuning can slot in from the game bundle later.

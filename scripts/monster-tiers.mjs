@@ -8,7 +8,7 @@
 //
 // Usage: npm run tiers   (env: N=6000 M=400 SEED=777)
 import { MatchMonstersGame } from '../dist/game/matchmonsters/engine.js';
-import { findMatches, isMovable } from '../dist/game/matchmonsters/board.js';
+import { chooseEvolution, chooseMove } from '../dist/game/matchmonsters/bot.js';
 import { MONSTERS } from '../dist/game/matchmonsters/monsters.js';
 
 const ids = Object.keys(MONSTERS);
@@ -16,21 +16,6 @@ let seed = Number(process.env.SEED ?? 777);
 const rng = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
 const pick = (exclude = []) => { let id; do { id = ids[Math.floor(rng() * ids.length)]; } while (exclude.includes(id)); return id; };
 
-function bestMove(g) {
-  const s = g.state, b = s.board, me = s.players[s.turn];
-  const els = new Set(me.monsters.map((m) => m.def.element));
-  let best = null, bestScore = -1;
-  for (let y = 0; y < b.height; y++) for (let x = 0; x < b.width; x++) for (const [dx, dy] of [[1, 0], [0, 1]]) {
-    const nx = x + dx, ny = y + dy; if (nx >= b.width || ny >= b.height) continue;
-    if (!isMovable(b, x, y, s.ice) || !isMovable(b, nx, ny, s.ice)) continue;
-    const t = b.grid[y][x]; b.grid[y][x] = b.grid[ny][nx]; b.grid[ny][nx] = t;
-    const m = findMatches(b); let score = 0;
-    for (const c of m) score += els.has(c.element) ? 3 : (c.element === 'berry' ? 2 : 1);
-    b.grid[ny][nx] = b.grid[y][x]; b.grid[y][x] = t;
-    if (m.length && score > bestScore) { bestScore = score; best = { from: { x, y }, to: { x: nx, y: ny } }; }
-  }
-  return best;
-}
 
 /** Play one match; returns the winner (0 | 1) or null if it stalled. */
 function play(teams, gameSeed, startEvo = [[0, 0], [0, 0]]) {
@@ -40,14 +25,11 @@ function play(teams, gameSeed, startEvo = [[0, 0], [0, 0]]) {
   });
   g.state.players.forEach((p, i) => p.monsters.forEach((m, j) => { m.evolution = startEvo[i][j]; }));
   for (let n = 0; g.state.phase !== 'finished' && n < 600; n++) {
-    const s = g.state, me = s.players[s.turn];
-    // Evolve the least-evolved monster whenever 4 berries are banked.
-    if (me.berries >= 4) {
-      const target = [...me.monsters].filter((m) => m.evolution < 3).sort((a, b) => a.evolution - b.evolution)[0];
-      if (target) g.evolve(s.turn, target.def.id);
-    }
-    const mv = bestMove(g); if (!mv) break;
-    if (!g.applyMove(s.turn, { type: 'swap', ...mv }).ok) break;
+    const s = g.state;
+    const evolveId = chooseEvolution(g, s.turn);
+    if (evolveId) g.evolve(s.turn, evolveId);
+    const mv = chooseMove(g, g.state.turn); if (!mv) break;
+    if (!g.applyMove(s.turn, mv).ok) break;
   }
   return g.state.phase === 'finished' ? g.state.winner : null;
 }
@@ -75,6 +57,7 @@ for (const t of tiers) console.log(`  ${tierOf(t.rate)}  ${name(t.id)} ${el(t.id
 
 // ---------------------------------------------------------------- 2. evolution value
 const M = Number(process.env.M ?? 400);
+if (M === 0) process.exit(0);
 console.log(`\nEVOLUTION VALUE — win rate at ★0 vs starting at ★★★ (${M} paired matches each)\n`);
 const evo = [];
 for (const id of ids) {

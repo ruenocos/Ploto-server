@@ -27,6 +27,7 @@ import type {
   CascadeStep,
   CastEvent,
   Effect,
+  EffectKind,
   Element,
   GameState,
   MatchShape,
@@ -36,6 +37,7 @@ import type {
   MoveRejection,
   MoveResult,
   NumericEventType,
+  Passive,
   PlayerState,
   Tile,
 } from "./types.js";
@@ -58,6 +60,7 @@ import {
   hasAnyMove,
   hasBigMatch,
   isMovable,
+  moveCells,
   reshuffle,
   type BoardOptions,
 } from "./board.js";
@@ -126,6 +129,7 @@ export class MatchMonstersGame {
       // Whoever opens gets a single move, offsetting the first-mover advantage.
       movesLeft: MOVES_PER_TURN - 1,
       turnPasses: 0,
+      pendingFreeze: [],
       phase: "awaiting-move",
       winner: null,
       moveNumber: 0,
@@ -208,6 +212,7 @@ export class MatchMonstersGame {
         s.movesLeft = Math.max(1, MOVES_PER_TURN - incoming.slow);
         incoming.slow = 0;
         meltIce(s.ice);
+        this.landFreezes();
         tickDots(incoming, nextTurn, ctx.abilities);
         s.turnPasses += 1;
         const fatigue = fatigueDamage(s.turnPasses);
@@ -314,7 +319,7 @@ export class MatchMonstersGame {
   private fire(mon: MonsterState, ctx: FireContext): void {
     const def = mon.def;
     const { attacker } = ctx;
-    const berserk = def.passive?.berserk;
+    const berserk = scaledPassive(def, mon.evolution)?.berserk;
     const raging = berserk !== undefined && attacker.hp <= berserk.threshold;
     const effects: Effect[] = raging
       ? Array.from({ length: berserk.hits }, () => ({ kind: "damage" as const, amount: berserk.amount }))
@@ -339,7 +344,7 @@ export class MatchMonstersGame {
     // Partner follow-up strikes (a follow-up never triggers another).
     if (dealtDamage && ctx.defender.hp > 0) {
       for (const partner of attacker.monsters) {
-        const extra = partner.def.passive?.followUp;
+        const extra = scaledPassive(partner.def, partner.evolution)?.followUp;
         if (partner === mon || !extra) continue;
         ctx.casts.push({
           by: ctx.by,
@@ -384,17 +389,23 @@ export class MatchMonstersGame {
         ctx.abilities.push(evt(def, e.dot, e.amount, ctx.foeIdx));
         return false;
       case "match":
-        this.matchRegion(this.shapeCells(e.shape), ctx);
+        this.matchRegion(this.shapeCells(e.shape, e.size ?? defaultShapeSize(e.shape)), ctx);
         return false;
-      case "freeze": {
-        const turns = e.turns + 1; // survives the pass to the rival
-        const free = this.cells((x, y) => b.grid[y]![x] !== "stone" && this.state.ice[y]![x] === 0);
-        for (const c of this.pick(free, e.count)) this.state.ice[c.y]![c.x] = turns;
+      case "freeze":
+        // Lands when the turn passes, so it never blocks the caster's own moves.
+        this.state.pendingFreeze.push({ count: e.count, turns: e.turns });
         return false;
-      }
       case "petrify": {
-        const gems = this.cells((x, y) => isElement(b.grid[y]![x]!));
-        for (const c of this.pick(gems, e.count)) b.grid[c.y]![c.x] = "stone";
+        // Stone the rival's element tiles (live moves first) to starve their charge.
+        const mine = new Set(attacker.monsters.map((m) => m.def.element));
+        const theirs = new Set(defender.monsters.map((m) => m.def.element));
+        const gem = (x: number, y: number) => b.grid[y]![x]!;
+        const picks = this.pickTargets(e.count, [
+          (x, y) => theirs.has(gem(x, y) as Element) && !mine.has(gem(x, y) as Element),
+          (x, y) => isElement(gem(x, y)) && !mine.has(gem(x, y) as Element),
+          (x, y) => isElement(gem(x, y)),
+        ]);
+        for (const c of picks) b.grid[c.y]![c.x] = "stone";
         return false;
       }
       case "convert": {
@@ -451,17 +462,16 @@ export class MatchMonstersGame {
     ctx.abilities.push(evt(def, "heal", amount, ctx.by));
   }
 
-  private shapeCells(shape: MatchShape): { x: number; y: number }[] {
+  private shapeCells(shape: MatchShape, size: number): { x: number; y: number }[] {
     const b = this.state.board;
     const cells: { x: number; y: number }[] = [];
     if (shape === "row") {
-      const y = this.rng.int(b.height);
-      for (let x = 0; x < b.width; x++) cells.push({ x, y });
+      const y0 = this.rng.int(Math.max(1, b.height - size + 1));
+      for (let y = y0; y < y0 + size; y++) for (let x = 0; x < b.width; x++) cells.push({ x, y });
     } else if (shape === "col") {
-      const x = this.rng.int(b.width);
-      for (let y = 0; y < b.height; y++) cells.push({ x, y });
+      const x0 = this.rng.int(Math.max(1, b.width - size + 1));
+      for (let x = x0; x < x0 + size; x++) for (let y = 0; y < b.height; y++) cells.push({ x, y });
     } else {
-      const size = shape === "area" ? 3 : 2;
       const x0 = this.rng.int(Math.max(1, b.width - size + 1));
       const y0 = this.rng.int(Math.max(1, b.height - size + 1));
       for (let dy = 0; dy < size; dy++)
@@ -503,6 +513,47 @@ export class MatchMonstersGame {
     return out;
   }
 
+  /** Ice the incoming player's best tiles with every freeze cast last turn. */
+  private landFreezes(): void {
+    const s = this.state;
+    for (const f of s.pendingFreeze) {
+      const free = (x: number, y: number) => s.board.grid[y]![x] !== "stone" && s.ice[y]![x] === 0;
+      // Walk every free cell, live ones first, until `count` are iced — skipping
+      // any that would leave the rival no legal swap (that would reshuffle the ice away).
+      let placed = 0;
+      for (const c of this.pickTargets(Infinity, [free])) {
+        if (placed >= f.count) break;
+        s.ice[c.y]![c.x] = f.turns;
+        if (hasAnyMove(s.board, s.ice)) placed++;
+        else s.ice[c.y]![c.x] = 0;
+      }
+    }
+    s.pendingFreeze = [];
+  }
+
+  /**
+   * Pick up to n distinct cells. Tiers are tried in order, and within each tier
+   * cells that are part of a legal swap right now (the tiles a player would
+   * reach for) come first.
+   */
+  private pickTargets(n: number, tiers: ((x: number, y: number) => boolean)[]): { x: number; y: number }[] {
+    const w = this.state.board.width;
+    const hot = moveCells(this.state.board, this.state.ice);
+    const taken = new Set<number>();
+    const out: { x: number; y: number }[] = [];
+    for (const ok of tiers) {
+      for (const live of [true, false]) {
+        if (out.length >= n) return out;
+        const pool = this.cells((x, y) => !taken.has(y * w + x) && ok(x, y) && hot.has(y * w + x) === live);
+        for (const c of this.pick(pool, n - out.length)) {
+          taken.add(c.y * w + c.x);
+          out.push(c);
+        }
+      }
+    }
+    return out;
+  }
+
   /** Deterministically pick up to n distinct items. */
   private pick<T>(items: readonly T[], n: number): T[] {
     const pool = items.slice();
@@ -513,6 +564,11 @@ export class MatchMonstersGame {
 }
 
 // ---------------------------------------------------------------- evolution
+//
+// Every level makes the whole move better: numbers grow +20% (min +1), tile and
+// charge counts +1, the charge cost drops by 1, and passives grow too. The
+// "special" parts step up at milestones — ★★ widens blasts and lengthens seals
+// and burns/poison; ★★★ adds an extra haste move and longer ice.
 
 /** Power after evolution: +20% (min +1) per level; 0 stays 0. */
 export function scaleAmount(base: number, evolution: number): number {
@@ -520,7 +576,14 @@ export function scaleAmount(base: number, evolution: number): number {
   return base + evolution * Math.max(1, Math.round(base * 0.2));
 }
 
-/** Effects after evolution: power +20%/level, tile/charge counts +1/level. */
+const atLeast = (evolution: number, level: number): number => (evolution >= level ? 1 : 0);
+
+/** Default region size for a match shape (lines for row/col, side for areas). */
+export function defaultShapeSize(shape: MatchShape): number {
+  return shape === "area" ? 3 : shape === "square" ? 2 : 1;
+}
+
+/** Effects after evolution (see the section comment for the rules). */
 export function scaledEffects(def: Monster, evolution: number): Effect[] {
   return def.ability.effects.map((e): Effect => {
     switch (e.kind) {
@@ -530,22 +593,53 @@ export function scaledEffects(def: Monster, evolution: number): Effect[] {
       case "drain":
         return { ...e, amount: scaleAmount(e.amount, evolution) };
       case "dot":
-        return { ...e, amount: scaleAmount(e.amount, evolution) };
+        return { ...e, amount: scaleAmount(e.amount, evolution), turns: e.turns + atLeast(evolution, 2) };
+      case "match":
+        return { ...e, size: (e.size ?? defaultShapeSize(e.shape)) + atLeast(evolution, 2) };
       case "freeze":
+        return { ...e, count: e.count + evolution, turns: e.turns + atLeast(evolution, 3) };
       case "petrify":
       case "convert":
       case "sap":
       case "empower":
         return { ...e, count: e.count + evolution };
+      case "seal":
+        return { ...e, turns: e.turns + atLeast(evolution, 2) };
+      case "haste":
+        return { ...e, count: e.count + atLeast(evolution, 3) };
       default:
-        return e; // match shape, slow, seal, haste, cleanse don't scale
+        return e; // slow is capped at one move; cleanse is all-or-nothing
     }
   });
+}
+
+/** Passives after evolution: follow-ups and berserk strikes hit harder, berserk kicks in sooner. */
+export function scaledPassive(def: Monster, evolution: number): Passive | undefined {
+  const p = def.passive;
+  if (!p) return undefined;
+  return {
+    ...(p.berserk
+      ? {
+          berserk: {
+            threshold: p.berserk.threshold + 5 * evolution,
+            hits: p.berserk.hits,
+            amount: scaleAmount(p.berserk.amount, evolution),
+          },
+        }
+      : {}),
+    ...(p.followUp ? { followUp: scaleAmount(p.followUp, evolution) } : {}),
+  };
 }
 
 /** Charge cost after evolution: -1 per level, never below the floor (or the base, if lower). */
 export function effectiveCost(def: Monster, evolution: number): number {
   return Math.max(Math.min(def.chargeCost, MIN_CHARGE_COST), def.chargeCost - evolution);
+}
+
+function describeShape(shape: MatchShape, size: number): string {
+  if (shape === "row") return size === 1 ? "match a random row" : `match ${size} rows`;
+  if (shape === "col") return size === 1 ? "match a random column" : `match ${size} columns`;
+  return `match a ${size}×${size} area`;
 }
 
 /** Human-readable text for a list of effects. */
@@ -557,9 +651,8 @@ export function describeEffects(effects: readonly Effect[], element: Element): s
       case "shield": return `gain a ${e.amount} shield`;
       case "drain": return `steal ${e.amount} HP`;
       case "dot": return `${e.dot} ${e.amount}/turn for ${e.turns} turns`;
-      case "match":
-        return { row: "match a random row", col: "match a random column", area: "match a 3×3 area", square: "match a 2×2 area" }[e.shape];
-      case "freeze": return `freeze ${e.count} tiles`;
+      case "match": return describeShape(e.shape, e.size ?? defaultShapeSize(e.shape));
+      case "freeze": return `freeze ${e.count} tiles for the rival's ` + (e.turns > 1 ? `next ${e.turns} turns` : "turn");
       case "petrify": return `turn ${e.count} tiles to stone`;
       case "convert": return `turn ${e.count} tiles into ${element}`;
       case "sap": return `drain ${e.count} charge from each rival`;
@@ -575,23 +668,77 @@ export function describeEffects(effects: readonly Effect[], element: Element): s
 }
 
 /** Passive text, if any. */
-export function describePassive(def: Monster): string | undefined {
-  const p = def.passive;
+export function describePassive(def: Monster, evolution = 0): string | undefined {
+  const p = scaledPassive(def, evolution);
   if (!p) return undefined;
   if (p.berserk) return `Berserk at ${p.berserk.threshold} HP or less: strike ${p.berserk.hits}× for ${p.berserk.amount}`;
   if (p.followUp) return `When its partner's move hits, follow up for ${p.followUp}`;
   return undefined;
 }
 
+const EFFECT_LABEL: Record<EffectKind, string> = {
+  damage: "Damage", heal: "Heal", shield: "Shield", drain: "Life steal", dot: "", match: "Blast",
+  freeze: "Frozen tiles", petrify: "Stone tiles", convert: "Converted tiles", sap: "Charge drained",
+  slow: "Moves stolen", seal: "Seal", haste: "Extra moves", cleanse: "Cleanse", empower: "Partner charge",
+};
+
+/**
+ * What the next evolution changes, as short "before → after" lines for the
+ * monster sheet, e.g. ["Damage 12 → 14", "Charge cost 8 → 7"]. Empty when maxed.
+ */
+export function evolutionChanges(def: Monster, evolution: number): string[] {
+  if (evolution >= MAX_EVOLUTION) return [];
+  const now = scaledEffects(def, evolution);
+  const next = scaledEffects(def, evolution + 1);
+  const out: string[] = [];
+  now.forEach((a, i) => {
+    const b = next[i]!;
+    const label = EFFECT_LABEL[a.kind];
+    if (a.kind === "dot" && b.kind === "dot") {
+      const name = a.dot === "burn" ? "Burn" : "Poison";
+      if (a.amount !== b.amount) out.push(`${name} ${a.amount} → ${b.amount}/turn`);
+      if (a.turns !== b.turns) out.push(`${name} lasts ${a.turns} → ${b.turns} turns`);
+    } else if (a.kind === "match" && b.kind === "match") {
+      const sa = a.size ?? defaultShapeSize(a.shape), sb = b.size ?? defaultShapeSize(b.shape);
+      if (sa !== sb) {
+        const unit = a.shape === "row" ? " rows" : a.shape === "col" ? " columns" : "";
+        out.push(unit ? `Blast ${sa} → ${sb}${unit}` : `Blast ${sa}×${sa} → ${sb}×${sb}`);
+      }
+    } else if (a.kind === "freeze" && b.kind === "freeze") {
+      if (a.count !== b.count) out.push(`${label} ${a.count} → ${b.count}`);
+      if (a.turns !== b.turns) out.push(`Ice lasts ${a.turns} → ${b.turns} turns`);
+    } else if (a.kind === "seal" && b.kind === "seal") {
+      if (a.turns !== b.turns) out.push(`${label} ${a.turns} → ${b.turns} turns`);
+    } else if ("amount" in a && "amount" in b && a.amount !== b.amount) {
+      out.push(`${label} ${a.amount} → ${b.amount}`);
+    } else if ("count" in a && "count" in b && a.count !== b.count) {
+      out.push(`${label} ${a.count} → ${b.count}`);
+    }
+  });
+  const pa = scaledPassive(def, evolution), pb = scaledPassive(def, evolution + 1);
+  if (pa?.followUp !== undefined && pb?.followUp !== undefined && pa.followUp !== pb.followUp) {
+    out.push(`Follow-up ${pa.followUp} → ${pb.followUp}`);
+  }
+  if (pa?.berserk && pb?.berserk) {
+    if (pa.berserk.amount !== pb.berserk.amount) out.push(`Berserk strikes ${pa.berserk.amount} → ${pb.berserk.amount}`);
+    if (pa.berserk.threshold !== pb.berserk.threshold) out.push(`Berserk at ${pa.berserk.threshold} → ${pb.berserk.threshold} HP`);
+  }
+  const ca = effectiveCost(def, evolution), cb = effectiveCost(def, evolution + 1);
+  if (ca !== cb) out.push(`Charge cost ${ca} → ${cb}`);
+  return out;
+}
+
 /** Move as shown to players, reflecting the monster's evolution level. */
 export function abilityView(def: Monster, evolution: number) {
   const effects = scaledEffects(def, evolution);
-  const passive = describePassive(def);
+  const passive = describePassive(def, evolution);
   return {
     name: def.ability.name,
     description: describeEffects(effects, def.element),
     effects,
     ...(passive ? { passive } : {}),
+    /** What the next evolution changes (empty when fully evolved). */
+    nextEvolution: evolutionChanges(def, evolution),
   };
 }
 

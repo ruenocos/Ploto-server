@@ -36,7 +36,9 @@ import {
   DEFAULT_BOARD,
   findMatches,
   generateBoard,
+  hasAnyMove,
   hasBigMatch,
+  reshuffle,
   type BoardOptions,
 } from "./board.js";
 
@@ -71,6 +73,7 @@ export class MatchMonstersGame {
     const hp = config.startingHp ?? STARTING_HP;
 
     const board = generateBoard(this.boardOpts, this.rng);
+    if (!hasAnyMove(board)) reshuffle(board, this.boardOpts, this.rng);
     const players = config.players.map((p) => toPlayerState(p, hp)) as [PlayerState, PlayerState];
 
     this.state = {
@@ -123,6 +126,7 @@ export class MatchMonstersGame {
       cascades.push({
         cleared: matches.map((mt) => ({ x: mt.x, y: mt.y, element: mt.element })),
         countsByElement,
+        board: cloneGrid(s.board), // board as it looks while these tiles are matched
       });
       collapseAndRefill(
         s.board,
@@ -130,6 +134,13 @@ export class MatchMonstersGame {
         this.palette,
         this.rng,
       );
+    }
+
+    // If the settled board has no possible move, reshuffle so nobody gets stuck.
+    let reshuffled = false;
+    if (!hasAnyMove(s.board)) {
+      reshuffle(s.board, this.boardOpts, this.rng);
+      reshuffled = true;
     }
 
     const attacker = s.players[by];
@@ -194,6 +205,7 @@ export class MatchMonstersGame {
       finished,
       winner: s.winner,
       board: cloneGrid(s.board),
+      reshuffled,
     };
   }
 

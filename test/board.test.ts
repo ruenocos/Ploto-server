@@ -4,6 +4,8 @@ import {
   generateBoard,
   findMatches,
   collapseAndRefill,
+  hasAnyMove,
+  reshuffle,
   DEFAULT_BOARD,
 } from "../src/game/matchmonsters/board.js";
 import type { Board, Element } from "../src/game/matchmonsters/types.js";
@@ -64,6 +66,24 @@ describe("findMatches", () => {
   it("returns nothing for a board with no run of 3", () => {
     const b = boardFrom(["FWFWF", "WFWFW", "FWFWF", "WFWFW", "FWFWF"]);
     expect(findMatches(b)).toHaveLength(0);
+  });
+});
+
+describe("hasAnyMove / reshuffle", () => {
+  it("detects a board with a possible move and one without", () => {
+    // A 2x2 board can never make a run of 3, so no move exists.
+    const locked = boardFrom(["FW", "WF"]);
+    expect(hasAnyMove(locked)).toBe(false);
+    // Swapping (1,0)<->(1,1) turns row 0 into F F F.
+    const movable = boardFrom(["FWFWL", "EFENW", "NLNEN", "LNLWE", "EWELW"]);
+    expect(hasAnyMove(movable)).toBe(true);
+  });
+
+  it("reshuffles into a playable board with no immediate matches", () => {
+    const b = boardFrom(["FWENL", "WFNLE", "NLWEF", "LENFW", "ENLWF"]);
+    reshuffle(b, { width: 5, height: 5, palette: DEFAULT_BOARD.palette }, new Rng(3));
+    expect(findMatches(b)).toHaveLength(0);
+    expect(hasAnyMove(b)).toBe(true);
   });
 });
 

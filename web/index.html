@@ -572,29 +572,38 @@
 
       async function animate(data) {
         animating = true;
-        selected = null;
-        // 1) show the swap happen on the board as it currently stands
-        const { from, to } = data.move;
-        swapLocal(from, to);
-        render();
-        tileAt(from.x, from.y)?.classList.add("swapin");
-        tileAt(to.x, to.y)?.classList.add("swapin");
-        await sleep(170);
-        // 2) flash the tiles that matched (first cascade, valid on the swapped board)
-        const step0 = data.cascades && data.cascades[0];
-        if (step0 && step0.cleared.length) {
-          for (const c of step0.cleared) tileAt(c.x, c.y)?.classList.add("pop");
-          await sleep(360);
+        try {
+          selected = null;
+          // 1) show the swap happen on the board as it currently stands
+          const { from, to } = data.move;
+          swapLocal(from, to);
+          render();
+          tileAt(from.x, from.y)?.classList.add("swapin");
+          tileAt(to.x, to.y)?.classList.add("swapin");
+          await sleep(160);
+          // 2) play EVERY cascade step: show that step's board, flash its matches
+          for (const step of data.cascades || []) {
+            if (step.board) {
+              state.board = step.board;
+              render();
+            }
+            for (const c of step.cleared) tileAt(c.x, c.y)?.classList.add("pop");
+            await sleep(340);
+          }
+          // 3) settle to the final board + float the ability effects
+          state.board = data.board;
+          render();
+          showAbilityFloats(data.abilities);
+          if (data.by === mySeat && data.berriesGained > 0) toast(`🍓 +${data.berriesGained} berries`);
+          if (data.extraTurn && data.by === mySeat) toast("💥 Match-4 — extra move!");
+          if (data.reshuffled) toast("🔀 No moves left — board reshuffled");
+          // 4) sync authoritative HP / turn / phase from the server
+          await refresh();
+        } catch (e) {
+          try { await refresh(); } catch (_) {}
+        } finally {
+          animating = false; // never leave the board locked
         }
-        // 3) settle to the final board + float the ability effects
-        state.board = data.board;
-        render();
-        showAbilityFloats(data.abilities);
-        if (data.by === mySeat && data.berriesGained > 0) toast(`🍓 +${data.berriesGained} berries`);
-        if (data.extraTurn && data.by === mySeat) toast("💥 Match-4 — extra move!");
-        // 4) sync authoritative HP / turn / phase from the server
-        await refresh();
-        animating = false;
       }
 
       function swapLocal(a, b) {

@@ -105,6 +105,8 @@ export type Move = SwapMove;
 export interface CascadeStep {
   cleared: { x: number; y: number; element: Gem }[];
   countsByElement: Partial<Record<Element, number>>;
+  /** Board state where this step's cleared tiles are present (for animation). */
+  board: Tile[][];
 }
 
 /** Something an ability did, for UI floats and logging. */
@@ -136,6 +138,8 @@ export interface MoveResult {
   readonly finished: boolean;
   readonly winner: 0 | 1 | null;
   readonly board: Tile[][];
+  /** The board was reshuffled because it had no valid moves. */
+  readonly reshuffled: boolean;
 }
 
 export interface MoveRejection {

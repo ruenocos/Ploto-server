@@ -146,4 +146,40 @@ export function collapseAndRefill(
   }
 }
 
+function swapCells(b: Board, x1: number, y1: number, x2: number, y2: number): void {
+  const t = b.grid[y1]![x1]!;
+  b.grid[y1]![x1] = b.grid[y2]![x2]!;
+  b.grid[y2]![x2] = t;
+}
+
+/** True if any single adjacent swap would create a match. */
+export function hasAnyMove(b: Board): boolean {
+  const trySwap = (x1: number, y1: number, x2: number, y2: number): boolean => {
+    swapCells(b, x1, y1, x2, y2);
+    const ok = findMatches(b).length > 0;
+    swapCells(b, x1, y1, x2, y2);
+    return ok;
+  };
+  for (let y = 0; y < b.height; y++) {
+    for (let x = 0; x < b.width; x++) {
+      if (x + 1 < b.width && trySwap(x, y, x + 1, y)) return true;
+      if (y + 1 < b.height && trySwap(x, y, x, y + 1)) return true;
+    }
+  }
+  return false;
+}
+
+/** Replace the board with a fresh one that has no matches and at least one move. */
+export function reshuffle(b: Board, opts: BoardOptions, rng: Rng): void {
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const fresh = generateBoard(opts, rng);
+    if (hasAnyMove(fresh)) {
+      b.grid = fresh.grid;
+      return;
+    }
+  }
+  // Extremely unlikely; accept the last generated board.
+  b.grid = generateBoard(opts, rng).grid;
+}
+
 export { inBounds };

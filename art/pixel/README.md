@@ -13,15 +13,19 @@ tiles (16×16), and the arena (a 160×100 meadow plus the grass platform).
   and split into parts (body, head, ears, wings, tail, tentacles, fx …). Each part
   has a role (which idle animation it gets), a parent, a z order (below 0 paints
   behind its parent) and a pivot (the joint it rotates around).
-- `rigs_fire.py`, `rigs_water.py`, `rigs_earth_nature.py`, `rigs_light.py` — the
-  monsters. Each `def name(stage)` draws all three stages; later stages add
-  features (horns, crests, extra fins, halos) rather than just getting bigger.
+- `rigs_fire.py`, `rigs_water.py`, `rigs_earth.py`, `rigs_nature.py`,
+  `rigs_light.py` — the monsters. Each `def name(stage)` draws all three
+  stages, and each stage is its own design (baby, adolescent, adult) with a
+  different silhouette, per [`EVOLUTION.md`](EVOLUTION.md). Parts that must
+  not move (crystal humps, ridges) use the role `static`.
+- `EVOLUTION.md` — the evolution design brief and its sources.
 - `gems.py` — fire triangle, water round, earth square, nature leaf, light
   diamond, cherries and stone.
 - `arena.py` — the battlefield backdrop and platform.
 - `build.py` — renders everything to `out/` and writes `web/pixelart.js`
   (data URLs the client loads; see its docstring for the shape).
-- `rigsheet.py` — a contact sheet of every monster's three stages for review.
+- `rigsheet.py` — a review sheet: each monster's three stages in colour, then as
+  black silhouettes (`python3 rigsheet.py sheet.png rigs_fire`).
 
 ```bash
 python3 art/pixel/build.py      # after editing any sprite

@@ -5,11 +5,10 @@
  *
  *   npm run blasts          (N=600 matches per monster; SEED=…)
  *
- * Two different questions:
- *  - placement: is every possible start position equally likely? (should be)
- *  - coverage: is every row equally likely to be *hit*? A 2-row blast can
- *    start at rows 0-5 on a 7-row board, so the middle rows are inside more
- *    of those positions than the edge rows are.
+ * Rows / columns: is every line equally likely to be hit? (Multi-line blasts
+ * pick separate random lines, so they should be.) Areas: is every placement
+ * equally likely? (A placed square still covers the middle more often than the
+ * edges; that's by design.)
  */
 import { MatchMonstersGame } from "../dist/game/matchmonsters/engine.js";
 import { chooseEvolution, chooseMove } from "../dist/game/matchmonsters/bot.js";
@@ -76,19 +75,20 @@ for (const id of blasters) {
   }
 }
 
+// Eight-ish tests at once: correct the threshold so chance alone doesn't flag one (Bonferroni).
+const ALPHA = 0.01 / Math.max(1, tallies.size);
 console.log(`\nBlast placement over ${N} bot matches per blasting monster (${blasters.map((id) => MONSTERS[id].name).join(", ")})\n`);
 for (const [key, t] of [...tallies].sort()) {
   const span = t.shape === "col" ? t.W : t.H;
   const positions = t.shape === "row" || t.shape === "col"
     ? Array.from({ length: Math.max(1, span - t.size + 1) }, (_, i) => i)
     : Array.from({ length: Math.max(1, t.H - t.size + 1) }, (_, y) => Array.from({ length: Math.max(1, t.W - t.size + 1) }, (_, x) => `${x},${y}`)).flat();
-  const counts = positions.map((p) => t.starts.get(p) ?? 0);
-  const n = counts.reduce((a, b) => a + b, 0);
+  const lines = t.shape === "row" || t.shape === "col";
+  const n = positions.reduce((a, p) => a + (t.starts.get(p) ?? 0), 0);
+  // Lines: every row/column should be equally likely to be hit. Areas: every placement equally likely.
+  const counts = lines ? t.cover : positions.map((p) => t.starts.get(p) ?? 0);
   const { x2, df, p } = chiSquare(counts);
-  console.log(`${key.padEnd(9)} ${String(n).padStart(5)} blasts   start positions: ${counts.map((c) => (c / n * 100).toFixed(0).padStart(3) + "%").join(" ")}`);
-  console.log(`${"".padEnd(9)} chi²=${x2.toFixed(1)} df=${df}  p=${p.toFixed(3)}  ${p > 0.01 ? "✓ uniform" : "✗ NOT uniform"}`);
-  if (t.shape === "row" || t.shape === "col") {
-    const hits = t.cover.map((c) => (c / n * 100).toFixed(0).padStart(3) + "%");
-    console.log(`${"".padEnd(9)} chance each ${t.shape === "row" ? "row" : "column"} is hit: ${hits.join(" ")}`);
-  }
+  const what = lines ? `chance each ${t.shape === "row" ? "row" : "column"} is hit` : "placements";
+  console.log(`${key.padEnd(9)} ${String(n).padStart(5)} blasts   ${what}: ${counts.map((c) => (c / n * 100).toFixed(0).padStart(3) + "%").join(" ")}`);
+  console.log(`${"".padEnd(9)} chi²=${x2.toFixed(1)} df=${df}  p=${p.toFixed(3)}  ${p > ALPHA ? "✓ uniform" : "✗ NOT uniform"}  (threshold ${ALPHA.toFixed(4)})`);
 }

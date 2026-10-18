@@ -506,12 +506,14 @@ export class MatchMonstersGame {
   private shapeCells(shape: MatchShape, size: number): { x: number; y: number }[] {
     const b = this.state.board;
     const cells: { x: number; y: number }[] = [];
-    if (shape === "row") {
-      const y0 = this.rng.int(Math.max(1, b.height - size + 1));
-      for (let y = y0; y < y0 + size; y++) for (let x = 0; x < b.width; x++) cells.push({ x, y });
-    } else if (shape === "col") {
-      const x0 = this.rng.int(Math.max(1, b.width - size + 1));
-      for (let x = x0; x < x0 + size; x++) for (let y = 0; y < b.height; y++) cells.push({ x, y });
+    if (shape === "row" || shape === "col") {
+      // `size` different lines, each chosen at random (not a band of neighbours),
+      // so every row/column is equally likely to be hit, edges included.
+      const lines = this.pickDistinct(shape === "row" ? b.height : b.width, size);
+      for (const i of lines) {
+        if (shape === "row") for (let x = 0; x < b.width; x++) cells.push({ x, y: i });
+        else for (let y = 0; y < b.height; y++) cells.push({ x: i, y });
+      }
     } else {
       const x0 = this.rng.int(Math.max(1, b.width - size + 1));
       const y0 = this.rng.int(Math.max(1, b.height - size + 1));
@@ -519,6 +521,17 @@ export class MatchMonstersGame {
         for (let dx = 0; dx < size; dx++) cells.push({ x: x0 + dx, y: y0 + dy });
     }
     return cells.filter((c) => onBoard(b, c));
+  }
+
+  /** `n` different integers from [0, count), uniformly at random (partial Fisher–Yates). */
+  private pickDistinct(count: number, n: number): number[] {
+    const pool = Array.from({ length: count }, (_, i) => i);
+    const k = Math.min(n, count);
+    for (let i = 0; i < k; i++) {
+      const j = i + this.rng.int(count - i);
+      [pool[i], pool[j]] = [pool[j]!, pool[i]!];
+    }
+    return pool.slice(0, k).sort((a, b) => a - b);
   }
 
   /**
@@ -684,8 +697,8 @@ export function effectiveCost(def: Monster, evolution: number): number {
 }
 
 function describeShape(shape: MatchShape, size: number): string {
-  if (shape === "row") return size === 1 ? "match a random row" : `match ${size} rows`;
-  if (shape === "col") return size === 1 ? "match a random column" : `match ${size} columns`;
+  if (shape === "row") return size === 1 ? "match a random row" : `match ${size} random rows`;
+  if (shape === "col") return size === 1 ? "match a random column" : `match ${size} random columns`;
   return `match a ${size}×${size} area`;
 }
 

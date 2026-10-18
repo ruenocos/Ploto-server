@@ -426,6 +426,23 @@ describe("evolution milestones", () => {
     expect(r.ok && r.effectSteps[0]!.cleared.length).toBe(10);
   });
 
+  it("a ★ row blast picks two different random rows, and every row gets its turn", () => {
+    const hit = new Array(5).fill(0); // the test board is 5x5
+    for (let seed = 1; seed <= 300; seed++) {
+      const g = newGame(fireMon("a", [{ kind: "match", shape: "row" }]), undefined, { seed });
+      g.state.players[0].monsters[0]!.evolution = 1;
+      const r = g.applyMove(0, FIRE_SWAP);
+      if (!r.ok) continue;
+      const cast = r.casts[0]!.effects.find((e) => e.kind === "match");
+      if (!cast || cast.kind !== "match") continue;
+      const rows = [...new Set(cast.cells.map((c) => c.y))];
+      expect(rows).toHaveLength(2);
+      for (const y of rows) hit[y]++;
+    }
+    // 600 row-hits over 5 rows: ~120 each. With a 2-row band the edges got ~75; now none is far off.
+    for (const n of hit) expect(n).toBeGreaterThan(95);
+  });
+
   it("passives grow with evolution", () => {
     const def = fireMon("a", [], 3, { followUp: 3, berserk: { threshold: 20, hits: 4, amount: 5 } });
     expect(scaledPassive(def, 2)).toEqual({ followUp: 5, berserk: { threshold: 32, hits: 4, amount: 7 } });

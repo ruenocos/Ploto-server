@@ -8,7 +8,7 @@
  * read off that bundle; when they are, only this adapter changes — the engine
  * and transport stay put. (Marked ⏳ in docs/PROTOCOL.md.)
  */
-import { MatchMonstersGame, type GameConfig } from "../game/matchmonsters/engine.js";
+import { MatchMonstersGame, abilityView, type GameConfig } from "../game/matchmonsters/engine.js";
 import type { Move, MonsterState, PlayerState } from "../game/matchmonsters/types.js";
 
 /** Minimal view of a protoo peer, so rooms are testable without a live socket. */
@@ -64,6 +64,19 @@ export class GameRoom {
         return { accepted: true };
       }
 
+      case "mm:evolve": {
+        const d = (data ?? {}) as Record<string, unknown>;
+        const monsterId = typeof d["monsterId"] === "string" ? d["monsterId"] : "";
+        const result = this.game.evolve(seat, monsterId);
+        if (!result.ok) throw new Error(result.reason);
+        this.broadcast("mm:evolved", {
+          by: seat,
+          monsterId: result.monsterId,
+          evolution: result.evolution,
+        });
+        return { ok: true, evolution: result.evolution, berries: result.berries };
+      }
+
       default:
         throw new Error(`unknown method: ${method}`);
     }
@@ -96,6 +109,7 @@ function serializePlayer(p: PlayerState) {
     maxHp: p.maxHp,
     shield: p.shield,
     dots: p.dots,
+    berries: p.berries,
     monsters: p.monsters.map(serializeMonster),
   };
 }
@@ -107,7 +121,8 @@ function serializeMonster(m: MonsterState) {
     element: m.def.element,
     charge: m.charge,
     chargeCost: m.def.chargeCost,
-    ability: m.def.ability,
+    evolution: m.evolution,
+    ability: abilityView(m.def, m.evolution),
   };
 }
 

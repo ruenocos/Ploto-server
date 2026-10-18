@@ -58,9 +58,12 @@ use `http://localhost:8080/play`). Each picks two monsters, then either:
 
 In the match: tap a tile then an adjacent one to swap. Matching tiles **charges**
 your monsters of that element; when a monster hits its charge cost it **fires its
-ability** — attack, heal, shield, or burn — at the rival. Each player has one HP
-pool; drop your rival to 0 to win. Works on phones on the same Wi-Fi. 20 monsters
-across five elements, each with its own ability and charge cost, in the picker.
+ability** — attack, heal, shield, burn, or poison — at the rival. You also get
+**2 moves per turn**, and clearing a line of **4+** grants an extra move. 🍓
+**Berry** tiles appear on the board — match them to collect berries, and spend
+**4** to **evolve** one of your monsters (its ability gets stronger, up to Lv3).
+Each player has one HP pool; drop your rival to 0 to win. Works on phones on the
+same Wi-Fi. 20 monsters across five elements in the picker.
 
 (Want it reachable off-LAN? Put it behind any TLS reverse proxy / tunnel and the
 same `/play` page works.)

@@ -29,7 +29,7 @@ import type {
   PlayerState,
   Tile,
 } from "./types.js";
-import { MOVES_PER_TURN, STARTING_HP } from "./types.js";
+import { BERRIES_TO_EVOLVE, MAX_EVOLUTION, MOVES_PER_TURN, STARTING_HP } from "./types.js";
 import { Rng } from "./rng.js";
 import {
   collapseAndRefill,
@@ -105,14 +105,20 @@ export class MatchMonstersGame {
     const cascades: CascadeStep[] = [];
     const charged: Partial<Record<Element, number>> = {};
     let bigMatch = false;
+    let berriesGained = 0;
     for (;;) {
       const matches = findMatches(s.board);
       if (matches.length === 0) break;
       if (hasBigMatch(s.board)) bigMatch = true; // a line of 4+ grants an extra move
       const countsByElement: Partial<Record<Element, number>> = {};
       for (const mtch of matches) {
-        countsByElement[mtch.element] = (countsByElement[mtch.element] ?? 0) + 1;
-        charged[mtch.element] = (charged[mtch.element] ?? 0) + 1;
+        if (mtch.element === "berry") {
+          berriesGained += 1;
+          continue;
+        }
+        const el = mtch.element;
+        countsByElement[el] = (countsByElement[el] ?? 0) + 1;
+        charged[el] = (charged[el] ?? 0) + 1;
       }
       cascades.push({
         cleared: matches.map((mt) => ({ x: mt.x, y: mt.y, element: mt.element })),
@@ -129,6 +135,8 @@ export class MatchMonstersGame {
     const attacker = s.players[by];
     const defender = s.players[other(by)];
     const abilities: AbilityEvent[] = [];
+
+    attacker.berries += berriesGained;
 
     // Feed charges to the attacker's monsters.
     for (const mon of attacker.monsters) {
@@ -179,6 +187,7 @@ export class MatchMonstersGame {
       cascades,
       charged,
       abilities,
+      berriesGained,
       nextTurn,
       movesLeft: s.movesLeft,
       extraTurn,
@@ -186,6 +195,21 @@ export class MatchMonstersGame {
       winner: s.winner,
       board: cloneGrid(s.board),
     };
+  }
+
+  /** Spend 4 berries to evolve one of a player's monsters, on that player's turn. */
+  evolve(by: 0 | 1, monsterId: string): EvolveResult | MoveRejection {
+    const s = this.state;
+    if (s.phase === "finished") return reject("game is finished");
+    if (by !== s.turn) return reject("not your turn");
+    const player = s.players[by];
+    if (player.berries < BERRIES_TO_EVOLVE) return reject("need 4 berries to evolve");
+    const mon = player.monsters.find((m) => m.def.id === monsterId);
+    if (!mon) return reject("no such monster");
+    if (mon.evolution >= MAX_EVOLUTION) return reject("monster is fully evolved");
+    player.berries -= BERRIES_TO_EVOLVE;
+    mon.evolution += 1;
+    return { ok: true, monsterId, evolution: mon.evolution, berries: player.berries };
   }
 }
 
@@ -198,30 +222,58 @@ function fireAbility(
   events: AbilityEvent[],
 ): void {
   const ab = mon.def.ability;
+  const amount = evolvedAmount(mon.def, mon.evolution);
   switch (ab.type) {
     case "attack":
-      dealDamage(defender, ab.amount);
-      events.push(evt(mon.def, "attack", ab.amount, defenderIdx));
+      dealDamage(defender, amount);
+      events.push(evt(mon.def, "attack", amount, defenderIdx));
       break;
     case "heal":
-      attacker.hp = Math.min(attacker.maxHp, attacker.hp + ab.amount);
-      events.push(evt(mon.def, "heal", ab.amount, attackerIdx));
+      attacker.hp = Math.min(attacker.maxHp, attacker.hp + amount);
+      events.push(evt(mon.def, "heal", amount, attackerIdx));
       break;
     case "shield":
-      attacker.shield += ab.amount;
-      events.push(evt(mon.def, "shield", ab.amount, attackerIdx));
+      attacker.shield += amount;
+      events.push(evt(mon.def, "shield", amount, attackerIdx));
       break;
     case "burn":
     case "poison":
       defender.dots.push({
-        amount: ab.amount,
+        amount,
         turns: ab.turns ?? 3,
         kind: ab.type,
         element: mon.def.element,
       });
-      events.push(evt(mon.def, ab.type, ab.amount, defenderIdx));
+      events.push(evt(mon.def, ab.type, amount, defenderIdx));
       break;
   }
+}
+
+/** Ability amount after evolution: +20% (min +1) per level. */
+export function evolvedAmount(def: Monster, evolution: number): number {
+  const bonus = Math.max(1, Math.round(def.ability.amount * 0.2));
+  return def.ability.amount + evolution * bonus;
+}
+
+/** Ability as shown to players, reflecting the monster's evolution level. */
+export function abilityView(def: Monster, evolution: number) {
+  const amount = evolvedAmount(def, evolution);
+  const turns = def.ability.turns;
+  const text: Record<string, string> = {
+    attack: `Deal ${amount} damage`,
+    heal: `Heal ${amount} HP`,
+    shield: `Gain a ${amount} shield`,
+    burn: `Burn ${amount}/turn for ${turns} turns`,
+    poison: `Poison ${amount}/turn for ${turns} turns`,
+  };
+  return { type: def.ability.type, amount, turns, description: text[def.ability.type] ?? "" };
+}
+
+export interface EvolveResult {
+  readonly ok: true;
+  readonly monsterId: string;
+  readonly evolution: number;
+  readonly berries: number;
 }
 
 function tickBurns(player: PlayerState, playerIdx: 0 | 1, events: AbilityEvent[]): void {
@@ -269,7 +321,8 @@ function toPlayerState(p: PlayerSetup, hp: number): PlayerState {
     maxHp: hp,
     shield: 0,
     dots: [],
-    monsters: p.monsters.map((def): MonsterState => ({ def, charge: 0 })),
+    berries: 0,
+    monsters: p.monsters.map((def): MonsterState => ({ def, charge: 0, evolution: 0 })),
   };
 }
 

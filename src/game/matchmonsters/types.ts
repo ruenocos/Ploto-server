@@ -11,8 +11,15 @@
 export const ELEMENTS = ["fire", "water", "earth", "nature", "light"] as const;
 export type Element = (typeof ELEMENTS)[number];
 
+/** A board piece: an element, or a berry pickup. */
+export type Gem = Element | "berry";
+
 /** A board cell. `null` is a transient empty cell during resolution. */
-export type Tile = Element | null;
+export type Tile = Gem | null;
+
+/** Berries needed to evolve a monster, and the evolution cap. */
+export const BERRIES_TO_EVOLVE = 4;
+export const MAX_EVOLUTION = 3;
 
 export interface Board {
   readonly width: number;
@@ -47,6 +54,8 @@ export interface MonsterState {
   readonly def: Monster;
   /** Accumulated matched tiles of the monster's element, spent when it fires. */
   charge: number;
+  /** Evolution level (0 = base); each level strengthens the ability. */
+  evolution: number;
 }
 
 /** A damage-over-time effect (burn or poison) on a player. */
@@ -64,6 +73,8 @@ export interface PlayerState {
   readonly maxHp: number;
   shield: number;
   dots: Dot[];
+  /** Berries collected, spent 4 at a time to evolve a monster. */
+  berries: number;
   monsters: MonsterState[];
 }
 
@@ -92,7 +103,7 @@ export interface SwapMove {
 export type Move = SwapMove;
 
 export interface CascadeStep {
-  cleared: { x: number; y: number; element: Element }[];
+  cleared: { x: number; y: number; element: Gem }[];
   countsByElement: Partial<Record<Element, number>>;
 }
 
@@ -115,6 +126,8 @@ export interface MoveResult {
   /** Total tiles matched per element this move (what fed the charges). */
   readonly charged: Partial<Record<Element, number>>;
   readonly abilities: AbilityEvent[];
+  /** Berries the mover collected this move. */
+  readonly berriesGained: number;
   readonly nextTurn: 0 | 1;
   /** Moves the next player has after this move resolves. */
   readonly movesLeft: number;

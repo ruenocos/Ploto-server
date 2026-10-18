@@ -145,6 +145,13 @@
       .float-shield { color: #7fd0ff !important; }
       .float-burn { color: #ff9a3c !important; }
       .float-poison { color: #8be27f !important; }
+      .float-berry { color: #ff7aa6 !important; }
+      .berries-line { font-size: 12px; color: #ff9ec0; margin-top: 4px; }
+      .evo-badge { color: #c9bcff; font-weight: 700; font-size: 11px; margin-left: 4px; }
+      button.evo {
+        width: 100%; margin-top: 6px; padding: 6px; font-size: 12px;
+        background: linear-gradient(90deg, var(--accent), #a98bff); border: 0;
+      }
       #board {
         display: grid;
         gap: 5px;
@@ -167,6 +174,7 @@
       .tile.earth { background: rgba(192, 138, 74, 0.22); }
       .tile.nature { background: rgba(76, 203, 107, 0.22); }
       .tile.light { background: rgba(255, 210, 60, 0.22); }
+      .tile.berry { background: rgba(255, 90, 140, 0.26); box-shadow: 0 0 0 1px rgba(255,120,160,0.5) inset; }
       .tile.swapin { animation: swapin 180ms ease; }
       .tile.pop { animation: pop 360ms ease forwards; z-index: 2; }
       @keyframes swapin { 0% { transform: scale(0.8); } 100% { transform: scale(1); } }
@@ -254,7 +262,9 @@
     <script>
       // Same-origin WebSocket: ws:// locally, wss:// behind HTTPS hosting.
       const WS_BASE = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
-      const EMOJI = { fire: "🔥", water: "💧", earth: "🪨", nature: "🌿", light: "✨" };
+      const EMOJI = { fire: "🔥", water: "💧", earth: "🪨", nature: "🌿", light: "✨", berry: "🍓" };
+      const MAX_EVOLUTION = 3;
+      const BERRIES_TO_EVOLVE = 4;
       const art = (id, size) => {
         try { return window.PLOTOMON ? PLOTOMON.svg(id, size) : ""; } catch (e) { return ""; }
       };
@@ -432,6 +442,10 @@
         await waitOpen(gameSock);
         gameSock.on("mm:moveResult", (d) => animate(d));
         gameSock.on("mm:gameOver", (d) => setTimeout(() => showEnd(d.winner === mySeat), 750));
+        gameSock.on("mm:evolved", (d) => {
+          if (d.by === mySeat) toast("✨ Evolved!");
+          refresh();
+        });
         $("lobby").classList.add("hidden");
         $("end").classList.add("hidden");
         $("game").classList.remove("hidden");
@@ -450,8 +464,8 @@
         const foe = state.players[mySeat === 0 ? 1 : 0];
         $("meName").textContent = me.displayName + " (you)";
         $("foeName").textContent = foe.displayName;
-        renderPlayer($("meTeam"), me);
-        renderPlayer($("foeTeam"), foe);
+        renderPlayer($("meTeam"), me, true);
+        renderPlayer($("foeTeam"), foe, false);
 
         const banner = $("turnBanner");
         const ml = state.movesLeft ?? 2;
@@ -479,7 +493,7 @@
         });
       }
 
-      function renderPlayer(container, p) {
+      function renderPlayer(container, p, isMe) {
         container.innerHTML = "";
         const hpPct = Math.max(0, Math.round((p.hp / p.maxHp) * 100));
         const dots = p.dots || [];
@@ -494,23 +508,41 @@
           `<div class="hd"><span>❤️ ${p.hp}/${p.maxHp}</span>` +
           (p.shield > 0 ? `<span class="shield-badge">🛡️ ${p.shield}</span>` : "") +
           `</div><div class="bar big"><div class="fill hpfill" style="width:${hpPct}%"></div></div>` +
-          (dotTotal > 0 ? `<div class="burns">${dotIcon} ${dotWord} ${dotTotal}/turn</div>` : "");
+          (dotTotal > 0 ? `<div class="burns">${dotIcon} ${dotWord} ${dotTotal}/turn</div>` : "") +
+          `<div class="berries-line">🍓 berries ${p.berries || 0}/${BERRIES_TO_EVOLVE}</div>`;
         container.appendChild(health);
 
+        const canEvolve = isMe && myTurn() && (p.berries || 0) >= BERRIES_TO_EVOLVE;
         for (const mon of p.monsters) {
           const cost = mon.chargeCost;
           const shown = Math.min(mon.charge, cost);
           const pct = Math.min(100, Math.round((mon.charge / cost) * 100));
           const ready = mon.charge >= cost;
+          const evo = mon.evolution || 0;
+          const stars = evo > 0 ? `<span class="evo-badge">${"★".repeat(evo)} Lv${evo}</span>` : "";
+          const showEvo = canEvolve && evo < MAX_EVOLUTION;
           const row = document.createElement("div");
           row.className = "mrow" + (ready ? " ready" : "");
           row.innerHTML =
             `<div class="mtop"><span class="mart">${art(mon.id, 34)}</span>` +
-            `<div class="mmeta"><div class="mhd"><span>${mon.name}</span>` +
+            `<div class="mmeta"><div class="mhd"><span>${mon.name}${stars}</span>` +
             `<span class="mcost">${ready ? "READY" : shown + "/" + cost}</span></div>` +
             `<div class="bar"><div class="fill chg" style="width:${pct}%"></div></div></div></div>` +
-            `<div class="ability">${mon.ability.description}</div>`;
+            `<div class="ability">${mon.ability.description}</div>` +
+            (showEvo ? `<button class="evo" data-mid="${mon.id}">Evolve 🍓${BERRIES_TO_EVOLVE}</button>` : "");
+          const btn = () => row.querySelector(".evo");
           container.appendChild(row);
+          if (showEvo) btn().addEventListener("click", () => onEvolve(mon.id));
+        }
+      }
+
+      async function onEvolve(monsterId) {
+        if (animating) return;
+        try {
+          await gameSock.request("mm:evolve", { monsterId });
+          await refresh();
+        } catch (e) {
+          toast(e.message);
         }
       }
 
@@ -558,6 +590,7 @@
         state.board = data.board;
         render();
         showAbilityFloats(data.abilities);
+        if (data.by === mySeat && data.berriesGained > 0) toast(`🍓 +${data.berriesGained} berries`);
         if (data.extraTurn && data.by === mySeat) toast("💥 Match-4 — extra move!");
         // 4) sync authoritative HP / turn / phase from the server
         await refresh();

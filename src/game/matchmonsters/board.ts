@@ -3,9 +3,19 @@
  * clear → gravity → refill cascade. All randomness flows through an injected
  * {@link Rng} so results are deterministic and server-authoritative.
  */
-import type { Board, Element, Tile } from "./types.js";
+import type { Board, Element, Gem, Tile } from "./types.js";
 import { ELEMENTS } from "./types.js";
 import type { Rng } from "./rng.js";
+
+/** Chance a refilled/generated cell is a berry pickup instead of an element. */
+export const BERRY_CHANCE = 0.08;
+
+/** Pick a gem (weighted toward elements), avoiding any banned gems. */
+function pickGem(palette: readonly Element[], rng: Rng, banned?: Set<Gem>): Gem {
+  if (rng.next() < BERRY_CHANCE && !(banned && banned.has("berry"))) return "berry";
+  const choices = palette.filter((e) => !(banned && banned.has(e)));
+  return rng.pick(choices.length > 0 ? choices : palette);
+}
 
 export interface BoardOptions {
   readonly width: number;
@@ -34,20 +44,19 @@ export function generateBoard(opts: BoardOptions, rng: Rng): Board {
   for (let y = 0; y < height; y++) {
     const row: Tile[] = [];
     for (let x = 0; x < width; x++) {
-      // Reject any element that would immediately complete a run of 3.
-      const banned = new Set<Element>();
+      // Reject any gem that would immediately complete a run of 3.
+      const banned = new Set<Gem>();
       if (x >= 2 && row[x - 1] === row[x - 2] && row[x - 1] != null) {
-        banned.add(row[x - 1] as Element);
+        banned.add(row[x - 1] as Gem);
       }
       if (
         y >= 2 &&
         grid[y - 1]![x] === grid[y - 2]![x] &&
         grid[y - 1]![x] != null
       ) {
-        banned.add(grid[y - 1]![x] as Element);
+        banned.add(grid[y - 1]![x] as Gem);
       }
-      const choices = palette.filter((e) => !banned.has(e));
-      row.push(rng.pick(choices.length > 0 ? choices : palette));
+      row.push(pickGem(palette, rng, banned));
     }
     grid.push(row);
   }
@@ -55,7 +64,7 @@ export function generateBoard(opts: BoardOptions, rng: Rng): Board {
 }
 
 /** Coordinates of every tile that is part of a horizontal or vertical run of 3+. */
-export function findMatches(b: Board): { x: number; y: number; element: Element }[] {
+export function findMatches(b: Board): { x: number; y: number; element: Gem }[] {
   const matched = new Set<string>();
 
   const scan = (horizontal: boolean) => {
@@ -81,10 +90,10 @@ export function findMatches(b: Board): { x: number; y: number; element: Element 
   scan(true);
   scan(false);
 
-  const out: { x: number; y: number; element: Element }[] = [];
+  const out: { x: number; y: number; element: Gem }[] = [];
   for (const key of matched) {
     const [x, y] = key.split(",").map(Number) as [number, number];
-    out.push({ x, y, element: b.grid[y]![x] as Element });
+    out.push({ x, y, element: b.grid[y]![x] as Gem });
   }
   return out;
 }
@@ -126,13 +135,13 @@ export function collapseAndRefill(
 
   for (let x = 0; x < b.width; x++) {
     // Compact non-null tiles toward the bottom.
-    const column: Element[] = [];
+    const column: Gem[] = [];
     for (let y = b.height - 1; y >= 0; y--) {
       const t = b.grid[y]![x];
       if (t != null) column.push(t);
     }
     for (let y = b.height - 1, i = 0; y >= 0; y--, i++) {
-      b.grid[y]![x] = i < column.length ? column[i]! : rng.pick(palette);
+      b.grid[y]![x] = i < column.length ? column[i]! : pickGem(palette, rng);
     }
   }
 }

@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { MatchMonstersGame, type GameConfig } from "../src/game/matchmonsters/engine.js";
-import { ELEMENTS, type Ability, type Element, type Monster, type Tile } from "../src/game/matchmonsters/types.js";
+import { MatchMonstersGame, evolvedAmount, type GameConfig } from "../src/game/matchmonsters/engine.js";
+import { ELEMENTS, type Ability, type Gem, type Monster, type Tile } from "../src/game/matchmonsters/types.js";
 
-const MAP: Record<string, Element> = { F: "fire", W: "water", E: "earth", N: "nature", L: "light" };
+const MAP: Record<string, Gem> = { F: "fire", W: "water", E: "earth", N: "nature", L: "light", B: "berry" };
+/** Swapping (1,2)<->(0,2) makes a vertical berry 3. */
+const LAYOUT_BERRY = ["BWENL", "BENLW", "WBENL", "ENLWF", "NLWFE"];
 /** No pre-existing matches; swapping (1,2)<->(0,2) makes a vertical fire 3. */
 const LAYOUT = ["FWENL", "FENLW", "WFENL", "ENLWF", "NLWFE"];
 /** Same swap makes a vertical fire run of 4 (extra-move trigger). */
@@ -134,5 +136,39 @@ describe("charging + abilities", () => {
     const a = newGame(fireMon("r", ab)).applyMove(0, FIRE_SWAP);
     const b = newGame(fireMon("r", ab)).applyMove(0, FIRE_SWAP);
     expect(a).toEqual(b);
+  });
+});
+
+describe("berries + evolution", () => {
+  it("collects berries from matched berry tiles", () => {
+    const g = newGame(fireMon("a", { type: "attack", amount: 10, description: "" }, 99));
+    g.state.board.grid = grid(LAYOUT_BERRY);
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.berriesGained).toBeGreaterThanOrEqual(3);
+    expect(g.state.players[0].berries).toBeGreaterThanOrEqual(3);
+  });
+
+  it("evolves a monster for 4 berries and strengthens its ability", () => {
+    const def: Monster = { id: "a", name: "A", element: "fire", chargeCost: 3, ability: { type: "attack", amount: 14, description: "" } };
+    const g = newGame(def);
+    g.state.players[0].berries = 4;
+    const r = g.evolve(0, "a");
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.evolution).toBe(1);
+    expect(r.berries).toBe(0);
+    expect(evolvedAmount(def, 1)).toBe(17); // 14 + max(1, round(14*0.2)=3)
+    expect(evolvedAmount(def, 1)).toBeGreaterThan(def.ability.amount);
+  });
+
+  it("rejects evolving without enough berries, out of turn, or past the cap", () => {
+    const g = newGame(fireMon("a", { type: "attack", amount: 10, description: "" }, 3));
+    expect(g.evolve(0, "a").ok).toBe(false); // 0 berries
+    g.state.players[0].berries = 8;
+    expect(g.evolve(1, "a").ok).toBe(false); // not your turn
+    g.state.players[0].monsters[0]!.evolution = 3; // at cap
+    expect(g.evolve(0, "a").ok).toBe(false);
   });
 });

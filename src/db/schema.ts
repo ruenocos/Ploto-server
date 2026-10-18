@@ -52,7 +52,8 @@ export const SCHEMA: readonly string[] = [
     moves INTEGER NOT NULL,
     turns INTEGER NOT NULL,
     started_at TEXT NOT NULL,
-    ended_at TEXT NOT NULL DEFAULT ${NOW}
+    ended_at TEXT NOT NULL DEFAULT ${NOW},
+    ended_by TEXT NOT NULL DEFAULT 'hp'
   )`,
   `CREATE INDEX IF NOT EXISTS matches_by_end ON matches (ended_at DESC)`,
   `CREATE TABLE IF NOT EXISTS match_players (
@@ -70,4 +71,13 @@ export const SCHEMA: readonly string[] = [
     PRIMARY KEY (match_id, seat)
   )`,
   `CREATE INDEX IF NOT EXISTS match_players_by_account ON match_players (account_id)`,
+];
+
+/**
+ * Columns added after a table first shipped: [table, column, definition].
+ * Added on boot when missing (SQLite has no ADD COLUMN IF NOT EXISTS).
+ */
+export const ADDED_COLUMNS: readonly (readonly [string, string, string])[] = [
+  // How the match ended: 'hp' (knocked out / sudden death) or 'forfeit'.
+  ["matches", "ended_by", "TEXT NOT NULL DEFAULT 'hp'"],
 ];

@@ -190,6 +190,10 @@
       .mchip .sealed { position: absolute; bottom: -6px; right: -4px; font-size: 10px; font-weight: 900; padding: 1px 6px; border-radius: 999px; background: #3a2f55; color: #d8c8ff; }
 
       .banner { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-weight: 800; padding: 8px 12px; border-radius: 12px; font-size: 14px; position: relative; transition: background 0.25s ease, color 0.25s ease; }
+      .banner-row { flex: none; display: flex; gap: 8px; }
+      .banner-row .banner { flex: 1; min-width: 0; }
+      .icon-btn { flex: none; padding: 0 12px; font-size: 16px; border-radius: 12px; }
+      button.danger { background: var(--bad); }
       .banner .round { font-size: 12px; min-width: 58px; }
       .banner .who { flex: 1; text-align: center; }
       .banner .pips { display: flex; gap: 6px; min-width: 58px; justify-content: flex-end; }
@@ -204,15 +208,13 @@
       .mchip .info { position: absolute; top: 4px; right: 7px; font-size: 12px; color: var(--muted); }
 
       .board-wrap { flex: 1 1 auto; min-height: 120px; position: relative; display: flex; align-items: center; justify-content: center; }
-      .board { display: grid; gap: 4px; touch-action: manipulation; border-radius: 10px; }
+      .board { display: grid; gap: 4px; touch-action: manipulation; border-radius: 14px; }
       .board.falling { overflow: hidden; } /* new tiles enter from above the board */
       .tile {
         --el: #8a8f9c;
-        position: relative; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+        position: relative; border-radius: 12px; display: flex; align-items: center; justify-content: center;
         cursor: pointer; user-select: none;
-        background: rgba(255, 255, 255, 0.035);
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-        transition: transform 0.12s ease;
+        transition: transform 0.12s ease, background 0.12s ease;
       }
       .tile .gem { width: 88%; height: 88%; display: block; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.45)); }
       /* gem colours: one hue per element (--el also tints effects) */
@@ -224,7 +226,7 @@
       .tile.berry { --el: #e8304a; }
       .tile.berry .gem { width: 82%; height: 82%; }
       .tile.stone { --el: #6d717c; cursor: not-allowed; }
-      .tile.sel { transform: scale(0.92); box-shadow: 0 0 0 3px #fff, 0 0 18px rgba(255,255,255,0.45); }
+      .tile.sel { transform: scale(0.94); background: rgba(255, 255, 255, 0.12); box-shadow: 0 0 0 2px #fff, 0 0 18px rgba(255, 255, 255, 0.4); }
       .tile.sel .gem { animation: gemWiggle 0.45s ease-in-out infinite alternate; }
       @keyframes gemWiggle { from { transform: rotate(-6deg) scale(1.04); } to { transform: rotate(6deg) scale(1.04); } }
       .tile.iced::after {
@@ -350,64 +352,60 @@
   </head>
   <body>
     <!--
-      Gem art. Every element shares one faceted octagon (#gem-base), coloured by
-      the tile's --gc and stamped with an embossed icon, so the board reads by
-      colour first and icon second. Berries and stones are deliberately not gems.
+      Gem art. Each element has its own cut (fire: trillion, water: round
+      brilliant, earth: square, nature: marquise, light: hexagon) in one shared
+      faceted style, coloured by the tile's --gc with an embossed icon. Berries
+      and stones are deliberately not gems.
     -->
     <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
       <defs>
         <radialGradient id="gg-berry" cx="0.35" cy="0.32" r="0.75"><stop offset="0" stop-color="#ff9aa8"/><stop offset="0.45" stop-color="#e8304a"/><stop offset="1" stop-color="#8f0f24"/></radialGradient>
         <linearGradient id="gg-stone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a9adb8"/><stop offset="0.55" stop-color="#737783"/><stop offset="1" stop-color="#474a54"/></linearGradient>
 
-        <symbol id="gem-base" viewBox="0 0 100 100">
-          <polygon points="31,5 69,5 95,31 95,69 69,95 31,95 5,69 5,31" style="fill: var(--gc)" stroke="rgba(0,0,0,0.5)" stroke-width="3" stroke-linejoin="round"/>
-          <polygon points="31,5 69,5 63,19 37,19" fill="rgba(255,255,255,0.40)"/>
-          <polygon points="69,5 95,31 81,37 63,19" fill="rgba(255,255,255,0.22)"/>
-          <polygon points="95,31 95,69 81,63 81,37" fill="rgba(0,0,0,0.06)"/>
-          <polygon points="95,69 69,95 63,81 81,63" fill="rgba(0,0,0,0.22)"/>
-          <polygon points="69,95 31,95 37,81 63,81" fill="rgba(0,0,0,0.34)"/>
-          <polygon points="31,95 5,69 19,63 37,81" fill="rgba(0,0,0,0.22)"/>
-          <polygon points="5,69 5,31 19,37 19,63" fill="rgba(255,255,255,0.08)"/>
-          <polygon points="5,31 31,5 37,19 19,37" fill="rgba(255,255,255,0.30)"/>
-          <polygon points="37,19 63,19 81,37 81,63 63,81 37,81 19,63 19,37" style="fill: var(--gc)"/>
-          <polygon points="37,19 63,19 81,37 81,63 63,81 37,81 19,63 19,37" fill="rgba(255,255,255,0.10)"/>
-          <polygon points="37,19 54,19 19,54 19,37" fill="rgba(255,255,255,0.16)"/>
-        </symbol>
         <symbol id="gem-fire" viewBox="0 0 100 100">
-          <use href="#gem-base"/>
-          <g transform="translate(1.6 2.2)" fill="rgba(0,0,0,0.28)" stroke="rgba(0,0,0,0.28)" stroke-width="0"><path d="M50 29C56 38 63 42 62 52C61 61 56 67 50 67C44 67 39 61 38 53C37 46 42 43 44 37C47 43 49 44 50 46C49 40 49 35 50 29Z"/></g>
-          <g fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.55)" stroke-width="0"><path d="M50 29C56 38 63 42 62 52C61 61 56 67 50 67C44 67 39 61 38 53C37 46 42 43 44 37C47 43 49 44 50 46C49 40 49 35 50 29Z"/></g>
+          <polygon points="44.6,10.3 55.4,10.3 93.6,83.7 88.2,94.0 11.8,94.0 6.4,83.7" style="fill: var(--gc)" stroke="rgba(0,0,0,0.5)" stroke-width="3" stroke-linejoin="round"/>
+          <polygon points="44.6,10.3 55.4,10.3 53.2,31.3 46.8,31.3" fill="rgba(255,255,255,0.34)"/><polygon points="55.4,10.3 93.6,83.7 76.2,75.3 53.2,31.3" fill="rgba(0,0,0,0.04)"/><polygon points="93.6,83.7 88.2,94.0 72.9,81.5 76.2,75.3" fill="rgba(0,0,0,0.32)"/><polygon points="88.2,94.0 11.8,94.0 27.1,81.5 72.9,81.5" fill="rgba(0,0,0,0.27)"/><polygon points="11.8,94.0 6.4,83.7 23.8,75.3 27.1,81.5" fill="rgba(255,255,255,0.10)"/><polygon points="6.4,83.7 44.6,10.3 46.8,31.3 23.8,75.3" fill="rgba(255,255,255,0.40)"/>
+          <polygon points="46.8,31.3 53.2,31.3 76.2,75.3 72.9,81.5 27.1,81.5 23.8,75.3" style="fill: var(--gc)"/><polygon points="46.8,31.3 53.2,31.3 76.2,75.3 72.9,81.5 27.1,81.5 23.8,75.3" fill="rgba(255,255,255,0.10)"/>
+          <g transform="translate(1.6 10.2)" fill="rgba(0,0,0,0.28)" stroke="rgba(0,0,0,0.28)" stroke-width="0"><path d="M50 34C55 41 61 45 60 54C59 62 55 67 50 67C45 67 41 62 40 55C39 49 43 46 45 41C47 46 49 47 50 49C49 44 49 39 50 34Z"/></g>
+          <g transform="translate(0 8)" fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.55)" stroke-width="0"><path d="M50 34C55 41 61 45 60 54C59 62 55 67 50 67C45 67 41 62 40 55C39 49 43 46 45 41C47 46 49 47 50 49C49 44 49 39 50 34Z"/></g>
         </symbol>
         <symbol id="gem-water" viewBox="0 0 100 100">
-          <use href="#gem-base"/>
+          <polygon points="50.0,5.0 72.5,11.0 89.0,27.5 95.0,50.0 89.0,72.5 72.5,89.0 50.0,95.0 27.5,89.0 11.0,72.5 5.0,50.0 11.0,27.5 27.5,11.0" style="fill: var(--gc)" stroke="rgba(0,0,0,0.5)" stroke-width="3" stroke-linejoin="round"/>
+          <polygon points="50.0,5.0 72.5,11.0 63.5,26.6 50.0,23.0" fill="rgba(255,255,255,0.27)"/><polygon points="72.5,11.0 89.0,27.5 73.4,36.5 63.5,26.6" fill="rgba(255,255,255,0.10)"/><polygon points="89.0,27.5 95.0,50.0 77.0,50.0 73.4,36.5" fill="rgba(0,0,0,0.14)"/><polygon points="95.0,50.0 89.0,72.5 73.4,63.5 77.0,50.0" fill="rgba(0,0,0,0.27)"/><polygon points="89.0,72.5 72.5,89.0 63.5,73.4 73.4,63.5" fill="rgba(0,0,0,0.34)"/><polygon points="72.5,89.0 50.0,95.0 50.0,77.0 63.5,73.4" fill="rgba(0,0,0,0.31)"/><polygon points="50.0,95.0 27.5,89.0 36.5,73.4 50.0,77.0" fill="rgba(0,0,0,0.20)"/><polygon points="27.5,89.0 11.0,72.5 26.6,63.5 36.5,73.4" fill="rgba(0,0,0,0.04)"/><polygon points="11.0,72.5 5.0,50.0 23.0,50.0 26.6,63.5" fill="rgba(255,255,255,0.20)"/><polygon points="5.0,50.0 11.0,27.5 26.6,36.5 23.0,50.0" fill="rgba(255,255,255,0.35)"/><polygon points="11.0,27.5 27.5,11.0 36.5,26.6 26.6,36.5" fill="rgba(255,255,255,0.42)"/><polygon points="27.5,11.0 50.0,5.0 50.0,23.0 36.5,26.6" fill="rgba(255,255,255,0.39)"/>
+          <polygon points="50.0,23.0 63.5,26.6 73.4,36.5 77.0,50.0 73.4,63.5 63.5,73.4 50.0,77.0 36.5,73.4 26.6,63.5 23.0,50.0 26.6,36.5 36.5,26.6" style="fill: var(--gc)"/><polygon points="50.0,23.0 63.5,26.6 73.4,36.5 77.0,50.0 73.4,63.5 63.5,73.4 50.0,77.0 36.5,73.4 26.6,63.5 23.0,50.0 26.6,36.5 36.5,26.6" fill="rgba(255,255,255,0.10)"/>
           <g transform="translate(1.6 2.2)" fill="rgba(0,0,0,0.28)" stroke="rgba(0,0,0,0.28)" stroke-width="0"><path d="M50 29C56.5 39 63 46 63 54C63 61.5 57.5 67 50 67C42.5 67 37 61.5 37 54C37 46 43.5 39 50 29Z"/></g>
           <g fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.55)" stroke-width="0"><path d="M50 29C56.5 39 63 46 63 54C63 61.5 57.5 67 50 67C42.5 67 37 61.5 37 54C37 46 43.5 39 50 29Z"/></g>
         </symbol>
         <symbol id="gem-earth" viewBox="0 0 100 100">
-          <use href="#gem-base"/>
+          <polygon points="20.0,8.0 80.0,8.0 92.0,20.0 92.0,80.0 80.0,92.0 20.0,92.0 8.0,80.0 8.0,20.0" style="fill: var(--gc)" stroke="rgba(0,0,0,0.5)" stroke-width="3" stroke-linejoin="round"/>
+          <polygon points="20.0,8.0 80.0,8.0 68.0,24.8 32.0,24.8" fill="rgba(255,255,255,0.34)"/><polygon points="80.0,8.0 92.0,20.0 75.2,32.0 68.0,24.8" fill="rgba(255,255,255,0.10)"/><polygon points="92.0,20.0 92.0,80.0 75.2,68.0 75.2,32.0" fill="rgba(0,0,0,0.21)"/><polygon points="92.0,80.0 80.0,92.0 68.0,75.2 75.2,68.0" fill="rgba(0,0,0,0.34)"/><polygon points="80.0,92.0 20.0,92.0 32.0,75.2 68.0,75.2" fill="rgba(0,0,0,0.27)"/><polygon points="20.0,92.0 8.0,80.0 24.8,68.0 32.0,75.2" fill="rgba(0,0,0,0.04)"/><polygon points="8.0,80.0 8.0,20.0 24.8,32.0 24.8,68.0" fill="rgba(255,255,255,0.28)"/><polygon points="8.0,20.0 20.0,8.0 32.0,24.8 24.8,32.0" fill="rgba(255,255,255,0.42)"/>
+          <polygon points="32.0,24.8 68.0,24.8 75.2,32.0 75.2,68.0 68.0,75.2 32.0,75.2 24.8,68.0 24.8,32.0" style="fill: var(--gc)"/><polygon points="32.0,24.8 68.0,24.8 75.2,32.0 75.2,68.0 68.0,75.2 32.0,75.2 24.8,68.0 24.8,32.0" fill="rgba(255,255,255,0.10)"/>
           <g transform="translate(1.6 2.2)" fill="rgba(0,0,0,0.28)" stroke="rgba(0,0,0,0.28)" stroke-width="0"><path d="M33 64L45 41L51.5 52L57 44L67 64Z"/></g>
           <g fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.55)" stroke-width="0"><path d="M33 64L45 41L51.5 52L57 44L67 64Z"/></g>
         </symbol>
         <symbol id="gem-nature" viewBox="0 0 100 100">
-          <use href="#gem-base"/>
-          <g transform="translate(1.6 2.2)" fill="rgba(0,0,0,0.28)" stroke="rgba(0,0,0,0.28)" stroke-width="0"><path d="M35 65C33 49 44 36 65 34C66 51 55 64 35 65Z"/></g>
-          <g fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.55)" stroke-width="0"><path d="M35 65C33 49 44 36 65 34C66 51 55 64 35 65Z"/></g>
+          <polygon points="78.1,9.9 84.3,28.9 85.2,50.3 77.9,69.5 62.3,83.0 41.9,89.5 21.9,90.1 15.7,71.1 14.8,49.7 22.1,30.5 37.7,17.0 58.1,10.5" style="fill: var(--gc)" stroke="rgba(0,0,0,0.5)" stroke-width="3" stroke-linejoin="round"/>
+          <polygon points="78.1,9.9 84.3,28.9 70.6,37.3 66.9,25.9" fill="rgba(255,255,255,0.10)"/><polygon points="84.3,28.9 85.2,50.3 71.1,50.2 70.6,37.3" fill="rgba(0,0,0,0.13)"/><polygon points="85.2,50.3 77.9,69.5 66.7,61.7 71.1,50.2" fill="rgba(0,0,0,0.28)"/><polygon points="77.9,69.5 62.3,83.0 57.4,69.8 66.7,61.7" fill="rgba(0,0,0,0.34)"/><polygon points="62.3,83.0 41.9,89.5 45.1,73.7 57.4,69.8" fill="rgba(0,0,0,0.28)"/><polygon points="41.9,89.5 21.9,90.1 33.1,74.1 45.1,73.7" fill="rgba(0,0,0,0.15)"/><polygon points="21.9,90.1 15.7,71.1 29.4,62.7 33.1,74.1" fill="rgba(0,0,0,0.03)"/><polygon points="15.7,71.1 14.8,49.7 28.9,49.8 29.4,62.7" fill="rgba(255,255,255,0.19)"/><polygon points="14.8,49.7 22.1,30.5 33.3,38.3 28.9,49.8" fill="rgba(255,255,255,0.36)"/><polygon points="22.1,30.5 37.7,17.0 42.6,30.2 33.3,38.3" fill="rgba(255,255,255,0.42)"/><polygon points="37.7,17.0 58.1,10.5 54.9,26.3 42.6,30.2" fill="rgba(255,255,255,0.35)"/><polygon points="58.1,10.5 78.1,9.9 66.9,25.9 54.9,26.3" fill="rgba(255,255,255,0.22)"/>
+          <polygon points="66.9,25.9 70.6,37.3 71.1,50.2 66.7,61.7 57.4,69.8 45.1,73.7 33.1,74.1 29.4,62.7 28.9,49.8 33.3,38.3 42.6,30.2 54.9,26.3" style="fill: var(--gc)"/><polygon points="66.9,25.9 70.6,37.3 71.1,50.2 66.7,61.7 57.4,69.8 45.1,73.7 33.1,74.1 29.4,62.7 28.9,49.8 33.3,38.3 42.6,30.2 54.9,26.3" fill="rgba(255,255,255,0.10)"/>
+          <g transform="translate(1.6 2.2)" fill="rgba(0,0,0,0.28)" stroke="rgba(0,0,0,0.28)" stroke-width="0"><path d="M36 64C34 49 44 37 64 35C65 51 55 63 36 64Z"/></g>
+          <g fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.55)" stroke-width="0"><path d="M36 64C34 49 44 37 64 35C65 51 55 63 36 64Z"/></g>
         </symbol>
         <symbol id="gem-light" viewBox="0 0 100 100">
-          <use href="#gem-base"/>
-          <g transform="translate(1.6 2.2)" fill="rgba(0,0,0,0.28)" stroke="rgba(0,0,0,0.28)" stroke-width="0"><circle cx="50" cy="48" r="8"/><g stroke-width="4" stroke-linecap="round"><path d="M50 30V34M50 62V66M32 48H36M64 48H68M37.3 35.3L40.1 38.1M59.9 57.9L62.7 60.7M37.3 60.7L40.1 57.9M59.9 38.1L62.7 35.3"/></g></g>
-          <g fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.55)" stroke-width="0"><circle cx="50" cy="48" r="8"/><g stroke-width="4" stroke-linecap="round"><path d="M50 30V34M50 62V66M32 48H36M64 48H68M37.3 35.3L40.1 38.1M59.9 57.9L62.7 60.7M37.3 60.7L40.1 57.9M59.9 38.1L62.7 35.3"/></g></g>
+          <polygon points="50.0,5.0 89.8,28.0 89.8,74.0 50.0,97.0 10.2,74.0 10.2,28.0" style="fill: var(--gc)" stroke="rgba(0,0,0,0.5)" stroke-width="3" stroke-linejoin="round"/>
+          <polygon points="50.0,5.0 89.8,28.0 73.9,37.2 50.0,23.4" fill="rgba(255,255,255,0.19)"/><polygon points="89.8,28.0 89.8,74.0 73.9,64.8 73.9,37.2" fill="rgba(0,0,0,0.21)"/><polygon points="89.8,74.0 50.0,97.0 50.0,78.6 73.9,64.8" fill="rgba(0,0,0,0.34)"/><polygon points="50.0,97.0 10.2,74.0 26.1,64.8 50.0,78.6" fill="rgba(0,0,0,0.12)"/><polygon points="10.2,74.0 10.2,28.0 26.1,37.2 26.1,64.8" fill="rgba(255,255,255,0.28)"/><polygon points="10.2,28.0 50.0,5.0 50.0,23.4 26.1,37.2" fill="rgba(255,255,255,0.42)"/>
+          <polygon points="50.0,23.4 73.9,37.2 73.9,64.8 50.0,78.6 26.1,64.8 26.1,37.2" style="fill: var(--gc)"/><polygon points="50.0,23.4 73.9,37.2 73.9,64.8 50.0,78.6 26.1,64.8 26.1,37.2" fill="rgba(255,255,255,0.10)"/>
+          <g transform="translate(1.6 2.2)" fill="rgba(0,0,0,0.28)" stroke="rgba(0,0,0,0.28)" stroke-width="0"><circle cx="50" cy="51" r="8"/><g stroke-width="4" stroke-linecap="round"><path d="M50 33V37M50 65V69M32 51H36M64 51H68M37.3 38.3L40.1 41.1M59.9 60.9L62.7 63.7M37.3 63.7L40.1 60.9M59.9 41.1L62.7 38.3"/></g></g>
+          <g fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.55)" stroke-width="0"><circle cx="50" cy="51" r="8"/><g stroke-width="4" stroke-linecap="round"><path d="M50 33V37M50 65V69M32 51H36M64 51H68M37.3 38.3L40.1 41.1M59.9 60.9L62.7 63.7M37.3 63.7L40.1 60.9M59.9 41.1L62.7 38.3"/></g></g>
         </symbol>
 
-        <!-- Berries: a currant cluster on a stem, nothing like a gem. -->
+        <!-- Berries: a pair of round cherries on stems, nothing like a gem. -->
         <symbol id="gem-berry" viewBox="0 0 100 100">
-          <path d="M52 34C54 24 60 16 70 10" stroke="#5a3a1c" stroke-width="4" fill="none" stroke-linecap="round"/>
-          <path d="M64 15C72 6 86 8 90 14C82 20 72 20 64 15Z" fill="#4ccb6b" stroke="rgba(0,50,10,0.5)" stroke-width="2"/>
-          <g stroke="rgba(80,0,15,0.55)" stroke-width="2.5" fill="url(#gg-berry)">
-            <circle cx="50" cy="42" r="11"/><circle cx="36" cy="55" r="11"/><circle cx="62" cy="55" r="11"/>
-            <circle cx="28" cy="72" r="11"/><circle cx="49" cy="70" r="11"/><circle cx="70" cy="72" r="11"/><circle cx="40" cy="86" r="10"/><circle cx="60" cy="87" r="10"/>
-          </g>
-          <g fill="rgba(255,255,255,0.7)"><circle cx="46" cy="38" r="3"/><circle cx="32" cy="51" r="3"/><circle cx="58" cy="51" r="3"/><circle cx="24" cy="68" r="3"/><circle cx="45" cy="66" r="3"/><circle cx="66" cy="68" r="3"/><circle cx="36" cy="82" r="2.6"/><circle cx="56" cy="83" r="2.6"/></g>
+          <path d="M33 60C38 40 48 24 60 12M67 58C66 40 64 26 60 12" stroke="#5a3a1c" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M60 13C68 4 84 5 89 12C80 19 69 19 60 13Z" fill="#4ccb6b" stroke="rgba(0,50,10,0.5)" stroke-width="2"/>
+          <circle cx="31" cy="70" r="21" fill="url(#gg-berry)" stroke="rgba(80,0,15,0.55)" stroke-width="3"/>
+          <circle cx="69" cy="68" r="21" fill="url(#gg-berry)" stroke="rgba(80,0,15,0.55)" stroke-width="3"/>
+          <ellipse cx="24" cy="63" rx="6" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-25 24 63)"/>
+          <ellipse cx="62" cy="61" rx="6" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-25 62 61)"/>
         </symbol>
 
         <!-- Stone: a rough boulder, flat grey, clearly a blocker. -->
@@ -469,7 +467,10 @@
     <section id="game" class="hidden">
       <div class="strip" id="foeStrip"><div class="s-body"></div><div class="s-fx"></div></div>
       <div id="peerWarn" class="peer-warn hidden">Your rival disconnected — waiting for them to come back…</div>
-      <div id="turnBanner" class="banner"></div>
+      <div class="banner-row">
+        <div id="turnBanner" class="banner"></div>
+        <button id="forfeitBtn" class="ghost icon-btn" aria-label="Forfeit match" title="Forfeit">🏳️</button>
+      </div>
       <div class="board-wrap" id="boardWrap">
         <div id="board" class="board"></div>
         <div id="cast" class="cast"></div>
@@ -574,7 +575,7 @@
         new Promise((res, rej) => {
           sock.addEventListener("open", () => res(), { once: true });
           sock.addEventListener("error", () => rej(new Error("connection failed")), { once: true });
-          sock.addEventListener("close", () => rej(new Error("connection closed")), { once: true });
+          sock.addEventListener("close", (ev) => rej(Object.assign(new Error("connection closed"), { code: ev.code })), { once: true });
         });
 
       /* ------------------------------------------------------------ lobby */
@@ -758,7 +759,7 @@
         const stillHere = () => sock === gameSock;
         sock.on("mm:moveResult", live((d) => { animQueue = animQueue.then(() => stillHere() && animate(d)); }));
         sock.on("mm:gameOver", live((d) => {
-          animQueue = animQueue.then(() => sleep(500)).then(() => { if (stillHere()) showEnd(d.winner === room.seat); });
+          animQueue = animQueue.then(() => sleep(500)).then(() => { if (stillHere()) showEnd(d.winner === room.seat, d.forfeitedBy); });
         }));
         sock.on("mm:evolved", live(async (d) => {
           await refresh();
@@ -781,7 +782,7 @@
         gameSock.addEventListener("close", onGameClose);
         showScreen("game");
         await refresh();
-        if (state && state.phase === "finished") showEnd(state.winner === room.seat);
+        if (state && state.phase === "finished") showEnd(state.winner === room.seat, state.forfeitedBy);
         if (!store.get("mm.tipChips")) {
           store.set("mm.tipChips", true);
           toast("Tip: tap any monster to see what its move does", 3500);
@@ -791,7 +792,7 @@
       function onGameClose(ev) {
         if (leaving || !room || !state) return;
         if (state.phase === "finished") return;
-        if (ev && ev.code === 4004) {
+        if (ev && ev.code === 4004) { // a CloseEvent, or a failed reconnect's error
           // The server restarted (e.g. woke from sleep) and the room is gone.
           toast("That game ended — the server restarted", 4000);
           return leaveGame();
@@ -802,6 +803,7 @@
           setTimeout(() => openGame().catch(onGameClose), 1200 * reconnectTries);
         } else {
           toast("Lost connection to the game", 4000);
+          leaveGame();
         }
       }
 
@@ -1459,9 +1461,11 @@
         }
       }
 
-      function showEnd(won) {
+      function showEnd(won, forfeitedBy = null) {
         store.del("mm.room");
-        endInfo = { won, mine: false, theirs: false };
+        if (panel) closePanel();
+        const forfeit = forfeitedBy == null ? null : forfeitedBy === room.seat ? "me" : "them";
+        endInfo = { won, forfeit, mine: false, theirs: false };
         renderEnd();
         $("end").classList.remove("hidden");
       }
@@ -1469,7 +1473,7 @@
       /** Re-draw the end card from endInfo + rivalOnline (votes and presence change it live). */
       function renderEnd() {
         if (!endInfo) return;
-        const { won, mine, theirs } = endInfo;
+        const { won, forfeit, mine, theirs } = endInfo;
         let label = "Rematch", hint = won ? "Same teams. They'll open the next game." : "Same teams. You'll open the next game.";
         let disabled = false, invited = false;
         if (!rivalOnline) { disabled = true; hint = "Your rival left the arena."; }
@@ -1478,7 +1482,7 @@
         $("end").innerHTML =
           `<div class="end-card"><div style="font-size:48px">${won ? "🏆" : "💀"}</div>` +
           `<div class="big">${won ? "Victory!" : "Defeat"}</div>` +
-          `<p>${won ? "Your monsters carried the day." : "Your rival takes this one."}</p>` +
+          `<p>${forfeit === "them" ? "Your rival gave up." : forfeit === "me" ? "You forfeited this one." : won ? "Your monsters carried the day." : "Your rival takes this one."}</p>` +
           `<div class="end-actions">` +
           `<button id="rematch" class="${invited ? "pulse" : ""}"${disabled ? " disabled" : ""}>${label}</button>` +
           `<div class="end-hint${invited ? " hot" : ""}">${hint}</div>` +
@@ -1908,10 +1912,40 @@
         el.querySelector("#keyGo").onclick = async () => { if (await signInWithKey(el.querySelector("#keyInput").value)) closePanel(); };
       }
 
+      /* ------------------------------------------------------------ forfeit */
+      function confirmForfeit() {
+        if (!room) return;
+        const el = showPanel("forfeit",
+          `<h2>Give up this match?</h2>` +
+          `<p class="muted" style="text-align:center;margin:8px 0 16px">Your rival wins, and it counts as a loss.</p>` +
+          `<div class="s-actions"><button class="danger" data-act="forfeit">🏳️ Forfeit</button><button class="ghost" data-act="close">Keep playing</button></div>`);
+        el.onclick = (e) => {
+          const btn = e.target.closest("[data-act]");
+          if (!btn) return;
+          if (btn.dataset.act === "close") return closePanel();
+          closePanel();
+          forfeit();
+        };
+      }
+
+      async function forfeit() {
+        try {
+          // A half-dead mobile connection can look open but never answer; don't wait on it.
+          const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timed out")), 4000));
+          await Promise.race([gameSock.request("mm:forfeit", {}), timeout]);
+          // The end screen follows from the server's gameOver.
+        } catch {
+          // No server to tell (dropped connection, room gone): just get out.
+          leaveGame();
+          toast("Left the game");
+        }
+      }
+
       /* ------------------------------------------------------------ boot */
       $("play").addEventListener("click", quickPlay);
       $("create").addEventListener("click", createRoom);
       $("practice").addEventListener("click", practice);
+      $("forfeitBtn").addEventListener("click", confirmForfeit);
       for (const b of document.querySelectorAll("[data-dbg]")) {
         b.addEventListener("click", async () => {
           try {

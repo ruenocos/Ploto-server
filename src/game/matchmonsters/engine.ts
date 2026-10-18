@@ -132,6 +132,7 @@ export class MatchMonstersGame {
       movesLeft: MOVES_PER_TURN - 1,
       turnPasses: 0,
       pendingFreeze: [],
+      forfeitedBy: null,
       phase: "awaiting-move",
       winner: null,
       moveNumber: 0,
@@ -270,6 +271,16 @@ export class MatchMonstersGame {
       iceLanded,
       reshuffled,
     };
+  }
+
+  /** `by` gives up: the match ends at once and the other player wins. Any time, either turn. */
+  forfeit(by: 0 | 1): { ok: true; winner: 0 | 1 } | MoveRejection {
+    const s = this.state;
+    if (s.phase === "finished") return reject("game is finished");
+    s.phase = "finished";
+    s.winner = other(by);
+    s.forfeitedBy = by;
+    return { ok: true, winner: s.winner };
   }
 
   /** Spend 4 berries to evolve one of a player's monsters, on that player's turn. */

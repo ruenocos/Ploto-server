@@ -134,6 +134,7 @@ export function registerApi(app: FastifyInstance, s: Services): void {
     const q = req.query as Record<string, unknown>;
     return {
       includeBot: q["includeBot"] === "1" || q["includeBot"] === "true",
+      includeForfeits: q["includeForfeits"] === "1" || q["includeForfeits"] === "true",
       ...(typeof q["version"] === "string" && q["version"] ? { version: q["version"] } : {}),
     };
   };
@@ -152,7 +153,11 @@ export function registerApi(app: FastifyInstance, s: Services): void {
         teams: "/api/monster-lab/teams?min=3",
         matches: "/api/monster-lab/matches?limit=50",
       },
-      filters: { includeBot: "1 to include practice games vs the bot (default: PvP only)", version: `"all", or a balance fingerprint (default: current, ${BALANCE_VERSION})` },
+      filters: {
+        includeBot: "1 to include practice games vs the bot (default: PvP only)",
+        includeForfeits: "1 to include matches someone gave up (default: no)",
+        version: `"all", or a balance fingerprint (default: current, ${BALANCE_VERSION})`,
+      },
       auth: "send the key as ?key=… or an x-lab-key header",
     };
   });

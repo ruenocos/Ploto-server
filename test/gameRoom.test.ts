@@ -179,3 +179,24 @@ describe("GameRoom practice bot", () => {
     expect(() => real.handleRequest("p0", "mm:debug", { action: "berries" })).toThrow(/practice/);
   });
 });
+
+describe("GameRoom forfeit", () => {
+  it("ends the match for either player at any time, rival wins, reported once", () => {
+    const reports: unknown[] = [];
+    const room = new GameRoom(roomConfig(), { onFinished: (r) => reports.push(r.toRecord()) });
+    const a = new FakePeer("p0");
+    const b = new FakePeer("p1");
+    room.join(a);
+    room.join(b);
+    // p1 gives up while it's p0's turn.
+    room.handleRequest("p1", "mm:forfeit", {});
+    expect(room.finished).toBe(true);
+    expect(a.notifications.at(-1)).toEqual({ method: "mm:gameOver", data: { winner: 0, matchId: "m1", forfeitedBy: 1 } });
+    expect(reports).toEqual([expect.objectContaining({ winner: 0, forfeitedBy: 1 })]);
+    expect(() => room.handleRequest("p0", "mm:forfeit", {})).toThrow(/finished/);
+    expect(reports).toHaveLength(1);
+    const snap = room.handleRequest("p0", "mm:getState", {}) as { forfeitedBy: number };
+    expect(snap.forfeitedBy).toBe(1);
+    expect(room.voteRematch(0)).toBe(false); // rematch still possible afterwards
+  });
+});

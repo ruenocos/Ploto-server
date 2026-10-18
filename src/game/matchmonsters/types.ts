@@ -187,6 +187,8 @@ export interface GameState {
   turnPasses: number;
   /** Freezes cast this turn; they land on the board when the turn passes. */
   pendingFreeze: { count: number; turns: number }[];
+  /** Set when the match ended because this player gave up. */
+  forfeitedBy: 0 | 1 | null;
   phase: Phase;
   winner: 0 | 1 | null;
   moveNumber: number;

@@ -10,7 +10,7 @@ import { mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import type { DatabaseSync as DatabaseSyncType, SQLInputValue } from "node:sqlite";
-import { SCHEMA } from "./schema.js";
+import { ADDED_COLUMNS, SCHEMA } from "./schema.js";
 
 // Loaded through require: some bundlers (vitest's) don't know `node:sqlite` yet.
 const { DatabaseSync } = createRequire(import.meta.url)("node:sqlite") as typeof import("node:sqlite");
@@ -43,6 +43,10 @@ export async function openDb(opts: DbOptions = {}): Promise<Db> {
     sqlite.exec("PRAGMA busy_timeout = 5000");
   }
   for (const statement of SCHEMA) sqlite.exec(statement);
+  for (const [table, column, definition] of ADDED_COLUMNS) {
+    const columns = sqlite.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+    if (!columns.some((c) => c.name === column)) sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
 
   const statements = new Map<string, ReturnType<DatabaseSyncType["prepare"]>>();
   const prepare = (sql: string) => {

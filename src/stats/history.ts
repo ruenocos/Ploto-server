@@ -25,6 +25,8 @@ export interface MatchRecord {
   readonly vsBot: boolean;
   readonly firstTurn: 0 | 1;
   readonly winner: 0 | 1 | null;
+  /** Seat that gave up, if the match ended by forfeit. */
+  readonly forfeitedBy?: 0 | 1 | null;
   readonly moves: number;
   readonly turns: number;
   readonly startedAt: Date;
@@ -36,6 +38,8 @@ export interface StatsFilter {
   readonly includeBot?: boolean;
   /** Balance fingerprint to filter by; "all" for every patch (default: current). */
   readonly version?: string;
+  /** Include matches someone forfeited (default: no; they say little about balance). */
+  readonly includeForfeits?: boolean;
 }
 
 const rate = (wins: number, games: number) => (games ? Math.round((wins / games) * 1000) / 1000 : null);
@@ -46,9 +50,9 @@ export class MatchHistory {
   async record(m: MatchRecord): Promise<string> {
     const id = randomUUID();
     await this.db.query(
-      `INSERT INTO matches (id, mode, vs_bot, balance_version, first_turn, winner, moves, turns, started_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [id, m.mode, m.vsBot, BALANCE_VERSION, m.firstTurn, m.winner, m.moves, m.turns, m.startedAt.toISOString()],
+      `INSERT INTO matches (id, mode, vs_bot, balance_version, first_turn, winner, moves, turns, started_at, ended_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [id, m.mode, m.vsBot, BALANCE_VERSION, m.firstTurn, m.winner, m.moves, m.turns, m.startedAt.toISOString(), m.forfeitedBy != null ? "forfeit" : "hp"],
     );
     for (const [seat, p] of m.players.entries()) {
       await this.db.query(
@@ -91,7 +95,10 @@ export class MatchHistory {
   /** Shared WHERE clause: which matches count. $1 = includeBot, $2 = version or null. */
   private scope(f: StatsFilter): [string, unknown[]] {
     const version = f.version === "all" ? null : (f.version ?? BALANCE_VERSION);
-    return ["(m.vs_bot = 0 OR $1 = 1) AND ($2 IS NULL OR m.balance_version = $2)", [f.includeBot ? 1 : 0, version]];
+    return [
+      "(m.vs_bot = 0 OR $1 = 1) AND ($2 IS NULL OR m.balance_version = $2) AND (m.ended_by = 'hp' OR $3 = 1)",
+      [f.includeBot ? 1 : 0, version, f.includeForfeits ? 1 : 0],
+    ];
   }
 
   async summary(f: StatsFilter = {}) {
@@ -152,7 +159,7 @@ export class MatchHistory {
        SELECT a.monster, b.monster AS opponent, count(*) AS games, sum(a.won) AS wins
          FROM picks a JOIN picks b ON a.match_id = b.match_id AND a.seat <> b.seat
         GROUP BY a.monster, b.monster
-       HAVING count(*) >= $3
+       HAVING count(*) >= $4
         ORDER BY a.monster, b.monster`,
       [...params, minGames],
     );
@@ -168,7 +175,7 @@ export class MatchHistory {
          FROM match_players p JOIN matches m ON m.id = p.match_id
         WHERE ${where}
         GROUP BY 1, 2
-       HAVING count(*) >= $3
+       HAVING count(*) >= $4
         ORDER BY CAST(sum(p.won) AS REAL) / count(*) DESC, count(*) DESC`,
       [...params, minGames],
     );
@@ -182,7 +189,7 @@ export class MatchHistory {
       id: string; ended_at: string; mode: string; vs_bot: number; winner: number | null; first_turn: number; moves: number; turns: number;
       seat: number; monster_a: string; monster_b: string; evo_a: number; evo_b: number; final_hp: number; is_bot: number;
     }>(
-      `WITH recent AS (SELECT * FROM matches m WHERE ${where} ORDER BY m.ended_at DESC LIMIT $3)
+      `WITH recent AS (SELECT * FROM matches m WHERE ${where} ORDER BY m.ended_at DESC LIMIT $4)
        SELECT r.id, r.ended_at, r.mode, r.vs_bot, r.winner, r.first_turn, r.moves, r.turns,
               p.seat, p.monster_a, p.monster_b, p.evo_a, p.evo_b, p.final_hp, p.is_bot
          FROM recent r JOIN match_players p ON p.match_id = r.id

@@ -80,6 +80,9 @@ export class SignalingServer {
     this.invites.clear();
     for (const room of this.rooms.values()) room.dispose();
     for (const peer of this.lobbyPeers.values()) peer.close();
+    // Drop game connections too, so clients notice right away and reconnect
+    // (ws's close() alone leaves existing sockets open).
+    for (const client of this.wss.clients) client.terminate();
     await new Promise<void>((resolve) => this.wss.close(() => resolve()));
   }
 

@@ -201,6 +201,7 @@ describe("match history and the monster lab", () => {
     await history.record(rec(0, ["ember_pup", "halo_moth"], ["stone_golem", "tide_serpent"]));
     await history.record(rec(1, ["ember_pup", "halo_moth"], ["frost_imp", "prism_owl"]));
     await history.record(rec(1, ["ember_pup", "halo_moth"], ["frost_imp", "prism_owl"], true)); // practice: excluded by default
+    await history.record({ ...rec(1, ["ember_pup", "halo_moth"], ["frost_imp", "prism_owl"]), forfeitedBy: 0 }); // forfeit: excluded by default
 
     const monsters = await history.monsters();
     const pup = monsters.find((m) => m.monster === "ember_pup")!;
@@ -211,6 +212,7 @@ describe("match history and the monster lab", () => {
     const teams = await history.teams();
     expect(teams.find((t) => t.team.join() === "ember_pup,halo_moth")).toMatchObject({ games: 2, wins: 1 });
     expect(await history.summary()).toMatchObject({ matches: 3, firstPlayerWinRate: 0.667 });
+    expect((await history.summary({ includeForfeits: true })).matches).toBe(4);
     expect((await history.recent())[0]!.teams).toHaveLength(2);
     await db.close();
 

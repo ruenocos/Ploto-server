@@ -111,6 +111,13 @@ export class GameRoom {
     return true;
   }
 
+  /** Hand the finished match to the history hook, once. */
+  private report(): void {
+    if (this.reported) return;
+    this.reported = true;
+    this.options.onFinished?.(this);
+  }
+
   /** This match as a history row (call once it's finished). */
   toRecord(): MatchRecord {
     const s = this.game.state;
@@ -131,6 +138,7 @@ export class GameRoom {
       vsBot: this.options.botSeat !== undefined,
       firstTurn: this.config.firstTurn ?? 0,
       winner: s.winner,
+      forfeitedBy: s.forfeitedBy,
       moves: s.moveNumber,
       turns: s.turnPasses,
       startedAt: this.createdAt,
@@ -184,6 +192,15 @@ export class GameRoom {
         return { accepted: true };
       }
 
+      case "mm:forfeit": {
+        const result = this.game.forfeit(seat);
+        if (!result.ok) throw new Error(result.reason);
+        this.dispose();
+        this.broadcast("mm:gameOver", { winner: result.winner, matchId: this.game.state.matchId, forfeitedBy: seat });
+        this.report();
+        return { ok: true };
+      }
+
       // Practice rooms only: shortcuts for trying things out.
       case "mm:debug": {
         if (this.options.botSeat === undefined) throw new Error("debug actions are only for practice games");
@@ -219,10 +236,7 @@ export class GameRoom {
     this.broadcast("mm:moveResult", result);
     if (result.finished) {
       this.broadcast("mm:gameOver", { winner: result.winner, matchId: this.game.state.matchId });
-      if (!this.reported) {
-        this.reported = true;
-        this.options.onFinished?.(this);
-      }
+      this.report();
     }
     const steps = result.cascades.length + result.effectSteps.length;
     // Cast cards run ~1.1s each and every number lands with its own beat.
@@ -272,6 +286,7 @@ export class GameRoom {
       suddenDeathIn: Math.max(0, FATIGUE_AFTER - s.turnPasses),
       phase: s.phase,
       winner: s.winner,
+      forfeitedBy: s.forfeitedBy,
       moveNumber: s.moveNumber,
       players: s.players.map(serializePlayer),
       connected: [0, 1].map((i) => i === this.options.botSeat || Boolean(this.peers[i])),

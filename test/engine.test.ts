@@ -484,6 +484,109 @@ describe("control effects", () => {
   });
 });
 
+describe("kit mechanics: pierce, ignite, regen, bubble, anti-heal", () => {
+  it("piercing damage ignores shields", () => {
+    const g = newGame(fireMon("a", [{ kind: "damage", amount: 10, pierce: true }]));
+    g.state.players[1].shield = 20;
+    g.applyMove(0, FIRE_SWAP);
+    expect(g.state.players[1].shield).toBe(20);
+    expect(g.state.players[1].hp).toBe(STARTING_HP - 10);
+  });
+
+  it("ignite detonates every burn for all its remaining ticks, through shields, and clears them", () => {
+    const g = newGame(fireMon("a", [{ kind: "ignite" }]));
+    const foe = g.state.players[1];
+    foe.shield = 15;
+    foe.dots = [
+      { kind: "burn", amount: 5, turns: 3, element: "fire" },
+      { kind: "burn", amount: 3, turns: 1, element: "fire" },
+      { kind: "poison", amount: 4, turns: 2, element: "nature" },
+    ];
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.casts[0]!.effects[0]).toMatchObject({ kind: "ignite", amount: 18, burns: 2 });
+    expect(foe.hp).toBe(STARTING_HP - 18);
+    expect(foe.shield).toBe(15);
+    expect(foe.dots.map((d) => d.kind)).toEqual(["poison"]); // poison isn't fire
+  });
+
+  it("ignite with nothing burning does nothing", () => {
+    const g = newGame(fireMon("a", [{ kind: "ignite" }]));
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.casts[0]!.effects[0]).toMatchObject({ kind: "ignite", amount: 0, burns: 0 });
+    expect(g.state.players[1].hp).toBe(STARTING_HP);
+  });
+
+  it("regen heals at the start of each of the caster's turns, then runs out", () => {
+    const g = newGame(fireMon("a", [{ kind: "regen", amount: 5, turns: 2 }]));
+    const me = g.state.players[0];
+    me.hp = 50;
+    g.applyMove(0, FIRE_SWAP);
+    expect(me.regen).toEqual([{ amount: 5, turns: 2 }]);
+    g.state.turn = 1; g.state.movesLeft = 1; // hand the turn to the rival...
+    g.state.players[1].monsters.forEach((m) => (m.charge = 0));
+    const mv = chooseMove(g, 1)!;
+    g.applyMove(1, mv); // ...whose turn ends, so ours starts and regen ticks
+    expect(me.hp).toBe(55);
+    expect(me.regen).toEqual([{ amount: 5, turns: 1 }]);
+  });
+
+  it("poison halves healing (heals, life steal and regen), rounded up", () => {
+    const g = newGame(fireMon("a", [{ kind: "heal", amount: 9 }, { kind: "drain", amount: 6 }]));
+    const me = g.state.players[0];
+    me.hp = 40;
+    me.dots = [{ kind: "poison", amount: 2, turns: 3, element: "nature" }];
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.casts[0]!.effects[0]).toMatchObject({ kind: "heal", amount: 5 });
+    expect(r.casts[0]!.effects[1]).toMatchObject({ kind: "drain", amount: 6, healed: 3 });
+    expect(me.hp).toBe(48);
+  });
+
+  it("a bubble blocks the next harmful effect, one per bubble", () => {
+    const g = newGame(fireMon("a", [
+      { kind: "dot", dot: "burn", amount: 5, turns: 2 },
+      { kind: "slow", count: 1 },
+      { kind: "seal", turns: 2 },
+    ]));
+    const foe = g.state.players[1];
+    foe.bubble = 2;
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    const [burn, slow, seal] = r.casts[0]!.effects;
+    expect(burn).toMatchObject({ kind: "dot", blocked: true });
+    expect(slow).toMatchObject({ kind: "slow", blocked: true });
+    expect(seal).not.toHaveProperty("blocked");
+    expect(foe.dots).toHaveLength(0);
+    expect(foe.slow).toBe(0);
+    expect(foe.bubble).toBe(0);
+    expect(foe.monsters.some((m) => m.sealed > 0)).toBe(true);
+  });
+
+  it("a bubble stops a freeze before it lands", () => {
+    const g = newGame(fireMon("a", [{ kind: "freeze", count: 3, turns: 1 }]));
+    g.state.players[1].bubble = 1;
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.casts[0]!.effects[0]).toMatchObject({ kind: "freeze", blocked: true });
+    expect(g.state.pendingFreeze).toHaveLength(0);
+  });
+
+  it("bubbles stack up to 3", () => {
+    const g = newGame(fireMon("a", [{ kind: "bubble", count: 5 }]));
+    g.applyMove(0, FIRE_SWAP);
+    expect(g.state.players[0].bubble).toBe(3);
+  });
+
+  it("regen lasts longer at ★ and bubbles add one at ★★", () => {
+    const def = fireMon("a", [{ kind: "regen", amount: 5, turns: 3 }, { kind: "bubble", count: 1 }]);
+    expect(scaledEffects(def, 1)).toMatchObject([{ amount: scaleAmount(5, 1), turns: 4 }, { count: 1 }]);
+    expect(scaledEffects(def, 2)).toMatchObject([{ amount: scaleAmount(5, 2), turns: 4 }, { count: 2 }]);
+    expect(evolutionChanges(def, 0)).toContain("Regen lasts 3 → 4 turns");
+  });
+});
+
 describe("bot", () => {
   it("only moves on its own turn, always legally, and evolves when it can", () => {
     const g = newGame(fireMon("a", [dmg(10)]));

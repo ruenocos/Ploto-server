@@ -98,11 +98,11 @@ they evolve. Tap one for its move, passive and evolution line.
 
 | Element | Archetype | Plays like |
 | ------- | --------- | ---------- |
-| 🔥 Fire | Destroyer | big hits, burns, blasts that match a row/column/area (the tiles charge you) |
-| 💧 Water | Controller | freeze the rival's best tiles for their turn, drain rival charge, make the rival lose a move |
+| 🔥 Fire | Destroyer | big hits, burns (Pyrup detonates them), blasts that match rows/columns/areas (the tiles charge you) |
+| 💧 Water | Controller | freeze the rival's best tiles for their turn, drain rival charge, make the rival lose a move; Bublob's bubble blocks the rival's control |
 | ⛰️ Earth | Fortress | stone the rival's element tiles, quakes, big shields and heals |
-| 🌿 Nature | Sustain | poison, life-steal, seal a rival monster's charge, overgrowth |
-| ✨ Light | Tempo | burst, extra moves, cleansing, charging its partner |
+| 🌿 Nature | Sustain | poison (halves the rival's healing), life-steal, seal a rival monster's charge, overgrowth |
+| ✨ Light | Tempo | burst, piercing hits that ignore shields, extra moves, regeneration, charging its partner |
 
 20 monsters, each with its own move; some have passives (Scorchpaw goes
 **berserk** at low HP, Lumoth **follows up** whenever its partner hits).
@@ -157,8 +157,9 @@ cleanest source is your own device's app cache while the service is up.
 
 `src/game/matchmonsters` is a self-contained, server-authoritative match-3
 battler built from the public rules. A monster's move is a list of **effects**
-(`damage`, `heal`, `shield`, `drain`, `dot`, `match`, `freeze`, `petrify`,
-`convert`, `sap`, `slow`, `seal`, `haste`, `cleanse`, `empower`) applied in
+(`damage` (optionally piercing), `heal`, `shield`, `drain`, `dot`, `ignite`,
+`regen`, `bubble`, `match`, `freeze`, `petrify`, `convert`, `sap`, `slow`,
+`seal`, `haste`, `cleanse`, `empower`) applied in
 order, plus optional passives (`berserk`, `followUp`). Display text is generated
 from the effects, so `monsters.ts` is the single source of truth for numbers.
 All randomness runs through a seeded PRNG, so a match is fully reproducible from

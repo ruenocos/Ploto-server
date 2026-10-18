@@ -25,7 +25,7 @@
  */
 
 /** @typedef {{ x: number, y: number }} Pt */
-/** @typedef {"attack" | "heal" | "shield" | "burn" | "poison" | "burn-tick" | "poison-tick" | "fatigue"} LandKind */
+/** @typedef {"attack" | "pierce" | "heal" | "shield" | "burn" | "poison" | "burn-tick" | "poison-tick" | "regen-tick" | "fatigue"} LandKind */
 /** @typedef {"attack" | "cast" | "hurt" | "cheer" | "charge" | "dizzy" | "faint" | "evolveOut" | "evolveIn"} Pose  each maps to a stock Animate.css preset (POSES in index.html) */
 
 /**
@@ -78,6 +78,16 @@ async function orbTo(/** @type {CastCtx} */ ctx, /** @type {0 | 1} */ seat, /** 
   if (source) await fx.fly("orb", fx.centerOf(source), fx.hitOf(seat), color, { dur, arc: 30 });
 }
 
+/** A bubble on the target soaked up a harmful effect: the orb flies, the bubble pops. */
+async function blocked(/** @type {CastCtx} */ ctx, /** @type {0 | 1} */ target) {
+  const { fx } = ctx;
+  await orbTo(ctx, target, "#bfefff");
+  fx.burst(fx.hitOf(target), "#bfefff", 10, 34);
+  fx.floatText(fx.sideOf(target), "🫧 blocked", "#bfefff");
+  void fx.pose(target, null, "cheer");
+  await fx.sleep(380);
+}
+
 /** The caster throws its hit (the attack pose); the orb leaves mid-motion. */
 async function lunge(/** @type {CastCtx} */ ctx) {
   void ctx.fx.pose(ctx.cast.by, ctx.cast.monsterId, "attack");
@@ -103,7 +113,7 @@ const EFFECTS = {
       const color = ctx.fx.COLOR[ctx.cast.element] ?? "#ff6a4d";
       await lunge(ctx);
       await orbTo(ctx, e.target, color);
-      ctx.fx.land(e.target, "attack", e.amount, color);
+      ctx.fx.land(e.target, e.pierce ? "pierce" : "attack", e.amount, color);
       await ctx.fx.sleep(90);
     },
   },
@@ -137,7 +147,7 @@ const EFFECTS = {
       const caster = other(e.target);
       const home = ctx.source ? fx.centerOf(ctx.source) : fx.hitOf(caster);
       await fx.fly("orb", fx.hitOf(e.target), home, "#4fd17a", { dur: 380, arc: 50 });
-      fx.land(caster, "heal", e.amount);
+      if (e.healed > 0) fx.land(caster, "heal", e.healed);
       await fx.sleep(90);
     },
   },
@@ -146,9 +156,49 @@ const EFFECTS = {
     async animate(e, ctx) {
       const color = e.dot === "burn" ? "#ff9a3c" : "#8be27f";
       await lunge(ctx);
+      if (e.blocked) return blocked(ctx, e.target);
       await orbTo(ctx, e.target, color);
       ctx.fx.land(e.target, e.dot, e.amount, color);
       await ctx.fx.sleep(90);
+    },
+  },
+
+  // The rival's burns go up all at once: a fire burst and one big number.
+  ignite: {
+    async animate(e, ctx) {
+      const { fx } = ctx;
+      if (e.amount <= 0) return; // nothing was burning
+      const at = fx.hitOf(e.target);
+      await orbTo(ctx, e.target, "#ff9a3c", 260);
+      fx.burst(at, "#ff6a2a", 14, 56);
+      fx.burst(at, "#ffd23c", 8, 30);
+      fx.floatText(fx.sideOf(e.target), e.burns > 1 ? `🔥 ignite ×${e.burns}` : "🔥 ignite", "#ffb04a");
+      fx.land(e.target, "pierce", e.amount, "#ff7a2a");
+      await fx.sleep(240);
+    },
+  },
+
+  // A soft glow settles on the caster's side; the healing itself ticks in at turn start.
+  regen: {
+    async animate(e, ctx) {
+      const { fx } = ctx;
+      await orbTo(ctx, e.target, "#92e27c");
+      for (const c of fx.sideOf(e.target).querySelectorAll(".core")) fx.burst(fx.centerOf(c), "#92e27c", 6, 24);
+      fx.floatText(fx.sideOf(e.target), `✚ ${e.amount}/turn ×${e.turns}`, "#92e27c");
+      void fx.pose(e.target, null, "cheer");
+      await fx.sleep(300);
+    },
+  },
+
+  // A bubble wraps the caster's team.
+  bubble: {
+    async animate(e, ctx) {
+      const { fx } = ctx;
+      await orbTo(ctx, e.target, "#bfefff");
+      for (const c of fx.sideOf(e.target).querySelectorAll(".core")) fx.burst(fx.centerOf(c), "#bfefff", 8, 30);
+      fx.floatText(fx.sideOf(e.target), e.count > 1 ? `🫧 ×${e.count}` : "🫧 bubble", "#bfefff");
+      void fx.pose(e.target, null, "cheer");
+      await fx.sleep(300);
     },
   },
 
@@ -177,6 +227,7 @@ const EFFECTS = {
   freeze: {
     async animate(e, ctx) {
       const { fx, source } = ctx;
+      if (e.blocked) return blocked(ctx, e.target);
       const board = fx.board();
       const r = board.getBoundingClientRect();
       if (source && !fx.reduceMotion) {
@@ -239,6 +290,7 @@ const EFFECTS = {
   slow: {
     async animate(e, ctx) {
       const { fx } = ctx;
+      if (e.blocked) return blocked(ctx, e.target);
       await orbTo(ctx, e.target, fx.COLOR.water ?? "#3aa0ff");
       void fx.pose(e.target, null, "dizzy");
       fx.floatText(fx.sideOf(e.target), e.count > 0 ? `🐌 −${e.count} move next turn` : "🐌 already slowed", "#9bf6ff");
@@ -250,6 +302,7 @@ const EFFECTS = {
   seal: {
     async animate(e, ctx) {
       const { fx } = ctx;
+      if (e.blocked) return blocked(ctx, e.target);
       const mon = e.monsterId ? fx.monOf(e.target, e.monsterId) : null;
       const fighter = mon?.closest(".fighter");
       const stage = fighter?.querySelector(".stage");

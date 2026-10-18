@@ -308,6 +308,8 @@ function serializePlayer(p: PlayerState) {
     maxHp: p.maxHp,
     shield: p.shield,
     dots: p.dots,
+    regen: p.regen,
+    bubble: p.bubble,
     berries: p.berries,
     slow: p.slow,
     monsters: p.monsters.map(serializeMonster),

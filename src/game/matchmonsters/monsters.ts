@@ -33,7 +33,10 @@ function m(
 
 export const MONSTERS: Record<string, Monster> = {
   // 🔥 fire — Destroyer
-  ember_pup: m("ember_pup", "Pyrup", "fire", 7, "Ember Bite", [dmg(17)]),
+  // Each bite sets off the burns already on the rival, then leaves a small one for next time.
+  // Alone it detonates its own leftovers; next to Emberwing it sets off a much bigger burn.
+  ember_pup: m("ember_pup", "Pyrup", "fire", 7, "Ember Bite",
+    [{ kind: "ignite" }, dmg(11), { kind: "dot", dot: "burn", amount: 3, turns: 2 }]),
   cinder_hound: m("cinder_hound", "Scorchpaw", "fire", 8, "Scorch Line",
     [dmg(6), { kind: "match", shape: "row" }],
     { berserk: { threshold: 16, hits: 4, amount: 4 } }),
@@ -46,11 +49,12 @@ export const MONSTERS: Record<string, Monster> = {
   tide_serpent: m("tide_serpent", "Tidecoil", "water", 8, "Undertow",
     [dmg(10), { kind: "sap", count: 2 }]),
   frost_imp: m("frost_imp", "Frostnip", "water", 7, "Frostbite",
-    [dmg(13), { kind: "freeze", count: 3, turns: 1 }]),
+    [dmg(14), { kind: "freeze", count: 3, turns: 1 }]),
   kraken_pup: m("kraken_pup", "Krakling", "water", 10, "Riptide",
     [dmg(19), { kind: "slow", count: 1 }]),
   bubble_jelly: m("bubble_jelly", "Bublob", "water", 8, "Bubble Barrier",
-    [shield(10), dmg(10), { kind: "cleanse" }]),
+    // The answer to control: the bubble eats the next freeze, slow, seal, burn or poison.
+    [shield(10), dmg(8), { kind: "bubble", count: 1 }]),
 
   // 🪨 earth — Fortress
   stone_golem: m("stone_golem", "Craggol", "earth", 9, "Stone Skin", [shield(18), dmg(9)]),
@@ -58,10 +62,11 @@ export const MONSTERS: Record<string, Monster> = {
     [dmg(14), { kind: "petrify", count: 3 }]),
   quake_mole: m("quake_mole", "Tremole", "earth", 9, "Tremor",
     [dmg(10), { kind: "match", shape: "col" }]),
-  crystal_ox: m("crystal_ox", "Gemox", "earth", 10, "Crystal Mend", [heal(14), shield(6), dmg(9)]),
+  crystal_ox: m("crystal_ox", "Gemox", "earth", 10, "Crystal Mend", [heal(16), shield(6), dmg(9)]),
 
   // 🌿 nature — Sustain
   thorn_sprite: m("thorn_sprite", "Thornkin", "nature", 7, "Thorn Prick",
+    // Poison halves the rival's healing while it lasts: the counter to sustain teams.
     [dmg(4), { kind: "dot", dot: "poison", amount: 4, turns: 3 }]),
   vine_lurker: m("vine_lurker", "Vinecoil", "nature", 10, "Leech Vine", [{ kind: "drain", amount: 13 }]),
   shroom_knight: m("shroom_knight", "Myconite", "nature", 9, "Spore Cloud",
@@ -71,11 +76,13 @@ export const MONSTERS: Record<string, Monster> = {
 
   // ✨ light — Tempo
   prism_owl: m("prism_owl", "Lumowl", "light", 10, "Smite",
-    [dmg(18), { kind: "match", shape: "square" }]),
+    // Piercing: ignores shields, the counter to Earth.
+    [{ kind: "damage", amount: 17, pierce: true }, { kind: "match", shape: "square" }]),
   dawn_sprite: m("dawn_sprite", "Glintling", "light", 8, "Starstep",
     [dmg(12), { kind: "haste", count: 1 }]),
   lumen_stag: m("lumen_stag", "Lumistag", "light", 8, "Radiance",
-    [dmg(11), heal(10), { kind: "cleanse" }]),
+    // Healing over time (the mirror of a burn): strong if you can outlast poison.
+    [dmg(11), { kind: "regen", amount: 4, turns: 3 }]),
   halo_moth: m("halo_moth", "Lumoth", "light", 7, "Kindred Glow",
     [dmg(6), { kind: "empower", count: 2 }],
     { followUp: 3 }),
@@ -94,8 +101,8 @@ export const ARCHETYPES: Record<Element, { title: string; blurb: string }> = {
   fire: { title: "Destroyer", blurb: "Big hits, burns, and blasts that clear the board" },
   water: { title: "Controller", blurb: "Freeze tiles, sap charge, steal rival moves" },
   earth: { title: "Fortress", blurb: "Stone blockers, quakes, big shields and heals" },
-  nature: { title: "Sustain", blurb: "Poison, life-steal, sealing, overgrowth" },
-  light: { title: "Tempo", blurb: "Burst, extra moves, cleansing, teamwork" },
+  nature: { title: "Sustain", blurb: "Poison that halves healing, life-steal, sealing, overgrowth" },
+  light: { title: "Tempo", blurb: "Piercing burst, extra moves, regeneration, teamwork" },
 };
 
 export function monsterById(id: string): Monster | undefined {

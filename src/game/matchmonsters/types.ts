@@ -48,12 +48,20 @@ export type MatchShape = "row" | "col" | "area" | "square";
 
 /** One effect in a move. Moves are stacks of these, applied in order. */
 export type Effect =
-  | { readonly kind: "damage"; readonly amount: number }
+  /** `pierce` damage ignores shields. */
+  | { readonly kind: "damage"; readonly amount: number; readonly pierce?: boolean }
   | { readonly kind: "heal"; readonly amount: number }
   | { readonly kind: "shield"; readonly amount: number }
   /** Damage the rival and heal yourself the same amount. */
   | { readonly kind: "drain"; readonly amount: number }
+  /** Burn or poison the rival; poison also halves the healing they get while it lasts. */
   | { readonly kind: "dot"; readonly dot: "burn" | "poison"; readonly amount: number; readonly turns: number }
+  /** The rival's burns go off at once for all the damage they had left (ignores shields). */
+  | { readonly kind: "ignite" }
+  /** Heal this much at the start of each of your next `turns` turns. */
+  | { readonly kind: "regen"; readonly amount: number; readonly turns: number }
+  /** Block the next `count` harmful effects aimed at you (burn, poison, freeze, slow, seal). */
+  | { readonly kind: "bubble"; readonly count: number }
   /**
    * Clear a board region; the tiles count as matched for you (charge + berries).
    * `size` is lines for row/col (default 1) and the side for area/square (3/2).
@@ -92,21 +100,29 @@ export interface Cell {
  * against this union, so adding an effect without an animation won't compile).
  */
 export type EffectEvent =
-  | { readonly kind: "damage"; readonly target: 0 | 1; readonly amount: number }
+  | { readonly kind: "damage"; readonly target: 0 | 1; readonly amount: number; readonly pierce?: boolean }
+  /** `amount` is what was actually healed (poison halves it). */
   | { readonly kind: "heal"; readonly target: 0 | 1; readonly amount: number }
   | { readonly kind: "shield"; readonly target: 0 | 1; readonly amount: number }
-  | { readonly kind: "drain"; readonly target: 0 | 1; readonly amount: number }
-  | { readonly kind: "dot"; readonly target: 0 | 1; readonly dot: "burn" | "poison"; readonly amount: number; readonly turns: number }
+  /** `amount` dealt to `target`; `healed` back to the caster (poison halves it). */
+  | { readonly kind: "drain"; readonly target: 0 | 1; readonly amount: number; readonly healed: number }
+  /** `blocked`: a bubble on the target stopped it. */
+  | { readonly kind: "dot"; readonly target: 0 | 1; readonly dot: "burn" | "poison"; readonly amount: number; readonly turns: number; readonly blocked?: boolean }
+  /** `amount` damage from `burns` detonated burns (0 if there were none). */
+  | { readonly kind: "ignite"; readonly target: 0 | 1; readonly amount: number; readonly burns: number }
+  | { readonly kind: "regen"; readonly target: 0 | 1; readonly amount: number; readonly turns: number }
+  /** `count`: bubbles the target now has. */
+  | { readonly kind: "bubble"; readonly target: 0 | 1; readonly count: number }
   /** `step` indexes the move result's effectSteps (-1 if nothing was there to clear). */
   | { readonly kind: "match"; readonly shape: MatchShape; readonly cells: readonly Cell[]; readonly step: number }
   /** Freezes land when the turn passes (see MoveResult.iceLanded). */
-  | { readonly kind: "freeze"; readonly target: 0 | 1; readonly count: number; readonly turns: number }
+  | { readonly kind: "freeze"; readonly target: 0 | 1; readonly count: number; readonly turns: number; readonly blocked?: boolean }
   | { readonly kind: "petrify"; readonly cells: readonly Cell[] }
   | { readonly kind: "convert"; readonly cells: readonly Cell[]; readonly element: Element }
   /** Charge removed from each rival monster, by monster id. */
   | { readonly kind: "sap"; readonly target: 0 | 1; readonly drained: Readonly<Record<string, number>> }
-  | { readonly kind: "slow"; readonly target: 0 | 1; readonly count: number }
-  | { readonly kind: "seal"; readonly target: 0 | 1; readonly monsterId: string | null; readonly turns: number }
+  | { readonly kind: "slow"; readonly target: 0 | 1; readonly count: number; readonly blocked?: boolean }
+  | { readonly kind: "seal"; readonly target: 0 | 1; readonly monsterId: string | null; readonly turns: number; readonly blocked?: boolean }
   | { readonly kind: "haste"; readonly count: number }
   | { readonly kind: "cleanse"; readonly removed: number }
   | { readonly kind: "empower"; readonly monsterIds: readonly string[]; readonly count: number };
@@ -162,6 +178,10 @@ export interface PlayerState {
   readonly maxHp: number;
   shield: number;
   dots: Dot[];
+  /** Heals at the start of this player's turns. */
+  regen: { amount: number; turns: number }[];
+  /** Harmful effects this player will shrug off (each block uses one). */
+  bubble: number;
   /** Berries collected, spent 4 at a time to evolve a monster. */
   berries: number;
   /** Moves this player loses at the start of their next turn. */
@@ -211,7 +231,7 @@ export interface CascadeStep {
 }
 
 export type NumericEventType =
-  | "attack" | "heal" | "shield" | "burn" | "poison" | "burn-tick" | "poison-tick" | "fatigue";
+  | "attack" | "heal" | "shield" | "burn" | "poison" | "burn-tick" | "poison-tick" | "regen-tick" | "fatigue";
 
 /** A number to float over a player (damage, heal, shield, burn/poison). */
 export interface AbilityEvent {

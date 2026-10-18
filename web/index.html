@@ -106,6 +106,7 @@
       .chips { display: flex; gap: var(--s1); flex-wrap: wrap; }
       .gem-icon { display: inline-block; vertical-align: middle; }
       .chip .gem-icon { margin: -4px 2px -4px -2px; }
+      .chip.bubble { color: #bfefff; } .chip.regen { color: var(--c-good-hi); }
       .chip.shield { color: #8fd8ff; } .chip.dot-fx { color: #ffa24a; } .chip.berry { color: #ff9cc0; } .chip.slow { color: #9bf6ff; }
       .badge-n { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; margin-left: 6px; background: var(--c-bad); color: #fff; font: 700 var(--fs-xs)/1 var(--f-label); }
       .dot { width: 8px; height: 8px; background: var(--c-good); flex: none; box-shadow: 0 0 0 var(--px) var(--c-ink); }
@@ -401,7 +402,7 @@
         text-shadow: var(--px) 0 0 var(--c-ink), calc(var(--px) * -1) 0 0 var(--c-ink), 0 var(--px) 0 var(--c-ink), 0 calc(var(--px) * -1) 0 var(--c-ink), var(--px) calc(var(--px) * 2) 0 var(--c-ink);
         animation: floatUp 1.05s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
       }
-      .float.attack { color: #ff6a4d; } .float.heal { color: var(--c-good-hi); } .float.shield { color: #8fd8ff; }
+      .float.attack, .float.pierce { color: #ff6a4d; } .float.regen { color: var(--c-good-hi); } .float.heal { color: var(--c-good-hi); } .float.shield { color: #8fd8ff; }
       .float.burn { color: #ffa24a; } .float.poison { color: var(--c-good-hi); } .float.fatigue { color: #ffb07a; }
       .float.small { font-size: var(--fs-s); }
       @keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, 6px) scale(1.6); } 18% { opacity: 1; transform: translate(-50%, 0) scale(1); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -30px); } }
@@ -1223,6 +1224,10 @@
           chips.push(`<span class="chip dot-fx">${icon} ${dotTotal}/t</span>`);
         }
         if (p.slow > 0) chips.push(`<span class="chip slow">🐌 −${p.slow}</span>`);
+        if (p.bubble > 0) chips.push(`<span class="chip bubble" title="Blocks the next harmful effect">🫧 ${p.bubble}</span>`);
+        const regen = (p.regen || []).reduce((sum, r) => sum + r.amount, 0);
+        if (regen > 0) chips.push(`<span class="chip regen" title="Heals at the start of each turn">✚ ${regen}/t</span>`);
+        if (dots.some((d) => d.kind === "poison")) chips.push(`<span class="chip dot-fx" title="Poisoned: healing is halved">½✚</span>`);
         chips.push(`<span class="chip berry" data-berry>${gemIcon("berry", 16)}<b>${p.berries || 0}</b>/${BERRIES_TO_EVOLVE}</span>`);
         const card = hudOf(seat);
         card.classList.toggle("active", state.phase === "awaiting-move" && state.turn === seat);
@@ -1913,6 +1918,8 @@
         poison: { color: "#8be27f", icon: "☠", sign: "", suffix: "/t" },
         "burn-tick": { color: "#ff9a3c", icon: "🔥", sign: "−" },
         "poison-tick": { color: "#8be27f", icon: "☠", sign: "−" },
+        pierce: { color: null, icon: "➹", sign: "−" },
+        "regen-tick": { color: "#92e27c", icon: "✚", sign: "+" },
         fatigue: { color: "#ff9a6b", icon: "☠", sign: "−" },
       };
 
@@ -1925,9 +1932,10 @@
         let hurt = 0, healed = false;
         if (d) {
           if (kind === "attack") { const ab = Math.min(d.shield, amount); d.shield -= ab; hurt = amount - ab; d.hp = Math.max(0, d.hp - hurt); }
-          else if (kind === "heal") { d.hp = Math.min(d.maxHp, d.hp + amount); healed = true; }
+          else if (kind === "pierce") { hurt = amount; d.hp = Math.max(0, d.hp - hurt); } // straight through the shield
+          else if (kind === "heal" || kind === "regen-tick") { d.hp = Math.min(d.maxHp, d.hp + amount); healed = true; }
           else if (kind === "shield") { d.shield += amount; }
-          else if (kind.endsWith("-tick") || kind === "fatigue") { hurt = amount; d.hp = Math.max(0, d.hp - hurt); }
+          else if (kind === "burn-tick" || kind === "poison-tick" || kind === "fatigue") { hurt = amount; d.hp = Math.max(0, d.hp - hurt); }
           drawHp(seat, healed);
         }
         const flash = document.createElement("div");
@@ -1940,7 +1948,7 @@
           cue(hurt >= 12 ? "bigHit" : "hit");
           pose(seat, null, "hurt");
           if (!reduceMotion) playPreset(hud, "headShake", { speed: "faster" });
-        } else if (kind === "heal" || kind === "shield") {
+        } else if (kind === "heal" || kind === "regen-tick" || kind === "shield") {
           cue("heal");
           pose(seat, null, "cheer");
           bump(hud.querySelector(".hp .bar"));

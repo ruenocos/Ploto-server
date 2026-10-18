@@ -216,6 +216,7 @@ export class MatchMonstersGame {
         meltIce(s.ice);
         iceLanded = this.landFreezes();
         tickDots(incoming, nextTurn, ctx.abilities);
+        tickRegen(incoming, nextTurn, ctx.abilities);
         s.turnPasses += 1;
         const fatigue = fatigueDamage(s.turnPasses);
         if (fatigue > 0) {
@@ -389,11 +390,10 @@ export class MatchMonstersGame {
     const b = this.state.board;
     switch (e.kind) {
       case "damage":
-        this.hit(ctx, def, e.amount);
-        return { kind: "damage", target: foeIdx, amount: e.amount };
+        this.hit(ctx, def, e.amount, e.pierce);
+        return { kind: "damage", target: foeIdx, amount: e.amount, ...(e.pierce ? { pierce: true } : {}) };
       case "heal":
-        this.heal(ctx, def, e.amount);
-        return { kind: "heal", target: by, amount: e.amount };
+        return { kind: "heal", target: by, amount: this.heal(ctx, def, e.amount) };
       case "shield": {
         const gained = Math.max(0, Math.min(e.amount, MAX_SHIELD - attacker.shield));
         if (gained > 0) {
@@ -402,20 +402,39 @@ export class MatchMonstersGame {
         }
         return { kind: "shield", target: by, amount: gained };
       }
-      case "drain":
+      case "drain": {
         this.hit(ctx, def, e.amount);
-        this.heal(ctx, def, e.amount);
-        return { kind: "drain", target: foeIdx, amount: e.amount };
-      case "dot":
+        const healed = this.heal(ctx, def, e.amount);
+        return { kind: "drain", target: foeIdx, amount: e.amount, healed };
+      }
+      case "dot": {
+        const ev = { kind: "dot", target: foeIdx, dot: e.dot, amount: e.amount, turns: e.turns } as const;
+        if (popBubble(defender)) return { ...ev, blocked: true };
         defender.dots.push({ amount: e.amount, turns: e.turns, kind: e.dot, element: def.element });
         ctx.abilities.push(evt(def, e.dot, e.amount, foeIdx));
-        return { kind: "dot", target: foeIdx, dot: e.dot, amount: e.amount, turns: e.turns };
+        return ev;
+      }
+      case "ignite": {
+        // Every burn on the rival goes off now for all the ticks it had left.
+        const burns = defender.dots.filter((d) => d.kind === "burn");
+        const amount = burns.reduce((sum, d) => sum + d.amount * d.turns, 0);
+        defender.dots = defender.dots.filter((d) => d.kind !== "burn");
+        if (amount > 0) this.hit(ctx, def, amount, true); // burns ignore shields
+        return { kind: "ignite", target: foeIdx, amount, burns: burns.length };
+      }
+      case "regen":
+        attacker.regen.push({ amount: e.amount, turns: e.turns });
+        return { kind: "regen", target: by, amount: e.amount, turns: e.turns };
+      case "bubble":
+        attacker.bubble = Math.min(MAX_BUBBLES, attacker.bubble + e.count);
+        return { kind: "bubble", target: by, count: attacker.bubble };
       case "match": {
         const cells = this.shapeCells(e.shape, e.size ?? defaultShapeSize(e.shape));
         const step = this.matchRegion(cells, ctx);
         return { kind: "match", shape: e.shape, cells, step };
       }
       case "freeze":
+        if (popBubble(defender)) return { kind: "freeze", target: foeIdx, count: e.count, turns: e.turns, blocked: true };
         // Lands when the turn passes, so it never blocks the caster's own moves.
         this.state.pendingFreeze.push({ count: e.count, turns: e.turns });
         return { kind: "freeze", target: foeIdx, count: e.count, turns: e.turns };
@@ -460,11 +479,13 @@ export class MatchMonstersGame {
         return { kind: "sap", target: foeIdx, drained };
       }
       case "slow": {
+        if (popBubble(defender)) return { kind: "slow", target: foeIdx, count: 0, blocked: true };
         const before = defender.slow;
         defender.slow = Math.min(MOVES_PER_TURN - 1, defender.slow + e.count);
         return { kind: "slow", target: foeIdx, count: defender.slow - before };
       }
       case "seal": {
+        if (popBubble(defender)) return { kind: "seal", target: foeIdx, monsterId: null, turns: e.turns, blocked: true };
         const target = this.pick(defender.monsters, 1)[0];
         if (target) target.sealed = Math.max(target.sealed, e.turns);
         return { kind: "seal", target: foeIdx, monsterId: target?.def.id ?? null, turns: e.turns };
@@ -490,17 +511,20 @@ export class MatchMonstersGame {
     }
   }
 
-  private hit(ctx: FireContext, def: Monster, amount: number): boolean {
+  private hit(ctx: FireContext, def: Monster, amount: number, pierce = false): boolean {
     if (amount <= 0) return false;
-    dealDamage(ctx.defender, amount);
+    dealDamage(ctx.defender, amount, pierce);
     ctx.abilities.push(evt(def, "attack", amount, ctx.foeIdx));
     return true;
   }
 
-  private heal(ctx: FireContext, def: Monster, amount: number): void {
-    if (amount <= 0) return;
-    ctx.attacker.hp = Math.min(ctx.attacker.maxHp, ctx.attacker.hp + amount);
-    ctx.abilities.push(evt(def, "heal", amount, ctx.by));
+  /** Heal the caster; poison halves it. Returns what was actually healed. */
+  private heal(ctx: FireContext, def: Monster, amount: number): number {
+    const healed = healAmount(ctx.attacker, amount);
+    if (healed <= 0) return 0;
+    ctx.attacker.hp = Math.min(ctx.attacker.maxHp, ctx.attacker.hp + healed);
+    ctx.abilities.push(evt(def, "heal", healed, ctx.by));
+    return healed;
   }
 
   private shapeCells(shape: MatchShape, size: number): { x: number; y: number }[] {
@@ -653,7 +677,10 @@ export function scaledEffects(def: Monster, evolution: number): Effect[] {
       case "drain":
         return { ...e, amount: scaleAmount(e.amount, evolution) };
       case "dot":
+      case "regen":
         return { ...e, amount: scaleAmount(e.amount, evolution), turns: e.turns + atLeast(evolution, 1) };
+      case "bubble":
+        return { ...e, count: e.count + atLeast(evolution, 2) };
       case "match":
         return { ...e, size: (e.size ?? defaultShapeSize(e.shape)) + atLeast(evolution, 1) };
       case "freeze":
@@ -668,7 +695,7 @@ export function scaledEffects(def: Monster, evolution: number): Effect[] {
       case "haste":
         return { ...e, count: e.count + atLeast(evolution, 2) };
       default:
-        return e; // slow is capped at one move; cleanse is all-or-nothing
+        return e; // slow is capped at one move; cleanse and ignite are all-or-nothing
     }
   });
 }
@@ -706,11 +733,14 @@ function describeShape(shape: MatchShape, size: number): string {
 export function describeEffects(effects: readonly Effect[], element: Element): string {
   const parts = effects.map((e) => {
     switch (e.kind) {
-      case "damage": return `deal ${e.amount} damage`;
+      case "damage": return `deal ${e.amount} ${e.pierce ? "piercing damage (ignores shields)" : "damage"}`;
       case "heal": return `heal ${e.amount} HP`;
       case "shield": return `gain a ${e.amount} shield`;
       case "drain": return `steal ${e.amount} HP`;
-      case "dot": return `${e.dot} ${e.amount}/turn for ${e.turns} turns`;
+      case "dot": return `${e.dot} ${e.amount}/turn for ${e.turns} turns` + (e.dot === "poison" ? " (halves their healing)" : "");
+      case "ignite": return "detonate the rival's burns for all their remaining damage";
+      case "regen": return `regenerate ${e.amount} HP/turn for ${e.turns} turns`;
+      case "bubble": return e.count === 1 ? "block the next harmful effect on you" : `block the next ${e.count} harmful effects on you`;
       case "match": return describeShape(e.shape, e.size ?? defaultShapeSize(e.shape));
       case "freeze": return `freeze ${e.count} tiles for the rival's ` + (e.turns > 1 ? `next ${e.turns} turns` : "turn");
       case "petrify": return `turn ${e.count} tiles to stone`;
@@ -740,6 +770,7 @@ const EFFECT_LABEL: Record<EffectKind, string> = {
   damage: "Damage", heal: "Heal", shield: "Shield", drain: "Life steal", dot: "", match: "Blast",
   freeze: "Frozen tiles", petrify: "Stone tiles", convert: "Converted tiles", sap: "Charge drained",
   slow: "Moves stolen", seal: "Seal", haste: "Extra moves", cleanse: "Cleanse", empower: "Partner charge",
+  ignite: "Ignite", regen: "Regen", bubble: "Bubbles",
 };
 
 /**
@@ -754,8 +785,8 @@ export function evolutionChanges(def: Monster, evolution: number): string[] {
   now.forEach((a, i) => {
     const b = next[i]!;
     const label = EFFECT_LABEL[a.kind];
-    if (a.kind === "dot" && b.kind === "dot") {
-      const name = a.dot === "burn" ? "Burn" : "Poison";
+    if ((a.kind === "dot" && b.kind === "dot") || (a.kind === "regen" && b.kind === "regen")) {
+      const name = a.kind === "regen" ? "Regen" : a.dot === "burn" ? "Burn" : "Poison";
       if (a.amount !== b.amount) out.push(`${name} ${a.amount} → ${b.amount}/turn`);
       if (a.turns !== b.turns) out.push(`${name} lasts ${a.turns} → ${b.turns} turns`);
     } else if (a.kind === "match" && b.kind === "match") {
@@ -842,9 +873,35 @@ function tickDots(player: PlayerState, playerIdx: 0 | 1, events: AbilityEvent[])
   player.dots = remaining;
 }
 
-function dealDamage(player: PlayerState, amount: number): void {
+/** Most bubbles a player can hold at once. */
+const MAX_BUBBLES = 3;
+
+/** If the player has a bubble, it blocks this harmful effect (and is used up). */
+function popBubble(player: PlayerState): boolean {
+  if (player.bubble <= 0) return false;
+  player.bubble -= 1;
+  return true;
+}
+
+/** Healing after poison: a poisoned player heals half (rounded up). */
+function healAmount(player: PlayerState, amount: number): number {
+  if (amount <= 0) return 0;
+  return player.dots.some((d) => d.kind === "poison") ? Math.ceil(amount / 2) : amount;
+}
+
+function tickRegen(player: PlayerState, playerIdx: 0 | 1, events: AbilityEvent[]): void {
+  if (player.regen.length === 0) return;
+  for (const r of player.regen) {
+    const healed = healAmount(player, r.amount);
+    player.hp = Math.min(player.maxHp, player.hp + healed);
+    events.push({ monsterId: "regen", monsterName: "Regen", element: "light", type: "regen-tick", amount: healed, targetPlayer: playerIdx });
+  }
+  player.regen = player.regen.map((r) => ({ ...r, turns: r.turns - 1 })).filter((r) => r.turns > 0);
+}
+
+function dealDamage(player: PlayerState, amount: number, pierce = false): void {
   let dmg = amount;
-  if (player.shield > 0) {
+  if (player.shield > 0 && !pierce) {
     const absorbed = Math.min(player.shield, dmg);
     player.shield -= absorbed;
     dmg -= absorbed;
@@ -864,6 +921,8 @@ function toPlayerState(p: PlayerSetup, hp: number): PlayerState {
     maxHp: hp,
     shield: 0,
     dots: [],
+    regen: [],
+    bubble: 0,
     berries: 0,
     slow: 0,
     monsters: p.monsters.map((def): MonsterState => ({ def, charge: 0, evolution: 0, sealed: 0 })),

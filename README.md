@@ -168,8 +168,8 @@ serves per-monster, matchup and team win rates from it for tuning.
 Balance is checked with `npm run sim` (match length, first-player edge, win
 share per element) and `npm run tiers` (per-monster win rate, and what going
 ★0 → ★★★ is worth for each). Both use the same greedy bot as practice mode.
-Last run (6×6 board): 100% of matches finish (median 57 moves), every monster wins
-48–53%, and evolving to ★★★ adds +35 to +50 points of win rate for every
+Last run: 100% of matches finish (median 56 moves), every monster wins
+47–54%, and evolving to ★★★ adds +35 to +50 points of win rate for every
 monster.
 
 The roster and art are our own, so the game is playable now; the real

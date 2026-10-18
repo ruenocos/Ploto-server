@@ -18,7 +18,8 @@
     "sim": "npm run build && node scripts/balance-sim.mjs",
     "tiers": "npm run build && node scripts/monster-tiers.mjs",
     "lab": "node scripts/lab-report.mjs",
-    "sounds": "node scripts/gen-sounds.mjs"
+    "sounds": "node scripts/gen-sounds.mjs",
+    "blasts": "npm run build && node scripts/blast-randomness.mjs"
   },
   "dependencies": {
     "@fontsource/pixelify-sans": "5.3.0",

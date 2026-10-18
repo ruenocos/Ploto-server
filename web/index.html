@@ -144,6 +144,25 @@
       .tile.earth { background: rgba(192, 138, 74, 0.22); }
       .tile.nature { background: rgba(76, 203, 107, 0.22); }
       .tile.light { background: rgba(255, 210, 60, 0.22); }
+      .tile.swapin { animation: swapin 180ms ease; }
+      .tile.pop { animation: pop 360ms ease forwards; z-index: 2; }
+      @keyframes swapin { 0% { transform: scale(0.8); } 100% { transform: scale(1); } }
+      @keyframes pop {
+        0% { transform: scale(1); }
+        35% { transform: scale(1.28); filter: brightness(1.7); }
+        100% { transform: scale(0.1); opacity: 0.15; }
+      }
+      .team { position: relative; }
+      .dmg-float {
+        position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+        font-weight: 800; font-size: 20px; color: #ff6a4d; text-shadow: 0 1px 4px #000;
+        pointer-events: none; animation: floatUp 950ms ease forwards; z-index: 5;
+      }
+      @keyframes floatUp {
+        0% { opacity: 0; transform: translate(-50%, 8px); }
+        20% { opacity: 1; }
+        100% { opacity: 0; transform: translate(-50%, -26px); }
+      }
       .hidden { display: none !important; }
       .toast {
         position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
@@ -192,8 +211,8 @@
       <section id="game" class="card hidden">
         <div id="turnBanner" class="turn-banner"></div>
         <div class="teams">
-          <div class="team"><h3 id="meName">You</h3><div id="meTeam"></div></div>
-          <div class="team"><h3 id="foeName">Opponent</h3><div id="foeTeam"></div></div>
+          <div class="team" id="teamMe"><h3 id="meName">You</h3><div id="meTeam"></div></div>
+          <div class="team" id="teamFoe"><h3 id="foeName">Opponent</h3><div id="foeTeam"></div></div>
         </div>
         <div id="board"></div>
         <div id="gameStatus" class="status"></div>
@@ -383,8 +402,8 @@
         try { lobbySock?.close(); } catch {}
         gameSock = connect(matched.roomId);
         await waitOpen(gameSock);
-        gameSock.on("mm:moveResult", () => refresh());
-        gameSock.on("mm:gameOver", (d) => showEnd(d.winner === mySeat));
+        gameSock.on("mm:moveResult", (d) => animate(d));
+        gameSock.on("mm:gameOver", (d) => setTimeout(() => showEnd(d.winner === mySeat), 750));
         $("lobby").classList.add("hidden");
         $("end").classList.add("hidden");
         $("game").classList.remove("hidden");
@@ -419,6 +438,8 @@
           row.forEach((el, x) => {
             const t = document.createElement("div");
             t.className = `tile ${el}`;
+            t.dataset.x = x;
+            t.dataset.y = y;
             t.textContent = EMOJI[el] || "";
             if (selected && selected.x === x && selected.y === y) t.classList.add("sel");
             t.addEventListener("click", () => onTile(x, y));
@@ -440,6 +461,7 @@
       }
 
       async function onTile(x, y) {
+        if (animating) return;
         if (!myTurn()) return toast("Not your turn");
         if (!selected) { selected = { x, y }; return render(); }
         if (selected.x === x && selected.y === y) { selected = null; return render(); }
@@ -449,11 +471,62 @@
         selected = null;
         render();
         try {
+          // On success the server broadcasts mm:moveResult to both players, which
+          // drives the animation for everyone. We only react here if it's illegal.
           await gameSock.request("mm:move", { from, to: { x, y } });
-          await refresh();
         } catch (e) {
           toast(e.message);
-          await refresh();
+        }
+      }
+
+      /* ---- move animation: swap -> match flash -> settle -> damage ---- */
+      let animating = false;
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      const tileAt = (x, y) => $("board").querySelector(`[data-x="${x}"][data-y="${y}"]`);
+
+      async function animate(data) {
+        animating = true;
+        selected = null;
+        // 1) show the swap happen on the board as it currently stands
+        const { from, to } = data.move;
+        swapLocal(from, to);
+        render();
+        tileAt(from.x, from.y)?.classList.add("swapin");
+        tileAt(to.x, to.y)?.classList.add("swapin");
+        await sleep(170);
+        // 2) flash the tiles that matched (first cascade, valid on the swapped board)
+        const step0 = data.cascades && data.cascades[0];
+        if (step0 && step0.cleared.length) {
+          for (const c of step0.cleared) tileAt(c.x, c.y)?.classList.add("pop");
+          await sleep(360);
+        }
+        // 3) settle to the final board + float the damage dealt
+        state.board = data.board;
+        render();
+        showDamage(data);
+        // 4) sync authoritative HP / turn / phase from the server
+        await refresh();
+        animating = false;
+      }
+
+      function swapLocal(a, b) {
+        const g = state.board;
+        const t = g[a.y][a.x];
+        g[a.y][a.x] = g[b.y][b.x];
+        g[b.y][b.x] = t;
+      }
+
+      function showDamage(data) {
+        if (!data.damage || !data.damage.length) return;
+        const totals = {};
+        for (const d of data.damage) totals[d.targetPlayer] = (totals[d.targetPlayer] || 0) + d.amount;
+        for (const seat of Object.keys(totals)) {
+          const card = Number(seat) === mySeat ? $("teamMe") : $("teamFoe");
+          const f = document.createElement("div");
+          f.className = "dmg-float";
+          f.textContent = "-" + totals[seat];
+          card.appendChild(f);
+          setTimeout(() => f.remove(), 950);
         }
       }
 

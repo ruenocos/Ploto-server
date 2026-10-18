@@ -24,6 +24,8 @@ import type { Monster } from "../game/matchmonsters/types.js";
 
 const LOBBY = "lobby";
 const PROTOO_SUBPROTOCOL = "protoo";
+/** How long an empty room survives so players can reload/reconnect. */
+const ROOM_IDLE_MS = 10 * 60 * 1000;
 
 export class SignalingServer {
   private readonly wss: WebSocketServer;
@@ -54,9 +56,14 @@ export class SignalingServer {
   }
 
   async close(): Promise<void> {
+    for (const t of this.roomTimers.values()) clearTimeout(t);
+    this.roomTimers.clear();
     for (const peer of this.lobbyPeers.values()) peer.close();
     await new Promise<void>((resolve) => this.wss.close(() => resolve()));
   }
+
+  /** Rooms nobody is connected to, scheduled for cleanup. */
+  private readonly roomTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   private onConnection(socket: WebSocket, roomId: string, peerId: string): void {
     if (roomId === LOBBY) {
@@ -66,6 +73,8 @@ export class SignalingServer {
         socket,
         (p, method, data) => this.handleLobby(p, method, data),
         (p) => {
+          // A reload may already have replaced this peer with a new connection.
+          if (this.lobbyPeers.get(p.id) !== p) return;
           this.matchmaker.cancel(p.id);
           this.removePendingByHost(p.id);
           this.picks.delete(p.id);
@@ -86,13 +95,32 @@ export class SignalingServer {
       roomId,
       socket,
       (p, method, data) => room.handleRequest(p.id, method, data),
-      () => {
-        /* keep the room; opponent may still be connected / reconnecting */
+      (p) => {
+        room.leave(p);
+        if (room.connectedCount() === 0) this.scheduleRoomCleanup(roomId);
       },
     );
     if (!room.join(peer)) {
       peer.close();
+      return;
     }
+    const pending = this.roomTimers.get(roomId);
+    if (pending) {
+      clearTimeout(pending);
+      this.roomTimers.delete(roomId);
+    }
+  }
+
+  /** Drop an abandoned room after a grace period (long enough to reload a tab). */
+  private scheduleRoomCleanup(roomId: string): void {
+    if (this.roomTimers.has(roomId)) return;
+    const timer = setTimeout(() => {
+      this.roomTimers.delete(roomId);
+      const room = this.rooms.get(roomId);
+      if (room && room.connectedCount() === 0) this.rooms.delete(roomId);
+    }, ROOM_IDLE_MS);
+    timer.unref?.();
+    this.roomTimers.set(roomId, timer);
   }
 
   private handleLobby(peer: Peer, method: string, data: unknown): unknown {

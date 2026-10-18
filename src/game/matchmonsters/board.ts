@@ -34,6 +34,11 @@ function inBounds(b: Board, x: number, y: number): boolean {
   return x >= 0 && y >= 0 && x < b.width && y < b.height;
 }
 
+/** Stones (and empty cells) never form part of a match. */
+function matchable(t: Tile): boolean {
+  return t != null && t !== "stone";
+}
+
 /**
  * Generate a full board with no pre-existing matches, so the opening position is
  * neutral and every clear is the result of a deliberate move.
@@ -75,9 +80,9 @@ export function findMatches(b: Board): { x: number; y: number; element: Gem }[] 
       for (let i = 1; i <= inner; i++) {
         const cur = i < inner ? cell(b, horizontal, o, i) : null;
         const prev = cell(b, horizontal, o, i - 1);
-        if (i < inner && cur != null && cur === prev) continue;
+        if (i < inner && matchable(cur) && cur === prev) continue;
         const runLen = i - runStart;
-        if (prev != null && runLen >= 3) {
+        if (matchable(prev) && runLen >= 3) {
           for (let k = runStart; k < i; k++) {
             const [x, y] = horizontal ? [k, o] : [o, k];
             matched.add(`${x},${y}`);
@@ -112,7 +117,7 @@ export function hasBigMatch(b: Board, minRun = 4): boolean {
       for (let i = 1; i < inner; i++) {
         const cur = cell(b, horizontal, o, i);
         const prev = cell(b, horizontal, o, i - 1);
-        run = cur != null && cur === prev ? run + 1 : 1;
+        run = matchable(cur) && cur === prev ? run + 1 : 1;
         if (run >= minRun) return true;
       }
     }
@@ -152,9 +157,16 @@ function swapCells(b: Board, x1: number, y1: number, x2: number, y2: number): vo
   b.grid[y2]![x2] = t;
 }
 
-/** True if any single adjacent swap would create a match. */
-export function hasAnyMove(b: Board): boolean {
+/** True if a cell can be picked up and swapped (not stone, not frozen). */
+export function isMovable(b: Board, x: number, y: number, ice?: number[][]): boolean {
+  if (b.grid[y]![x] === "stone") return false;
+  return !(ice && (ice[y]?.[x] ?? 0) > 0);
+}
+
+/** True if any single adjacent swap of movable tiles would create a match. */
+export function hasAnyMove(b: Board, ice?: number[][]): boolean {
   const trySwap = (x1: number, y1: number, x2: number, y2: number): boolean => {
+    if (!isMovable(b, x1, y1, ice) || !isMovable(b, x2, y2, ice)) return false;
     swapCells(b, x1, y1, x2, y2);
     const ok = findMatches(b).length > 0;
     swapCells(b, x1, y1, x2, y2);
@@ -180,6 +192,28 @@ export function reshuffle(b: Board, opts: BoardOptions, rng: Rng): void {
   }
   // Extremely unlikely; accept the last generated board.
   b.grid = generateBoard(opts, rng).grid;
+}
+
+/** Stones orthogonally next to any cleared cell (they crumble), excluding cleared cells. */
+export function adjacentStones(
+  b: Board,
+  cleared: readonly { x: number; y: number }[],
+): { x: number; y: number }[] {
+  const taken = new Set(cleared.map((c) => `${c.x},${c.y}`));
+  const out: { x: number; y: number }[] = [];
+  for (const c of cleared) {
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+      const x = c.x + dx;
+      const y = c.y + dy;
+      const key = `${x},${y}`;
+      if (!inBounds(b, x, y) || taken.has(key)) continue;
+      if (b.grid[y]![x] === "stone") {
+        taken.add(key);
+        out.push({ x, y });
+      }
+    }
+  }
+  return out;
 }
 
 export { inBounds };

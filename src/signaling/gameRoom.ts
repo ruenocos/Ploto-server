@@ -8,7 +8,13 @@
  * read off that bundle; when they are, only this adapter changes — the engine
  * and transport stay put. (Marked ⏳ in docs/PROTOCOL.md.)
  */
-import { MatchMonstersGame, abilityView, type GameConfig } from "../game/matchmonsters/engine.js";
+import {
+  MatchMonstersGame,
+  abilityView,
+  effectiveCost,
+  fatigueDamage,
+  type GameConfig,
+} from "../game/matchmonsters/engine.js";
 import type { Move, MonsterState, PlayerState } from "../game/matchmonsters/types.js";
 
 /** Minimal view of a protoo peer, so rooms are testable without a live socket. */
@@ -16,7 +22,6 @@ export interface PeerLike {
   readonly id: string;
   notify(method: string, data: unknown): void;
 }
-
 
 export class GameRoom {
   private readonly game: MatchMonstersGame;
@@ -30,12 +35,36 @@ export class GameRoom {
     this.seats.set(config.players[1].peerId, 1);
   }
 
-  /** Attach a connected peer to its reserved seat. */
+  /**
+   * Attach a connected peer to its reserved seat. Re-joining (e.g. after a page
+   * reload) replaces the old connection and tells the opponent they're back.
+   */
   join(peer: PeerLike): boolean {
     const seat = this.seats.get(peer.id);
     if (seat === undefined) return false;
     this.peers[seat] = peer;
+    this.peers[seat === 0 ? 1 : 0]?.notify("mm:peerStatus", { seat, connected: true });
     return true;
+  }
+
+  /**
+   * A peer's socket closed. Only counts if it's still the live connection for
+   * that seat (a reload may already have replaced it).
+   */
+  leave(peer: PeerLike): void {
+    const seat = this.seats.get(peer.id);
+    if (seat === undefined || this.peers[seat] !== peer) return;
+    this.peers[seat] = undefined;
+    this.peers[seat === 0 ? 1 : 0]?.notify("mm:peerStatus", { seat, connected: false });
+  }
+
+  /** How many seats currently have a live connection. */
+  connectedCount(): number {
+    return this.peers.filter(Boolean).length;
+  }
+
+  get finished(): boolean {
+    return this.game.state.phase === "finished";
   }
 
   /**
@@ -87,12 +116,17 @@ export class GameRoom {
     return {
       matchId: s.matchId,
       board: s.board.grid,
+      ice: s.ice,
       turn: s.turn,
       movesLeft: s.movesLeft,
+      turnPasses: s.turnPasses,
+      /** Sudden-death damage the next player to start a turn will take (0 = not yet). */
+      fatigueNext: fatigueDamage(s.turnPasses + 1),
       phase: s.phase,
       winner: s.winner,
       moveNumber: s.moveNumber,
       players: s.players.map(serializePlayer),
+      connected: [Boolean(this.peers[0]), Boolean(this.peers[1])],
     };
   }
 
@@ -120,7 +154,7 @@ function serializeMonster(m: MonsterState) {
     name: m.def.name,
     element: m.def.element,
     charge: m.charge,
-    chargeCost: m.def.chargeCost,
+    chargeCost: effectiveCost(m.def, m.evolution),
     evolution: m.evolution,
     ability: abilityView(m.def, m.evolution),
   };

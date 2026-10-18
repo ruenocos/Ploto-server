@@ -48,10 +48,12 @@ describe("GameRoom", () => {
     const b = new FakePeer("p1");
     room.join(a);
     room.join(b);
-    // The freshly generated board has no immediate match, so this swap is illegal.
+    a.notifications.length = 0; // ignore the "opponent connected" notice
+    b.notifications.length = 0;
+    // Non-adjacent tiles can never be swapped, whatever the board looks like.
     expect(() =>
-      room.handleRequest("p0", "mm:move", { from: { x: 0, y: 0 }, to: { x: 1, y: 0 } }),
-    ).toThrow();
+      room.handleRequest("p0", "mm:move", { from: { x: 0, y: 0 }, to: { x: 2, y: 0 } }),
+    ).toThrow(/adjacent/);
     expect(a.notifications).toHaveLength(0);
     expect(b.notifications).toHaveLength(0);
   });

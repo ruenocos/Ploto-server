@@ -10,7 +10,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import Fastify, { type FastifyInstance } from "fastify";
 import type { ServerConfig } from "../config/env.js";
-import { roster } from "../game/matchmonsters/monsters.js";
+import { ARCHETYPES, roster } from "../game/matchmonsters/monsters.js";
+import { abilityView } from "../game/matchmonsters/engine.js";
 
 export interface StatusBody {
   downtime: 0 | 1;
@@ -42,8 +43,17 @@ export function buildStatusServer(config: ServerConfig): FastifyInstance {
     return loadClientHtml();
   });
 
-  // Monster roster for the client's picker.
-  app.get("/play/monsters", async () => roster());
+  // Monster roster for the client's picker: move text + element archetype.
+  app.get("/play/monsters", async () =>
+    roster().map((m) => ({
+      id: m.id,
+      name: m.name,
+      element: m.element,
+      chargeCost: m.chargeCost,
+      ability: abilityView(m, 0),
+      archetype: ARCHETYPES[m.element],
+    })),
+  );
 
   // Plotomon creature art module (served to the client).
   app.get("/play/plotomon.js", async (_req, reply) => {

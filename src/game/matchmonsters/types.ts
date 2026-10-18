@@ -2,17 +2,20 @@
  * Match Monsters — domain types.
  *
  * Model (like the real game): a match-3 board of elemental tiles. Each player has
- * a single HP pool and fields two monsters. Matching 3+ tiles of a monster's
- * element charges that monster; when its charge reaches the monster's cost, its
- * ability fires (damage / heal / shield / burn) and the charge is spent. Reduce
- * the opponent's HP to zero to win. Server-authoritative.
+ * a single HP pool and fields two monsters. Matching tiles of a monster's element
+ * charges it; at its charge cost it fires its move — a stack of effects (damage
+ * plus a twist: board blasts, freezes, stone, charge tricks, …). Reduce the
+ * opponent's HP to zero to win. Server-authoritative.
  */
 
 export const ELEMENTS = ["fire", "water", "earth", "nature", "light"] as const;
 export type Element = (typeof ELEMENTS)[number];
 
-/** A board piece: an element, or a berry pickup. */
-export type Gem = Element | "berry";
+/**
+ * A board piece: an element, a berry pickup, or a stone blocker. Stones never
+ * match, can't be swapped, and crumble when a neighbouring tile is matched.
+ */
+export type Gem = Element | "berry" | "stone";
 
 /** A board cell. `null` is a transient empty cell during resolution. */
 export type Tile = Gem | null;
@@ -28,34 +31,83 @@ export interface Board {
 }
 
 /** Starting / maximum HP for every player. */
-export const STARTING_HP = 100;
+export const STARTING_HP = 80;
+/** Shields can't stack past this. */
+export const MAX_SHIELD = 30;
+/**
+ * Sudden death: once this many turns have passed (both players combined), each
+ * player takes growing damage at the start of their turn (ignores shields).
+ */
+export const FATIGUE_AFTER = 14;
+/** Sudden-death damage grows by this much per turn. */
+export const FATIGUE_STEP = 3;
 
-export type AbilityType = "attack" | "heal" | "shield" | "burn" | "poison";
+/** Shapes a "match" effect can clear (cleared tiles count as matched for you). */
+export type MatchShape = "row" | "col" | "area" | "square";
+
+/** One effect in a move. Moves are stacks of these, applied in order. */
+export type Effect =
+  | { readonly kind: "damage"; readonly amount: number }
+  | { readonly kind: "heal"; readonly amount: number }
+  | { readonly kind: "shield"; readonly amount: number }
+  /** Damage the rival and heal yourself the same amount. */
+  | { readonly kind: "drain"; readonly amount: number }
+  | { readonly kind: "dot"; readonly dot: "burn" | "poison"; readonly amount: number; readonly turns: number }
+  /** Clear a board region; the tiles count as matched for you (charge + berries). */
+  | { readonly kind: "match"; readonly shape: MatchShape }
+  /** Ice random tiles so they can't be swapped for the rival's next turn(s). */
+  | { readonly kind: "freeze"; readonly count: number; readonly turns: number }
+  /** Turn random tiles into stone blockers. */
+  | { readonly kind: "petrify"; readonly count: number }
+  /** Turn random tiles into your monster's element. */
+  | { readonly kind: "convert"; readonly count: number }
+  /** Remove charge from each rival monster. */
+  | { readonly kind: "sap"; readonly count: number }
+  /** The rival gets this many fewer moves next turn. */
+  | { readonly kind: "slow"; readonly count: number }
+  /** A random rival monster can't gain charge for this many of their turns. */
+  | { readonly kind: "seal"; readonly turns: number }
+  /** Extra moves this turn. */
+  | { readonly kind: "haste"; readonly count: number }
+  /** Remove your burns and poison. */
+  | { readonly kind: "cleanse" }
+  /** Give charge to your partner monster. */
+  | { readonly kind: "empower"; readonly count: number };
+
+export type EffectKind = Effect["kind"];
 
 export interface Ability {
-  readonly type: AbilityType;
-  /** Damage (attack / burn / poison per turn), HP restored (heal), or shield gained. */
-  readonly amount: number;
-  /** For `burn`/`poison`: how many of the victim's turns it ticks. */
-  readonly turns?: number;
-  readonly description: string;
+  /** Move name shown to players, e.g. "Eruption". */
+  readonly name: string;
+  readonly effects: readonly Effect[];
+}
+
+/** Always-on traits. */
+export interface Passive {
+  /** At or below `threshold` HP, the move becomes `hits` strikes of `amount`. */
+  readonly berserk?: { readonly threshold: number; readonly hits: number; readonly amount: number };
+  /** Whenever the partner's move deals damage, strike for this much too. */
+  readonly followUp?: number;
 }
 
 export interface Monster {
   readonly id: string;
   readonly name: string;
   readonly element: Element;
-  /** Tiles of this monster's element that must be matched to fire its ability. */
+  /** Tiles of this monster's element that must be matched to fire its move. */
   readonly chargeCost: number;
   readonly ability: Ability;
+  readonly passive?: Passive;
 }
 
 export interface MonsterState {
   readonly def: Monster;
   /** Accumulated matched tiles of the monster's element, spent when it fires. */
   charge: number;
-  /** Evolution level (0 = base); each level strengthens the ability. */
+  /** Evolution level (0 = base); each level strengthens the move. */
   evolution: number;
+  /** Owner turns left during which this monster can't gain charge. */
+  sealed: number;
 }
 
 /** A damage-over-time effect (burn or poison) on a player. */
@@ -75,6 +127,8 @@ export interface PlayerState {
   dots: Dot[];
   /** Berries collected, spent 4 at a time to evolve a monster. */
   berries: number;
+  /** Moves this player loses at the start of their next turn. */
+  slow: number;
   monsters: MonsterState[];
 }
 
@@ -86,10 +140,14 @@ export const MOVES_PER_TURN = 2;
 export interface GameState {
   readonly matchId: string;
   board: Board;
+  /** Per-cell ice: turn-passes left before it melts (0 = not frozen). */
+  ice: number[][];
   players: [PlayerState, PlayerState];
   turn: 0 | 1;
   /** Moves the current player has left this turn. */
   movesLeft: number;
+  /** Turns that have ended so far (both players), for sudden death. */
+  turnPasses: number;
   phase: Phase;
   winner: 0 | 1 | null;
   moveNumber: number;
@@ -109,15 +167,30 @@ export interface CascadeStep {
   board: Tile[][];
 }
 
-/** Something an ability did, for UI floats and logging. */
+export type NumericEventType =
+  | "attack" | "heal" | "shield" | "burn" | "poison" | "burn-tick" | "poison-tick" | "fatigue";
+
+/** A number to float over a player (damage, heal, shield, burn/poison). */
 export interface AbilityEvent {
   readonly monsterId: string;
   readonly monsterName: string;
   readonly element: Element;
-  readonly type: AbilityType | "burn-tick" | "poison-tick";
+  readonly type: NumericEventType;
   readonly amount: number;
-  /** Player index the effect landed on (foe for attack/burn, self for heal/shield). */
+  /** Player index the effect landed on. */
   readonly targetPlayer: 0 | 1;
+}
+
+/** A monster using its move, for the "X used Eruption!" callouts. */
+export interface CastEvent {
+  readonly by: 0 | 1;
+  readonly monsterId: string;
+  readonly monsterName: string;
+  readonly element: Element;
+  readonly moveName: string;
+  readonly kinds: EffectKind[];
+  /** Fired via a passive (follow-up) or berserk form. */
+  readonly via?: "followUp" | "berserk";
 }
 
 export interface MoveResult {
@@ -125,9 +198,14 @@ export interface MoveResult {
   readonly move: Move;
   readonly by: 0 | 1;
   readonly cascades: CascadeStep[];
-  /** Total tiles matched per element this move (what fed the charges). */
+  /** Board changes from moves (blasts) and their fallout, for animation. */
+  readonly effectSteps: CascadeStep[];
+  /** Total tiles matched per element by the swap (what fed the charges). */
   readonly charged: Partial<Record<Element, number>>;
+  /** Numbers to float (damage/heal/shield/burn/poison). */
   readonly abilities: AbilityEvent[];
+  /** Moves used this turn, in firing order. */
+  readonly casts: CastEvent[];
   /** Berries the mover collected this move. */
   readonly berriesGained: number;
   readonly nextTurn: 0 | 1;
@@ -138,6 +216,8 @@ export interface MoveResult {
   readonly finished: boolean;
   readonly winner: 0 | 1 | null;
   readonly board: Tile[][];
+  /** Ice on the board after this move resolves. */
+  readonly ice: number[][];
   /** The board was reshuffled because it had no valid moves. */
   readonly reshuffled: boolean;
 }

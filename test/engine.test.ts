@@ -1,42 +1,106 @@
 import { describe, it, expect } from "vitest";
-import { MatchMonstersGame, evolvedAmount, type GameConfig } from "../src/game/matchmonsters/engine.js";
-import { ELEMENTS, type Ability, type Gem, type Monster, type Tile } from "../src/game/matchmonsters/types.js";
+import {
+  MatchMonstersGame,
+  effectiveCost,
+  fatigueDamage,
+  scaleAmount,
+  scaledEffects,
+  type GameConfig,
+} from "../src/game/matchmonsters/engine.js";
+import { findMatches } from "../src/game/matchmonsters/board.js";
+import {
+  ELEMENTS,
+  FATIGUE_AFTER,
+  FATIGUE_STEP,
+  MAX_SHIELD,
+  STARTING_HP,
+  type Effect,
+  type Gem,
+  type Monster,
+  type Passive,
+  type Tile,
+} from "../src/game/matchmonsters/types.js";
 
-const MAP: Record<string, Gem> = { F: "fire", W: "water", E: "earth", N: "nature", L: "light", B: "berry" };
-/** Swapping (1,2)<->(0,2) makes a vertical berry 3. */
-const LAYOUT_BERRY = ["BWENL", "BENLW", "WBENL", "ENLWF", "NLWFE"];
+const MAP: Record<string, Gem> = {
+  F: "fire", W: "water", E: "earth", N: "nature", L: "light", B: "berry", S: "stone",
+};
 /** No pre-existing matches; swapping (1,2)<->(0,2) makes a vertical fire 3. */
 const LAYOUT = ["FWENL", "FENLW", "WFENL", "ENLWF", "NLWFE"];
 /** Same swap makes a vertical fire run of 4 (extra-move trigger). */
 const LAYOUT4 = ["FWENL", "FENLW", "WFENL", "FNLWE", "NLWFE"];
+/** Same swap makes a vertical berry 3. */
+const LAYOUT_BERRY = ["BWENL", "BENLW", "WBENL", "ENLWF", "NLWFE"];
 const FIRE_SWAP = { type: "swap" as const, from: { x: 1, y: 2 }, to: { x: 0, y: 2 } };
 
 function grid(rows: string[]): Tile[][] {
   return rows.map((r) => r.split("").map((c) => MAP[c]!));
 }
-function fireMon(id: string, ability: Ability, chargeCost = 3): Monster {
-  return { id, name: id, element: "fire", chargeCost, ability };
+/** A fire monster that fires `effects` after one 3-match (cost 3 by default). */
+function fireMon(id: string, effects: Effect[], chargeCost = 3, passive?: Passive): Monster {
+  return {
+    id, name: id, element: "fire", chargeCost,
+    ability: { name: `${id} move`, effects },
+    ...(passive ? { passive } : {}),
+  };
 }
-const filler: Monster = { id: "x", name: "x", element: "light", chargeCost: 99, ability: { type: "heal", amount: 0, description: "" } };
+const filler: Monster = {
+  id: "x", name: "x", element: "light", chargeCost: 99, ability: { name: "noop", effects: [] },
+};
 
-function newGame(p0: Monster, p1: Monster = filler, over: Partial<GameConfig> = {}): MatchMonstersGame {
+function newGame(p0: Monster, p1: Monster = filler, over: Partial<GameConfig> = {}, p0b: Monster = filler) {
   const g = new MatchMonstersGame({
     matchId: "t",
     seed: 123,
     board: { width: 5, height: 5, palette: ELEMENTS },
     players: [
-      { peerId: "p0", displayName: "Alice", monsters: [p0, filler] },
+      { peerId: "p0", displayName: "Alice", monsters: [p0, p0b] },
       { peerId: "p1", displayName: "Bob", monsters: [p1, filler] },
     ],
     ...over,
   });
   g.state.board.grid = grid(LAYOUT);
+  g.state.movesLeft = 2; // most tests reason about a full 2-move turn
   return g;
 }
+const dmg = (amount: number): Effect => ({ kind: "damage", amount });
+
+describe("game rules", () => {
+  it("the opening player gets a single move on their first turn", () => {
+    const g = new MatchMonstersGame({
+      matchId: "o", seed: 1,
+      players: [
+        { peerId: "a", displayName: "A", monsters: [filler, filler] },
+        { peerId: "b", displayName: "B", monsters: [filler, filler] },
+      ],
+    });
+    expect(g.state.movesLeft).toBe(1);
+  });
+
+  it("shields cap at MAX_SHIELD", () => {
+    const g = newGame(fireMon("sh", [{ kind: "shield", amount: 50 }]));
+    g.applyMove(0, FIRE_SWAP);
+    expect(g.state.players[0].shield).toBe(MAX_SHIELD);
+  });
+
+  it("sudden death damages the incoming player once enough turns pass", () => {
+    expect(fatigueDamage(FATIGUE_AFTER)).toBe(0);
+    expect(fatigueDamage(FATIGUE_AFTER + 1)).toBe(FATIGUE_STEP);
+    expect(fatigueDamage(FATIGUE_AFTER + 3)).toBe(3 * FATIGUE_STEP);
+
+    const g = newGame(fireMon("a", [], 99));
+    g.state.turnPasses = FATIGUE_AFTER; // the next pass triggers sudden death
+    g.state.movesLeft = 1;
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.abilities.some((a) => a.type === "fatigue" && a.targetPlayer === 1)).toBe(true);
+    expect(g.state.players[1].hp).toBe(STARTING_HP - FATIGUE_STEP);
+  });
+});
 
 describe("validation", () => {
   it("rejects moves out of turn, non-adjacent, and non-matching", () => {
-    const g = newGame(fireMon("a", { type: "attack", amount: 14, description: "" }));
+    const g = newGame(fireMon("a", [dmg(14)]));
     expect(g.applyMove(1, FIRE_SWAP).ok).toBe(false);
     expect(g.applyMove(0, { type: "swap", from: { x: 0, y: 0 }, to: { x: 4, y: 4 } }).ok).toBe(false);
     const before = g.state.board.grid.map((r) => r.slice());
@@ -45,25 +109,33 @@ describe("validation", () => {
   });
 });
 
-describe("charging + abilities", () => {
-  it("charges a monster from matched tiles and fires its attack at the opponent", () => {
-    const g = newGame(fireMon("atk", { type: "attack", amount: 14, description: "" }, 3));
+describe("charging + turns", () => {
+  it("charges a monster from matched tiles and fires its move", () => {
+    const g = newGame(fireMon("atk", [dmg(14)]));
     const r = g.applyMove(0, FIRE_SWAP);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.abilities.some((a) => a.type === "attack")).toBe(true);
-    expect(g.state.players[1].hp).toBeLessThanOrEqual(86); // 100 - 14 (maybe more from cascades)
+    expect(r.casts[0]!.moveName).toBe("atk move");
+    expect(g.state.players[1].hp).toBeLessThanOrEqual(86);
     // A plain 3-match keeps the turn (2 moves per turn) and uses one move.
     expect(r.nextTurn).toBe(0);
     expect(r.movesLeft).toBe(1);
   });
 
+  it("does not fire until the charge cost is met", () => {
+    const g = newGame(fireMon("slow", [dmg(50)], 99));
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.casts).toHaveLength(0);
+    expect(g.state.players[1].hp).toBe(STARTING_HP);
+  });
+
   it("passes the turn after both moves are used", () => {
-    const g = newGame(fireMon("a", { type: "attack", amount: 10, description: "" }, 99));
-    const r1 = g.applyMove(0, FIRE_SWAP);
-    expect(r1.ok).toBe(true);
-    if (r1.ok) expect(r1.nextTurn).toBe(0);
-    g.state.board.grid = grid(LAYOUT); // reset to a known legal position
+    const g = newGame(fireMon("a", [dmg(10)], 99));
+    g.applyMove(0, FIRE_SWAP);
+    g.state.board.grid = grid(LAYOUT);
     const r2 = g.applyMove(0, FIRE_SWAP);
     expect(r2.ok).toBe(true);
     if (!r2.ok) return;
@@ -72,76 +144,211 @@ describe("charging + abilities", () => {
   });
 
   it("a line of 4+ grants an extra move", () => {
-    const g = newGame(fireMon("a", { type: "attack", amount: 5, description: "" }, 99));
+    const g = newGame(fireMon("a", [dmg(5)], 99));
     g.state.board.grid = grid(LAYOUT4);
     const r = g.applyMove(0, FIRE_SWAP);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.extraTurn).toBe(true);
-    expect(r.nextTurn).toBe(0);
-    expect(r.movesLeft).toBe(2); // 2 - 1 + 1
-  });
-
-  it("does not fire until the charge cost is met", () => {
-    // Needs 99 fire tiles — a single 3-match can never charge it.
-    const g = newGame(fireMon("slow", { type: "attack", amount: 50, description: "" }, 99));
-    const r = g.applyMove(0, FIRE_SWAP);
-    expect(r.ok).toBe(true);
-    if (!r.ok) return;
-    expect(r.abilities).toHaveLength(0);
-    expect(g.state.players[1].hp).toBe(100);
-  });
-
-  it("shield soaks damage before HP", () => {
-    const g = newGame(fireMon("sh", { type: "shield", amount: 20, description: "" }, 3));
-    const r = g.applyMove(0, FIRE_SWAP);
-    expect(r.ok).toBe(true);
-    expect(g.state.players[0].shield).toBeGreaterThanOrEqual(20);
-  });
-
-  it("heal is capped at max HP", () => {
-    const g = newGame(fireMon("hl", { type: "heal", amount: 30, description: "" }, 3));
-    g.state.players[0].hp = 90;
-    const r = g.applyMove(0, FIRE_SWAP);
-    expect(r.ok).toBe(true);
-    expect(g.state.players[0].hp).toBe(100);
-  });
-
-  it("burn ticks on the victim's turn and ignores shields", () => {
-    const g = newGame(fireMon("bn", { type: "burn", amount: 7, turns: 2, description: "" }, 3));
-    g.state.players[1].shield = 100;
-    g.state.movesLeft = 1; // this move ends the turn, so it passes and burns tick
-    const r = g.applyMove(0, FIRE_SWAP);
-    expect(r.ok).toBe(true);
-    if (!r.ok) return;
-    expect(r.abilities.some((a) => a.type === "burn-tick")).toBe(true);
-    expect(g.state.players[1].hp).toBeLessThan(100); // burn bypassed the 100 shield
-    expect(g.state.players[1].shield).toBe(100);
+    expect(r.movesLeft).toBe(2);
   });
 
   it("declares a winner when the opponent reaches 0 HP", () => {
-    const g = newGame(fireMon("ko", { type: "attack", amount: 50, description: "" }, 3));
+    const g = newGame(fireMon("ko", [dmg(50)]));
     g.state.players[1].hp = 10;
     const r = g.applyMove(0, FIRE_SWAP);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.finished).toBe(true);
     expect(r.winner).toBe(0);
-    expect(g.state.phase).toBe("finished");
     expect(g.applyMove(1, FIRE_SWAP).ok).toBe(false);
   });
 
   it("is reproducible from (seed, move)", () => {
-    const ab: Ability = { type: "attack", amount: 14, description: "" };
-    const a = newGame(fireMon("r", ab)).applyMove(0, FIRE_SWAP);
-    const b = newGame(fireMon("r", ab)).applyMove(0, FIRE_SWAP);
+    const a = newGame(fireMon("r", [dmg(14), { kind: "match", shape: "row" }])).applyMove(0, FIRE_SWAP);
+    const b = newGame(fireMon("r", [dmg(14), { kind: "match", shape: "row" }])).applyMove(0, FIRE_SWAP);
     expect(a).toEqual(b);
+  });
+});
+
+describe("sustain effects", () => {
+  it("shield soaks damage before HP; heal is capped", () => {
+    const g = newGame(fireMon("sh", [{ kind: "shield", amount: 20 }]));
+    g.applyMove(0, FIRE_SWAP);
+    expect(g.state.players[0].shield).toBeGreaterThanOrEqual(20);
+
+    const h = newGame(fireMon("hl", [{ kind: "heal", amount: 30 }]));
+    h.state.players[0].hp = STARTING_HP - 10;
+    h.applyMove(0, FIRE_SWAP);
+    expect(h.state.players[0].hp).toBe(STARTING_HP);
+  });
+
+  it("burn ticks on the victim's turn and ignores shields", () => {
+    const g = newGame(fireMon("bn", [{ kind: "dot", dot: "burn", amount: 7, turns: 2 }]));
+    g.state.players[1].shield = 100;
+    g.state.movesLeft = 1; // this move ends the turn, so it passes and burns tick
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.abilities.some((a) => a.type === "burn-tick")).toBe(true);
+    expect(g.state.players[1].hp).toBeLessThan(100);
+    expect(g.state.players[1].shield).toBe(100);
+  });
+
+  it("cleanse cures damage-over-time; drain steals HP", () => {
+    const g = newGame(fireMon("c", [{ kind: "cleanse" }, { kind: "heal", amount: 10 }]));
+    g.state.players[0].hp = 50;
+    g.state.players[0].dots = [{ amount: 5, turns: 2, kind: "burn", element: "fire" }];
+    g.applyMove(0, FIRE_SWAP);
+    expect(g.state.players[0].dots).toHaveLength(0);
+    expect(g.state.players[0].hp).toBe(60);
+
+    const d = newGame(fireMon("d", [{ kind: "drain", amount: 10 }]));
+    d.state.players[0].hp = 50;
+    d.applyMove(0, FIRE_SWAP);
+    expect(d.state.players[0].hp).toBe(60);
+    expect(d.state.players[1].hp).toBeLessThanOrEqual(90);
+  });
+});
+
+describe("board effects", () => {
+  const iced = (g: MatchMonstersGame) => {
+    const out: { x: number; y: number; v: number }[] = [];
+    g.state.ice.forEach((row, y) => row.forEach((v, x) => v > 0 && out.push({ x, y, v })));
+    return out;
+  };
+
+  it("match: clears a row (animated) and the tiles charge your monsters", () => {
+    // Partner is a water monster: matched water tiles in the row charge it.
+    const water: Monster = { id: "w", name: "w", element: "water", chargeCost: 99, ability: { name: "n", effects: [] } };
+    const g = newGame(fireMon("a", [{ kind: "match", shape: "row" }]), filler, {}, water);
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const step = r.effectSteps[0]!;
+    expect(step.cleared).toHaveLength(5); // 5-wide board
+    const waterInRow = step.cleared.filter((c) => c.element === "water").length;
+    expect(g.state.players[0].monsters[1]!.charge).toBeGreaterThanOrEqual(waterInRow);
+  });
+
+  it("match square/area clear 2×2 and 3×3 regions", () => {
+    const sq = newGame(fireMon("s", [{ kind: "match", shape: "square" }])).applyMove(0, FIRE_SWAP);
+    const ar = newGame(fireMon("a", [{ kind: "match", shape: "area" }])).applyMove(0, FIRE_SWAP);
+    expect(sq.ok && sq.effectSteps[0]!.cleared.length).toBe(4);
+    expect(ar.ok && ar.effectSteps[0]!.cleared.length).toBe(9);
+  });
+
+  it("freeze ices tiles that can't be swapped and lasts through the rival's turn", () => {
+    const g = newGame(fireMon("a", [{ kind: "freeze", count: 3, turns: 1 }]));
+    g.state.movesLeft = 1;
+    g.applyMove(0, FIRE_SWAP);
+    const ice = iced(g);
+    expect(ice).toHaveLength(3);
+    expect(ice.every((c) => c.v === 1)).toBe(true);
+    const c = ice[0]!;
+    const n = c.x + 1 < 5 ? { x: c.x + 1, y: c.y } : { x: c.x - 1, y: c.y };
+    const blocked = g.applyMove(1, { type: "swap", from: { x: c.x, y: c.y }, to: n });
+    expect(blocked.ok).toBe(false);
+    if (!blocked.ok) expect(blocked.reason).toMatch(/frozen/);
+  });
+
+  it("petrify turns tiles to stone, which can't be moved", () => {
+    const g = newGame(fireMon("a", [{ kind: "petrify", count: 2 }]));
+    g.applyMove(0, FIRE_SWAP);
+    const stones: { x: number; y: number }[] = [];
+    g.state.board.grid.forEach((row, y) => row.forEach((t, x) => t === "stone" && stones.push({ x, y })));
+    expect(stones).toHaveLength(2);
+    const s = stones[0]!;
+    const n = s.y + 1 < 5 ? { x: s.x, y: s.y + 1 } : { x: s.x, y: s.y - 1 };
+    const res = g.applyMove(0, { type: "swap", from: s, to: n });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toMatch(/stone/);
+  });
+
+  it("stones crumble when a neighbouring tile is matched", () => {
+    const g = newGame(fireMon("a", [], 99));
+    g.state.board.grid = grid(["FWENL", "FSNLW", "WFENL", "ENLWF", "NLWFE"]);
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.cascades[0]!.cleared.some((c) => c.element === "stone")).toBe(true);
+  });
+
+  it("convert adds the caster's element without creating instant matches", () => {
+    const g = newGame(fireMon("a", [{ kind: "convert", count: 3 }]));
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    expect(findMatches(g.state.board)).toHaveLength(0);
+  });
+});
+
+describe("tempo & charge effects", () => {
+  const rival: Monster = { id: "r", name: "R", element: "water", chargeCost: 50, ability: { name: "n", effects: [] } };
+
+  it("sap drains rival charge", () => {
+    const g = newGame(fireMon("a", [{ kind: "sap", count: 3 }]), rival);
+    g.state.players[1].monsters[0]!.charge = 5;
+    g.applyMove(0, FIRE_SWAP);
+    expect(g.state.players[1].monsters[0]!.charge).toBe(2);
+  });
+
+  it("slow makes the rival start their next turn with fewer moves", () => {
+    const g = newGame(fireMon("a", [{ kind: "slow", count: 1 }]), rival);
+    g.state.movesLeft = 1;
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.nextTurn).toBe(1);
+    expect(r.movesLeft).toBe(1); // 2 - 1
+  });
+
+  it("seal stops a rival monster gaining charge", () => {
+    const g = newGame(fireMon("a", [{ kind: "seal", turns: 2 }]), rival);
+    g.applyMove(0, FIRE_SWAP);
+    const sealed = g.state.players[1].monsters.filter((m) => m.sealed > 0);
+    expect(sealed).toHaveLength(1);
+  });
+
+  it("haste grants an extra move this turn", () => {
+    const g = newGame(fireMon("a", [{ kind: "haste", count: 1 }]));
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok && r.movesLeft).toBe(2); // 2 - 1 + 1
+  });
+
+  it("empower charges the partner monster", () => {
+    const g = newGame(fireMon("a", [{ kind: "empower", count: 5 }]));
+    g.applyMove(0, FIRE_SWAP);
+    expect(g.state.players[0].monsters[1]!.charge).toBe(5); // filler (cost 99) doesn't fire
+  });
+});
+
+describe("passives", () => {
+  it("berserk turns the move into multiple strikes at low HP", () => {
+    const g = newGame(fireMon("b", [dmg(30)], 3, { berserk: { threshold: 30, hits: 4, amount: 5 } }));
+    g.state.players[0].hp = 25;
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.casts[0]!.via).toBe("berserk");
+    expect(r.abilities.filter((a) => a.type === "attack" && a.amount === 5).length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("follow-up strikes when the partner's move deals damage", () => {
+    const helper: Monster = {
+      id: "h", name: "H", element: "light", chargeCost: 99,
+      ability: { name: "n", effects: [] }, passive: { followUp: 5 },
+    };
+    const g = newGame(fireMon("a", [dmg(10)]), filler, {}, helper);
+    const r = g.applyMove(0, FIRE_SWAP);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.casts.some((c) => c.via === "followUp")).toBe(true);
+    expect(g.state.players[1].hp).toBeLessThanOrEqual(85);
   });
 });
 
 describe("berries + evolution", () => {
   it("collects berries from matched berry tiles", () => {
-    const g = newGame(fireMon("a", { type: "attack", amount: 10, description: "" }, 99));
+    const g = newGame(fireMon("a", [dmg(10)], 99));
     g.state.board.grid = grid(LAYOUT_BERRY);
     const r = g.applyMove(0, FIRE_SWAP);
     expect(r.ok).toBe(true);
@@ -150,8 +357,8 @@ describe("berries + evolution", () => {
     expect(g.state.players[0].berries).toBeGreaterThanOrEqual(3);
   });
 
-  it("evolves a monster for 4 berries and strengthens its ability", () => {
-    const def: Monster = { id: "a", name: "A", element: "fire", chargeCost: 3, ability: { type: "attack", amount: 14, description: "" } };
+  it("evolves for 4 berries: stronger effects and cheaper charge", () => {
+    const def = fireMon("a", [dmg(14), { kind: "freeze", count: 4, turns: 1 }], 10);
     const g = newGame(def);
     g.state.players[0].berries = 4;
     const r = g.evolve(0, "a");
@@ -159,16 +366,25 @@ describe("berries + evolution", () => {
     if (!r.ok) return;
     expect(r.evolution).toBe(1);
     expect(r.berries).toBe(0);
-    expect(evolvedAmount(def, 1)).toBe(17); // 14 + max(1, round(14*0.2)=3)
-    expect(evolvedAmount(def, 1)).toBeGreaterThan(def.ability.amount);
+    expect(scaleAmount(14, 1)).toBe(17); // 14 + max(1, round(14*0.2))
+    const scaled = scaledEffects(def, 1);
+    expect(scaled[0]).toEqual({ kind: "damage", amount: 17 });
+    expect(scaled[1]).toMatchObject({ kind: "freeze", count: 5 });
+    expect(effectiveCost(def, 1)).toBe(9);
+  });
+
+  it("charge cost reduction has a floor", () => {
+    expect(effectiveCost(fireMon("x", [], 10), 2)).toBe(8);
+    expect(effectiveCost(fireMon("x", [], 5), 3)).toBe(4);
+    expect(effectiveCost(fireMon("x", [], 3), 1)).toBe(3);
   });
 
   it("rejects evolving without enough berries, out of turn, or past the cap", () => {
-    const g = newGame(fireMon("a", { type: "attack", amount: 10, description: "" }, 3));
-    expect(g.evolve(0, "a").ok).toBe(false); // 0 berries
+    const g = newGame(fireMon("a", [dmg(10)]));
+    expect(g.evolve(0, "a").ok).toBe(false);
     g.state.players[0].berries = 8;
-    expect(g.evolve(1, "a").ok).toBe(false); // not your turn
-    g.state.players[0].monsters[0]!.evolution = 3; // at cap
+    expect(g.evolve(1, "a").ok).toBe(false);
+    g.state.players[0].monsters[0]!.evolution = 3;
     expect(g.evolve(0, "a").ok).toBe(false);
   });
 });

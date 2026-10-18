@@ -33,14 +33,14 @@ function m(
 
 export const MONSTERS: Record<string, Monster> = {
   // 🔥 fire — Destroyer
-  ember_pup: m("ember_pup", "Pyrup", "fire", 7, "Ember Bite", [dmg(15)]),
+  ember_pup: m("ember_pup", "Pyrup", "fire", 7, "Ember Bite", [dmg(17)]),
   cinder_hound: m("cinder_hound", "Scorchpaw", "fire", 8, "Scorch Line",
-    [dmg(8), { kind: "match", shape: "row" }],
-    { berserk: { threshold: 20, hits: 4, amount: 5 } }),
+    [dmg(6), { kind: "match", shape: "row" }],
+    { berserk: { threshold: 16, hits: 4, amount: 4 } }),
   magma_titan: m("magma_titan", "Magmaul", "fire", 12, "Eruption",
-    [dmg(20), { kind: "match", shape: "area" }]),
+    [dmg(19), { kind: "match", shape: "area" }]),
   phoenix_chick: m("phoenix_chick", "Emberwing", "fire", 9, "Cinder Rain",
-    [dmg(8), { kind: "dot", dot: "burn", amount: 5, turns: 3 }]),
+    [dmg(10), { kind: "dot", dot: "burn", amount: 5, turns: 3 }]),
 
   // 💧 water — Controller
   tide_serpent: m("tide_serpent", "Tidecoil", "water", 8, "Undertow",
@@ -48,26 +48,26 @@ export const MONSTERS: Record<string, Monster> = {
   frost_imp: m("frost_imp", "Frostnip", "water", 7, "Frostbite",
     [dmg(13), { kind: "freeze", count: 3, turns: 1 }]),
   kraken_pup: m("kraken_pup", "Krakling", "water", 10, "Riptide",
-    [dmg(18), { kind: "slow", count: 1 }]),
+    [dmg(19), { kind: "slow", count: 1 }]),
   bubble_jelly: m("bubble_jelly", "Bublob", "water", 8, "Bubble Barrier",
-    [shield(10), dmg(9), { kind: "cleanse" }]),
+    [shield(10), dmg(10), { kind: "cleanse" }]),
 
   // 🪨 earth — Fortress
-  stone_golem: m("stone_golem", "Craggol", "earth", 9, "Stone Skin", [shield(18), dmg(8)]),
+  stone_golem: m("stone_golem", "Craggol", "earth", 9, "Stone Skin", [shield(18), dmg(9)]),
   boulder_beetle: m("boulder_beetle", "Rubbug", "earth", 8, "Petrify",
     [dmg(14), { kind: "petrify", count: 3 }]),
   quake_mole: m("quake_mole", "Tremole", "earth", 9, "Tremor",
-    [dmg(12), { kind: "match", shape: "col" }]),
-  crystal_ox: m("crystal_ox", "Gemox", "earth", 10, "Crystal Mend", [heal(14), shield(6), dmg(8)]),
+    [dmg(10), { kind: "match", shape: "col" }]),
+  crystal_ox: m("crystal_ox", "Gemox", "earth", 10, "Crystal Mend", [heal(14), shield(6), dmg(9)]),
 
   // 🌿 nature — Sustain
   thorn_sprite: m("thorn_sprite", "Thornkin", "nature", 7, "Thorn Prick",
-    [dmg(3), { kind: "dot", dot: "poison", amount: 4, turns: 3 }]),
+    [dmg(4), { kind: "dot", dot: "poison", amount: 4, turns: 3 }]),
   vine_lurker: m("vine_lurker", "Vinecoil", "nature", 10, "Leech Vine", [{ kind: "drain", amount: 13 }]),
   shroom_knight: m("shroom_knight", "Myconite", "nature", 9, "Spore Cloud",
-    [dmg(7), { kind: "seal", turns: 2 }]),
+    [dmg(6), { kind: "seal", turns: 2 }]),
   petal_fawn: m("petal_fawn", "Petalope", "nature", 7, "Overgrowth",
-    [dmg(5), heal(8), { kind: "convert", count: 4 }]),
+    [dmg(5), heal(10), { kind: "convert", count: 4 }]),
 
   // ✨ light — Tempo
   prism_owl: m("prism_owl", "Lumowl", "light", 10, "Smite",
@@ -75,9 +75,9 @@ export const MONSTERS: Record<string, Monster> = {
   dawn_sprite: m("dawn_sprite", "Glintling", "light", 8, "Starstep",
     [dmg(12), { kind: "haste", count: 1 }]),
   lumen_stag: m("lumen_stag", "Lumistag", "light", 8, "Radiance",
-    [dmg(10), heal(10), { kind: "cleanse" }]),
+    [dmg(11), heal(10), { kind: "cleanse" }]),
   halo_moth: m("halo_moth", "Lumoth", "light", 7, "Kindred Glow",
-    [dmg(7), { kind: "empower", count: 2 }],
+    [dmg(6), { kind: "empower", count: 2 }],
     { followUp: 3 }),
 };
 

@@ -4,7 +4,7 @@
 //      evolve whenever they can. Reports each monster's win rate.
 //   2. Evolution value — for each monster, M paired matches that are identical
 //      (same seed, partner, opponent, seat) except the monster starts at ★0 in one
-//      and ★★★ in the other. The win-rate gap is what evolving it is worth.
+//      and fully evolved (★★) in the other. The win-rate gap is what evolving it is worth.
 //
 // Usage: npm run tiers   (env: N=6000 M=400 SEED=777)
 import { MatchMonstersGame } from '../dist/game/matchmonsters/engine.js';
@@ -58,7 +58,7 @@ for (const t of tiers) console.log(`  ${tierOf(t.rate)}  ${name(t.id)} ${el(t.id
 // ---------------------------------------------------------------- 2. evolution value
 const M = Number(process.env.M ?? 400);
 if (M === 0) process.exit(0);
-console.log(`\nEVOLUTION VALUE — win rate at ★0 vs starting at ★★★ (${M} paired matches each)\n`);
+console.log(`\nEVOLUTION VALUE — win rate at base vs starting at ★★ (${M} paired matches each)\n`);
 const evo = [];
 for (const id of ids) {
   let base = 0, evolved = 0, n = 0;
@@ -67,7 +67,7 @@ for (const id of ids) {
     const seat = rng() < 0.5 ? 0 : 1;
     const teams = seat === 0 ? [[id, partner], [c, d]] : [[c, d], [id, partner]];
     const s = (rng() * 1e9) | 0;
-    const evoStart = seat === 0 ? [[3, 0], [0, 0]] : [[0, 0], [3, 0]];
+    const evoStart = seat === 0 ? [[2, 0], [0, 0]] : [[0, 0], [2, 0]];
     const w0 = play(teams, s), w3 = play(teams, s, evoStart);
     if (w0 === null || w3 === null) continue;
     n++; if (w0 === seat) base++; if (w3 === seat) evolved++;

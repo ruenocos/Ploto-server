@@ -74,11 +74,12 @@ the same teams, and the loser goes first.
   A line of **4+** grants an extra move.
 - Matching tiles **charges** your monsters of that element. At its charge cost a
   monster **fires its move** — damage plus a twist (see below).
-- 🍓 **Berries** appear on the board; collect **4** to **evolve** a monster
-  (up to ★★★). Every level: numbers +20%, tile/charge counts +1, charge
-  cost −1, passives grow. At ★★ blasts widen and seals/burns/poison last a
-  turn longer; at ★★★ haste gives an extra move and ice lasts longer. Tap a
-  monster to see exactly what its next star changes.
+- 🍓 **Berries** appear on the board; collect **4** to **evolve** a monster.
+  Every monster has three stages (base, ★, ★★), each with its own sprite.
+  Every evolution: numbers +25%, tile/charge counts +1, charge cost −1,
+  passives grow. At ★ blasts widen and seals/burns/poison last a turn longer;
+  at ★★ haste gives an extra move and ice lasts longer. Tap a monster to see
+  exactly what its next evolution changes.
 - 🪨 **Stone** tiles can't move and crumble when a neighbour is matched;
   ❄ **frozen** tiles can't be swapped until the ice melts.
 - One HP pool each (80). Shields cap at 30. From round 20, **sudden death**
@@ -167,9 +168,9 @@ serves per-monster, matchup and team win rates from it for tuning.
 
 Balance is checked with `npm run sim` (match length, first-player edge, win
 share per element) and `npm run tiers` (per-monster win rate, and what going
-★0 → ★★★ is worth for each). Both use the same greedy bot as practice mode.
-Last run: 100% of matches finish (median 56 moves), every monster wins
-47–54%, and evolving to ★★★ adds +35 to +50 points of win rate for every
+base → ★★ is worth for each). Both use the same greedy bot as practice mode.
+Last run: 100% of matches finish (median 54 moves), every monster wins
+48–52%, and evolving to ★★ adds +26 to +42 points of win rate for every
 monster.
 
 The roster and art are our own, so the game is playable now; the real

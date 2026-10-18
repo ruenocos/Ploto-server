@@ -611,15 +611,16 @@ export class MatchMonstersGame {
 
 // ---------------------------------------------------------------- evolution
 //
-// Every level makes the whole move better: numbers grow +20% (min +1), tile and
-// charge counts +1, the charge cost drops by 1, and passives grow too. The
-// "special" parts step up at milestones — ★★ widens blasts and lengthens seals
-// and burns/poison; ★★★ adds an extra haste move and longer ice.
+// Monsters have three stages (base, ★, ★★). Every evolution makes the whole move
+// better: numbers grow +25% (min +1), tile and charge counts +1, the charge cost
+// drops by 1, and passives grow too. The "special" parts step up as well — ★
+// widens blasts and lengthens seals and burns/poison; ★★ adds an extra haste
+// move and longer ice.
 
-/** Power after evolution: +20% (min +1) per level; 0 stays 0. */
+/** Power after evolution: +25% (min +1) per level; 0 stays 0. */
 export function scaleAmount(base: number, evolution: number): number {
   if (base <= 0) return base;
-  return base + evolution * Math.max(1, Math.round(base * 0.2));
+  return base + evolution * Math.max(1, Math.round(base * 0.25));
 }
 
 const atLeast = (evolution: number, level: number): number => (evolution >= level ? 1 : 0);
@@ -639,20 +640,20 @@ export function scaledEffects(def: Monster, evolution: number): Effect[] {
       case "drain":
         return { ...e, amount: scaleAmount(e.amount, evolution) };
       case "dot":
-        return { ...e, amount: scaleAmount(e.amount, evolution), turns: e.turns + atLeast(evolution, 2) };
+        return { ...e, amount: scaleAmount(e.amount, evolution), turns: e.turns + atLeast(evolution, 1) };
       case "match":
-        return { ...e, size: (e.size ?? defaultShapeSize(e.shape)) + atLeast(evolution, 2) };
+        return { ...e, size: (e.size ?? defaultShapeSize(e.shape)) + atLeast(evolution, 1) };
       case "freeze":
-        return { ...e, count: e.count + evolution, turns: e.turns + atLeast(evolution, 3) };
+        return { ...e, count: e.count + evolution, turns: e.turns + atLeast(evolution, 2) };
       case "petrify":
       case "convert":
       case "sap":
       case "empower":
         return { ...e, count: e.count + evolution };
       case "seal":
-        return { ...e, turns: e.turns + atLeast(evolution, 2) };
+        return { ...e, turns: e.turns + atLeast(evolution, 1) };
       case "haste":
-        return { ...e, count: e.count + atLeast(evolution, 3) };
+        return { ...e, count: e.count + atLeast(evolution, 2) };
       default:
         return e; // slow is capped at one move; cleanse is all-or-nothing
     }
@@ -667,7 +668,7 @@ export function scaledPassive(def: Monster, evolution: number): Passive | undefi
     ...(p.berserk
       ? {
           berserk: {
-            threshold: p.berserk.threshold + 5 * evolution,
+            threshold: p.berserk.threshold + 6 * evolution,
             hits: p.berserk.hits,
             amount: scaleAmount(p.berserk.amount, evolution),
           },

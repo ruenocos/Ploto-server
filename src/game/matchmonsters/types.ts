@@ -22,7 +22,7 @@ export type Tile = Gem | null;
 
 /** Berries needed to evolve a monster, and the evolution cap. */
 export const BERRIES_TO_EVOLVE = 4;
-export const MAX_EVOLUTION = 3;
+export const MAX_EVOLUTION = 2; // three stages: base, ★, ★★
 
 export interface Board {
   readonly width: number;

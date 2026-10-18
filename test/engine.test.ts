@@ -370,9 +370,9 @@ describe("berries + evolution", () => {
     if (!r.ok) return;
     expect(r.evolution).toBe(1);
     expect(r.berries).toBe(0);
-    expect(scaleAmount(14, 1)).toBe(17); // 14 + max(1, round(14*0.2))
+    expect(scaleAmount(14, 1)).toBe(18); // 14 + max(1, round(14*0.25))
     const scaled = scaledEffects(def, 1);
-    expect(scaled[0]).toEqual({ kind: "damage", amount: 17 });
+    expect(scaled[0]).toEqual({ kind: "damage", amount: 18 });
     expect(scaled[1]).toMatchObject({ kind: "freeze", count: 5 });
     expect(effectiveCost(def, 1)).toBe(9);
   });
@@ -388,59 +388,59 @@ describe("berries + evolution", () => {
     expect(g.evolve(0, "a").ok).toBe(false);
     g.state.players[0].berries = 8;
     expect(g.evolve(1, "a").ok).toBe(false);
-    g.state.players[0].monsters[0]!.evolution = 3;
+    g.state.players[0].monsters[0]!.evolution = 2; // fully evolved: base, ★, ★★
     expect(g.evolve(0, "a").ok).toBe(false);
   });
 });
 
 describe("evolution milestones", () => {
-  it("every roster monster gets cheaper and upgrades its move at each level, and stops at ★★★", () => {
+  it("every roster monster gets cheaper and upgrades its move at each level, and stops at ★★", () => {
     for (const def of Object.values(MONSTERS)) {
-      for (let evo = 0; evo < 3; evo++) {
+      for (let evo = 0; evo < 2; evo++) {
         const changes = evolutionChanges(def, evo);
         expect(changes.length, `${def.name} ★${evo}`).toBeGreaterThanOrEqual(2);
         expect(changes.some((c) => c.startsWith("Charge cost")), `${def.name} ★${evo} cost`).toBe(true);
       }
-      expect(evolutionChanges(def, 3)).toEqual([]);
+      expect(evolutionChanges(def, 2)).toEqual([]);
     }
   });
 
-  it("widens blasts and lengthens seals and burns at ★★; adds a haste move at ★★★", () => {
+  it("widens blasts and lengthens seals and burns at ★; adds a haste move at ★★", () => {
     const def = fireMon("a", [
       { kind: "match", shape: "row" },
       { kind: "seal", turns: 2 },
       { kind: "dot", dot: "burn", amount: 5, turns: 3 },
       { kind: "haste", count: 1 },
     ]);
-    expect(scaledEffects(def, 1)).toMatchObject([{ size: 1 }, { turns: 2 }, { turns: 3 }, { count: 1 }]);
-    expect(scaledEffects(def, 2)).toMatchObject([{ size: 2 }, { turns: 3 }, { turns: 4 }, { count: 1 }]);
-    expect(scaledEffects(def, 3)).toMatchObject([{ size: 2 }, { turns: 3 }, { turns: 4 }, { count: 2 }]);
-    expect(evolutionChanges(def, 1)).toContain("Blast 1 → 2 rows");
-    expect(evolutionChanges(def, 1)).toContain("Seal 2 → 3 turns");
+    expect(scaledEffects(def, 0)).toMatchObject([{ shape: "row" }, { turns: 2 }, { turns: 3 }, { count: 1 }]);
+    expect(scaledEffects(def, 1)).toMatchObject([{ size: 2 }, { turns: 3 }, { turns: 4 }, { count: 1 }]);
+    expect(scaledEffects(def, 2)).toMatchObject([{ size: 2 }, { turns: 3 }, { turns: 4 }, { count: 2 }]);
+    expect(evolutionChanges(def, 0)).toContain("Blast 1 → 2 rows");
+    expect(evolutionChanges(def, 0)).toContain("Seal 2 → 3 turns");
   });
 
-  it("a ★★ row blast clears two rows", () => {
+  it("a ★ row blast clears two rows", () => {
     const g = newGame(fireMon("a", [{ kind: "match", shape: "row" }]));
-    g.state.players[0].monsters[0]!.evolution = 2;
+    g.state.players[0].monsters[0]!.evolution = 1;
     const r = g.applyMove(0, FIRE_SWAP);
     expect(r.ok && r.effectSteps[0]!.cleared.length).toBe(10);
   });
 
   it("passives grow with evolution", () => {
     const def = fireMon("a", [], 3, { followUp: 3, berserk: { threshold: 20, hits: 4, amount: 5 } });
-    expect(scaledPassive(def, 2)).toEqual({ followUp: 5, berserk: { threshold: 30, hits: 4, amount: 7 } });
+    expect(scaledPassive(def, 2)).toEqual({ followUp: 5, berserk: { threshold: 32, hits: 4, amount: 7 } });
     expect(evolutionChanges(def, 0)).toEqual(
-      expect.arrayContaining(["Follow-up 3 → 4", "Berserk strikes 5 → 6", "Berserk at 20 → 25 HP"]),
+      expect.arrayContaining(["Follow-up 3 → 4", "Berserk strikes 5 → 6", "Berserk at 20 → 26 HP"]),
     );
   });
 
   it("an evolved partner's follow-up hits harder in play", () => {
     const helper: Monster = { ...fireMon("h", [], 99, { followUp: 3 }), element: "light" };
     const g = newGame(fireMon("a", [dmg(10)]), filler, {}, helper);
-    g.state.players[0].monsters[1]!.evolution = 3;
+    g.state.players[0].monsters[1]!.evolution = 2;
     const r = g.applyMove(0, FIRE_SWAP);
     expect(r.ok).toBe(true);
-    expect(g.state.players[1].hp).toBe(STARTING_HP - 10 - 6);
+    expect(g.state.players[1].hp).toBe(STARTING_HP - 10 - 5);
   });
 });
 

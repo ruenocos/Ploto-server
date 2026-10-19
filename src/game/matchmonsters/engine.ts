@@ -198,8 +198,9 @@ export class MatchMonstersGame {
     // Board effects may have lined up matches; clear them (no charge).
     this.resolveCascades(ctx.effectSteps, null);
 
-    // Seals count the sealed player's own moves: this one is done, so the mover's seals wear off a step.
-    for (const m of attacker.monsters) if (m.sealed > 0) m.sealed -= 1;
+    // Seals count the sealed player's own matches, every combo step included (a 2× combo takes off 2);
+    // the seal still blocked all of this move's charge. A swap that matched nothing doesn't count.
+    for (const m of attacker.monsters) if (m.sealed > 0) m.sealed = Math.max(0, m.sealed - cascades.length);
 
     let finished = defender.hp <= 0;
     let nextTurn: 0 | 1 = by;
@@ -521,7 +522,7 @@ export class MatchMonstersGame {
         return { kind: "slow", target: foeIdx, count: defender.slow - before };
       }
       case "seal": {
-        if (popBubble(defender)) return { kind: "seal", target: foeIdx, monsterId: null, moves: e.moves, blocked: true };
+        if (popBubble(defender)) return { kind: "seal", target: foeIdx, monsterId: null, matches: e.matches, blocked: true };
         // The rival monster closest to firing (most charge; a coin flip on ties), skipping one that's
         // already sealed: it can't charge anyway, so it would stay on top and soak up every seal.
         // Only when both are sealed does it top one up.
@@ -529,8 +530,8 @@ export class MatchMonstersGame {
         const pool = open.length ? open : defender.monsters;
         const most = Math.max(...pool.map((m) => m.charge));
         const target = this.pick(pool.filter((m) => m.charge === most), 1)[0];
-        if (target) target.sealed = Math.max(target.sealed, e.moves);
-        return { kind: "seal", target: foeIdx, monsterId: target?.def.id ?? null, moves: e.moves };
+        if (target) target.sealed = Math.max(target.sealed, e.matches);
+        return { kind: "seal", target: foeIdx, monsterId: target?.def.id ?? null, matches: e.matches };
       }
       case "haste":
         ctx.haste += e.count;
@@ -739,7 +740,7 @@ export function scaledEffects(def: Monster, evolution: number): Effect[] {
       case "pluck":
         return { ...e, count: e.count + atLeast(evolution, 2) };
       case "seal":
-        return { ...e, moves: e.moves + evolution };
+        return { ...e, matches: e.matches + evolution };
       case "haste":
         return { ...e, count: e.count + atLeast(evolution, 2) };
       default:
@@ -803,7 +804,7 @@ export function describeEffects(effects: readonly Effect[], element: Element): s
       case "grow": return `grow ${e.count} ${e.count === 1 ? "berry" : "berries"} on the board`;
       case "pluck": return `steal ${e.count} ${e.count === 1 ? "berry" : "berries"} from the rival`;
       case "slow": return `the rival loses ${e.count} move${e.count === 1 ? "" : "s"} next turn`;
-      case "seal": return `seal the rival monster closest to firing that isn't sealed yet: it can't charge for their next ${e.moves} moves`;
+      case "seal": return `seal the rival monster closest to firing that isn't sealed yet: it can't charge for their next ${e.matches} matches`;
       case "haste": return `gain ${e.count} extra move${e.count === 1 ? "" : "s"}`;
       case "cleanse": return "cure burns and poison";
       case "empower": return `give ${e.count} charge to your partner`;
@@ -857,7 +858,7 @@ export function evolutionChanges(def: Monster, evolution: number): string[] {
       if (a.count !== b.count) out.push(`${label} ${a.count} → ${b.count}`);
       if (a.turns !== b.turns) out.push(`Ice lasts ${a.turns} → ${b.turns} turns`);
     } else if (a.kind === "seal" && b.kind === "seal") {
-      if (a.moves !== b.moves) out.push(`${label} ${a.moves} → ${b.moves} moves`);
+      if (a.matches !== b.matches) out.push(`${label} ${a.matches} → ${b.matches} matches`);
     } else if ("amount" in a && "amount" in b && a.amount !== b.amount) {
       const name = a.kind === "damage" && a.fromShield ? "Minimum hit" : label;
       out.push(`${name} ${a.amount} → ${b.amount}`);

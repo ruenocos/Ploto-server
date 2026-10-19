@@ -367,7 +367,7 @@ const EFFECTS = {
         void fx.pose(e.target, e.monsterId, "hurt");
         fighter.classList.add("sealed"); // the next render keeps it in sync with the real state
         fighter.classList.remove("ready");
-        fx.floatText(stage, `sealed ${e.moves} moves`, "#b39dff");
+        fx.floatText(stage, `sealed ${e.matches} matches`, "#b39dff");
         await fx.sleep(650);
         stamp.remove();
       } else {

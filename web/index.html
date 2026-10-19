@@ -1908,7 +1908,7 @@
           `<div class="s-desc">${esc(mon.ability.description)}</div>` +
           (mon.ability.passive ? `<div class="s-pass">${ic("passive")}${esc(mon.ability.passive)}</div>` : "") +
           `<div class="s-meta">Charge ${Math.min(mon.charge, mon.chargeCost)}/${mon.chargeCost}` +
-          (mon.sealed > 0 ? ` · ${ic("seal")}sealed for ${mon.sealed} more move${mon.sealed === 1 ? "" : "s"}` : "") +
+          (mon.sealed > 0 ? ` · ${ic("seal")}sealed for ${mon.sealed} more match${mon.sealed === 1 ? "" : "es"}` : "") +
           (evo >= MAX_EVOLUTION ? " · Fully evolved" : "") + `</div>` +
           (mon.ability.nextEvolution && mon.ability.nextEvolution.length
             ? `<div class="s-next"><h3>Next evolution · ${stars(evo + 2)}</h3><ul>` +

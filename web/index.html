@@ -1629,7 +1629,7 @@
       /* ------------------------------------------------------------ rendering */
       function renderGame() {
         if (!state) return;
-        const theme = themeFor(room.roomId);
+        const theme = themeNow();
         if (theme !== arenaTheme) { arenaTheme = theme; sizeArena(); }
         const foe = state.players[room.seat === 0 ? 1 : 0];
         for (const seat of [0, 1]) { renderHud(seat); renderSide(seat); }
@@ -1799,15 +1799,17 @@
       }
 
       /**
-       * The arena's time of day, the same for both players: picked from the
-       * room id (half the matches by day, a quarter each at dusk and night).
+       * The arena's time of day follows your own clock: day from 7:00, dusk
+       * (and dawn, 5:00 to 7:00) around sunset from 18:00, night from 21:00.
+       * Each player sees their local time; it's checked on every render, so a
+       * match that runs past the hour changes with it.
        */
       let arenaTheme = "day";
-      function themeFor(roomId) {
-        let h = 0;
-        for (const ch of String(roomId)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-        const r = h % 4;
-        return r < 2 ? "day" : r === 2 ? "dusk" : "night";
+      function themeNow(date = new Date()) {
+        const h = date.getHours();
+        if (h >= 21 || h < 5) return "night";
+        if (h < 7 || h >= 18) return "dusk";
+        return "day";
       }
       const themeArt = () => (window.PIXELART?.themes && PIXELART.themes[arenaTheme]) || null;
 

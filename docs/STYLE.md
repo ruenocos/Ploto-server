@@ -131,9 +131,10 @@ No rounded corners, no blur, no soft drop shadows. Depth is bevels only.
   silhouette, old and new silhouettes trade places (each swap at least
   340 ms apart, so never more than 3 a second, per WCAG 2.3.1), one burst of
   light, then the new form bounces in.
-- **The arena** has three times of day (day, dusk, night), picked from the
-  room id so both players see the same one, and two cloud layers drifting at
-  different speeds, one sprite pixel per step.
+- **The arena** has three times of day (day, dusk, night) that follow the
+  player's own clock: day 7:00–18:00, dusk 18:00–21:00 (and dawn 5:00–7:00),
+  night 21:00–5:00. Two cloud layers drift at different speeds, one sprite
+  pixel per step.
 - **Battle intro** (once per match, on its first move): each team runs in
   from its own side, back monster first (stock backIn presets); a VS lands in
   the arena between the two teams; then the gems fall onto the board row by

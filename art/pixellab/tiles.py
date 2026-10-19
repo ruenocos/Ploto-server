@@ -31,8 +31,8 @@ GEM = ("a single cut gemstone for a match-3 puzzle game board, seen straight fro
 TILES = {
     "fire": f"an octagon-cut ruby red gem with an engraved flame symbol. {GEM}",
     "water": f"a round cushion-cut aquamarine blue gem with an engraved water droplet symbol. {GEM}",
-    "earth": f"a square-cut amber orange-brown gem with clipped corners and an engraved mountain symbol. {GEM}",
-    "nature": f"a hexagon-cut emerald green gem with an engraved leaf symbol. {GEM}",
+    "earth": f"a square-cut earthy brown and tan topaz gem, as wide as it is tall, with small clipped corners and an engraved mountain symbol, brown not orange. {GEM}",
+    "nature": f"a wide hexagon-cut emerald green gem, as wide as it is tall, with an engraved leaf symbol. {GEM}",
     "light": f"a diamond-shaped topaz yellow gem with blunt tips and an engraved star sparkle symbol. {GEM}",
     "berry": ("a pair of shiny red cherries on one stem with a small green leaf, filling most of the canvas, "
               "match-3 puzzle game tile, glossy, lit from the top left, clean dark outline, simple pixel art"),

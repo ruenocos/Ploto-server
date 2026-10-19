@@ -56,11 +56,10 @@ the code for them; the host's mode decides). No accounts needed.
 
 **Draft.** Both players ban one monster at the same time (revealed together),
 then pick in a snake: whoever moves second in the match picks first, 1-2-1.
-Picks are unique and visible, so you can counter what your rival takes: cards
-show **Counter** when they beat a rival pick (piercing vs shields, poison vs
-healing, bubbles vs control) and **Combo** when they pair with yours (burn and
-ignite). Quick Play gives 20 seconds per step (then no ban or a random pick);
-friend rooms and bot practice have no timer, and the bot drafts counters too.
+Picks are unique and visible, so you can counter what your rival takes (which
+kits beat or combo with which is for players to discover). Quick Play gives 20
+seconds per step (then no ban or a random pick); friend rooms and bot practice
+have no timer, and the bot drafts counters too.
 
 **Accounts & friends.** Claim a username (no password: the server hands back a
 secret key that stays in the browser's localStorage; copy it from your profile to

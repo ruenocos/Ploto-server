@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Draft, draftScore, kitTags } from "../src/game/matchmonsters/draft.js";
+import { Draft, draftScore } from "../src/game/matchmonsters/draft.js";
 import { MONSTERS } from "../src/game/matchmonsters/monsters.js";
 
 const POOL = Object.keys(MONSTERS);
@@ -68,14 +68,6 @@ describe("draft", () => {
 });
 
 describe("counters", () => {
-  it("tags come from kits", () => {
-    expect(kitTags(MONSTERS["prism_owl"]!).strongVs).toContain("shields");
-    expect(kitTags(MONSTERS["thorn_sprite"]!).strongVs).toContain("healing");
-    expect(kitTags(MONSTERS["bubble_jelly"]!).strongVs).toContain("control");
-    expect(kitTags(MONSTERS["stone_golem"]!).weakTo).toContain("piercing");
-    expect(kitTags(MONSTERS["ember_pup"]!).combos).toContain("burns");
-  });
-
   it("the bot's score rewards counters and combos", () => {
     const owl = MONSTERS["prism_owl"]!, golem = MONSTERS["stone_golem"]!, pup = MONSTERS["ember_pup"]!, wing = MONSTERS["phoenix_chick"]!;
     expect(draftScore(owl, [], [golem])).toBeGreaterThan(draftScore(owl, [], [pup]));

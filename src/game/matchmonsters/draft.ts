@@ -174,7 +174,10 @@ export class Draft {
 
 // ---------------------------------------------------------------- counters
 
-/** What a kit does that other kits care about (derived from its effects). */
+/**
+ * What a kit does that other kits care about (derived from its effects). Only
+ * the bot uses this: players discover counters and combos themselves.
+ */
 export interface KitTraits {
   readonly shields: boolean;
   readonly heals: boolean; // heal, life steal, regen
@@ -199,27 +202,6 @@ export function kitTraits(def: Monster): KitTraits {
     bubble: has("bubble"),
     ignite: has("ignite"),
   };
-}
-
-/**
- * Short tags for the draft screen: what a monster is strong against, weak to,
- * and which partners it combos with. Derived from kits, so they stay true when
- * numbers or kits change.
- */
-export function kitTags(def: Monster): { strongVs: string[]; weakTo: string[]; combos: string[] } {
-  const t = kitTraits(def);
-  const strongVs: string[] = [];
-  const weakTo: string[] = [];
-  const combos: string[] = [];
-  if (t.pierce) strongVs.push("shields");
-  if (t.poison) strongVs.push("healing");
-  if (t.bubble) strongVs.push("control");
-  if (t.shields) weakTo.push("piercing");
-  if (t.heals) weakTo.push("poison");
-  if (t.controls) weakTo.push("bubbles");
-  if (t.ignite) combos.push("burns");
-  if (t.burns) combos.push("ignite");
-  return { strongVs, weakTo, combos };
 }
 
 /**

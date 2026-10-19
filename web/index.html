@@ -500,12 +500,7 @@
       .dr-card.taken { opacity: 0.85; }
       .dr-card.myban { outline: var(--px) dashed var(--c-bad-hi); outline-offset: calc(var(--px) * -4); }
       .dr-card .dr-badge { position: absolute; top: 3px; left: 3px; font: 700 8px/1 var(--f-label); padding: 2px 3px; text-transform: uppercase; }
-      .dr-badge.counter { background: var(--c-gold); color: var(--c-ink); }
-      .dr-badge.combo { background: var(--c-good); color: var(--c-ink); }
       .dr-badge.who { left: auto; right: 3px; background: var(--c-ink); color: var(--c-cream); }
-      .s-tags { display: grid; gap: 4px; margin: 8px 0 12px; font-size: var(--fs-s); }
-      .s-tags b { font: 700 var(--fs-xs)/1 var(--f-label); text-transform: uppercase; margin-right: 4px; }
-      .s-tags .good { color: var(--c-good-hi); } .s-tags .bad { color: var(--c-bad-hi); } .s-tags .combo { color: var(--c-gold); }
 
       /* settings */
       .brand .settings-btn { grid-column: 2; grid-row: 1; }
@@ -957,7 +952,6 @@
           `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">⚡ ${mon.chargeCost} charge</span></div>` +
           `<div class="s-desc">${esc(mon.ability.description)}</div>` +
           (mon.ability.passive ? `<div class="s-pass">✦ ${esc(mon.ability.passive)}</div>` : "") +
-          tagsHtml(mon) +
           `<div class="s-actions">${draftMode ? "" : `<button id="pickSelect" class="${i >= 0 ? "ghost" : ""}">${esc(label)}</button>`}` +
           `<button class="ghost" id="sheetClose">Close</button></div></div>`;
         sheet.classList.remove("hidden");
@@ -1668,21 +1662,6 @@
       let draftTimerIv = 0;
       let draftHadMove = false;
       const rosterById = (id) => roster.find((m) => m.id === id);
-      /** What each "strong vs" tag beats on the other side's "weak to" list. */
-      const BEATS = { shields: "piercing", healing: "poison", control: "bubbles" };
-      const counters = (mon, team) => team.some((t) => mon.tags?.strongVs.some((s) => t.tags?.weakTo.includes(BEATS[s])));
-      const combos = (mon, team) => team.some((t) => (mon.tags?.combos.includes("burns") && t.tags?.combos.includes("ignite")) || (mon.tags?.combos.includes("ignite") && t.tags?.combos.includes("burns")));
-      /** Strong vs / weak to / combos lines for a monster's sheet. */
-      function tagsHtml(mon) {
-        const t = mon.tags;
-        if (!t || (!t.strongVs.length && !t.weakTo.length && !t.combos.length)) return "";
-        const combo = t.combos.map((c) => (c === "burns" ? "burners (Emberwing)" : "ignite (Pyrup)"));
-        return `<div class="s-tags">` +
-          (t.strongVs.length ? `<div class="good"><b>Strong vs</b> ${t.strongVs.join(", ")}</div>` : "") +
-          (t.weakTo.length ? `<div class="bad"><b>Weak to</b> ${t.weakTo.join(", ")}</div>` : "") +
-          (combo.length ? `<div class="combo"><b>Combos with</b> ${combo.join(", ")}</div>` : "") + `</div>`;
-      }
-
       function stopDraftTimer() {
         clearInterval(draftTimerIv);
         draftTimerIv = 0;
@@ -1694,8 +1673,6 @@
         const names = draftState.names;
         const owner = new Map([...d.picks[me].map((id) => [id, "mine"]), ...d.picks[foe].map((id) => [id, "theirs"])]);
         const banned = new Set(d.bans.filter((b) => typeof b === "string"));
-        const foeTeam = d.picks[foe].map(rosterById).filter(Boolean);
-        const myTeam = d.picks[me].map(rosterById).filter(Boolean);
 
         // Whose move, in words.
         const rival = esc(names[foe]);
@@ -1749,10 +1726,7 @@
           card.classList.toggle("theirs", who === "theirs");
           card.classList.toggle("myban", d.bans[me] === id && d.phase === "ban");
           card.querySelectorAll(".dr-badge").forEach((b) => b.remove());
-          const free = !isBanned && !who;
           if (who) card.insertAdjacentHTML("beforeend", `<span class="dr-badge who">${who === "mine" ? "You" : "Rival"}</span>`);
-          else if (free && counters(mon, foeTeam)) card.insertAdjacentHTML("beforeend", `<span class="dr-badge counter" title="Counters a rival pick">Counter</span>`);
-          else if (free && combos(mon, myTeam)) card.insertAdjacentHTML("beforeend", `<span class="dr-badge combo" title="Combos with your pick">Combo</span>`);
           card.setAttribute("aria-label", `${mon.name}${isBanned ? ", banned" : who === "mine" ? ", your pick" : who === "theirs" ? ", rival's pick" : ""}`);
         }
 
@@ -1795,7 +1769,6 @@
             `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">⚡ ${mon.chargeCost} charge</span></div>` +
             `<div class="s-desc">${esc(mon.ability.description)}</div>` +
             (mon.ability.passive ? `<div class="s-pass">✦ ${esc(mon.ability.passive)}</div>` : "") +
-            tagsHtml(mon) +
             `<div class="s-actions">` +
             (action ? `<button id="drAct" class="${action === "ban" ? "danger" : ""}">${action === "ban" ? "Ban" : "Pick"} ${esc(mon.name)}</button>` : `<button disabled>${label}</button>`) +
             `<button class="ghost" id="sheetClose">Close</button></div></div>`;

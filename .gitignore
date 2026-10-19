@@ -7,3 +7,5 @@ coverage/
 .DS_Store
 data/
 __pycache__/
+# PixelLab candidates are review material, not game art
+art/pixellab/candidates/

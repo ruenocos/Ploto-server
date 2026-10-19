@@ -285,7 +285,7 @@
       .fighter { position: absolute; width: calc(var(--u) * 48); margin-left: calc(var(--u) * -24); display: flex; flex-direction: column; align-items: center; cursor: pointer; pointer-events: none; }
       /* only the sprite's parts and the badge take taps, so the empty canvas of the front monster doesn't steal the back one's */
       .fighter .part > img, .fighter .cbadge { pointer-events: auto; }
-      .fighter.f0 { --u: var(--ub); bottom: 38%; }
+      .fighter.f0 { --u: var(--ub); --hu: var(--hub); --hx: var(--hxb); --hy: var(--hyb); bottom: 38%; }
       .fighter.f1 { bottom: 0; }
       .side.me .f0 { left: 32%; } .side.me .f1 { left: 64%; }
       .side.foe .f0 { left: 68%; } .side.foe .f1 { left: 36%; }
@@ -298,6 +298,15 @@
       .rig { position: absolute; inset: 0; transform-origin: 50% 98%; }
       .rig .part { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
       .rig .part > img { position: absolute; display: block; image-rendering: pixelated; }
+      /*
+       * 64px art (art/pixellab): one image on its own pixel unit --hu (about 0.75 --u,
+       * snapped to whole device pixels), bottom-centre in the 48-unit stage at
+       * (--hx, --hy). An idle sheet steps through its --n frames.
+       */
+      .rig .hd-art { position: absolute; left: var(--hx); top: var(--hy); width: calc(var(--hu) * 64); height: calc(var(--hu) * 64);
+        background: 0 0 / calc(var(--hu) * 64 * var(--n)) 100% no-repeat; image-rendering: pixelated; }
+      .rig .hd-art.idle { animation: hdIdle calc(var(--n) * 150ms) steps(var(--n)) infinite; }
+      @keyframes hdIdle { to { background-position-x: calc(var(--hu) * -64 * var(--n)); } }
       .core { position: absolute; width: 0; height: 0; }
       .rig-view { position: relative; overflow: hidden; flex: none; max-width: 100%; }
       .rig-canvas { position: absolute; width: calc(var(--u) * 48); height: calc(var(--u) * 48); } /* body centre: where motes and orbs aim */
@@ -515,7 +524,7 @@
       .bob:nth-child(2n) svg, .bob:nth-child(2n) img { animation-delay: -1.3s; }
       @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(var(--px) * -1)); } }
       @media (prefers-reduced-motion: reduce) {
-        .bob svg, .bob img, .tile.sel .gem, .board.shuffling .gem, .rig .part, .st, .clouds { animation: none; }
+        .bob svg, .bob img, .tile.sel .gem, .board.shuffling .gem, .rig .part, .rig .hd-art, .st, .clouds { animation: none; }
         .float { animation: fadeOnly 1s ease forwards; }
       }
       @keyframes fadeOnly { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
@@ -638,7 +647,7 @@
       /* the Motion setting forces reduced motion even when the device doesn't ask for it */
       .reduce-motion .animate__animated { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
       .reduce-motion .bob svg, .reduce-motion .bob img, .reduce-motion .tile.sel .gem, .reduce-motion .board.shuffling .gem,
-      .reduce-motion .rig .part, .reduce-motion button.pulse, .reduce-motion .st, .reduce-motion .clouds { animation: none; }
+      .reduce-motion .rig .part, .reduce-motion .rig .hd-art, .reduce-motion button.pulse, .reduce-motion .st, .reduce-motion .clouds { animation: none; }
       .reduce-motion .float { animation: fadeOnly 1s ease forwards; }
       /*
        * Battle intro: while .entering, the monsters wait off stage (each runs in
@@ -922,8 +931,19 @@
       // Pixel sprites (web/pixelart.js) at the biggest whole-number scale that fits
       // the slot; the vector art is only a fallback.
       const pxMon = (id) => (window.PIXELART && PIXELART.monsters[id]) || null;
+      /** 64px art's own pixel unit for a stage drawn at `u` per 48-canvas pixel: whole device pixels, art bottom-centre. */
+      const hdUnit = (u) => {
+        const dpr = window.devicePixelRatio || 1;
+        const hu = Math.max(1, Math.floor(u * 0.75 * dpr)) / dpr;
+        const dev = (v) => Math.round(v * dpr) / dpr;
+        return { hu, hx: dev(24 * u - 32 * hu), hy: dev(48 * u - 64 * hu) };
+      };
       const art = (id, size) => {
         const px = pxMon(id);
+        if (px?.res) {
+          const dpr = window.devicePixelRatio || 1;
+          return rigView(id, 0, Math.max(1, Math.floor((size / 36) * dpr)) / dpr, CARD_CROP);
+        }
         if (px) {
           const s = 32 * Math.max(1, Math.floor(size / 32));
           return `<img class="px" src="${px.icon}" width="${s}" height="${s}" alt="" draggable="false">`;
@@ -967,7 +987,8 @@
       function rigView(id, stage, u, crop = [0, 0, 48, 48]) {
         if (!pxMon(id)) return art(id, 32 * u);
         const [x, y, w, h] = crop;
-        return `<div class="rig-view" style="--u:${u}px;width:${w * u}px;height:${h * u}px">` +
+        const hd = hdUnit(u);
+        return `<div class="rig-view" style="--u:${u}px;--hu:${hd.hu}px;--hx:${hd.hx}px;--hy:${hd.hy}px;width:${w * u}px;height:${h * u}px">` +
           `<div class="rig-canvas" style="left:${-x * u}px;top:${-y * u}px">${rigHtml(id, stage)}</div></div>`;
       }
 
@@ -980,6 +1001,12 @@
       function rigHtml(id, stage) {
         const px = pxMon(id);
         if (!px) return `<div class="rig">${art(id, 64)}</div>`;
+        if (px.res) {
+          // 64px art: one image; a still one breathes like a rig's body, an idle sheet plays its own frames.
+          const s = px.stages[stage];
+          return `<div class="rig"><div class="part r-${s.idle ? "still" : "body"}" style="transform-origin:${U(24)} ${U(47)}">` +
+            `<div class="hd-art${s.idle ? " idle" : ""}" style="background-image:url(${s.idle || s.flat});--n:${s.idle ? s.n : 1}"></div></div></div>`;
+        }
         const parts = px.stages[stage].parts;
         const kids = new Map();
         for (const p of parts) {
@@ -1700,10 +1727,12 @@
         // Width: front monster stays on its half, back one inside the edge. Height: the back
         // monster stands 38% up and its top 40 rows must fit (the rest of the canvas is headroom).
         const u = snap(Math.min(half.clientWidth / 66, half.clientHeight / 64));
+        const ub = snap(u * 0.86), hd = hdUnit(u), hdb = hdUnit(ub);
         for (const side of [half, $("foeSide")]) {
           side.style.setProperty("--u", u + "px");
-          side.style.setProperty("--ub", snap(u * 0.86) + "px");
+          side.style.setProperty("--ub", ub + "px");
           side.style.setProperty("--gu", snap(u * 0.55) + "px");
+          for (const [k, v] of Object.entries({ hu: hd.hu, hx: hd.hx, hy: hd.hy, hub: hdb.hu, hxb: hdb.hx, hyb: hdb.hy })) side.style.setProperty(`--${k}`, v + "px");
         }
         if (window.PIXELART) {
           const k = Math.ceil(Math.max(W / 160, arena.clientHeight / 100) * dpr) / dpr;

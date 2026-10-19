@@ -48,7 +48,9 @@
  * @property {(el: Element | null, preset: string, opts?: { speed?: "" | "fast" | "faster" | "slow" | "slower", keep?: boolean }) => Promise<void>} play   play an Animate.css preset (name without the animate__ prefix)
  * @property {(host: HTMLElement, text: string, color: string, icons?: string[]) => void} floatText   a floating label, led by pixel icons (web/icons.js names)
  * @property {(name: string, scale?: number) => string} icon   a pixel icon (web/icons.js) as inline SVG markup
- * @property {(seat: 0 | 1, kind: LandKind, amount: number, color?: string) => void} land   apply + show a number on a player
+ * @property {(seat: 0 | 1, kind: LandKind, amount: number, color?: string, element?: string) => void} land   apply + show a number on a player (the impact takes the attacker's element)
+ * @property {(at: Pt, kind: string, opts?: { k?: number, dur?: number }) => void} impact   a pixel impact sprite (art/pixel/fx.py: an element, heal, shield, ice or poison)
+ * @property {() => number} tileFxUnit   impact scale that fits a board tile
  * @property {(seat: 0 | 1, monsterId: string, delta: number) => void} charge   move a monster's shown charge
  * @property {(x: number, y: number, gem: Gem, cls?: string) => void} setTile   change one tile (with an entrance class)
  * @property {(step: CascadeStep, opts: { mover: 0 | 1 | null, combo?: number }) => Promise<void>} playStep
@@ -83,7 +85,7 @@ async function orbTo(/** @type {CastCtx} */ ctx, /** @type {0 | 1} */ seat, /** 
 async function blocked(/** @type {CastCtx} */ ctx, /** @type {0 | 1} */ target) {
   const { fx } = ctx;
   await orbTo(ctx, target, "#bfefff");
-  fx.burst(fx.hitOf(target), "#bfefff", 10, 34);
+  fx.impact(fx.hitOf(target), "water");
   fx.floatText(fx.sideOf(target), "blocked", "#bfefff", ["bubble"]);
   void fx.pose(target, null, "cheer");
   await fx.sleep(380);
@@ -114,7 +116,7 @@ const EFFECTS = {
       const color = ctx.fx.COLOR[ctx.cast.element] ?? "#ff6a4d";
       await lunge(ctx);
       await orbTo(ctx, e.target, color);
-      ctx.fx.land(e.target, e.pierce ? "pierce" : "attack", e.amount, color);
+      ctx.fx.land(e.target, e.pierce ? "pierce" : "attack", e.amount, color, ctx.cast.element);
       await ctx.fx.sleep(90);
     },
   },
@@ -144,7 +146,7 @@ const EFFECTS = {
       const color = fx.COLOR[ctx.cast.element] ?? "#ff6a4d";
       await lunge(ctx);
       await orbTo(ctx, e.target, color);
-      fx.land(e.target, "attack", e.amount, color);
+      fx.land(e.target, "attack", e.amount, color, ctx.cast.element);
       const caster = other(e.target);
       const home = ctx.source ? fx.centerOf(ctx.source) : fx.hitOf(caster);
       await fx.fly("orb", fx.hitOf(e.target), home, "#4fd17a", { dur: 380, arc: 50 });
@@ -171,10 +173,10 @@ const EFFECTS = {
       if (e.amount <= 0) return; // nothing was burning
       const at = fx.hitOf(e.target);
       await orbTo(ctx, e.target, "#ff9a3c", 260);
-      fx.burst(at, "#ff6a2a", 14, 56);
+      fx.impact(at, "fire", { dur: 480 });
       fx.burst(at, "#ffd23c", 8, 30);
       fx.floatText(fx.sideOf(e.target), e.burns > 1 ? `ignite ×${e.burns}` : "ignite", "#ffb04a", ["burn"]);
-      fx.land(e.target, "pierce", e.amount, "#ff7a2a");
+      fx.land(e.target, "pierce", e.amount, "#ff7a2a", "fire");
       await fx.sleep(240);
     },
   },
@@ -184,7 +186,7 @@ const EFFECTS = {
     async animate(e, ctx) {
       const { fx } = ctx;
       await orbTo(ctx, e.target, "#92e27c");
-      for (const c of fx.sideOf(e.target).querySelectorAll(".core")) fx.burst(fx.centerOf(c), "#92e27c", 6, 24);
+      for (const c of fx.sideOf(e.target).querySelectorAll(".core")) fx.impact(fx.centerOf(c), "heal");
       fx.floatText(fx.sideOf(e.target), `${e.amount}/turn ×${e.turns}`, "#92e27c", ["heal"]);
       void fx.pose(e.target, null, "cheer");
       await fx.sleep(300);
@@ -196,7 +198,7 @@ const EFFECTS = {
     async animate(e, ctx) {
       const { fx } = ctx;
       await orbTo(ctx, e.target, "#bfefff");
-      for (const c of fx.sideOf(e.target).querySelectorAll(".core")) fx.burst(fx.centerOf(c), "#bfefff", 8, 30);
+      for (const c of fx.sideOf(e.target).querySelectorAll(".core")) fx.impact(fx.centerOf(c), "water");
       fx.floatText(fx.sideOf(e.target), e.count > 1 ? `×${e.count}` : "bubble", "#bfefff", ["bubble"]);
       void fx.pose(e.target, null, "cheer");
       await fx.sleep(300);
@@ -240,6 +242,7 @@ const EFFECTS = {
         await Promise.all(flights);
       }
       board.animate([{ filter: "none" }, { filter: "brightness(1.25) saturate(0.4) hue-rotate(160deg)" }, { filter: "none" }], { duration: 420 });
+      fx.impact({ x: r.left + r.width / 2, y: r.top + r.height / 2 }, "ice", { k: fx.tileFxUnit() * 2, dur: 420 });
       fx.floatText(fx.sideOf(e.target), `${e.count} next turn`, "#bfe9ff", ["frozen"]);
       void fx.pose(e.target, null, "hurt");
       await fx.sleep(300);
@@ -252,7 +255,7 @@ const EFFECTS = {
       await motesToCells(ctx, e.cells, fx.COLOR.earth ?? "#e0a35e", (c) => {
         fx.setTile(c.x, c.y, "stone", "fresh");
         const t = fx.tileAt(c.x, c.y);
-        if (t) fx.burst(fx.centerOf(t), "#9aa0ad", 6, 26);
+        if (t) fx.impact(fx.centerOf(t), "earth", { k: fx.tileFxUnit() });
       });
       await fx.sleep(250);
     },
@@ -262,7 +265,11 @@ const EFFECTS = {
     async animate(e, ctx) {
       const { fx } = ctx;
       const color = fx.COLOR[e.element] ?? "#fff";
-      await motesToCells(ctx, e.cells, color, (c) => fx.setTile(c.x, c.y, e.element, "converted"));
+      await motesToCells(ctx, e.cells, color, (c) => {
+        fx.setTile(c.x, c.y, e.element, "converted");
+        const t = fx.tileAt(c.x, c.y);
+        if (t) fx.impact(fx.centerOf(t), e.element, { k: fx.tileFxUnit() });
+      });
       await fx.sleep(300);
     },
   },
@@ -277,7 +284,7 @@ const EFFECTS = {
         fx.charge(e.target, monsterId, -n);
         void fx.pose(e.target, monsterId, "hurt");
         if (!mon) return Promise.resolve();
-        fx.burst(fx.centerOf(mon), color, 6, 22);
+        fx.impact(fx.centerOf(mon), cast.element);
         return source ? fx.fly("mote", fx.centerOf(mon), fx.centerOf(source), color, { dur: 460 }) : Promise.resolve();
       });
       if (!flights.length) fx.floatText(fx.sideOf(e.target), "no charge to drain", "#8f98ad");
@@ -331,7 +338,7 @@ const EFFECTS = {
       const { fx, cast } = ctx;
       const banner = fx.banner();
       const r = banner.getBoundingClientRect();
-      fx.burst({ x: r.right - 34, y: r.top + r.height / 2 }, "#ffd23c", 10, 30);
+      fx.impact({ x: r.right - 34, y: r.top + r.height / 2 }, "light");
       fx.bump(banner);
       void fx.pose(cast.by, null, "cheer");
       await fx.sleep(320); // the bonus pip itself pops in when the turn re-renders
@@ -343,8 +350,7 @@ const EFFECTS = {
       const { fx, cast } = ctx;
       const side = fx.sideOf(cast.by);
       for (const f of side.querySelectorAll(".fighter .core")) {
-        const c = fx.centerOf(f);
-        fx.burst(c, "#fff6c2", 7, 26);
+        fx.impact(fx.centerOf(f), "light");
       }
       void fx.pose(cast.by, null, "cheer");
       if (e.removed > 0) fx.floatText(side, "cleansed", "#fff6c2", ["cleanse"]);
@@ -425,7 +431,7 @@ const BOARD = {
         const t = fx.tileAt(c.x, c.y);
         if (!t) return;
         t.classList.add("fresh");
-        setTimeout(() => fx.burst(fx.centerOf(t), "#bfe9ff", 5, 20), i * 50);
+        setTimeout(() => fx.impact(fx.centerOf(t), "ice", { k: fx.tileFxUnit() }), i * 50);
       });
       if (cells.length) await fx.sleep(400);
     },

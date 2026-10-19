@@ -21,7 +21,13 @@ tiles (16×16), and the arena (a 160×100 meadow plus the grass platform).
 - `EVOLUTION.md` — the evolution design brief and its sources.
 - `gems.py` — fire triangle, water round, earth square, nature leaf, light
   diamond, cherries and stone.
-- `arena.py` — the battlefield backdrop and platform.
+- `arena.py` — the battlefield at three times of day (`THEMES`: day, dusk,
+  night): the 160×100 backdrop, two 160×40 cloud strips that tile sideways
+  (so they can drift) and the grass platform.
+- `fx.py` — impact effects: a 6-frame 32×32 sheet per element and per effect
+  (heal, shield, ice, poison), each burst in its own shape with its own
+  particles and dithered edges; plus the status loops (burn, poison, regen:
+  4 frames of 12×12) and two stills (the bubble shell and the shield wall).
 - `build.py` — renders everything to `out/` and writes `web/pixelart.js`
   (data URLs the client loads; see its docstring for the shape).
 - `rigsheet.py` — a review sheet: each monster's three stages in colour, then as

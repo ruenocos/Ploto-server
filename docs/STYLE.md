@@ -113,9 +113,34 @@ No rounded corners, no blur, no soft drop shadows. Depth is bevels only.
   `web/index.html`). Each body part has its own idle loop.
 - UI transitions use stepped easing (`steps(n)`), so they move in frames like
   the art does.
-- **Glow is for moves only:** cast banners, charge motes, orbs. Nothing else
-  glows.
-- Everything respects `prefers-reduced-motion`.
+- **Effects are pixel art too.** Hits land as 6-frame impact sprites per
+  element (`art/pixel/fx.py`: fire, water, earth, nature, light, plus heal,
+  shield, ice, poison), at the arena's sprite pixel size. Motes and orbs are
+  small hard-edged pixel shapes. Soft edges are dithered, never blurred.
+- **Weight:** a hit freezes the arena for a beat (hit-stop: 60 ms, 140 ms from
+  12 damage), then shakes in tiers with stock presets (head shake from 8,
+  full shake from 16). Damage numbers grow and warm up in bands (under 8,
+  8–14, 15–19, 20+) and land with a small random sideways offset; combo
+  labels get gold at ×4 and orange at ×6, and the match sound stops rising at
+  ×5.
+- **Statuses show on the monsters:** flames while burning, bubbles while
+  poisoned, plus signs while regenerating (4-frame loops), a bubble shell and
+  a glass shield wall while those last.
+- **Evolution is staged:** the arena dims, the monster turns into a white
+  silhouette, old and new silhouettes trade places (each swap at least
+  340 ms apart, so never more than 3 a second, per WCAG 2.3.1), one burst of
+  light, then the new form bounces in.
+- **The arena** has three times of day (day, dusk, night), picked from the
+  room id so both players see the same one, and two cloud layers drifting at
+  different speeds, one sprite pixel per step.
+- **The end card** opens with a stepped circular wipe; a winning team
+  cheers; your damage, best hit and best combo count up.
+- Small life: now and then a glint runs across one gem; gems squash for one
+  frame when they land; a draft pick lands in its slot like a stamp.
+- **Glow is for moves only:** cast banners. Nothing else glows.
+- Everything respects `prefers-reduced-motion` (and the Motion setting):
+  no impacts, shakes, hit-stop, drifting clouds, status loops, silhouette
+  swaps or wipes; the result of each moment still shows.
 
 ## Sound and haptics
 

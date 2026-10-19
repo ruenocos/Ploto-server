@@ -111,6 +111,16 @@ describe("GameRoom rematch", () => {
     return { room, a, b };
   }
 
+  it("tells clients whether the teams were drafted (a drafted match re-drafts on rematch)", () => {
+    const blind = new GameRoom(roomConfig());
+    const drafted = new GameRoom(roomConfig(), { draftStepMs: null });
+    const a = new FakePeer("p0");
+    blind.join(a);
+    drafted.join(a);
+    expect((blind.handleRequest("p0", "mm:getState", {}) as { drafted: boolean }).drafted).toBe(false);
+    expect((drafted.handleRequest("p0", "mm:getState", {}) as { drafted: boolean }).drafted).toBe(true);
+  });
+
   it("refuses a rematch vote while the game is still running", () => {
     const room = new GameRoom(roomConfig());
     expect(() => room.voteRematch(0)).toThrow(/isn't over/);

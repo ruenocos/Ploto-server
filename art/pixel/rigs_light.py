@@ -1,4 +1,4 @@
-"""Light rigs: Lumowl, Glintling, Dawnhart (lumistag), Halomoth (lumoth) (three stages each).
+"""Light rigs: Lumowl, Glintling, Dawnhare, Halomoth (lumoth) (three stages each).
 
 Each line follows EVOLUTION.md: a round baby, a lankier adolescent with one new
 feature, and an adult with its own silhouette.
@@ -7,9 +7,9 @@ feature, and an adult with its own silhouette.
   great owl with prism-tipped wings spread wide.
 - Glintling: a chubby sitting star -> a comet with a trailing tail -> a robed
   dawn spirit with a sunburst halo, holding two starlets.
-- Dawnhart: a big-headed fawn with antler buds -> a long-legged yearling (three
-  quarter view) with forked antlers -> a stag with a gold mane and wide,
-  starlit antlers.
+- Dawnhare: a round sun bunny kit with sunlit ear tips -> a crouching leveret
+  (side view) with a ruff of short rays -> an upright sun hare with
+  ray-tipped ears, a gold chest mane and a sun disc behind its head.
 - Halomoth: a fuzzy haloed larva -> an upright moth with small round wings -> a
   luna-moth adult with pointed forewings and long streamers.
 """
@@ -174,88 +174,102 @@ def glintling(stage: int) -> Rig:
     return r
 
 
-# ------------------------------------------------------------------ Dawnhart
-def lumistag(stage: int) -> Rig:
-    r = Rig("lumistag", base_materials(fur=Material(["#8a7a5a", "#d8cdb0", "#f6f0e0", "#ffffff"]), muzzle=Material(["#9a9488", "#cfc8b8", "#ece6d8", "#ffffff"]),
-                                       antler=Material(GOLD), gem=Material(["#ffd23c"], flat=True), glow=Material(["#ffd56a"], flat=True),
-                                       hoof=Material(["#b8860b"], flat=True), mane=Material(["#c9a24a", "#e8c46a", "#ffe08e", "#fff4c8"]),
-                                       eyeglow=Material(["#ffcf3a"], flat=True), spark=Material(["#fff8c8"], flat=True, floating=True)), "#1e1606", stage)
-    if stage == 0:  # fawn: front view, a huge head, floppy ears, two antler buds
-        r.part("legs", "legs", pivot=(16, 30), z=-1)
-        for x in (12.8, 19.2):
-            r.stroke([(x, 25.4), (x, 30.6)], 2, "fur")
-        r.pxs("hoof", [(12, 30), (13, 30), (18, 30), (19, 30)])
-        r.part("body", "body", pivot=(16, 29))
-        r.ellipse(16, 24.4, 6.8, 4.6, "fur")
-        r.pxs("glow", [(10, 24), (12, 26), (21, 24), (19, 26)])
-        r.part("head", "head", pivot=(16, 21), parent="body", z=1)
-        r.ellipse(16, 15.2, 7.4, 6.6, "fur")
-        r.ellipse(16, 19.2, 3.4, 2.2, "muzzle")
-        r.pxs("ink", [(15, 18), (16, 18)])
-        eyes(r, 16, 13, 6)
-        r.pxs("gem", [(15, 10), (16, 10)])
+# ------------------------------------------------------------------ Dawnhare
+def dawnhare(stage: int) -> Rig:
+    """Sun bunny kit -> crouching hare with a sun-ray ruff -> upright sun hare
+    with ray-tipped ears and a sun disc behind its head (a hare, so it shares
+    no silhouette with Petalope's fawn line)."""
+    r = Rig("dawnhare", base_materials(fur=Material(["#8a7a5a", "#d8cdb0", "#f6f0e0", "#ffffff"]),
+                                       muzzle=Material(["#9a9488", "#cfc8b8", "#ece6d8", "#ffffff"]),
+                                       tip=Material(GOLD), ray=Material(RAY), mane=Material(["#c9a24a", "#e8c46a", "#ffe08e", "#fff4c8"]),
+                                       gem=Material(["#ffd23c"], flat=True), nose=Material(["#ff9fb0"], flat=True),
+                                       inner=Material(["#ffd6c8"], flat=True), eyeglow=Material(["#ffcf3a"], flat=True),
+                                       spark=Material(["#fff8c8"], flat=True, floating=True)), "#1e1606", stage)
+    if stage == 0:  # kit: sitting, front view, round body, two tall ears with sunlit tips
+        r.part("tail", "tail", pivot=(21, 27), z=-2)
+        r.ellipse(22.6, 26.4, 2.3, 2.1, "mane")
+        r.part("feet", "legs", pivot=(16, 30), z=1)
+        r.ellipse(12.4, 30, 2.7, 1.4, "fur")
+        r.ellipse(19.6, 30, 2.7, 1.4, "fur")
+        r.part("body", "body", pivot=(16, 30))
+        r.ellipse(16, 25.2, 6.6, 5, "fur")
+        r.ellipse(16, 26.4, 3.4, 3.2, "muzzle")
+        r.part("head", "head", pivot=(16, 22), parent="body", z=1)
+        r.ellipse(16, 17.2, 6.8, 5.9, "fur")
+        r.ellipse(16, 20.2, 2.8, 1.7, "muzzle")
+        r.pxs("nose", [(15, 19), (16, 19)])
+        eyes(r, 16, 15, 5)
+        r.pxs("blush", [(10, 19), (21, 19)])
+        r.pxs("gem", [(15, 12), (16, 12)])
         for side in ("ear-l", "ear-r"):
-            r.part(side, side, pivot=(10, 14) if side == "ear-l" else (22, 14), parent="head", z=-1)
-            pts = [(10.2, 13.2), (2.8, 14.4), (5.2, 17.4), (10, 16.6)]
-            r.poly(pts if side == "ear-l" else mirror_poly(pts), "fur")
-        r.part("buds", "fx", pivot=(16, 9), parent="head", z=-1)
-        r.ellipse(12.6, 8.6, 1.7, 2.2, "antler")
-        r.ellipse(19.4, 8.6, 1.7, 2.2, "antler")
+            r.part(side, side, pivot=(13, 12) if side == "ear-l" else (19, 12), parent="head", z=-1)
+            ear = [(12.4, 12.6), (11, 4.4), (12.2, 2.8), (14.2, 4.4), (14.8, 12)]
+            inner = [(12.6, 11), (12.2, 5.4), (13.4, 5.2), (13.8, 11)]
+            tip = [(11, 4.4), (12.2, 2.8), (14.2, 4.4), (12.6, 5.4)]
+            r.poly(ear if side == "ear-l" else mirror_poly(ear), "fur")
+            r.poly(inner if side == "ear-l" else mirror_poly(inner), "inner")
+            r.poly(tip if side == "ear-l" else mirror_poly(tip), "tip")
         return r
 
-    if stage == 1:  # yearling: three-quarter view, long legs, a neck, forked antlers
-        r.part("legs", "legs", pivot=(18, 24), z=-1)
-        for x0, x1 in ((22.4, 22.8), (25, 25.6), (13.4, 12.8), (15.8, 15.6)):
-            r.stroke([(x0, 22), (x1, 30.6)], 1.6, "fur")
-        r.pxs("hoof", [(12, 30), (13, 30), (15, 30), (16, 30), (22, 30), (23, 30), (25, 30), (26, 30)])
-        r.part("tail", "tail", pivot=(26, 18), z=-1)
-        r.ellipse(26.8, 18.2, 1.7, 1.8, "fur")
-        r.part("body", "body", pivot=(18, 24))
-        r.ellipse(19, 20.4, 7.6, 3.9, "fur")
-        r.pxs("glow", [(17, 18), (20, 18), (23, 19), (21, 21), (15, 20)])
-        r.part("head", "head", pivot=(12, 18), parent="body", z=1)
-        r.poly([(10.4, 19), (14.8, 19.4), (13.6, 12), (10.4, 12)], "fur")
-        r.ellipse(11.6, 10.3, 4, 3.9, "fur")
-        r.ellipse(9.4, 12.6, 2.4, 1.7, "muzzle")
-        r.pxs("ink", [(7, 12)])
-        eyes(r, 11.2, 10, 1.6)
-        r.pxs("gem", [(11, 7)])
-        for side, pts in (("ear-l", [(9.2, 9), (4.6, 7.6), (7.6, 10.6)]), ("ear-r", [(14, 8.4), (18.4, 6.6), (16, 10)])):
-            r.part(side, side, pivot=(9, 9) if side == "ear-l" else (14, 8), parent="head", z=-1)
-            r.poly(pts, "fur")
-        r.part("antlers", "fx", pivot=(11, 7), parent="head", z=-2)
-        for path in ([(10, 7.6), (8.8, 5), (7.8, 3.6)], [(9, 5.6), (6.8, 5.2)], [(13.2, 7.4), (14, 4.8), (15.2, 3.4)], [(13.8, 5.4), (16.2, 5)]):
-            r.stroke(path, 1.3, "antler")
+    if stage == 1:  # leveret: side-on crouch, big hind leg, ears swept back, a ruff of short rays
+        r.part("tail", "tail", pivot=(25, 22), z=-1)
+        r.ellipse(25.4, 21.6, 2.2, 2, "mane")
+        r.part("legs", "legs", pivot=(18, 28), z=1)
+        r.ellipse(21, 27.6, 4.8, 2.9, "fur")
+        r.ellipse(23.4, 30.2, 3.2, 1.1, "fur")
+        r.stroke([(13, 24), (12.2, 30.4)], 1.8, "fur")
+        r.stroke([(15.4, 24.6), (15, 30.4)], 1.8, "fur")
+        r.part("body", "body", pivot=(18, 28))
+        r.ellipse(18.4, 22.6, 6.8, 5, "fur")
+        r.ellipse(15.4, 24, 3, 3, "muzzle")
+        r.part("ruff", "static", pivot=(14, 19), parent="body", z=1)
+        r.poly(star_points(14.2, 18.8, 5.4, 3.2, n=8, rot=-70), "ray")
+        r.part("head", "head", pivot=(13, 18), parent="body", z=2)
+        r.ellipse(12.6, 14.6, 4.8, 4.1, "fur")
+        r.ellipse(9.2, 16, 2.2, 1.6, "muzzle")
+        r.pxs("nose", [(7, 15)])
+        eyes(r, 12, 12.6, 1.6)
+        r.pxs("gem", [(12, 10)])
+        for side, ear, tip in (("ear-l", [(12, 11), (15.6, 2.6), (17.6, 2.4), (15.6, 11.4)], [(15.6, 2.6), (17.6, 2.4), (16.6, 5)]),
+                               ("ear-r", [(14.2, 11.6), (21, 4.4), (22.6, 5.4), (16.6, 12.4)], [(21, 4.4), (22.6, 5.4), (20.4, 6.6)])):
+            r.part(side, side, pivot=(14, 11), parent="head", z=-1 if side == "ear-l" else -2)
+            r.poly(ear, "fur")
+            r.poly(tip, "tip")
+        sparkle(r, 27, 9)
         return r
 
-    # stag: tall, a gold mane, wide antlers with starlit tips
-    r.part("legs", "legs", pivot=(18, 24), z=-1)
-    for x0, x1 in ((23, 23.4), (25.8, 26.4), (13.4, 12.6), (16.2, 15.8)):
-        r.stroke([(x0, 22), (x1, 30.6)], 1.6, "fur")
-    r.pxs("hoof", [(12, 30), (13, 30), (15, 30), (16, 30), (23, 30), (24, 30), (26, 30), (27, 30), (12, 29), (15, 29), (23, 29), (26, 29)])
-    r.part("tail", "tail", pivot=(27, 17), z=-1)
-    r.poly([(26, 16.4), (30, 14.6), (29.6, 18.4), (27, 19)], "mane")
-    r.part("body", "body", pivot=(18, 24))
-    r.ellipse(19.6, 19.4, 8.2, 4.4, "fur")
-    r.pxs("glow", [(18, 17), (20, 16), (23, 17), (25, 19), (21, 20), (17, 20)])
-    r.part("head", "head", pivot=(12, 18), parent="body", z=1)
-    r.poly([(10, 17.4), (14.6, 18), (13.6, 9.6), (10.4, 9.6)], "fur")
-    r.poly([(9, 16), (14.6, 15.4), (15.4, 20.6), (12.6, 23.2), (9.6, 21.4)], "mane")
-    r.ellipse(11.6, 8, 3.6, 3, "fur")
-    r.ellipse(9.4, 9.8, 2.3, 1.6, "muzzle")
-    r.pxs("ink", [(7, 9)])
-    eyes(r, 11, 6.5, 1.4, iris="eyeglow")
-    r.pxs("gem", [(11, 4), (11, 5)])
-    for side, pts in (("ear-l", [(9.4, 6.8), (5, 5.6), (8, 8.4)]), ("ear-r", [(13.8, 6.2), (18, 4.6), (15.8, 7.8)])):
-        r.part(side, side, pivot=(9, 7) if side == "ear-l" else (14, 6), parent="head", z=-1)
-        r.poly(pts, "fur")
-    r.part("antlers", "fx", pivot=(11, 5), parent="head", z=-2)
-    left = [[(10, 5.4), (8, 2), (4.8, -0.4), (1.4, -1.2)], [(7.6, 2.4), (4.4, 3.4), (1.4, 2.8)], [(5.6, 0.4), (5, -2.2)]]
-    right = [[(13, 5.2), (15.4, 2), (18.8, -0.4), (22.4, -1.2)], [(15.4, 2.4), (18.4, 3.4), (21.4, 2.8)], [(18, 0.2), (18.6, -2.2)]]
-    for path in left + right:
-        r.stroke(path, 1.4, "antler")
-    r.part("stars", "fx", pivot=(11, 0), parent="head", z=2)
-    r.pxs("spark", [(0, -2), (0, 2), (4, -3), (22, -2), (22, 2), (18, -3)])
+    # sun hare: upright on its hind legs, a sun disc behind the head, long ray-tipped ears, a gold chest mane
+    # a round sun disc (Glintling's halo is the spiky one)
+    r.part("sun", "static", pivot=(16, 9), z=-3)
+    r.ellipse(16, 9.6, 8.2, 8.2, "ray")
+    r.ellipse(16, 9.6, 6.4, 6.4, "mane")
+    r.part("legs", "legs", pivot=(16, 26), z=-1)
+    r.stroke([(13.2, 24), (12.4, 30)], 2.8, "fur")
+    r.stroke([(18.8, 24), (19.6, 30)], 2.8, "fur")
+    r.ellipse(11.4, 30.3, 3, 1.2, "fur")
+    r.ellipse(20.6, 30.3, 3, 1.2, "fur")
+    r.part("body", "body", pivot=(16, 27))
+    r.ellipse(16, 21.6, 5.8, 6.4, "fur")
+    r.poly([(11.2, 15.4), (20.8, 15.4), (19.4, 21.2), (16, 24.6), (12.6, 21.2)], "mane")
+    for side, path in (("arm-l", [(11.2, 17.6), (9, 21.4), (9.6, 23.2)]), ("arm-r", _mirror_path([(11.2, 17.6), (9, 21.4), (9.6, 23.2)]))):
+        r.part(side, side, pivot=path[0], parent="body", z=1)
+        r.stroke(path, 2, "fur")
+    r.part("head", "head", pivot=(16, 15), parent="body", z=1)
+    r.ellipse(16, 11.6, 5.2, 4.6, "fur")
+    r.ellipse(16, 14, 2.3, 1.4, "muzzle")
+    r.pxs("nose", [(15, 13), (16, 13)])
+    eyes(r, 16, 10, 4, iris="eyeglow")
+    r.pxs("gem", [(15, 7), (16, 7)])
+    for side in ("ear-l", "ear-r"):
+        r.part(side, side, pivot=(14, 8) if side == "ear-l" else (18, 8), parent="head", z=-1)
+        ear = [(13.4, 8.2), (11.4, -0.6), (12.6, -2.6), (14.6, -0.6), (15, 7.8)]
+        inner = [(13.4, 6.8), (12.8, 0.6), (13.8, 0.4), (14.2, 6.6)]
+        tip = [(11.4, -0.6), (12.6, -2.6), (14.6, -0.6), (13, 0.6)]
+        r.poly(ear if side == "ear-l" else mirror_poly(ear), "fur")
+        r.poly(inner if side == "ear-l" else mirror_poly(inner), "inner")
+        r.poly(tip if side == "ear-l" else mirror_poly(tip), "tip")
+    r.part("motes", "fx", pivot=(16, 4), z=2)
+    r.pxs("spark", [(3, 6), (29, 5), (5, 14), (27, 15), (2, 22), (30, 21)])
     return r
 
 
@@ -342,4 +356,4 @@ def lumoth(stage: int) -> Rig:
     return r
 
 
-RIGS = [lumowl, glintling, lumistag, lumoth]
+RIGS = [lumowl, glintling, dawnhare, lumoth]

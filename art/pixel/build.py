@@ -39,7 +39,7 @@ MONSTER_IDS = {
     "tidecoil": "tide_serpent", "frostnip": "frost_imp", "krakling": "kraken_pup", "bublob": "bubble_jelly",
     "craggol": "stone_golem", "rubbug": "boulder_beetle", "tremole": "quake_mole", "gemox": "crystal_ox",
     "thornkin": "thorn_sprite", "vinecoil": "vine_lurker", "myconite": "shroom_knight", "petalope": "petal_fawn",
-    "lumowl": "prism_owl", "glintling": "dawn_sprite", "lumistag": "lumen_stag", "lumoth": "halo_moth",
+    "lumowl": "prism_owl", "glintling": "dawn_sprite", "dawnhare": "lumen_stag", "lumoth": "halo_moth",
 }
 
 

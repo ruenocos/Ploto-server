@@ -70,9 +70,9 @@ record and recent matches.
 
 **Solo?** Tap **Bot**. In blind pick the bot takes a random team; it plays a
 greedy (occasionally sloppy) game. Practice games add debug shortcuts under
-the board: **+4 🍓** (evolve right away) and **⚡ Charge up** (both your
+the board: **+4 berries** (evolve right away) and **Charge up** (both your
 monsters fire on your next match). After any game, **Rematch** restarts with
-the same teams, and the loser goes first.
+the same teams (after a draft, it drafts new ones), and the loser goes first.
 
 ### How a match plays
 

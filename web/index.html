@@ -1222,7 +1222,8 @@
           if (d.by !== room.seat) toast("Your rival left the draft", 3000);
           leaveGame();
         }));
-        gameSock.addEventListener("close", onGameClose);
+        // Only the live socket's drop counts: the one closed on purpose when hopping to a rematch must not trigger a reconnect.
+        sock.addEventListener("close", (ev) => { if (sock === gameSock) onGameClose(ev); });
         await refresh(); // shows the draft or the game
         if (state && state.phase === "finished") showEnd(state.winner === room.seat, state.forfeitedBy);
         if (state && !store.get("mm.tipChips")) {
@@ -2480,7 +2481,8 @@
       function renderEnd() {
         if (!endInfo) return;
         const { won, forfeit, mine, theirs } = endInfo;
-        let label = "Rematch", hint = won ? "Same teams. They'll open the next game." : "Same teams. You'll open the next game.";
+        const teams = state?.drafted ? "A new draft" : "Same teams"; // a drafted match drafts again
+        let label = "Rematch", hint = won ? `${teams}. They'll open the next game.` : `${teams}. You'll open the next game.`;
         let disabled = false, invited = false;
         if (!rivalOnline) { disabled = true; hint = "Your rival left the arena."; }
         else if (mine) { label = "Waiting for rival…"; disabled = true; hint = "Rematch requested. Waiting for your rival to accept."; }
@@ -2527,7 +2529,7 @@
         selected = null;
         try {
           await openGame();
-          toast(state && state.turn === room.seat ? "Rematch: you go first" : "Rematch: your rival goes first", 2500);
+          toast(draftState ? "Rematch: draft new teams" : state && state.turn === room.seat ? "Rematch: you go first" : "Rematch: your rival goes first", 2500);
         } catch {
           toast("Couldn't join the rematch", 3000);
           leaveGame();

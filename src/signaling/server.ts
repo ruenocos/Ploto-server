@@ -162,8 +162,9 @@ export class SignalingServer {
   }
 
   /**
-   * A player asked for a rematch. Once both have, spin up a fresh room with the
-   * same teams (loser opens) and send both players there.
+   * A player asked for a rematch. Once both have, spin up a fresh room (the
+   * loser opens) and send both players there: the same teams after blind
+   * picks, a fresh draft (same timer rules) after a draft.
    */
   private handleRematch(room: GameRoom, peer: Peer): unknown {
     const seat = room.seatOf(peer.id);
@@ -172,7 +173,16 @@ export class SignalingServer {
     if (!room.voteRematch(seat)) return { waiting: true };
     const roomId = randomUUID();
     const seed = (Math.random() * 0xffffffff) >>> 0;
-    this.rooms.set(roomId, new GameRoom(room.rematchConfig(randomUUID(), seed), { ...room.options, mode: "rematch" }));
+    const config = room.rematchConfig(randomUUID(), seed);
+    const options: RoomOptions = { ...room.options, mode: "rematch" };
+    if (room.options.draftStepMs !== undefined) {
+      this.openRoom({
+        roomId, matchId: config.matchId, seed, firstTurn: config.firstTurn ?? 0,
+        players: config.players, stepMs: room.options.draftStepMs, options,
+      });
+    } else {
+      this.rooms.set(roomId, new GameRoom(config, options));
+    }
     this.scheduleRoomCleanup(roomId); // cancelled as soon as a player connects
     room.announceRematch(roomId);
     return { roomId };
@@ -437,7 +447,7 @@ export class SignalingServer {
       stepMs,
       ...(options.botSeat !== undefined ? { botSeat: options.botSeat } : {}),
       onDone: (teams, peers) => {
-        const game = new GameRoom(config(teams), options);
+        const game = new GameRoom(config(teams), { ...options, draftStepMs: stepMs });
         this.rooms.set(roomId, game);
         for (const p of peers) if (p) game.join(p);
         for (const p of peers) p?.notify("mm:draftDone", {});

@@ -35,6 +35,8 @@ export interface RoomOptions {
   readonly accounts?: readonly [string | null, string | null];
   /** Called once when the match ends. */
   readonly onFinished?: (room: GameRoom) => void;
+  /** Set when the teams were drafted: the draft's time per step (null = no timer). A rematch drafts again. */
+  readonly draftStepMs?: number | null;
 }
 
 /** Bot pacing: wait for the client's animations, then "think" a moment. */
@@ -292,6 +294,8 @@ export class GameRoom {
       connected: [0, 1].map((i) => i === this.options.botSeat || Boolean(this.peers[i])),
       /** Seat the practice bot plays, if this is a practice game. */
       botSeat: this.options.botSeat ?? null,
+      /** Whether the teams were drafted (a rematch then drafts again). */
+      drafted: this.options.draftStepMs !== undefined,
     };
   }
 

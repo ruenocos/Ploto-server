@@ -80,7 +80,7 @@ export const MONSTERS: Record<string, Monster> = {
     [{ kind: "damage", amount: 17, pierce: true }, { kind: "match", shape: "square" }]),
   dawn_sprite: m("dawn_sprite", "Glintling", "light", 8, "Starstep",
     [dmg(12), { kind: "haste", count: 1 }]),
-  lumen_stag: m("lumen_stag", "Dawnhart", "light", 8, "Radiance",
+  lumen_stag: m("lumen_stag", "Dawnhare", "light", 8, "Radiance",
     // Healing over time (the mirror of a burn): strong if you can outlast poison.
     [dmg(11), { kind: "regen", amount: 4, turns: 3 }]),
   halo_moth: m("halo_moth", "Halomoth", "light", 7, "Kindred Glow",

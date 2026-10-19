@@ -109,6 +109,14 @@ export const ARCHETYPES: Record<Element, { title: string; blurb: string }> = {
   light: { title: "Striker", blurb: "Piercing burst, extra moves, regeneration, teamwork" },
 };
 
+/** Two different monsters at random: a dealt team (Random mode, and the practice bot's team). */
+export function dealTeam(rand: () => number = Math.random): [Monster, Monster] {
+  const all = Object.values(MONSTERS);
+  const a = all[Math.floor(rand() * all.length)]!;
+  const rest = all.filter((m) => m !== a);
+  return [a, rest[Math.floor(rand() * rest.length)]!];
+}
+
 export function monsterById(id: string): Monster | undefined {
   return MONSTERS[id];
 }

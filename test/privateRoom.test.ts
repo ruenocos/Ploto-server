@@ -109,6 +109,28 @@ describe("private rooms (shareable code)", () => {
     host.close(); guest.close();
   });
 
+  it("random rooms deal both teams: the guest joins without picking", async () => {
+    const host = new Client(port, "lobby", "rnd-host");
+    const guest = new Client(port, "lobby", "rnd-guest");
+    await host.open();
+    await guest.open();
+    const created = (await host.req("mm:createRoom", { displayName: "Host", monsters: [], random: true })) as { data: { code: string; random: boolean } };
+    expect(created.data.random).toBe(true);
+    const info = (await guest.req("mm:roomInfo", { code: created.data.code })) as { data: { draft: boolean; random: boolean } };
+    expect(info.data).toMatchObject({ draft: false, random: true });
+    const joined = (await guest.req("mm:joinRoom", { code: created.data.code, displayName: "Guest", monsters: [] })) as { ok: boolean; data: { roomId: string } };
+    expect(joined.ok).toBe(true);
+    const g = new Client(port, joined.data.roomId, "rnd-guest");
+    await g.open();
+    const snap = (await g.req("mm:getState", {})) as { data: { randomTeams: boolean; players: { monsters: { id: string }[] }[] } };
+    expect(snap.data.randomTeams).toBe(true);
+    for (const p of snap.data.players) {
+      expect(p.monsters).toHaveLength(2);
+      expect(p.monsters[0]!.id).not.toBe(p.monsters[1]!.id);
+    }
+    host.close(); guest.close(); g.close();
+  });
+
   it("rejects an unknown code", async () => {
     const c = new Client(port, "lobby", "x");
     await c.open();

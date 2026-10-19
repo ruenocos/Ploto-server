@@ -139,6 +139,14 @@ describe("GameRoom rematch", () => {
     expect(b.notifications.at(-1)).toEqual({ method: "mm:rematchReady", data: { roomId: "r2" } });
   });
 
+  it("deals new teams for a random-teams rematch", () => {
+    const room = new GameRoom(roomConfig(), { randomTeams: true });
+    (room.game.state as { winner: 0 | 1 | null }).winner = 0;
+    const teams = Array.from({ length: 12 }, (_, i) => room.rematchConfig(`m${i}`, i).players.map((p) => p.monsters.map((m) => m.id).join("+")).join(" vs "));
+    expect(new Set(teams).size).toBeGreaterThan(1);
+    for (const t of teams) for (const team of t.split(" vs ")) expect(new Set(team.split("+")).size).toBe(2);
+  });
+
   it("keeps the teams and lets the loser open", () => {
     const { room } = finishedRoom(0);
     const cfg = room.rematchConfig("m2", 999);

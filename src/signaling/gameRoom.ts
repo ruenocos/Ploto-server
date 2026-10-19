@@ -17,6 +17,7 @@ import {
   type GameConfig,
 } from "../game/matchmonsters/engine.js";
 import { chooseEvolution, chooseMove } from "../game/matchmonsters/bot.js";
+import { dealTeam } from "../game/matchmonsters/monsters.js";
 import type { Move, MoveResult, MonsterState, PlayerState } from "../game/matchmonsters/types.js";
 import { BERRIES_TO_EVOLVE, FATIGUE_AFTER } from "../game/matchmonsters/types.js";
 import type { MatchMode, MatchRecord } from "../stats/history.js";
@@ -38,6 +39,8 @@ export interface RoomOptions {
   readonly onFinished?: (room: GameRoom) => void;
   /** Set when the teams were drafted: the draft's time per step (null = no timer). A rematch drafts again. */
   readonly draftStepMs?: number | null;
+  /** Random teams: both players were dealt two monsters, and a rematch deals new ones. */
+  readonly randomTeams?: boolean;
 }
 
 /** Bot pacing: wait for the client's animations, then "think" a moment. */
@@ -92,7 +95,11 @@ export class GameRoom {
   /** Same players and monsters; the loser of this game opens the next one. */
   rematchConfig(matchId: string, seed: number): GameConfig {
     const loser: 0 | 1 = this.game.state.winner === 0 ? 1 : 0;
-    return { ...this.config, matchId, seed, firstTurn: loser };
+    const [p0, p1] = this.config.players;
+    const players: GameConfig["players"] = this.options.randomTeams
+      ? [{ ...p0, monsters: dealTeam() }, { ...p1, monsters: dealTeam() }]
+      : this.config.players;
+    return { ...this.config, players, matchId, seed, firstTurn: loser };
   }
 
   /** Point both players at the new room. */
@@ -300,6 +307,8 @@ export class GameRoom {
       botSeat: this.options.botSeat ?? null,
       /** Whether the teams were drafted (a rematch then drafts again). */
       drafted: this.options.draftStepMs !== undefined,
+      /** Random teams: the client reveals them as dealt, and a rematch deals new ones. */
+      randomTeams: this.options.randomTeams === true,
     };
   }
 

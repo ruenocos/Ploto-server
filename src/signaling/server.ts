@@ -38,7 +38,7 @@ import { GameRoom, type RoomOptions } from "./gameRoom.js";
 import { DraftRoom } from "./draftRoom.js";
 import type { GameConfig } from "../game/matchmonsters/engine.js";
 import { Peer } from "./peer.js";
-import { monsterById, MONSTERS } from "../game/matchmonsters/monsters.js";
+import { dealTeam, monsterById, MONSTERS } from "../game/matchmonsters/monsters.js";
 import type { Monster } from "../game/matchmonsters/types.js";
 
 const LOBBY = "lobby";
@@ -281,6 +281,7 @@ export class SignalingServer {
           id: randomUUID(),
           to: friendId,
           draft: req.draft,
+          random: req.random,
           host: { peerId: peer.id, displayName: me.username, monsters: req.monsters },
           timer: setTimeout(() => this.dropInvite(inv, "expired"), INVITE_MS),
         };
@@ -289,8 +290,9 @@ export class SignalingServer {
         this.services.presence.notify(friendId, "social:invite", {
           inviteId: inv.id,
           from: { id: me.id, username: me.username },
-          monsters: req.draft ? [] : req.monsters.map((m) => m.id),
+          monsters: req.draft || req.random ? [] : req.monsters.map((m) => m.id),
           draft: req.draft,
+          random: req.random,
           expiresInMs: INVITE_MS,
         });
         return { inviteId: inv.id, expiresInMs: INVITE_MS };
@@ -306,9 +308,10 @@ export class SignalingServer {
           throw new Error("they left the lobby");
         }
         const req = parseEnqueue(data);
-        if (!inv.draft && !req.picked) throw new Error("this is a blind-pick match: pick your two monsters first");
+        if (!inv.draft && !inv.random && !req.picked) throw new Error("this is a blind-pick match: pick your two monsters first");
         this.dropInvite(inv, "accepted");
-        const spawned = this.spawnRoom(inv.host, { peerId: peer.id, displayName: me.username, monsters: req.monsters }, "invite", inv.draft);
+        const guest = { peerId: peer.id, displayName: me.username, monsters: inv.random ? randomPicks() : req.monsters };
+        const spawned = this.spawnRoom(inv.host, guest, "invite", inv.draft, inv.random);
         return { roomId: spawned.roomId, matchId: spawned.matchId, seat: 1, firstTurn: spawned.firstTurn };
       }
 
@@ -347,7 +350,7 @@ export class SignalingServer {
           ],
           // Both tickets share the queue key, and draft queues are separate, so both drafted.
           stepMs: req.draft ? QUICK_DRAFT_STEP_MS : undefined,
-          options: this.roomOptions("quick", a.peerId, b.peerId),
+          options: this.roomOptions("quick", a.peerId, b.peerId, req.random ? { randomTeams: true } : {}),
         });
 
         this.notifyMatched(a.peerId, match.roomId, match.matchId, 0, match.firstTurn);
@@ -367,9 +370,10 @@ export class SignalingServer {
           code,
           hostPeerId: peer.id,
           draft: req.draft,
+          random: req.random,
           host: { peerId: peer.id, displayName: this.nameFor(peer, req.displayName), monsters: req.monsters },
         });
-        return { code, draft: req.draft };
+        return { code, draft: req.draft, random: req.random };
       }
 
       // What an invite link leads to, before joining: draft rooms are joined straight
@@ -379,7 +383,7 @@ export class SignalingServer {
         const code = typeof d["code"] === "string" ? d["code"].trim().toUpperCase() : "";
         const pending = this.pendingRooms.get(code);
         if (!pending) throw new Error("that invite has expired");
-        return { code, draft: pending.draft, host: pending.host.displayName };
+        return { code, draft: pending.draft, random: pending.random, host: pending.host.displayName };
       }
 
       case "mm:joinRoom": {
@@ -389,14 +393,14 @@ export class SignalingServer {
         const pending = this.pendingRooms.get(code);
         if (!pending) throw new Error("room not found or expired");
         if (pending.hostPeerId === peer.id) throw new Error("cannot join your own room");
-        if (!pending.draft && !req.picked) throw new Error("this room uses blind picks: pick your two monsters first");
+        if (!pending.draft && !pending.random && !req.picked) throw new Error("this room uses blind picks: pick your two monsters first");
         this.pendingRooms.delete(code);
         const joiner = {
           peerId: peer.id,
           displayName: this.nameFor(peer, req.displayName),
-          monsters: req.monsters,
+          monsters: pending.random ? randomPicks() : req.monsters, // the host's mode decides
         };
-        const spawned = this.spawnRoom(pending.host, joiner, "private", pending.draft); // the host's mode
+        const spawned = this.spawnRoom(pending.host, joiner, "private", pending.draft, pending.random);
         return { roomId: spawned.roomId, matchId: spawned.matchId, seat: 1, firstTurn: spawned.firstTurn };
       }
 
@@ -416,7 +420,7 @@ export class SignalingServer {
             { peerId: `bot:${randomUUID()}`, displayName: "Bot", monsters: randomPicks() },
           ],
           stepMs: req.draft ? null : undefined, // the bot drafts too; no timer
-          options: this.roomOptions("practice", peer.id, null, { botSeat: 1 }),
+          options: this.roomOptions("practice", peer.id, null, { botSeat: 1, ...(req.random ? { randomTeams: true } : {}) }),
         });
         this.scheduleRoomCleanup(roomId); // cancelled once the player connects
         this.notifyMatched(peer.id, roomId, matchId, 0, firstTurn);
@@ -475,6 +479,7 @@ export class SignalingServer {
     b: PlayerDesc,
     mode: MatchMode,
     draft = false,
+    random = false,
   ): { roomId: string; matchId: string; firstTurn: 0 | 1 } {
     const roomId = randomUUID();
     const matchId = randomUUID();
@@ -483,7 +488,7 @@ export class SignalingServer {
     this.openRoom({
       roomId, matchId, seed, firstTurn, players: [a, b],
       stepMs: draft ? null : undefined, // friends draft at their own pace
-      options: this.roomOptions(mode, a.peerId, b.peerId),
+      options: this.roomOptions(mode, a.peerId, b.peerId, random ? { randomTeams: true } : {}),
     });
     this.notifyMatched(a.peerId, roomId, matchId, 0, firstTurn);
     this.notifyMatched(b.peerId, roomId, matchId, 1, firstTurn);
@@ -544,6 +549,8 @@ interface Invite {
   readonly id: string;
   /** Draft or blind: the host's choice. */
   readonly draft: boolean;
+  /** Random teams: both players are dealt two monsters. */
+  readonly random: boolean;
   /** Account invited. */
   readonly to: string;
   /** The inviter, as they'll be seated. */
@@ -555,6 +562,8 @@ interface PendingRoom {
   readonly code: string;
   /** Draft or blind: the host's choice. */
   readonly draft: boolean;
+  /** Random teams: both players are dealt two monsters. */
+  readonly random: boolean;
   readonly hostPeerId: string;
   readonly host: PlayerDesc;
 }
@@ -562,6 +571,8 @@ interface PendingRoom {
 interface EnqueueRequest {
   /** Draft mode (separate queues from blind picks). */
   readonly draft: boolean;
+  /** Random teams (their own queue): `monsters` is already a dealt random pair. */
+  readonly random: boolean;
   /** Whether the player actually sent two monsters (blind picks need them). */
   readonly picked: boolean;
   readonly displayName: string;
@@ -578,8 +589,10 @@ function parseEnqueue(data: unknown): EnqueueRequest {
   const monsters = resolveMonsters(d["monsters"]);
   const picked = Array.isArray(d["monsters"]) && d["monsters"].filter((m) => typeof m === "string" && monsterById(m)).length >= 2;
   const draft = d["draft"] === true;
-  // Drafting players only meet other drafting players.
-  return { draft, picked, displayName, key: { gameId, mode: draft ? `${mode}:draft` : mode, stake }, monsters };
+  const random = !draft && d["random"] === true;
+  // Drafting players only meet other drafting players, random-team players other random ones.
+  const queue = draft ? `${mode}:draft` : random ? `${mode}:random` : mode;
+  return { draft, random, picked: picked || random, displayName, key: { gameId, mode: queue, stake }, monsters: random ? randomPicks() : monsters };
 }
 
 function resolveMonsters(raw: unknown): [Monster, Monster] {
@@ -591,13 +604,8 @@ function resolveMonsters(raw: unknown): [Monster, Monster] {
   return defaultPicks();
 }
 
-/** Two different random monsters (the practice bot's team). */
-function randomPicks(): [Monster, Monster] {
-  const all = Object.values(MONSTERS);
-  const a = all[Math.floor(Math.random() * all.length)]!;
-  const rest = all.filter((m) => m !== a);
-  return [a, rest[Math.floor(Math.random() * rest.length)]!];
-}
+/** Two different random monsters (Random mode, and the practice bot's team). */
+const randomPicks = (): [Monster, Monster] => dealTeam();
 
 function defaultPicks(): [Monster, Monster] {
   return [MONSTERS["ember_pup"]!, MONSTERS["tide_serpent"]!];

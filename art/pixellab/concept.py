@@ -6,12 +6,16 @@ Concept options for one stage of a line, with PixelLab's Pro model.
 One Pro call per monster returns a grid of options (25 at 48 px), drawn for
 the colour pool. Every option is saved as candidates/<id>/c<stage>-<seed>-<i>.png
 and a numbered contact sheet candidates/<id>-c<stage>-<seed>.png goes up for
-review. The adult (stage 2) is designed first; pick.py then turns the chosen
-option into a sprite, and evolve.py works the line backwards from it.
+review. The adult (stage 2) is designed first; pick.py turns the chosen option
+into a sprite. Then the line is worked backwards with --from-next: the picked
+older stage goes in as a labelled reference and its own colours become the
+palette, so the younger stage is the same creature in the same colours.
 """
 from __future__ import annotations
 
 import argparse
+import base64
+import io
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -46,8 +50,33 @@ def main() -> None:
     ap.add_argument("ids", nargs="+")
     ap.add_argument("--stage", type=int, default=2)
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--colors", help="try another colour scheme than the roster's")
+    ap.add_argument("--extra", default="", help="appended to the stage description")
+    ap.add_argument("--from-next", action="store_true", help="draw from the picked next (older) stage")
     a = ap.parse_args()
-    jobs = [(CAND / mid / f"c{a.stage}-{a.seed}.png", "create_image_pro", pro_concept_args(ROSTER[mid], a.stage, a.seed))
+
+    def mon(mid: str) -> dict:
+        m = dict(ROSTER[mid])
+        if a.colors:
+            m["colors"] = a.colors
+        if a.extra:
+            m["stages"] = tuple(s + (", " + a.extra if i == a.stage else "") for i, s in enumerate(m["stages"]))
+        return m
+
+    def args(mid: str) -> dict:
+        out = pro_concept_args(mon(mid), a.stage, a.seed)
+        if a.from_next:
+            older = Image.open(HERE / "sprites" / f"{mid}-{a.stage + 1}.png").convert("RGBA")
+            buf = io.BytesIO()
+            older.crop(older.getchannel("A").getbbox()).save(buf, format="PNG")
+            out["reference_images"] = [{"base64": base64.b64encode(buf.getvalue()).decode(),
+                                        "usage": "this creature's next, older evolution: draw its younger stage as the same "
+                                                 "species with the same colours, face, markings and signature feature, "
+                                                 "smaller and less developed"}]
+            out["palette"] = ["#%02x%02x%02x" % c[:3] for c in sorted({c for c in older.get_flattened_data() if c[3]})]
+        return out
+
+    jobs = [(CAND / mid / f"c{a.stage}-{a.seed}.png", "create_image_pro", args(mid))
             for mid in a.ids if not (CAND / mid / f"c{a.stage}-{a.seed}.png").exists()]
     client = Client()
     print(f"{len(jobs)} calls", flush=True)

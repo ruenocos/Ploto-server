@@ -48,12 +48,18 @@ export type MatchShape = "row" | "col" | "area" | "square";
 
 /** One effect in a move. Moves are stacks of these, applied in order. */
 export type Effect =
-  /** `pierce` damage ignores shields. */
-  | { readonly kind: "damage"; readonly amount: number; readonly pierce?: boolean }
+  /**
+   * `pierce` damage ignores shields. `fromShield`: hit for this share of your
+   * shield instead, if that's more (Craggol's Shield Bash).
+   */
+  | { readonly kind: "damage"; readonly amount: number; readonly pierce?: boolean; readonly fromShield?: number }
   | { readonly kind: "heal"; readonly amount: number }
   | { readonly kind: "shield"; readonly amount: number }
-  /** Damage the rival and heal yourself the same amount. */
-  | { readonly kind: "drain"; readonly amount: number }
+  /**
+   * Damage the rival and heal yourself the same amount. `perDotTurn`: steal
+   * this much more for every turn of burn or poison left on the rival.
+   */
+  | { readonly kind: "drain"; readonly amount: number; readonly perDotTurn?: number }
   /** Burn or poison the rival; poison also halves the healing they get while it lasts. */
   | { readonly kind: "dot"; readonly dot: "burn" | "poison"; readonly amount: number; readonly turns: number }
   /** The rival's burns go off at once for all the damage they had left (ignores shields). */
@@ -66,18 +72,19 @@ export type Effect =
    * Clear a board region; the tiles count as matched for you (charge + berries).
    * `size` is lines for row/col (default 1) and the side for area/square (3/2).
    */
-  | { readonly kind: "match"; readonly shape: MatchShape; readonly size?: number }
+  /** `shatter`: stones in the region break for this much damage each. */
+  | { readonly kind: "match"; readonly shape: MatchShape; readonly size?: number; readonly shatter?: number }
   /** Ice random tiles so they can't be swapped for the rival's next turn(s). */
   | { readonly kind: "freeze"; readonly count: number; readonly turns: number }
   /** Turn random tiles into stone blockers. */
   | { readonly kind: "petrify"; readonly count: number }
-  /** Turn random tiles into your monster's element. */
-  | { readonly kind: "convert"; readonly count: number }
+  /** Turn random tiles into your monster's element (or, with `partner`, your partner's). */
+  | { readonly kind: "convert"; readonly count: number; readonly partner?: boolean }
   /** Remove charge from each rival monster. */
   | { readonly kind: "sap"; readonly count: number }
   /** The rival gets this many fewer moves next turn. */
   | { readonly kind: "slow"; readonly count: number }
-  /** A random rival monster can't gain charge for this many of their turns. */
+  /** The rival monster with the most charge can't gain charge for this many of their turns. */
   | { readonly kind: "seal"; readonly turns: number }
   /** Extra moves this turn. */
   | { readonly kind: "haste"; readonly count: number }
@@ -114,7 +121,8 @@ export type EffectEvent =
   /** `count`: bubbles the target now has. */
   | { readonly kind: "bubble"; readonly target: 0 | 1; readonly count: number }
   /** `step` indexes the move result's effectSteps (-1 if nothing was there to clear). */
-  | { readonly kind: "match"; readonly shape: MatchShape; readonly cells: readonly Cell[]; readonly step: number }
+  /** `shatter`: stones the blast broke, and the damage they did to the rival. */
+  | { readonly kind: "match"; readonly shape: MatchShape; readonly cells: readonly Cell[]; readonly step: number; readonly shatter?: { readonly target: 0 | 1; readonly stones: number; readonly amount: number } }
   /** Freezes land when the turn passes (see MoveResult.iceLanded). */
   | { readonly kind: "freeze"; readonly target: 0 | 1; readonly count: number; readonly turns: number; readonly blocked?: boolean }
   | { readonly kind: "petrify"; readonly cells: readonly Cell[] }
@@ -141,6 +149,8 @@ export interface Passive {
   readonly berserk?: { readonly threshold: number; readonly hits: number; readonly amount: number };
   /** Whenever the partner's move deals damage, strike for this much too. */
   readonly followUp?: number;
+  /** Burns from this team last this many turns longer. */
+  readonly afterburn?: number;
 }
 
 export interface Monster {

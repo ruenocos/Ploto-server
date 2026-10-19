@@ -389,9 +389,11 @@ export class MatchMonstersGame {
     const { attacker, defender, by, foeIdx } = ctx;
     const b = this.state.board;
     switch (e.kind) {
-      case "damage":
-        this.hit(ctx, def, e.amount, e.pierce);
-        return { kind: "damage", target: foeIdx, amount: e.amount, ...(e.pierce ? { pierce: true } : {}) };
+      case "damage": {
+        const amount = e.fromShield ? Math.max(e.amount, Math.floor(attacker.shield * e.fromShield)) : e.amount;
+        this.hit(ctx, def, amount, e.pierce);
+        return { kind: "damage", target: foeIdx, amount, ...(e.pierce ? { pierce: true } : {}) };
+      }
       case "heal":
         return { kind: "heal", target: by, amount: this.heal(ctx, def, e.amount) };
       case "shield": {
@@ -403,14 +405,20 @@ export class MatchMonstersGame {
         return { kind: "shield", target: by, amount: gained };
       }
       case "drain": {
-        this.hit(ctx, def, e.amount);
-        const healed = this.heal(ctx, def, e.amount);
-        return { kind: "drain", target: foeIdx, amount: e.amount, healed };
+        // It feeds on what's eating the rival: more for every burn or poison turn left.
+        const dotTurns = defender.dots.reduce((sum, d) => sum + d.turns, 0);
+        const amount = e.amount + (e.perDotTurn ?? 0) * dotTurns;
+        this.hit(ctx, def, amount);
+        const healed = this.heal(ctx, def, amount);
+        return { kind: "drain", target: foeIdx, amount, healed };
       }
       case "dot": {
-        const ev = { kind: "dot", target: foeIdx, dot: e.dot, amount: e.amount, turns: e.turns } as const;
+        // Afterburn (Emberwing): burns from this team last longer.
+        const extra = e.dot === "burn" ? Math.max(0, ...attacker.monsters.map((m) => scaledPassive(m.def, m.evolution)?.afterburn ?? 0)) : 0;
+        const turns = e.turns + extra;
+        const ev = { kind: "dot", target: foeIdx, dot: e.dot, amount: e.amount, turns } as const;
         if (popBubble(defender)) return { ...ev, blocked: true };
-        defender.dots.push({ amount: e.amount, turns: e.turns, kind: e.dot, element: def.element });
+        defender.dots.push({ amount: e.amount, turns, kind: e.dot, element: def.element });
         ctx.abilities.push(evt(def, e.dot, e.amount, foeIdx));
         return ev;
       }
@@ -430,8 +438,13 @@ export class MatchMonstersGame {
         return { kind: "bubble", target: by, count: attacker.bubble };
       case "match": {
         const cells = this.shapeCells(e.shape, e.size ?? defaultShapeSize(e.shape));
+        const stones = e.shatter ? cells.filter((c) => b.grid[c.y]![c.x] === "stone").length : 0;
         const step = this.matchRegion(cells, ctx);
-        return { kind: "match", shape: e.shape, cells, step };
+        if (!stones || !e.shatter) return { kind: "match", shape: e.shape, cells, step };
+        // Stones in the blast shatter into the rival.
+        const amount = stones * e.shatter;
+        this.hit(ctx, def, amount);
+        return { kind: "match", shape: e.shape, cells, step, shatter: { target: foeIdx, stones, amount } };
       }
       case "freeze":
         if (popBubble(defender)) return { kind: "freeze", target: foeIdx, count: e.count, turns: e.turns, blocked: true };
@@ -452,9 +465,10 @@ export class MatchMonstersGame {
         return { kind: "petrify", cells: picks };
       }
       case "convert": {
-        // Turn tiles into the caster's element, skipping any that would match
-        // immediately (so the bonus tiles are there for your next move).
-        const target = def.element;
+        // Turn tiles into the caster's element (or its partner's), skipping any
+        // that would match immediately (so the bonus tiles are there for your next move).
+        const partner = attacker.monsters.find((m) => m !== mon);
+        const target = e.partner && partner ? partner.def.element : def.element;
         const pool = this.cells((x, y) => {
           const t = b.grid[y]![x]!;
           return isElement(t) && t !== target;
@@ -486,7 +500,9 @@ export class MatchMonstersGame {
       }
       case "seal": {
         if (popBubble(defender)) return { kind: "seal", target: foeIdx, monsterId: null, turns: e.turns, blocked: true };
-        const target = this.pick(defender.monsters, 1)[0];
+        // The rival monster closest to firing (most charge; a coin flip on ties).
+        const most = Math.max(...defender.monsters.map((m) => m.charge));
+        const target = this.pick(defender.monsters.filter((m) => m.charge === most), 1)[0];
         if (target) target.sealed = Math.max(target.sealed, e.turns);
         return { kind: "seal", target: foeIdx, monsterId: target?.def.id ?? null, turns: e.turns };
       }
@@ -715,6 +731,7 @@ export function scaledPassive(def: Monster, evolution: number): Passive | undefi
         }
       : {}),
     ...(p.followUp ? { followUp: scaleAmount(p.followUp, evolution) } : {}),
+    ...(p.afterburn ? { afterburn: p.afterburn + atLeast(evolution, 2) } : {}),
   };
 }
 
@@ -735,21 +752,23 @@ function describeShape(shape: MatchShape, size: number): string {
 export function describeEffects(effects: readonly Effect[], element: Element): string {
   const parts = effects.map((e) => {
     switch (e.kind) {
-      case "damage": return `deal ${e.amount} ${e.pierce ? "piercing damage (ignores shields)" : "damage"}`;
+      case "damage": return e.fromShield
+        ? `hit for ${e.fromShield === 0.5 ? "half" : `${Math.round(e.fromShield * 100)}% of`} your shield (at least ${e.amount})`
+        : `deal ${e.amount} ${e.pierce ? "piercing damage (ignores shields)" : "damage"}`;
       case "heal": return `heal ${e.amount} HP`;
       case "shield": return `gain ${e.amount} shield`;
-      case "drain": return `steal ${e.amount} HP`;
+      case "drain": return `steal ${e.amount} HP` + (e.perDotTurn ? `, +${e.perDotTurn} for each turn of burn or poison left on the rival` : "");
       case "dot": return `${e.dot} the rival for ${e.amount} damage/turn over ${e.turns} turns` + (e.dot === "poison" ? " (halves their healing)" : "");
       case "ignite": return "detonate the rival's burns for all their remaining damage";
       case "regen": return `regenerate ${e.amount} HP/turn for ${e.turns} turns`;
       case "bubble": return e.count === 1 ? "block the next harmful effect on you" : `block the next ${e.count} harmful effects on you`;
-      case "match": return describeShape(e.shape, e.size ?? defaultShapeSize(e.shape));
+      case "match": return describeShape(e.shape, e.size ?? defaultShapeSize(e.shape)) + (e.shatter ? `; stones in it shatter for ${e.shatter} damage each` : "");
       case "freeze": return `freeze ${e.count} tiles for the rival's ` + (e.turns > 1 ? `next ${e.turns} turns` : "turn");
       case "petrify": return `turn ${e.count} tiles to stone`;
-      case "convert": return `turn ${e.count} tiles into ${element}`;
+      case "convert": return e.partner ? `turn ${e.count} tiles into your partner's element` : `turn ${e.count} tiles into ${element}`;
       case "sap": return `drain ${e.count} charge from each rival monster`;
       case "slow": return `the rival loses ${e.count} move${e.count === 1 ? "" : "s"} next turn`;
-      case "seal": return `seal a random rival monster: it can't charge for ${e.turns} turns`;
+      case "seal": return `seal the rival monster closest to firing: it can't charge for ${e.turns} turns`;
       case "haste": return `gain ${e.count} extra move${e.count === 1 ? "" : "s"}`;
       case "cleanse": return "cure burns and poison";
       case "empower": return `give ${e.count} charge to your partner`;
@@ -765,6 +784,7 @@ export function describePassive(def: Monster, evolution = 0): string | undefined
   if (!p) return undefined;
   if (p.berserk) return `Berserk at ${p.berserk.threshold} HP or less: strike ${p.berserk.hits}× for ${p.berserk.amount}`;
   if (p.followUp) return `When its partner's move hits, follow up for ${p.followUp}`;
+  if (p.afterburn) return `Afterburn: your team's burns last ${p.afterburn} turn${p.afterburn === 1 ? "" : "s"} longer`;
   return undefined;
 }
 
@@ -803,7 +823,8 @@ export function evolutionChanges(def: Monster, evolution: number): string[] {
     } else if (a.kind === "seal" && b.kind === "seal") {
       if (a.turns !== b.turns) out.push(`${label} ${a.turns} → ${b.turns} turns`);
     } else if ("amount" in a && "amount" in b && a.amount !== b.amount) {
-      out.push(`${label} ${a.amount} → ${b.amount}`);
+      const name = a.kind === "damage" && a.fromShield ? "Minimum hit" : label;
+      out.push(`${name} ${a.amount} → ${b.amount}`);
     } else if ("count" in a && "count" in b && a.count !== b.count) {
       out.push(`${label} ${a.count} → ${b.count}`);
     }
@@ -811,6 +832,9 @@ export function evolutionChanges(def: Monster, evolution: number): string[] {
   const pa = scaledPassive(def, evolution), pb = scaledPassive(def, evolution + 1);
   if (pa?.followUp !== undefined && pb?.followUp !== undefined && pa.followUp !== pb.followUp) {
     out.push(`Follow-up ${pa.followUp} → ${pb.followUp}`);
+  }
+  if (pa?.afterburn !== undefined && pb?.afterburn !== undefined && pa.afterburn !== pb.afterburn) {
+    out.push(`Afterburn ${pa.afterburn} → ${pb.afterburn} turns`);
   }
   if (pa?.berserk && pb?.berserk) {
     if (pa.berserk.amount !== pb.berserk.amount) out.push(`Berserk strikes ${pa.berserk.amount} → ${pb.berserk.amount}`);

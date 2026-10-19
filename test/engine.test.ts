@@ -587,6 +587,77 @@ describe("kit mechanics: pierce, ignite, regen, bubble, anti-heal", () => {
   });
 });
 
+describe("kit mechanics: shield bash, feeding vine, shatter, bloom, targeted seal, afterburn", () => {
+  it("shield bash hits for half your shield after it shields up, never less than its minimum", () => {
+    const bash: Effect[] = [{ kind: "shield", amount: 14 }, { kind: "damage", amount: 9, fromShield: 0.5 }];
+    const a = newGame(fireMon("a", bash));
+    a.state.players[0].shield = 10; // 10 + 14 = 24 -> 12
+    const r = a.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.casts[0]!.effects[1]).toMatchObject({ kind: "damage", amount: 12 });
+    const b = newGame(fireMon("a", bash)); // 14 -> 7, so the minimum 9
+    const r2 = b.applyMove(0, FIRE_SWAP);
+    if (!r2.ok) throw new Error(r2.reason);
+    expect(r2.casts[0]!.effects[1]).toMatchObject({ kind: "damage", amount: 9 });
+  });
+
+  it("feeding vine steals more for every turn of burn or poison left on the rival", () => {
+    const g = newGame(fireMon("a", [{ kind: "drain", amount: 10, perDotTurn: 2 }]));
+    g.state.players[0].hp = 40;
+    g.state.players[1].dots = [
+      { kind: "burn", amount: 3, turns: 3, element: "fire" },
+      { kind: "poison", amount: 2, turns: 2, element: "nature" },
+    ];
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.casts[0]!.effects[0]).toMatchObject({ kind: "drain", amount: 20 });
+  });
+
+  it("a blast with shatter breaks the stones in it into the rival", () => {
+    const g = newGame(fireMon("a", [{ kind: "match", shape: "col", shatter: 2 }]));
+    for (let x = 0; x < 5; x++) g.state.board.grid[4]![x] = "stone"; // one stone in every column
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    const ev = r.casts[0]!.effects[0]!;
+    expect(ev).toMatchObject({ kind: "match", shatter: { target: 1, stones: 1, amount: 2 } });
+    expect(g.state.players[1].hp).toBe(STARTING_HP - 2);
+  });
+
+  it("bloom grows the partner's element", () => {
+    const water: Monster = { ...filler, id: "w", element: "water" };
+    const g = newGame(fireMon("a", [{ kind: "convert", count: 3, partner: true }]), filler, {}, water);
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.casts[0]!.effects[0]).toMatchObject({ kind: "convert", element: "water" });
+  });
+
+  it("a seal lands on the rival monster closest to firing", () => {
+    const foeA: Monster = { ...filler, id: "fa" }, foeB: Monster = { ...filler, id: "fb" };
+    const g = new MatchMonstersGame({
+      matchId: "t", seed: 123, board: { width: 5, height: 5, palette: ELEMENTS },
+      players: [
+        { peerId: "p0", displayName: "A", monsters: [fireMon("a", [{ kind: "seal", turns: 2 }]), filler] },
+        { peerId: "p1", displayName: "B", monsters: [foeA, foeB] },
+      ],
+    });
+    g.state.board.grid = grid(LAYOUT);
+    g.state.players[1].monsters[0]!.charge = 1;
+    g.state.players[1].monsters[1]!.charge = 6;
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.casts[0]!.effects[0]).toMatchObject({ kind: "seal", monsterId: "fb" });
+  });
+
+  it("afterburn makes the team's burns last longer (and grows at ★★)", () => {
+    const wing = fireMon("w", [], 99, { afterburn: 1 });
+    const g = newGame(fireMon("a", [{ kind: "dot", dot: "burn", amount: 3, turns: 2 }]), filler, {}, wing);
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.casts[0]!.effects[0]).toMatchObject({ kind: "dot", dot: "burn", turns: 3 });
+    expect(scaledPassive(wing, 2)?.afterburn).toBe(2);
+  });
+});
+
 describe("bot", () => {
   it("only moves on its own turn, always legally, and evolves when it can", () => {
     const g = newGame(fireMon("a", [dmg(10)]));

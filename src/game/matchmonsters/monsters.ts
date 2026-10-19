@@ -42,8 +42,10 @@ export const MONSTERS: Record<string, Monster> = {
     { berserk: { threshold: 16, hits: 4, amount: 4 } }),
   magma_titan: m("magma_titan", "Magmaul", "fire", 12, "Eruption",
     [dmg(19), { kind: "match", shape: "area" }]),
+  // Afterburn: every burn the team lays lasts a turn longer (Pyrup's Ignite then sets off more).
   phoenix_chick: m("phoenix_chick", "Emberwing", "fire", 9, "Cinder Rain",
-    [dmg(10), { kind: "dot", dot: "burn", amount: 5, turns: 3 }]),
+    [dmg(10), { kind: "dot", dot: "burn", amount: 4, turns: 3 }],
+    { afterburn: 1 }),
 
   // 💧 water — Controller
   tide_serpent: m("tide_serpent", "Tidecoil", "water", 8, "Undertow",
@@ -57,22 +59,29 @@ export const MONSTERS: Record<string, Monster> = {
     [shield(10), dmg(8), { kind: "bubble", count: 1 }]),
 
   // 🪨 earth — Guardian
-  stone_golem: m("stone_golem", "Craggol", "earth", 9, "Stone Skin", [shield(18), dmg(9)]),
+  // Shield Bash: shield up, then hit with it. Other shields (Bublob, Gemox) make the bash bigger.
+  stone_golem: m("stone_golem", "Craggol", "earth", 9, "Shield Bash",
+    [shield(14), { kind: "damage", amount: 9, fromShield: 0.5 }]),
   boulder_beetle: m("boulder_beetle", "Rubbug", "earth", 8, "Petrify",
     [dmg(14), { kind: "petrify", count: 3 }]),
+  // Stones in the column shatter into the rival: great after Rubbug's Petrify, or the rival's.
   quake_mole: m("quake_mole", "Tremole", "earth", 9, "Tremor",
-    [dmg(10), { kind: "match", shape: "col" }]),
-  crystal_ox: m("crystal_ox", "Gemox", "earth", 10, "Crystal Mend", [heal(16), shield(6), dmg(9)]),
+    [dmg(10), { kind: "match", shape: "col", shatter: 2 }]),
+  // Crystallize: mends and grows earth gems, so it fuels itself (and any earth partner).
+  crystal_ox: m("crystal_ox", "Gemox", "earth", 10, "Crystallize",
+    [heal(14), shield(6), dmg(8), { kind: "convert", count: 3 }]),
 
   // 🌿 nature — Survivor
   thorn_sprite: m("thorn_sprite", "Thornkin", "nature", 7, "Thorn Prick",
     // Poison halves the rival's healing while it lasts: the counter to sustain teams.
     [dmg(4), { kind: "dot", dot: "poison", amount: 4, turns: 3 }]),
-  vine_lurker: m("vine_lurker", "Tanglet", "nature", 10, "Leech Vine", [{ kind: "drain", amount: 13 }]),
+  // Feeding Vine: steals more the longer the rival burns or is poisoned (Thornkin, Emberwing, Pyrup).
+  vine_lurker: m("vine_lurker", "Tanglet", "nature", 9, "Feeding Vine", [{ kind: "drain", amount: 12, perDotTurn: 2 }]),
   shroom_knight: m("shroom_knight", "Myconite", "nature", 9, "Spore Cloud",
-    [dmg(6), { kind: "seal", turns: 2 }]),
-  petal_fawn: m("petal_fawn", "Petalope", "nature", 7, "Overgrowth",
-    [dmg(5), heal(10), { kind: "convert", count: 4 }]),
+    [dmg(8), { kind: "seal", turns: 2 }]), // seals the rival monster closest to firing
+  // Bloom: grows tiles of its partner's element, a support for any team.
+  petal_fawn: m("petal_fawn", "Petalope", "nature", 7, "Bloom",
+    [dmg(5), heal(12), { kind: "convert", count: 4, partner: true }]),
 
   // ✨ light — Striker
   prism_owl: m("prism_owl", "Lumowl", "light", 10, "Smite",

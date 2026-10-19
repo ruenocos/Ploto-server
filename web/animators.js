@@ -223,6 +223,12 @@ const EFFECTS = {
         ctx.playedSteps.add(e.step);
         await fx.playStep(step, { mover: cast.by });
       }
+      // Stones caught in the blast shatter into the rival (Tremole).
+      if (e.shatter) {
+        fx.land(e.shatter.target, "attack", e.shatter.amount, fx.COLOR.earth, "earth");
+        fx.floatText(fx.sideOf(e.shatter.target), `${e.shatter.stones} stone${e.shatter.stones === 1 ? "" : "s"} shattered`, "#d8a860");
+        await fx.sleep(200);
+      }
     },
   },
 

@@ -93,10 +93,10 @@ they evolve. Tap one for its move, passive and evolution line.
 - Matching tiles **charges** your monsters of that element. At its charge cost a
   monster **fires its move** — damage plus a twist (see below).
 - 🍓 **Berries** appear on the board; collect **4** to **evolve** a monster.
-  Every monster has three stages (base, ★, ★★), each with its own sprite.
+  Every monster has three stages (★, ★★, ★★★), each with its own sprite.
   Every evolution: numbers +25%, tile/charge counts +1, charge cost −1,
-  passives grow. At ★ blasts widen and seals/burns/poison last a turn longer;
-  at ★★ haste gives an extra move and ice lasts longer. Tap a monster to see
+  passives grow. At ★★ blasts widen and seals/burns/poison last a turn longer;
+  at ★★★ haste gives an extra move and ice lasts longer. Tap a monster to see
   exactly what its next evolution changes.
 - 🪨 **Stone** tiles can't move and crumble when a neighbour is matched;
   ❄ **frozen** tiles can't be swapped until the ice melts.
@@ -107,14 +107,18 @@ they evolve. Tap one for its move, passive and evolution line.
 
 | Element | Archetype | Plays like |
 | ------- | --------- | ---------- |
-| 🔥 Fire | Destroyer | big hits, burns (Pyrup detonates them), blasts that match rows/columns/areas (the tiles charge you) |
+| 🔥 Fire | Destroyer | big hits, burns (Emberwing makes them last longer, Pyrup detonates them), blasts that clear rows/columns/areas (the gems charge you) |
 | 💧 Water | Controller | freeze the rival's best tiles for their turn, drain rival charge, make the rival lose a move; Bublob's bubble blocks the rival's control |
-| ⛰️ Earth | Guardian | stone the rival's element tiles, quakes, big shields and heals |
-| 🌿 Nature | Survivor | poison (halves the rival's healing), life-steal, seal a rival monster's charge, overgrowth |
+| ⛰️ Earth | Guardian | stone the rival's element tiles, quakes that shatter stones, a shield bash, crystals that grow earth gems |
+| 🌿 Nature | Survivor | poison (halves the rival's healing), life-steal that feeds on burns and poison, sealing the rival's readiest monster, blooms of the partner's element |
 | ✨ Light | Striker | burst, piercing hits that ignore shields, extra moves, regeneration, charging its partner |
 
 20 monsters, each with its own move; some have passives (Scorchpaw goes
-**berserk** at low HP, Halomoth **follows up** whenever its partner hits).
+**berserk** at low HP, Halomoth **follows up** whenever its partner hits,
+Emberwing's **afterburn** makes the team's burns last longer). Kits are built
+to work alone and to combo: Tanglet feeds on Thornkin's poison, Craggol's
+bash grows with Bublob's shield, Tremole shatters Rubbug's stones, Petalope
+grows its partner's gems.
 
 ## Run it
 
@@ -187,10 +191,10 @@ serves per-monster, matchup and team win rates from it for tuning.
 
 Balance is checked with `npm run sim` (match length, first-player edge, win
 share per element) and `npm run tiers` (per-monster win rate, and what going
-base → ★★ is worth for each). Both use the same greedy bot as practice mode.
-Last run: 100% of matches finish (median 54 moves), every monster wins
-48–52%, and evolving to ★★ adds +26 to +42 points of win rate for every
-monster.
+★ → ★★★ is worth for each). Both use the same greedy bot as practice mode.
+Last run (after the kit reworks): every monster wins 46–53% (the noise
+is about ±3), and evolving to ★★★ adds +25 to +40 points of win rate for
+every monster.
 
 The roster and art are our own, so the game is playable now; the real
 roster/tuning can slot in from the game bundle later.

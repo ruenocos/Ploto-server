@@ -360,8 +360,9 @@
         background: var(--c-ink); display: flex; align-items: center; gap: 4px; overflow: hidden; }
       .cbar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: color-mix(in srgb, var(--el) 70%, var(--c-ink)); box-shadow: inset 0 var(--px) 0 color-mix(in srgb, var(--el) 70%, #fff); transition: width 0.25s steps(4); }
       .cbar-num { position: relative; font: 700 calc(var(--gu) * 8)/1 var(--f-label); color: #fff; font-variant-numeric: tabular-nums; text-shadow: var(--px) var(--px) 0 var(--c-ink); }
-      .cbar-stars { position: relative; display: flex; gap: var(--gu); color: var(--c-gold); filter: drop-shadow(var(--gu) var(--gu) 0 var(--c-ink)); }
-      .cbar-stars .ic { width: calc(var(--gu) * 5); height: calc(var(--gu) * 5); }
+      /* the back monster's badge leans to the outer edge, so it never runs into the front monster */
+      .side.me .fighter.f0 .cbadge { align-self: flex-start; }
+      .side.foe .fighter.f0 .cbadge { align-self: flex-end; }
       .fighter.ready .cbar-num { color: var(--c-cream); }
       .cbadge .lock, .cbadge .evo { position: absolute; bottom: calc(100% + 2px); font: 700 calc(var(--gu) * 8)/1 var(--f-label); padding: calc(var(--gu) * 2) calc(var(--gu) * 3); white-space: nowrap; display: flex; align-items: center; gap: var(--gu); }
       .cbadge .lock .ic { width: calc(var(--gu) * 7); height: calc(var(--gu) * 7); }
@@ -528,7 +529,6 @@
       @keyframes sheetUp { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
       .sheet .s-art { display: flex; justify-content: center; margin-bottom: 6px; }
       .sheet h2 { margin: 0; text-align: center; font-size: var(--fl-3); color: var(--c-cream); display: flex; justify-content: center; align-items: center; gap: 6px; flex-wrap: wrap; }
-      .sheet h2 .stars { display: inline-flex; gap: 2px; color: var(--c-gold); }
       .sheet .s-sub { text-align: center; color: var(--el); font: 700 var(--fs-xs)/1.4 var(--f-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
       .sheet .s-move { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
       .sheet .s-move b { color: var(--el); font: 700 var(--fl-2)/1.1 var(--f-label); }
@@ -844,7 +844,7 @@
       const EMOJI = { fire: "🔥", water: "💧", earth: "⛰️", nature: "🌿", light: "✨", berry: "🍓", stone: "🪨" };
       const EL_LABEL = { fire: "Fire", water: "Water", earth: "Earth", nature: "Nature", light: "Light" };
       const ORDER = ["fire", "water", "earth", "nature", "light"];
-      const MAX_EVOLUTION = 2; // three stages: base, ★, ★★
+      const MAX_EVOLUTION = 2; // three stages, shown as 1, 2 and 3 stars (evolution 0, 1, 2)
       const MOVES_PER_TURN = 2;
       const BERRIES_TO_EVOLVE = 4;
 
@@ -1127,7 +1127,7 @@
           `<div class="s-sub">${gemIcon(mon.element, 16)} ${EL_LABEL[mon.element]}${arch ? ` · ${esc(arch)}` : ""}</div>` +
           (pxMon(mon.id)
             ? `<div class="evo-line" aria-label="Evolution line">` +
-              [0, 1, 2].map((st) => `<div class="evo-st${st === 0 ? " cur" : ""}">${rigView(mon.id, st, lineUnit())}<span>${st ? stars(st) : "Base"}</span></div>`)
+              [0, 1, 2].map((st) => `<div class="evo-st${st === 0 ? " cur" : ""}">${rigView(mon.id, st, lineUnit())}<span>${stars(st + 1)}</span></div>`)
                 .join(`<span class="arrow">›</span>`) + `</div>`
             : "") +
           `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">${ic("charge")}${mon.chargeCost} charge</span></div>` +
@@ -1312,7 +1312,7 @@
             if (stillHere()) showEnd(d.winner === room.seat, d.forfeitedBy);
           });
         }));
-        sock.on("mm:evolved", live((d) => { animQueue = animQueue.then(() => stillHere() && evolveFx(d.by, d.monsterId)); }));
+        sock.on("mm:evolved", live((d) => { animQueue = animQueue.then(() => stillHere() && evolveFx(d.by, d.monsterId, d.evolution)); }));
         sock.on("mm:peerStatus", live((d) => {
           if (d.seat === room.seat) return;
           rivalOnline = d.connected;
@@ -1662,7 +1662,7 @@
           f.querySelector(".cbadge").innerHTML =
             (gems[mon.element] ? `<img class="px" src="${gems[mon.element]}" alt="" draggable="false">` : `<span>${EMOJI[mon.element]}</span>`) +
             `<div class="cbar"><div class="cbar-fill" style="width:${Math.round((c / cost) * 100)}%"></div>` +
-            `<span class="cbar-num">${c}/${cost}</span>${evo ? `<span class="cbar-stars">${stars(evo)}</span>` : ""}</div>` +
+            `<span class="cbar-num">${c}/${cost}</span></div>` + // the stage shows in the sprite itself
             (evolvable ? `<span class="evo animate__animated animate__pulse animate__infinite">EVOLVE</span>` : "") +
             (mon.sealed > 0 ? `<span class="lock">${ic("seal")}${mon.sealed}</span>` : "");
           f.onclick = () => openSheet(mon, isMe, evolvable);
@@ -1774,12 +1774,12 @@
         sheet.innerHTML =
           `<div class="sheet" style="--el: var(--${mon.element})">` +
           `<div class="s-art">${rigView(mon.id, evo, innerHeight < 820 ? 2 : 3, HERO_CROP[evo])}</div>` +
-          `<h2>${esc(mon.name)}${evo ? `<span class="stars">${stars(evo, "star", 3)}</span>` : ""}</h2>` +
+          `<h2>${esc(mon.name)}</h2>` +
           `<div class="s-sub">${gemIcon(mon.element, 16)} ${EL_LABEL[mon.element]}${rosterById(mon.id)?.archetype ? ` · ${esc(rosterById(mon.id).archetype.title)}` : ""}</div>` +
           (pxMon(mon.id)
             ? `<div class="evo-line" aria-label="Evolution line">` +
               [0, 1, 2].map((s) =>
-                `<div class="evo-st${s === evo ? " cur" : s > evo ? " locked" : ""}">${rigView(mon.id, s, lineUnit())}<span>${s ? stars(s) : "Base"}</span></div>`,
+                `<div class="evo-st${s === evo ? " cur" : s > evo ? " locked" : ""}">${rigView(mon.id, s, lineUnit())}<span>${stars(s + 1)}</span></div>`,
               ).join(`<span class="arrow">›</span>`) + `</div>`
             : "") +
           `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">${ic("charge")}${mon.chargeCost} charge</span></div>` +
@@ -1789,7 +1789,7 @@
           (mon.sealed > 0 ? ` · ${ic("seal")}sealed for ${mon.sealed} turn${mon.sealed === 1 ? "" : "s"}` : "") +
           (evo >= MAX_EVOLUTION ? " · Fully evolved" : "") + `</div>` +
           (mon.ability.nextEvolution && mon.ability.nextEvolution.length
-            ? `<div class="s-next"><h3>Next evolution · ${stars(evo + 1)}</h3><ul>` +
+            ? `<div class="s-next"><h3>Next evolution · ${stars(evo + 2)}</h3><ul>` +
               mon.ability.nextEvolution.map((c) => `<li>${esc(c)}</li>`).join("") + `</ul></div>`
             : "") +
           `<div class="s-actions">` +
@@ -2668,33 +2668,47 @@
        * straight to the new form.
        */
       const EVO_SWAPS = [480, 420, 380, 350, 340, 340];
-      async function evolveFx(seat, monsterId) {
+      async function evolveFx(seat, monsterId, to) {
         const old = chipOf(seat, monsterId)?.el;
-        const before = state.players[seat].monsters.find((m) => m.id === monsterId)?.evolution || 0;
-        if (old && !reduceMotion) {
+        // `to` comes with the event; the monster may already be drawn at it (a move's
+        // refresh can land first, e.g. when the bot evolves), so both silhouettes are
+        // drawn here as overlays and the fighter's own sprite just hides meanwhile.
+        const after = to ?? Math.min(MAX_EVOLUTION, (state.players[seat].monsters.find((m) => m.id === monsterId)?.evolution || 0) + 1);
+        if (old && !reduceMotion && after > 0) {
           const arena = $("arena");
           const at = centerOf(old.querySelector(".core") || old);
-          const cur = old.querySelector(".bounce");
-          const next = document.createElement("div");
-          next.className = "bounce silhouette";
-          next.innerHTML = rigHtml(monsterId, Math.min(MAX_EVOLUTION, before + 1));
+          const own = old.querySelector(".bounce");
+          const silhouette = (stage) => {
+            const el = document.createElement("div");
+            el.className = "bounce silhouette evo-ghost";
+            el.innerHTML = rigHtml(monsterId, stage);
+            old.querySelector(".stage").appendChild(el);
+            return el;
+          };
+          const prev = silhouette(after - 1), next = silhouette(after);
           next.hidden = true;
-          old.querySelector(".stage").appendChild(next);
+          own.hidden = true;
           arena.classList.add("casting");
           old.classList.add("spot");
-          cur.classList.add("silhouette");
-          cue("ready");
-          await sleep(520);
-          for (const ms of EVO_SWAPS) {
-            cur.hidden = !cur.hidden;
-            next.hidden = !next.hidden;
-            await sleep(ms);
+          try {
+            cue("ready");
+            await sleep(520);
+            for (const ms of EVO_SWAPS) {
+              prev.hidden = !prev.hidden;
+              next.hidden = !next.hidden;
+              await sleep(ms);
+            }
+            prev.hidden = true;
+            next.hidden = false;
+            impact(at, "light", { k: fxUnit(2), dur: 520 });
+            await sleep(160);
+          } finally {
+            // Always undo the overlay, whether or not the refresh below rebuilds the fighter.
+            prev.remove();
+            next.remove();
+            own.hidden = false;
+            arena.classList.remove("casting");
           }
-          cur.hidden = true;
-          next.hidden = false;
-          impact(at, "light", { k: fxUnit(2), dur: 520 });
-          await sleep(160);
-          arena.classList.remove("casting");
         } else if (old) {
           old.classList.add("spot");
           await pose(seat, monsterId, "evolveOut");
@@ -2710,7 +2724,7 @@
         burst(at, "#fff6c2", 6, 30);
         const evo = state.players[seat].monsters.find((m) => m.id === monsterId)?.evolution || 1;
         if (seat === room.seat) { matchStats.evolved += 1; saveStats(); }
-        floatText(f.querySelector(".stage"), "", "#ffe14d", Array(evo).fill("star"));
+        floatText(f.querySelector(".stage"), "", "#ffe14d", Array(evo + 1).fill("star")); // stages are 1 to 3 stars
         await arrived;
         f.classList.remove("spot");
       }

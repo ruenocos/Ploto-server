@@ -13,6 +13,7 @@ import {
   abilityView,
   effectiveCost,
   fatigueDamage,
+  scaledPassive,
   type GameConfig,
 } from "../game/matchmonsters/engine.js";
 import { chooseEvolution, chooseMove } from "../game/matchmonsters/bot.js";
@@ -332,6 +333,8 @@ function serializeMonster(m: MonsterState) {
     chargeCost: effectiveCost(m.def, m.evolution),
     evolution: m.evolution,
     sealed: m.sealed,
+    /** Charge per berry the team collects (Sweet tooth), so the client can show it land. */
+    sweetTooth: scaledPassive(m.def, m.evolution)?.sweetTooth ?? 0,
     ability: abilityView(m.def, m.evolution),
   };
 }

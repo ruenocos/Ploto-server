@@ -82,6 +82,10 @@ export type Effect =
   | { readonly kind: "convert"; readonly count: number; readonly partner?: boolean }
   /** Remove charge from each rival monster. */
   | { readonly kind: "sap"; readonly count: number }
+  /** Turn random tiles into berries (on the shared board: the rival can match them too). */
+  | { readonly kind: "grow"; readonly count: number }
+  /** Steal up to this many berries from the rival's stash. */
+  | { readonly kind: "pluck"; readonly count: number }
   /** The rival gets this many fewer moves next turn. */
   | { readonly kind: "slow"; readonly count: number }
   /** The rival monster with the most charge can't gain charge for this many of their turns. */
@@ -127,6 +131,9 @@ export type EffectEvent =
   | { readonly kind: "freeze"; readonly target: 0 | 1; readonly count: number; readonly turns: number; readonly blocked?: boolean }
   | { readonly kind: "petrify"; readonly cells: readonly Cell[] }
   | { readonly kind: "convert"; readonly cells: readonly Cell[]; readonly element: Element }
+  | { readonly kind: "grow"; readonly cells: readonly Cell[] }
+  /** `count` berries actually taken from `target`'s stash (0 if it was empty). */
+  | { readonly kind: "pluck"; readonly target: 0 | 1; readonly count: number }
   /** Charge removed from each rival monster, by monster id. */
   | { readonly kind: "sap"; readonly target: 0 | 1; readonly drained: Readonly<Record<string, number>> }
   | { readonly kind: "slow"; readonly target: 0 | 1; readonly count: number; readonly blocked?: boolean }
@@ -151,6 +158,8 @@ export interface Passive {
   readonly followUp?: number;
   /** Burns from this team last this many turns longer. */
   readonly afterburn?: number;
+  /** Every berry the team collects from the board gives this monster this much charge. */
+  readonly sweetTooth?: number;
 }
 
 export interface Monster {

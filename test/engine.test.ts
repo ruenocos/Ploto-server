@@ -285,6 +285,54 @@ describe("board effects", () => {
   });
 });
 
+describe("berries", () => {
+  const rival: Monster = { id: "r", name: "R", element: "water", chargeCost: 50, ability: { name: "n", effects: [] } };
+
+  it("grow puts berries on the board without creating instant matches", () => {
+    const g = newGame(fireMon("a", [{ kind: "grow", count: 3 }]));
+    const before = g.state.board.grid.flat().filter((t) => t === "berry").length;
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    const grown = r.casts[0]!.effects[0]!;
+    expect(grown).toMatchObject({ kind: "grow" });
+    expect(grown.kind === "grow" && grown.cells.length).toBe(3);
+    for (const c of grown.kind === "grow" ? grown.cells : []) expect(g.state.board.grid[c.y]![c.x]).toBe("berry");
+    expect(findMatches(g.state.board)).toHaveLength(0);
+    expect(g.state.board.grid.flat().filter((t) => t === "berry").length).toBeGreaterThanOrEqual(before);
+  });
+
+  it("pluck steals berries from the rival's stash, never more than they have", () => {
+    const g = newGame(fireMon("a", [{ kind: "pluck", count: 2 }]), rival);
+    g.state.players[1].berries = 1;
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.casts[0]!.effects[0]).toMatchObject({ kind: "pluck", target: 1, count: 1 });
+    expect(g.state.players[1].berries).toBe(0);
+    expect(g.state.players[0].berries).toBe(1); // the swap itself matched no berries
+  });
+
+  it("sweet tooth charges on berries the team collects, not on stolen ones", () => {
+    const sweet: Monster = { id: "s", name: "S", element: "light", chargeCost: 50, ability: { name: "n", effects: [] }, passive: { sweetTooth: 2 } };
+    const g = newGame(fireMon("a", [], 99), rival, {}, sweet);
+    g.state.board.grid = grid(LAYOUT_BERRY);
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.berriesGained).toBeGreaterThanOrEqual(3);
+    const lightMatched = r.charged.light ?? 0;
+    expect(g.state.players[0].monsters[1]!.charge).toBe(2 * r.berriesGained + lightMatched);
+  });
+
+  it("sweet tooth ignores berries stolen with pluck", () => {
+    const sweet: Monster = { id: "s", name: "S", element: "light", chargeCost: 50, ability: { name: "n", effects: [] }, passive: { sweetTooth: 2 } };
+    const g = newGame(fireMon("a", [{ kind: "pluck", count: 1 }]), rival, {}, sweet);
+    g.state.players[1].berries = 3;
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(g.state.players[0].berries).toBe(1);
+    expect(g.state.players[0].monsters[1]!.charge).toBe(r.charged.light ?? 0);
+  });
+});
+
 describe("tempo & charge effects", () => {
   const rival: Monster = { id: "r", name: "R", element: "water", chargeCost: 50, ability: { name: "n", effects: [] } };
 

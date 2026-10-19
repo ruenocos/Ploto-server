@@ -108,17 +108,18 @@ they evolve. Tap one for its move, passive and evolution line.
 | Element | Archetype | Plays like |
 | ------- | --------- | ---------- |
 | 🔥 Fire | Destroyer | big hits, burns (Emberwing makes them last longer, Pyrup detonates them), blasts that clear rows/columns/areas (the gems charge you) |
-| 💧 Water | Controller | freeze the rival's best tiles for their turn, drain rival charge, make the rival lose a move; Bublob's bubble blocks the rival's control |
+| 💧 Water | Controller | freeze the rival's best tiles for their turn, drain rival charge, make the rival lose a move; Bublob steals berries and its bubble blocks the rival's control |
 | ⛰️ Earth | Guardian | stone the rival's element tiles, quakes that shatter stones, a shield bash, crystals that grow earth gems |
-| 🌿 Nature | Survivor | poison (halves the rival's healing), life-steal that feeds on burns and poison, sealing the rival's readiest monster, blooms of the partner's element |
+| 🌿 Nature | Survivor | poison (halves the rival's healing), life-steal that feeds on burns and poison, sealing the rival's readiest monster, Petalope growing berries and charging on them |
 | ✨ Light | Striker | burst, piercing hits that ignore shields, extra moves, regeneration, charging its partner |
 
 20 monsters, each with its own move; some have passives (Scorchpaw goes
 **berserk** at low HP, Halomoth **follows up** whenever its partner hits,
-Emberwing's **afterburn** makes the team's burns last longer). Kits are built
+Emberwing's **afterburn** makes the team's burns last longer, Petalope's
+**sweet tooth** charges it on every berry the team collects). Kits are built
 to work alone and to combo: Tanglet feeds on Thornkin's poison, Craggol's
 bash grows with Bublob's shield, Tremole shatters Rubbug's stones, Petalope
-grows its partner's gems.
+grows berries for the whole team to evolve with.
 
 ## Run it
 
@@ -171,9 +172,9 @@ cleanest source is your own device's app cache while the service is up.
 `src/game/matchmonsters` is a self-contained, server-authoritative match-3
 battler built from the public rules. A monster's move is a list of **effects**
 (`damage` (optionally piercing), `heal`, `shield`, `drain`, `dot`, `ignite`,
-`regen`, `bubble`, `match`, `freeze`, `petrify`, `convert`, `sap`, `slow`,
+`regen`, `bubble`, `match`, `freeze`, `petrify`, `convert`, `grow`, `pluck`, `sap`, `slow`,
 `seal`, `haste`, `cleanse`, `empower`) applied in
-order, plus optional passives (`berserk`, `followUp`). Display text is generated
+order, plus optional passives (`berserk`, `followUp`, `afterburn`, `sweetTooth`). Display text is generated
 from the effects, so `monsters.ts` is the single source of truth for numbers.
 All randomness runs through a seeded PRNG, so a match is fully reproducible from
 `(seed, moves)` — which is how the engine is unit-tested and replayed.

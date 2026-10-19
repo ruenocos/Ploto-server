@@ -52,6 +52,8 @@
  * @property {(at: Pt, kind: string, opts?: { k?: number, dur?: number }) => void} impact   a pixel impact sprite (art/pixel/fx.py: an element, heal, shield, ice or poison)
  * @property {() => number} tileFxUnit   impact scale that fits a board tile
  * @property {(seat: 0 | 1, monsterId: string, delta: number) => void} charge   move a monster's shown charge
+ * @property {(seat: 0 | 1) => HTMLElement | null} stashOf   a player's berry counter in the HUD
+ * @property {(seat: 0 | 1, delta: number) => void} berries   move a player's shown berry count
  * @property {(x: number, y: number, gem: Gem, cls?: string) => void} setTile   change one tile (with an entrance class)
  * @property {(step: CascadeStep, opts: { mover: 0 | 1 | null, combo?: number }) => Promise<void>} playStep
  * @property {(seat: 0 | 1, monsterId: string | null, pose: Pose) => Promise<void>} pose   body language (null = both monsters); `land` already flinches/cheers
@@ -277,6 +279,41 @@ const EFFECTS = {
         if (t) fx.impact(fx.centerOf(t), e.element, { k: fx.tileFxUnit() });
       });
       await fx.sleep(300);
+    },
+  },
+
+  // Berries sprout on the board, one by one, where the caster's motes land.
+  grow: {
+    async animate(e, ctx) {
+      const { fx } = ctx;
+      await motesToCells(ctx, e.cells, fx.COLOR.berry ?? "#ff5a7a", (c) => {
+        fx.setTile(c.x, c.y, "berry", "converted");
+        const t = fx.tileAt(c.x, c.y);
+        if (t) fx.impact(fx.centerOf(t), "heal", { k: fx.tileFxUnit() });
+      });
+      await fx.sleep(300);
+    },
+  },
+
+  // Berries hop out of the rival's stash and into the caster's.
+  pluck: {
+    async animate(e, ctx) {
+      const { fx, cast } = ctx;
+      const from = fx.stashOf(e.target), to = fx.stashOf(cast.by);
+      if (!e.count || !from || !to) {
+        fx.floatText(fx.sideOf(e.target), "no berries to steal", "#8f98ad");
+        await fx.sleep(300);
+        return;
+      }
+      void fx.pose(e.target, null, "hurt");
+      await Promise.all(Array.from({ length: e.count }, (_, i) =>
+        fx.sleep(i * 140).then(() => {
+          fx.berries(e.target, -1);
+          return fx.fly("orb", fx.centerOf(from), fx.centerOf(to), fx.COLOR.berry ?? "#ff5a7a", { dur: 520, arc: 60 });
+        }).then(() => fx.berries(cast.by, 1)),
+      ));
+      void fx.pose(cast.by, cast.monsterId, "cheer");
+      await fx.sleep(160);
     },
   },
 

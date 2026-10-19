@@ -6,7 +6,7 @@
  *   🔥 fire   — Destroyer: big hits, burns, blasts that match board regions
  *   💧 water  — Controller: freeze tiles, sap rival charge, steal rival moves
  *   🪨 earth  — Guardian: stone blockers, quakes, big shields and heals
- *   🌿 nature — Survivor: poison, life-steal, sealing rival charge, overgrowth
+ *   🌿 nature — Survivor: poison, life-steal, sealing rival charge, berries
  *   ✨ light  — Striker: burst, extra moves, regeneration, empowering your partner
  * Display text is generated from the effects (see describeEffects), so the
  * numbers here are the single source of truth. IDs are stable.
@@ -54,9 +54,10 @@ export const MONSTERS: Record<string, Monster> = {
     [dmg(14), { kind: "freeze", count: 3, turns: 1 }]),
   kraken_pup: m("kraken_pup", "Krakling", "water", 10, "Riptide",
     [dmg(19), { kind: "slow", count: 1 }]),
-  bubble_jelly: m("bubble_jelly", "Bublob", "water", 8, "Bubble Barrier",
-    // The answer to control: the bubble eats the next freeze, slow, seal, burn or poison.
-    [shield(10), dmg(8), { kind: "bubble", count: 1 }]),
+  // Pearl Snatch: a clam that pockets the rival's berries (slowing their evolutions, speeding yours),
+  // and its bubble still eats the next freeze, slow, seal, burn or poison.
+  bubble_jelly: m("bubble_jelly", "Bublob", "water", 8, "Pearl Snatch",
+    [shield(8), dmg(8), { kind: "pluck", count: 1 }, { kind: "bubble", count: 1 }]),
 
   // 🪨 earth — Guardian
   // Shield Bash: shield up, then hit with it. Other shields (Bublob, Gemox) make the bash bigger.
@@ -79,9 +80,11 @@ export const MONSTERS: Record<string, Monster> = {
   vine_lurker: m("vine_lurker", "Tanglet", "nature", 9, "Feeding Vine", [{ kind: "drain", amount: 12, perDotTurn: 2 }]),
   shroom_knight: m("shroom_knight", "Myconite", "nature", 9, "Spore Cloud",
     [dmg(8), { kind: "seal", turns: 2 }]), // seals the rival monster closest to firing (an unsealed one first)
-  // Bloom: grows tiles of its partner's element, a support for any team.
-  petal_fawn: m("petal_fawn", "Petalope", "nature", 7, "Bloom",
-    [dmg(5), heal(12), { kind: "convert", count: 4, partner: true }]),
+  // Harvest Bloom: grows berries on the shared board (grab them before the rival does),
+  // and Sweet tooth turns every berry you match into charge for it.
+  petal_fawn: m("petal_fawn", "Petalope", "nature", 7, "Harvest Bloom",
+    [dmg(5), heal(10), { kind: "grow", count: 2 }],
+    { sweetTooth: 1 }),
 
   // ✨ light — Striker
   prism_owl: m("prism_owl", "Lumowl", "light", 10, "Smite",
@@ -100,9 +103,9 @@ export const MONSTERS: Record<string, Monster> = {
 /** One-line identity per element, shown in the picker. */
 export const ARCHETYPES: Record<Element, { title: string; blurb: string }> = {
   fire: { title: "Destroyer", blurb: "Big hits, burns, and blasts that clear the board" },
-  water: { title: "Controller", blurb: "Freeze tiles, sap charge, steal rival moves" },
+  water: { title: "Controller", blurb: "Freeze tiles, sap charge, steal moves and berries" },
   earth: { title: "Guardian", blurb: "Stone blockers, quakes, big shields and heals" },
-  nature: { title: "Survivor", blurb: "Poison that halves healing, life-steal, sealing, overgrowth" },
+  nature: { title: "Survivor", blurb: "Poison that halves healing, life-steal, sealing, berries" },
   light: { title: "Striker", blurb: "Piercing burst, extra moves, regeneration, teamwork" },
 };
 

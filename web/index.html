@@ -2392,6 +2392,7 @@
           hp: p.hp, maxHp: p.maxHp, shield: p.shield || 0, berries: p.berries || 0,
           charge: p.monsters.map((m) => m.charge), cost: p.monsters.map((m) => m.chargeCost),
           sealed: p.monsters.map((m) => m.sealed > 0), elements: p.monsters.map((m) => m.element),
+          sweet: p.monsters.map((m) => m.sweetTooth || 0),
         }));
       }
 
@@ -2422,6 +2423,14 @@
         if (gulp) { pose(seat, f.dataset.mon, "charge"); bump(f.querySelector(".cbar")); }
       }
 
+      /** Show a player's berry count mid-move. */
+      function setBerries(seat, n) {
+        if (!disp) return;
+        disp[seat].berries = Math.max(0, n);
+        const b = hudOf(seat).querySelector("[data-berry] b");
+        if (b) b.textContent = disp[seat].berries;
+      }
+
       /** Where a cleared tile's energy goes for `seat`: into the matching monsters, or the berry stash. */
       function chargeTargets(seat) {
         if (!disp) return () => [];
@@ -2429,8 +2438,14 @@
         const berryChip = hudOf(seat).querySelector("[data-berry]");
         const d = disp[seat];
         return (gem) => {
-          if (gem === "berry" && berryChip) {
-            return [{ pos: centerOf(berryChip), arrive: () => { d.berries++; const b = berryChip.querySelector("b"); if (b) b.textContent = d.berries; bump(berryChip); } }];
+          if (gem === "berry") {
+            const out = berryChip ? [{ pos: centerOf(berryChip), arrive: () => { setBerries(seat, d.berries + 1); bump(berryChip); } }] : [];
+            // Sweet tooth: the berry charges that monster too.
+            d.sweet.forEach((n, i) => {
+              const core = side.querySelector(`.fighter.f${i} .core`);
+              if (n > 0 && !d.sealed[i] && core) out.push({ pos: centerOf(core), arrive: () => { d.charge[i] += n; drawCharge(seat, i, true); } });
+            });
+            return out;
           }
           const out = [];
           d.elements.forEach((el, i) => {
@@ -2683,6 +2698,8 @@
         bump, play: (el, preset, opts) => playPreset(el, preset, opts),
         floatText, land, setTile, playStep, icon: ic, impact, tileFxUnit,
         charge: chargeBy,
+        stashOf: (seat) => hudOf(seat).querySelector("[data-berry]"),
+        berries: (seat, delta) => { if (disp) setBerries(seat, disp[seat].berries + delta); bump(hudOf(seat).querySelector("[data-berry]")); },
         pose,
         shuffle: () => shuffleBoard(),
       };

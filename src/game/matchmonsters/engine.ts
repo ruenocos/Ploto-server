@@ -166,6 +166,7 @@ export class MatchMonstersGame {
     const defender = s.players[other(by)];
     attacker.berries += tally.berries;
     feedCharge(attacker, tally.charged);
+    feedBerries(attacker, tally.berries);
 
     // Fire every move that is fully charged. Loop so monsters charged by a move
     // (blasts, empower) can still fire this turn; capped for safety.
@@ -483,6 +484,26 @@ export class MatchMonstersGame {
         }
         return { kind: "convert", cells: converted, element: target };
       }
+      case "grow": {
+        // Berries on random tiles, skipping any that would match at once (they wait for a move).
+        // The board is shared: whoever matches them first gets them.
+        const pool = this.cells((x, y) => isElement(b.grid[y]![x]!));
+        const grown: Cell[] = [];
+        for (const c of this.pick(pool, pool.length)) {
+          if (grown.length >= e.count) break;
+          const before = b.grid[c.y]![c.x]!;
+          b.grid[c.y]![c.x] = "berry";
+          if (findMatches(b).length > 0) b.grid[c.y]![c.x] = before;
+          else grown.push(c);
+        }
+        return { kind: "grow", cells: grown };
+      }
+      case "pluck": {
+        const taken = Math.min(defender.berries, e.count);
+        defender.berries -= taken;
+        ctx.berries += taken;
+        return { kind: "pluck", target: foeIdx, count: taken };
+      }
       case "sap": {
         const drained: Record<string, number> = {};
         for (const m of defender.monsters) {
@@ -587,14 +608,17 @@ export class MatchMonstersGame {
     const present = cells.filter((c) => b.grid[c.y]![c.x] != null);
     if (present.length === 0) return -1;
     const counts: Partial<Record<Element, number>> = {};
+    let berries = 0;
     for (const c of present) {
       const t = b.grid[c.y]![c.x]!;
-      if (t === "berry") ctx.berries += 1;
+      if (t === "berry") berries += 1;
       else if (isElement(t)) counts[t] = (counts[t] ?? 0) + 1;
     }
     const before = cloneGrid(b);
     const clearedInfo = present.map((c) => ({ x: c.x, y: c.y, element: b.grid[c.y]![c.x]! }));
+    ctx.berries += berries;
     feedCharge(ctx.attacker, counts);
+    feedBerries(ctx.attacker, berries);
     this.breakIce(present);
     collapseAndRefill(b, present, this.palette, this.rng);
     ctx.effectSteps.push({ cleared: clearedInfo, countsByElement: counts, board: before, after: cloneGrid(b) });
@@ -707,9 +731,12 @@ export function scaledEffects(def: Monster, evolution: number): Effect[] {
         return { ...e, count: e.count + evolution, turns: e.turns + atLeast(evolution, 2) };
       case "petrify":
       case "convert":
+      case "grow":
       case "sap":
       case "empower":
         return { ...e, count: e.count + evolution };
+      case "pluck":
+        return { ...e, count: e.count + atLeast(evolution, 2) };
       case "seal":
         return { ...e, turns: e.turns + atLeast(evolution, 1) };
       case "haste":
@@ -736,6 +763,7 @@ export function scaledPassive(def: Monster, evolution: number): Passive | undefi
       : {}),
     ...(p.followUp ? { followUp: scaleAmount(p.followUp, evolution) } : {}),
     ...(p.afterburn ? { afterburn: p.afterburn + atLeast(evolution, 2) } : {}),
+    ...(p.sweetTooth ? { sweetTooth: p.sweetTooth + atLeast(evolution, 2) } : {}),
   };
 }
 
@@ -771,6 +799,8 @@ export function describeEffects(effects: readonly Effect[], element: Element): s
       case "petrify": return `turn ${e.count} tiles to stone`;
       case "convert": return e.partner ? `turn ${e.count} tiles into your partner's element` : `turn ${e.count} tiles into ${element}`;
       case "sap": return `drain ${e.count} charge from each rival monster`;
+      case "grow": return `grow ${e.count} ${e.count === 1 ? "berry" : "berries"} on the board`;
+      case "pluck": return `steal ${e.count} ${e.count === 1 ? "berry" : "berries"} from the rival`;
       case "slow": return `the rival loses ${e.count} move${e.count === 1 ? "" : "s"} next turn`;
       case "seal": return `seal the rival monster closest to firing that isn't sealed yet: it can't charge for ${e.turns} turns`;
       case "haste": return `gain ${e.count} extra move${e.count === 1 ? "" : "s"}`;
@@ -789,12 +819,13 @@ export function describePassive(def: Monster, evolution = 0): string | undefined
   if (p.berserk) return `Berserk at ${p.berserk.threshold} HP or less: strike ${p.berserk.hits}× for ${p.berserk.amount}`;
   if (p.followUp) return `When its partner's move hits, follow up for ${p.followUp}`;
   if (p.afterburn) return `Afterburn: your team's burns last ${p.afterburn} turn${p.afterburn === 1 ? "" : "s"} longer`;
+  if (p.sweetTooth) return `Sweet tooth: every berry your team collects gives it ${p.sweetTooth} charge`;
   return undefined;
 }
 
 const EFFECT_LABEL: Record<EffectKind, string> = {
   damage: "Damage", heal: "Heal", shield: "Shield", drain: "Life steal", dot: "", match: "Blast",
-  freeze: "Frozen tiles", petrify: "Stone tiles", convert: "Converted tiles", sap: "Charge drained",
+  freeze: "Frozen tiles", petrify: "Stone tiles", convert: "Converted tiles", grow: "Berries grown", pluck: "Berries stolen", sap: "Charge drained",
   slow: "Moves stolen", seal: "Seal", haste: "Extra moves", cleanse: "Cleanse", empower: "Partner charge",
   ignite: "Ignite", regen: "Regen", bubble: "Bubbles",
 };
@@ -836,6 +867,9 @@ export function evolutionChanges(def: Monster, evolution: number): string[] {
   const pa = scaledPassive(def, evolution), pb = scaledPassive(def, evolution + 1);
   if (pa?.followUp !== undefined && pb?.followUp !== undefined && pa.followUp !== pb.followUp) {
     out.push(`Follow-up ${pa.followUp} → ${pb.followUp}`);
+  }
+  if (pa?.sweetTooth !== undefined && pb?.sweetTooth !== undefined && pa.sweetTooth !== pb.sweetTooth) {
+    out.push(`Sweet tooth ${pa.sweetTooth} → ${pb.sweetTooth} charge per berry`);
   }
   if (pa?.afterburn !== undefined && pb?.afterburn !== undefined && pa.afterburn !== pb.afterburn) {
     out.push(`Afterburn ${pa.afterburn} → ${pb.afterburn} turns`);
@@ -882,6 +916,15 @@ function feedCharge(player: PlayerState, counts: Partial<Record<Element, number>
   for (const mon of player.monsters) {
     const gained = counts[mon.def.element] ?? 0;
     if (gained > 0 && mon.sealed === 0) mon.charge += gained;
+  }
+}
+
+/** Berries a player collected from the board: Sweet tooth monsters charge on them (stolen ones don't count). */
+function feedBerries(player: PlayerState, berries: number): void {
+  if (berries <= 0) return;
+  for (const mon of player.monsters) {
+    const sweet = scaledPassive(mon.def, mon.evolution)?.sweetTooth ?? 0;
+    if (sweet > 0 && mon.sealed === 0) mon.charge += sweet * berries;
   }
 }
 

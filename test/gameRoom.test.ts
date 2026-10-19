@@ -170,6 +170,23 @@ describe("GameRoom practice bot", () => {
     room.dispose();
   });
 
+  it("sends each move with the room as of that move, not as of the latest one", () => {
+    vi.useFakeTimers();
+    const room = new GameRoom({ ...roomConfig(), firstTurn: 1 }, { botSeat: 1 });
+    const human = new FakePeer("p0");
+    room.join(human);
+    for (let i = 0; i < 10 && room.game.state.turn === 1; i++) vi.advanceTimersByTime(5_000);
+    const moves = human.notifications.filter((n) => n.method === "mm:moveResult")
+      .map((n) => (n.data as { board: unknown; state: { board: unknown; moveNumber: number; turn: number } }));
+    expect(moves.length).toBeGreaterThan(0);
+    moves.forEach((m, i) => {
+      expect(m.state.moveNumber).toBe(i + 1);
+      expect(m.state.board).toEqual(m.board);
+    });
+    expect(moves.at(-1)!.state.turn).toBe(0); // the hand-back comes with the bot's last move
+    room.dispose();
+  });
+
   it("shows the bot as connected and agrees to rematches", () => {
     const room = new GameRoom(roomConfig(), { botSeat: 1 });
     const snap = room.handleRequest("p0", "mm:getState", {}) as { connected: boolean[]; botSeat: number };

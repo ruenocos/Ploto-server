@@ -1340,7 +1340,7 @@
             if (stillHere()) showEnd(d.winner === room.seat, d.forfeitedBy);
           });
         }));
-        sock.on("mm:evolved", live((d) => { animQueue = animQueue.then(() => stillHere() && evolveFx(d.by, d.monsterId, d.evolution)); }));
+        sock.on("mm:evolved", live((d) => { animQueue = animQueue.then(() => stillHere() && evolveFx(d.by, d.monsterId, d.evolution, d.state)); }));
         sock.on("mm:peerStatus", live((d) => {
           if (d.seat === room.seat) return;
           rivalOnline = d.connected;
@@ -1441,7 +1441,15 @@
       /** Pull the room's state: a draft view while drafting, the game afterwards. */
       async function refresh() {
         if (!gameSock) return;
-        const res = await gameSock.request("mm:getState", {});
+        show(await gameSock.request("mm:getState", {}));
+      }
+      /**
+       * Draw a room snapshot. Queued animations end on the snapshot their event
+       * carries (the room as of that move), never on a fresh mm:getState: by then
+       * the rival may have moved again, and jumping ahead would call YOUR TURN and
+       * draw the final board while their next move is still to play.
+       */
+      function show(res) {
         if (res.draft) {
           draftState = res;
           state = null;
@@ -2696,11 +2704,11 @@
        * straight to the new form.
        */
       const EVO_SWAPS = [480, 420, 380, 350, 340, 340];
-      async function evolveFx(seat, monsterId, to) {
+      async function evolveFx(seat, monsterId, to, snap) {
         const old = chipOf(seat, monsterId)?.el;
-        // `to` comes with the event; the monster may already be drawn at it (a move's
-        // refresh can land first, e.g. when the bot evolves), so both silhouettes are
-        // drawn here as overlays and the fighter's own sprite just hides meanwhile.
+        // `to` comes with the event; the monster may already be drawn at it (an older
+        // server's refresh could land first), so both silhouettes are drawn here as
+        // overlays and the fighter's own sprite just hides meanwhile.
         const after = to ?? Math.min(MAX_EVOLUTION, (state.players[seat].monsters.find((m) => m.id === monsterId)?.evolution || 0) + 1);
         if (old && !reduceMotion && after > 0) {
           const arena = $("arena");
@@ -2741,7 +2749,7 @@
           old.classList.add("spot");
           await pose(seat, monsterId, "evolveOut");
         }
-        await refresh();
+        if (snap) show(snap); else await refresh();
         const f = chipOf(seat, monsterId)?.el;
         if (!f) return;
         f.classList.add("spot");
@@ -2817,7 +2825,7 @@
           const hasted = (data.casts || []).some((c) => (c.kinds || []).includes("haste"));
           popPip = !data.finished && data.nextTurn === data.by && (data.extraTurn || hasted);
           if ((data.casts || []).length || ticks.length) await sleep(450); // let the HP ghost catch up
-          await refresh();
+          if (data.state) show(data.state); else await refresh();
         } catch (err) {
           console.error(err);
           try { await refresh(); } catch {}

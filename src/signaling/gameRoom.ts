@@ -225,6 +225,7 @@ export class GameRoom {
           by: seat,
           monsterId: result.monsterId,
           evolution: result.evolution,
+          state: this.snapshot(),
         });
         return { ok: true, evolution: result.evolution, berries: result.berries };
       }
@@ -235,7 +236,9 @@ export class GameRoom {
   }
 
   private publishMove(result: MoveResult): void {
-    this.broadcast("mm:moveResult", result);
+    // `state` is the room as of this move: clients animate moves one after another and must
+    // end each on its own state, not on a later one (the bot's next move may already be in).
+    this.broadcast("mm:moveResult", { ...result, state: this.snapshot() });
     if (result.finished) {
       this.broadcast("mm:gameOver", { winner: result.winner, matchId: this.game.state.matchId });
       this.report();
@@ -264,7 +267,7 @@ export class GameRoom {
     if (evolveId) {
       const evolved = this.game.evolve(seat, evolveId);
       if (evolved.ok) {
-        this.broadcast("mm:evolved", { by: seat, monsterId: evolved.monsterId, evolution: evolved.evolution });
+        this.broadcast("mm:evolved", { by: seat, monsterId: evolved.monsterId, evolution: evolved.evolution, state: this.snapshot() });
       }
     }
     const move = chooseMove(this.game, seat, { sloppiness: BOT_SLOPPINESS });

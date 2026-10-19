@@ -23,7 +23,7 @@ from client import Client
 from generate import run_jobs
 from pick import clean
 from roster import ROSTER
-from style import CANVAS, IDLE_ACTION, IDLE_FRAMES
+from style import CANVAS, IDLE_ACTION, IDLE_CALM, IDLE_FRAMES
 
 HERE = Path(__file__).resolve().parent
 SPRITES = HERE / "sprites"
@@ -49,8 +49,11 @@ def main() -> None:
     ap.add_argument("--stages", default="0,1,2")
     ap.add_argument("--variant", type=int, default=0)
     ap.add_argument("--keep", action="store_true", help="copy the reviewed variant into sprites/")
+    ap.add_argument("--calm", action="store_true", help="the stricter stand-still prompt (no walking, running or smoke)")
+    ap.add_argument("--only", help="just these stages: id:stage,id:stage (the ids and --stages are then ignored)")
     a = ap.parse_args()
     stages = [int(s) for s in a.stages.split(",")]
+    pairs = [(p.split(":")[0], int(p.split(":")[1])) for p in a.only.split(",")] if a.only else [(m, st) for m in a.ids for st in stages]
     if a.keep:
         for mid in a.ids:
             for st in stages:
@@ -59,31 +62,29 @@ def main() -> None:
                 print("kept", src.name, "->", f"{mid}-{st}-idle.png")
         return
     jobs = []
-    for mid in a.ids:
-        for st in stages:
-            out = CAND / mid / f"idle-s{st}-v{a.variant}-raw.png"
-            if out.exists():
-                continue
-            still = Image.open(SPRITES / f"{mid}-{st}.png")
-            jobs.append((out, "animate_image", {
-                "action": IDLE_ACTION.format(extra=ROSTER[mid]["idle"]), "frame_count": IDLE_FRAMES,
-                "first_frame_base64": b64(still), "last_frame_base64": b64(still),
-                "no_background": True, "seed": 2000 + a.variant}))
+    for mid, st in pairs:
+        out = CAND / mid / f"idle-s{st}-v{a.variant}-raw.png"
+        if out.exists():
+            continue
+        still = Image.open(SPRITES / f"{mid}-{st}.png")
+        jobs.append((out, "animate_image", {
+            "action": IDLE_CALM if a.calm else IDLE_ACTION.format(extra=ROSTER[mid]["idle"]), "frame_count": IDLE_FRAMES,
+            "first_frame_base64": b64(still), "last_frame_base64": b64(still),
+            "no_background": True, "seed": 2000 + a.variant}))
     run_jobs(Client(), jobs)
     # run_jobs saved every frame as <raw stem>-f<i>.png; frame 0 is the input itself.
-    for mid in a.ids:
-        for st in stages:
-            raw = CAND / mid / f"idle-s{st}-v{a.variant}-raw.png"
-            frames = sorted(raw.parent.glob(f"{raw.stem}-f*.png"), key=lambda p: int(p.stem.rsplit("-f", 1)[1]))
-            if not frames:
-                continue
-            # the pinned last frame repeats frame 0: drop it so the loop doesn't hold a beat
-            imgs = [Image.open(p) for p in frames]
-            if len(imgs) > 2 and list(imgs[-1].getdata()) == list(imgs[0].getdata()):
-                imgs = imgs[:-1]
-            out = CAND / mid / f"idle-s{st}-v{a.variant}.png"
-            strip(imgs).save(out)
-            print("strip", out.relative_to(HERE), len(imgs), "frames")
+    for mid, st in pairs:
+        raw = CAND / mid / f"idle-s{st}-v{a.variant}-raw.png"
+        frames = sorted(raw.parent.glob(f"{raw.stem}-f*.png"), key=lambda p: int(p.stem.rsplit("-f", 1)[1]))
+        if not frames:
+            continue
+        # the pinned last frame repeats frame 0: drop it so the loop doesn't hold a beat
+        imgs = [Image.open(p) for p in frames]
+        if len(imgs) > 2 and list(imgs[-1].getdata()) == list(imgs[0].getdata()):
+            imgs = imgs[:-1]
+        out = CAND / mid / f"idle-s{st}-v{a.variant}.png"
+        strip(imgs).save(out)
+        print("strip", out.relative_to(HERE), len(imgs), "frames")
 
 
 if __name__ == "__main__":

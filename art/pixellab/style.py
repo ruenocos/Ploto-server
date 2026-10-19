@@ -86,4 +86,9 @@ def pixflux_evolve_args(mon: dict, stage: int, init_b64: str, colors_b64: str, s
 
 # Idle loops: a gentle, seamless breath. Frames are drawn by PixelLab from the still.
 IDLE_ACTION = "idle breathing in place, subtle loop, the body rises and falls slightly, {extra}"
+# A stricter loop for monsters whose default idle wandered off (walking, running, smoke): no per-monster
+# extra, the feet stay planted, only breathing.
+IDLE_CALM = ("standing still in place with its feet planted, a gentle idle breathing loop: the body rises and falls "
+             "by one pixel, nothing else moves much. Not walking, not running, not jumping, no smoke, no particles, "
+             "no new effects, the same pose throughout")
 IDLE_FRAMES = 6

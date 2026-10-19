@@ -303,6 +303,8 @@ export class GameRoom {
       moveNumber: s.moveNumber,
       players: s.players.map(serializePlayer),
       connected: [0, 1].map((i) => i === this.options.botSeat || Boolean(this.peers[i])),
+      /** Which seats are signed-in accounts: their display name is then their username (friends can add them). */
+      signedIn: [0, 1].map((i) => this.options.accounts?.[i] != null),
       /** Seat the practice bot plays, if this is a practice game. */
       botSeat: this.options.botSeat ?? null,
       /** Whether the teams were drafted (a rematch then drafts again). */

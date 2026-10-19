@@ -138,9 +138,13 @@
       @media (max-width: 379px) { .brand h1 { font-size: var(--fl-2); } }
       @media (min-width: 760px) { .brand h1 { font-size: var(--fl-4); } }
       .intro { color: var(--c-mute); margin: 8px 0 14px; }
-      .acct { max-width: 520px; margin-bottom: 6px; display: grid; gap: 6px; }
+      .acct { max-width: 520px; margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
       .acct-guest, .acct-user, .row-input { display: flex; gap: 8px; align-items: center; }
       .acct-guest button, .row-input button { flex: none; }
+      .online-n { margin-left: 6px; font-size: var(--fs-xs); color: var(--c-good-hi); }
+      .online-n::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 4px; background: var(--c-good-hi); vertical-align: middle; }
+      .fpick { display: grid; gap: 6px; margin: 0 0 14px; }
+      .fpick .frow { margin: 0; }
       .sheet h3 { font: 700 var(--fs-xs)/1.2 var(--f-text); letter-spacing: 1px; color: var(--c-mute); margin: 16px 0 6px; text-transform: uppercase; }
       .frow { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: var(--px) solid var(--c-well); min-width: 0; }
       .frow .fname { flex: 1; min-width: 0; font-weight: 700; }
@@ -776,8 +780,8 @@
         </div>
         <div id="acctUser" class="acct-user hidden">
           <button id="profileBtn" class="ghost small">@<span id="acctName"></span></button>
-          <button id="friendsBtn" class="ghost small"><span data-icon="friends"></span> Friends<span id="friendsBadge" class="badge-n hidden"></span></button>
         </div>
+        <button id="friendsBtn" class="ghost small"><span data-icon="friends"></span> Friends<span id="friendsOnline" class="online-n hidden"></span><span id="friendsBadge" class="badge-n hidden"></span></button>
       </div>
       <div id="picker"></div>
     </section>
@@ -1356,11 +1360,15 @@
         const el = showPanel("friend",
           `<h2>Play a friend</h2>` +
           `<p class="muted" style="text-align:center;margin:8px 0 14px">${esc(how)}</p>` +
+          friendPicker() +
           `<div class="s-actions" style="margin:0"><button id="fCreate"${blindNotReady ? " disabled" : ""}>Send an invite link</button></div>` +
           `<p class="muted" style="text-align:center;margin:18px 0 8px;font-size:var(--fs-s)">Got a code from a friend?</p>` +
           `<form class="row-input join-row" id="fJoin"><input id="fCode" type="text" placeholder="CODE" maxlength="8" autocapitalize="characters" autocomplete="off" aria-label="Room code" />` +
           `<button class="small ghost" type="submit">Join</button></form>`);
         el.querySelector("#fCreate").onclick = () => createRoom();
+        el.querySelector("#fGetName")?.addEventListener("click", openFriends);
+        el.querySelector("#fAll")?.addEventListener("click", openFriends);
+        for (const b of el.querySelectorAll("[data-invite]")) b.onclick = () => sendInvite(b.dataset.invite);
         el.querySelector("#fJoin").onsubmit = (e) => {
           e.preventDefault();
           const code = el.querySelector("#fCode").value.trim().toUpperCase();
@@ -3038,6 +3046,7 @@
         if (panel) closePanel();
         const forfeit = forfeitedBy == null ? null : forfeitedBy === room.seat ? "me" : "them";
         endInfo = { won, forfeit, mine: false, theirs: false };
+        rivalAdded = null;
         if (won) cue("win");
         renderEnd();
         $("end").classList.remove("hidden");
@@ -3078,7 +3087,7 @@
       function renderEnd() {
         if (!endInfo) return;
         const { won, forfeit, mine, theirs } = endInfo;
-        const teams = state?.drafted ? "A new draft" : "Same teams"; // a drafted match drafts again
+        const teams = state?.drafted ? "A new draft" : state?.randomTeams ? "New random teams" : "Same teams"; // drafts and random teams start over
         let label = "Rematch", hint = won ? `${teams}. They'll open the next game.` : `${teams}. You'll open the next game.`;
         let disabled = false, invited = false;
         if (!rivalOnline) { disabled = true; hint = "Your rival left the arena."; }
@@ -3096,9 +3105,45 @@
           `<button id="rematch" class="${invited ? "pulse" : ""}"${disabled ? " disabled" : ""}>${label}</button>` +
           `<div class="end-hint${invited ? " hot" : ""}">${hint}</div>` +
           `<button id="again" class="ghost">Back to lobby</button></div>` +
+          addRivalHtml() +
           (account ? "" : `<p class="end-hint" style="margin:12px 0 0">Claim a username in the lobby to keep a record of your matches.</p>`) + `</div>`;
         $("rematch").onclick = requestRematch;
         $("again").onclick = leaveGame;
+        $("addRival")?.addEventListener("click", addRival);
+      }
+
+      /**
+       * After a match with a signed-in rival (not the bot): add them as a friend.
+       * Only signed-in seats count: a guest's name could match someone else's username.
+       */
+      let rivalAdded = null; // the rival's name once a request went out this match
+      function rivalName() {
+        const foe = room.seat === 0 ? 1 : 0;
+        if (!state || state.botSeat != null || !state.signedIn?.[foe]) return null;
+        const name = state.players[foe].displayName;
+        const known = [...friendsData.friends, ...friendsData.outgoing].some((f) => f.username.toLowerCase() === name.toLowerCase());
+        return known || (account && account.username === name) ? null : name;
+      }
+      function addRivalHtml() {
+        if (rivalAdded) return `<p class="end-hint" style="margin:12px 0 0">${ic("friends")} Friend request sent to ${esc(rivalAdded)}</p>`;
+        const name = rivalName();
+        if (!name) return "";
+        return `<div class="end-actions" style="margin-top:10px"><button id="addRival" class="ghost">${ic("friends")} Add ${esc(name)} as a friend</button></div>`;
+      }
+      async function addRival() {
+        const name = rivalName();
+        if (!name) return;
+        const send = async () => {
+          try {
+            const r = await api("POST", "/api/friends", { username: name });
+            rivalAdded = name;
+            toast(r.status === "accepted" ? `You and ${r.friend.username} are now friends` : `Friend request sent to ${r.friend.username}`);
+            await loadFriends();
+          } catch (e) { toast(errText(e)); }
+          renderEnd();
+        };
+        if (account) return send();
+        openClaim({ title: `Add ${name} as a friend`, body: "Claim a username first: it's how friends find each other.", then: send });
       }
 
       async function requestRematch() {
@@ -3184,13 +3229,19 @@
         const b = $("friendsBadge");
         b.textContent = n;
         b.classList.toggle("hidden", n === 0);
+        const online = account ? friendsData.friends.filter((f) => f.online).length : 0;
+        $("friendsOnline").textContent = online;
+        $("friendsOnline").classList.toggle("hidden", online === 0);
+        $("friendsOnline").setAttribute("aria-label", `${online} online`);
       }
 
       /** Claiming a username, in a sheet (offered in the lobby and after a match, never as a gate). */
-      function openClaim() {
+      let afterClaim = null; // what to open once the claim succeeds (the friends list, adding a rival)
+      function openClaim({ title = "Claim a username", body = "It keeps your record and lets friends find you. No password: this device keeps a key.", then = null } = {}) {
+        afterClaim = then;
         const el = showPanel("claim",
-          `<h2>Claim a username</h2>` +
-          `<p class="muted" style="text-align:center;margin:8px 0 14px">It keeps your record and lets friends find you. No password: this device keeps a key.</p>` +
+          `<h2>${esc(title)}</h2>` +
+          `<p class="muted" style="text-align:center;margin:8px 0 14px">${esc(body)}</p>` +
           `<div class="row-input"><input id="name" type="text" placeholder="Username" maxlength="16" autocomplete="nickname" /><button id="claim" class="small">Claim</button></div>` +
           `<p class="muted" style="font-size:var(--fs-s);margin:10px 0 0">Played on another device? <a href="#" id="useKey">Sign in with your key</a></p>` +
           `<div class="s-actions" style="margin-top:16px"><button class="ghost" data-act="close">Close</button></div>`);
@@ -3211,6 +3262,9 @@
           toast(`Signed in as ${res.username} on this device`, 2600);
           if (panel === "claim") closePanel();
           await connectLobby();
+          const next = afterClaim;
+          afterClaim = null;
+          if (next) await next();
         } catch (e) { toast(errText(e), 2600); }
       }
 
@@ -3298,6 +3352,27 @@
       }
 
       const frow = (inner) => `<div class="frow">${inner}</div>`;
+      /** The friends list; a guest first claims a username (it's how friends find each other). */
+      function openFriends() {
+        if (account) { renderFriends(); loadFriends(); return; }
+        openClaim({
+          title: "Play with friends",
+          body: "Friends find each other by username. Claim yours (your name is filled in), then add them.",
+          then: async () => { renderFriends(); await loadFriends(); },
+        });
+      }
+      /** Friends in the Play-a-friend sheet: online first, each a tap from a battle invite. */
+      function friendPicker() {
+        if (!account) {
+          return `<div class="fpick"><button class="ghost" id="fGetName">${ic("friends")} Play from a friends list</button></div>`;
+        }
+        const list = [...friendsData.friends].sort((a, b) => Number(b.online) - Number(a.online) || a.username.localeCompare(b.username));
+        if (!list.length) return `<div class="fpick"><button class="ghost" id="fAll">${ic("friends")} Add friends by username</button></div>`;
+        return `<div class="fpick">` + list.slice(0, 4).map((a) => frow(
+          `<span class="dot ${a.online ? "" : "off"}"></span><span class="fname ell">${esc(a.username)}</span>` +
+          `<button class="small" data-invite="${a.id}" ${a.online ? "" : "disabled"}>${ic("battle")} ${a.online ? "Invite" : "Offline"}</button>`)).join("") +
+          (list.length > 4 ? `<button class="ghost small" id="fAll">All friends · ${list.length}</button>` : "") + `</div>`;
+      }
       function renderFriends() {
         const f = friendsData;
         const invites = [...incomingInvites.values()];
@@ -3425,7 +3500,9 @@
         const f = friendsData.friends.find((x) => x.id === d.id);
         if (!f) return;
         f.online = d.online;
+        updateBadge();
         if (panel === "friends") renderFriends();
+        if (panel === "friend") openFriendSheet(); // their Invite button follows them online and off
         if (chatWith === d.id) $("chatDot")?.classList.toggle("off", !d.online);
       }
 
@@ -3660,7 +3737,7 @@
         });
       }
       $("nameBtn").addEventListener("click", () => askName({ title: "Your name", body: "Your rival sees this name during the match.", go: "Save" }));
-      $("friendsBtn").addEventListener("click", () => { renderFriends(); loadFriends(); });
+      $("friendsBtn").addEventListener("click", openFriends);
       $("profileBtn").addEventListener("click", openProfile);
       renderAccount();
 

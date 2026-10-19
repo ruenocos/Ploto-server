@@ -68,11 +68,14 @@ seconds per step (then no ban or a random pick); friend rooms and bot practice
 have no timer, and the bot drafts counters too.
 
 **Accounts & friends.** Optional, and never in the way: play first, then tap
-your name in the lobby and **Claim a username** (no password: the server hands back a
+**Friends** (or your name) in the lobby and **Claim a username** (your name is
+filled in) (no password: the server hands back a
 secret key that stays in the browser's localStorage; copy it from your profile to
 sign in on another device). Then add friends by username, chat with them, and
-tap **Invite** to start a match without sharing codes. Your profile shows your
-record and recent matches.
+tap **Invite** to start a match without sharing codes: **Friend** lists your
+friends (online first) with a one-tap Invite, above the link and code options.
+After a match with a signed-in rival, **Add them as a friend** from the end
+screen. Your profile shows your record and recent matches.
 
 **Solo?** Tap **Bot**. In blind pick the bot takes a random team; it plays a
 greedy (occasionally sloppy) game. Practice games add debug shortcuts under

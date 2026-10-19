@@ -52,6 +52,7 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--colors", help="try another colour scheme than the roster's")
     ap.add_argument("--extra", default="", help="appended to the stage description")
+    ap.add_argument("--desc", help="replace the stage description for this run")
     ap.add_argument("--from-next", action="store_true", help="draw from the picked next (older) stage")
     ap.add_argument("--palette-only", action="store_true", help="with --from-next: take only its colours, not the reference")
     ap.add_argument("--redraw", action="store_true", help="redraw the picked sprite of this stage (same design and colours), e.g. in another view")
@@ -61,6 +62,8 @@ def main() -> None:
         m = dict(ROSTER[mid])
         if a.colors:
             m["colors"] = a.colors
+        if a.desc:
+            m["stages"] = tuple(a.desc if i == a.stage else s for i, s in enumerate(m["stages"]))
         if a.extra:
             m["stages"] = tuple(s + (", " + a.extra if i == a.stage else "") for i, s in enumerate(m["stages"]))
         return m

@@ -91,10 +91,10 @@ async function blocked(/** @type {CastCtx} */ ctx, /** @type {0 | 1} */ target) 
   await fx.sleep(380);
 }
 
-/** The caster throws its hit (the attack pose); the orb leaves mid-motion. */
+/** The caster lunges at the rival (the attack pose); the orb leaves at the peak of the dart. */
 async function lunge(/** @type {CastCtx} */ ctx) {
   void ctx.fx.pose(ctx.cast.by, ctx.cast.monsterId, "attack");
-  await ctx.fx.sleep(ctx.fx.reduceMotion ? 0 : 190);
+  await ctx.fx.sleep(ctx.fx.reduceMotion ? 0 : 260);
 }
 
 /** Motes from the caster to each cell, then `onArrive` per cell. */

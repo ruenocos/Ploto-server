@@ -362,6 +362,15 @@
       @keyframes tentR { 0%, 100% { transform: rotate(4deg); } 50% { transform: rotate(-5deg); } }
       /* reactions and loops are stock Animate.css presets (see playPreset); a full charge pulses on .rig, one-shot poses play on .bounce */
       .rig.animate__animated, .bounce.animate__animated { transform-origin: 50% 98%; }
+      /* the attack pose: a short wind-up, a dart towards the rival with a forward lean, then back (--dir: which way the rival is) */
+      .side.me .bounce { --dir: 1; } .side.foe .bounce { --dir: -1; }
+      .bounce.animate__lunge { animation-name: lunge; animation-duration: .55s; animation-timing-function: cubic-bezier(.3, 0, .2, 1); }
+      @keyframes lunge {
+        0%, 100% { transform: none; }
+        22% { transform: translateX(calc(var(--dir) * -8%)) rotate(calc(var(--dir) * -4deg)); }
+        48% { transform: translateX(calc(var(--dir) * 34%)) rotate(calc(var(--dir) * 7deg)) scaleX(1.06); }
+        62% { transform: translateX(calc(var(--dir) * 30%)) rotate(calc(var(--dir) * 5deg)); }
+      }
       /* charge badge under each monster: element gem + a sunken bar with "charge/cost" */
       .cbadge { display: flex; align-items: center; margin-top: calc(var(--u) * 2); position: relative; z-index: 3; white-space: nowrap; }
       .cbadge > .px { position: relative; z-index: 1; width: calc(var(--gu) * 16); height: calc(var(--gu) * 16); }
@@ -2248,7 +2257,7 @@
        */
       const POSES = {
         cast: { preset: "tada", speed: "fast" },          // stepping up to fire its move
-        attack: { preset: "rubberBand", speed: "faster" }, // throwing a hit
+        attack: { preset: "lunge" },                       // throwing a hit (our own preset, see @keyframes lunge)
         hurt: { preset: "shakeX", speed: "faster" },      // taking one
         cheer: { preset: "bounce", speed: "fast" },       // heals, shields, haste, cleanse, a partner's boost
         charge: { preset: "pulse", speed: "faster" },     // a charge mote landing

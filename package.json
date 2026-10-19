@@ -17,6 +17,7 @@
     "dump": "tsx src/tools/bundleDumper/cli.ts",
     "sim": "npm run build && node scripts/balance-sim.mjs",
     "tiers": "npm run build && node scripts/monster-tiers.mjs",
+    "duos": "npm run build && node scripts/duo-sim.mjs",
     "lab": "node scripts/lab-report.mjs",
     "sounds": "node scripts/gen-sounds.mjs",
     "blasts": "npm run build && node scripts/blast-randomness.mjs"

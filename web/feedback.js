@@ -30,7 +30,7 @@ const CUES = {
   hit: { sound: "hit", vol: 0.6, buzz: 60 },
   bigHit: { sound: "bigHit", vol: 0.7, buzz: [80, 40, 120] },
   heal: { sound: "heal", vol: 0.45, buzz: 35 },
-  turn: { sound: "turn", vol: 0.6, buzz: [60, 80, 60] },
+  turn: { sound: "turn", vol: 0.5, buzz: [60, 80, 60] },
   evolve: { sound: "evolve", vol: 0.7, buzz: [50, 60, 50, 60, 140] },
   ko: { sound: "ko", vol: 0.7, buzz: 200 },
   win: { sound: "evolve", vol: 0.7, buzz: [60, 70, 60, 70, 160] },

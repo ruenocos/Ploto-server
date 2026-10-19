@@ -7,7 +7,8 @@
  * every call, so this script seeds Math.random and picks one variant of each,
  * then writes them as jsfxr's compact codes to web/sounds.js. The client
  * synthesises them with jsfxr at runtime. Change a seed to audition another
- * variant of the same preset.
+ * variant of the same preset. An entry can override preset parameters, for a
+ * sound whose variants are all too harsh.
  */
 import { writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -15,7 +16,25 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { sfxr } = require("jsfxr");
 
-/** event -> [jsfxr preset, seed] */
+/**
+ * A soft two-note chime: a sine wave (no harsh harmonics) stepping up a fifth,
+ * C5 to G5 (~520 -> ~790 Hz), so a cue that plays every turn stays easy on the
+ * ears. The stock "jump" preset was a thin pulse sweeping past 1.3 kHz.
+ */
+const CHIME = {
+  wave_type: 2, // sine
+  p_base_freq: 0.384, // ~523 Hz
+  p_arp_mod: 0.608, // up a fifth
+  p_arp_speed: 0.62,
+  p_env_sustain: 0.18,
+  p_env_punch: 0.25,
+  p_env_decay: 0.42,
+  p_freq_ramp: 0,
+  p_lpf_freq: 1,
+  p_hpf_freq: 0,
+};
+
+/** event -> [jsfxr preset, seed, parameter overrides?] */
 const SOUNDS = {
   select: ["blipSelect", 3], // picking a gem up
   swap: ["click", 5], // two gems trading places
@@ -25,7 +44,7 @@ const SOUNDS = {
   hit: ["hitHurt", 4], // damage landing
   bigHit: ["explosion", 9], // a heavy hit
   heal: ["synth", 6], // heal or shield
-  turn: ["jump", 8], // your turn
+  turn: ["pickupCoin", 8, CHIME], // your turn
   evolve: ["powerUp", 21], // evolution
   ko: ["explosion", 13], // a team fainting
 };
@@ -44,9 +63,9 @@ function seeded(seed) {
 
 const random = Math.random;
 const codes = {};
-for (const [name, [preset, seed]] of Object.entries(SOUNDS)) {
+for (const [name, [preset, seed, overrides]] of Object.entries(SOUNDS)) {
   Math.random = seeded(seed);
-  codes[name] = sfxr.b58encode(sfxr.generate(preset));
+  codes[name] = sfxr.b58encode(Object.assign(sfxr.generate(preset), overrides));
 }
 Math.random = random;
 

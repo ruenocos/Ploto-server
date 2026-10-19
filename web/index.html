@@ -1799,8 +1799,8 @@
       }
 
       /**
-       * The arena's time of day follows your own clock: day from 7:00, dusk
-       * (and dawn, 5:00 to 7:00) around sunset from 18:00, night from 21:00.
+       * The arena's time of day follows your own clock: dawn from 5:00, day
+       * from 7:00, dusk from 18:00, night from 21:00.
        * Each player sees their local time; it's checked on every render, so a
        * match that runs past the hour changes with it.
        */
@@ -1808,7 +1808,8 @@
       function themeNow(date = new Date()) {
         const h = date.getHours();
         if (h >= 21 || h < 5) return "night";
-        if (h < 7 || h >= 18) return "dusk";
+        if (h < 7) return "dawn";
+        if (h >= 18) return "dusk";
         return "day";
       }
       const themeArt = () => (window.PIXELART?.themes && PIXELART.themes[arenaTheme]) || null;

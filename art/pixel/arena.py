@@ -1,4 +1,4 @@
-"""The arena: a pixel meadow at three times of day, drifting cloud layers, and the grass platform monsters stand on."""
+"""The arena: a pixel meadow at four times of day, drifting cloud layers, and the grass platform monsters stand on."""
 from __future__ import annotations
 
 import random
@@ -34,6 +34,15 @@ THEMES = {
         "tuft": "#4e9a3e", "tuft_near": "#3f8a34", "flowers": ("#ffffff", "#ffe14d", "#ff9ab8"),
         "cloud": "#ffffff", "cloud_lo": "#dcecf6", "grass": ("#3f8a34", "#5cae44", "#7cc85a"), "dirt": "#6b4a26", "stars": 0,
     },
+    # Dawn: cooler than dusk, lavender up top through pink to pale gold, a soft sun rising in the
+    # east (left), dewy greens with a little mist, the last few stars.
+    "dawn": {
+        "sky": ["#7d86c8", "#b79ad0", "#f2b3c0", "#ffdca6"], "far": "#a597c8", "near": "#8a7cb4",
+        "tree": "#2d4c46", "tree_hi": "#3e6656", "meadow": ["#8cc26e", "#7ab462", "#69a356", "#5a924b"],
+        "tuft": "#5a924b", "tuft_near": "#4a7f40", "flowers": ("#ffffff", "#ffd3e6", "#fff1a8"),
+        "cloud": "#ffe6ee", "cloud_lo": "#f2b8cc", "grass": ("#4a7f40", "#69a356", "#8cc26e"), "dirt": "#6a4a36", "stars": 4,
+        "mist": "#b5d6a6",
+    },
     "dusk": {
         "sky": ["#4a3a78", "#8a4f86", "#d9707a", "#f7b27a"], "far": "#7a5a8e", "near": "#5a4478",
         "tree": "#2a3f3a", "tree_hi": "#3a5444", "meadow": ["#7a9a4a", "#6a8c42", "#5a7c3a", "#4c6c34"],
@@ -65,6 +74,9 @@ def backdrop(theme: str = "day") -> Image.Image:
         d.ellipse((131, 5, 141, 15), fill=hex_rgb(t["sky"][0]))
     if theme == "dusk":  # the sun setting behind the hills
         d.ellipse((60, 30, 84, 54), fill=hex_rgb("#ffd27a"))
+    if theme == "dawn":  # a pale sun just clearing the hills on the left, in a soft halo
+        d.ellipse((14, 25, 46, 57), fill=hex_rgb("#ffe7b8"))
+        d.ellipse((20, 31, 40, 51), fill=hex_rgb("#fff6dc"))
     # Distant mountains.
     d.polygon([(0, 40), (14, 30), (28, 36), (44, 26), (62, 37), (80, 29), (98, 38), (118, 27), (136, 35), (150, 30), (160, 34), (160, 44), (0, 44)], fill=hex_rgb(t["far"]))
     d.polygon([(0, 44), (20, 36), (40, 41), (58, 34), (78, 42), (100, 35), (124, 41), (142, 36), (160, 40), (160, 46), (0, 46)], fill=hex_rgb(t["near"]))
@@ -86,6 +98,11 @@ def backdrop(theme: str = "day") -> Image.Image:
     for _ in range(26):
         x, y = rnd.randrange(W), rnd.randrange(56, H)
         img.putpixel((x, y), hex_rgb(rnd.choice(t["flowers"])))
+    if t.get("mist"):  # morning mist over the far meadow: thick at the tree line, thinning out
+        for y in range(50, 56):
+            for x in range(W):
+                if BAYER[y % 4][x % 4] < (56 - y) * 1.1:
+                    img.putpixel((x, y), hex_rgb(t["mist"]))
     return img
 
 

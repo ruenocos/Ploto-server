@@ -12,7 +12,7 @@ Writes PNGs to art/pixel/out/ and web/pixelart.js, which the client loads:
     gems: { fire, water, earth, nature, light, berry, stone },  // 16x16 icons (chips, badges)
     tiles: { fire, water, earth, nature, light, berry, stone },  // 32x32 board tiles, the same gems
     arena, platform,  // the day meadow (kept for older clients)
-    themes: { day|dusk|night: { arena, platform, cloudsFar, cloudsNear } },  // 160x100 backdrop, 40x14 platform, 160x40 cloud strips
+    themes: { day|dawn|dusk|night: { arena, platform, cloudsFar, cloudsNear } },  // 160x100 backdrop, 40x14 platform, 160x40 cloud strips
     fx: { fire, water, earth, nature, light, heal, shield, ice, poison },  // 6-frame 32x32 impact sheets (fx.py)
     status: { burn, poison, regen },  // 4-frame 12x12 loops on monsters with that status
     statusStill: { bubble, shield },  // the bubble shell (48x48) and the shield wall (12x40)

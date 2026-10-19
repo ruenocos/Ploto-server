@@ -1,22 +1,70 @@
 {
+ "boulder_beetle": {
+  "2": "front"
+ },
+ "bubble_jelly": {
+  "2": "front"
+ },
  "cinder_hound": {
   "0": "right",
   "1": "right",
   "2": "right"
+ },
+ "crystal_ox": {
+  "2": "right"
+ },
+ "dawn_sprite": {
+  "2": "front"
  },
  "ember_pup": {
   "0": "right",
   "1": "right",
   "2": "right"
  },
+ "frost_imp": {
+  "2": "front"
+ },
+ "halo_moth": {
+  "2": "front"
+ },
+ "kraken_pup": {
+  "2": "front"
+ },
+ "lumen_stag": {
+  "2": "front"
+ },
  "magma_titan": {
   "0": "front",
   "1": "right",
+  "2": "right"
+ },
+ "petal_fawn": {
   "2": "right"
  },
  "phoenix_chick": {
   "0": "right",
   "1": "right",
   "2": "right"
+ },
+ "prism_owl": {
+  "2": "front"
+ },
+ "quake_mole": {
+  "2": "right"
+ },
+ "shroom_knight": {
+  "2": "front"
+ },
+ "stone_golem": {
+  "2": "right"
+ },
+ "thorn_sprite": {
+  "2": "front"
+ },
+ "tide_serpent": {
+  "2": "right"
+ },
+ "vine_lurker": {
+  "2": "front"
  }
 }

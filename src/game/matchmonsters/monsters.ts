@@ -78,7 +78,7 @@ export const MONSTERS: Record<string, Monster> = {
   // Feeding Vine: steals more the longer the rival burns or is poisoned (Thornkin, Emberwing, Pyrup).
   vine_lurker: m("vine_lurker", "Tanglet", "nature", 9, "Feeding Vine", [{ kind: "drain", amount: 12, perDotTurn: 2 }]),
   shroom_knight: m("shroom_knight", "Myconite", "nature", 9, "Spore Cloud",
-    [dmg(8), { kind: "seal", turns: 2 }]), // seals the rival monster closest to firing
+    [dmg(8), { kind: "seal", turns: 2 }]), // seals the rival monster closest to firing (an unsealed one first)
   // Bloom: grows tiles of its partner's element, a support for any team.
   petal_fawn: m("petal_fawn", "Petalope", "nature", 7, "Bloom",
     [dmg(5), heal(12), { kind: "convert", count: 4, partner: true }]),

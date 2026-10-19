@@ -648,6 +648,25 @@ describe("kit mechanics: shield bash, feeding vine, shatter, bloom, targeted sea
     expect(r.casts[0]!.effects[0]).toMatchObject({ kind: "seal", monsterId: "fb" });
   });
 
+  it("a seal skips a rival monster that's already sealed", () => {
+    const foeA: Monster = { ...filler, id: "fa" }, foeB: Monster = { ...filler, id: "fb" };
+    const g = new MatchMonstersGame({
+      matchId: "t", seed: 123, board: { width: 5, height: 5, palette: ELEMENTS },
+      players: [
+        { peerId: "p0", displayName: "A", monsters: [fireMon("a", [{ kind: "seal", turns: 2 }]), filler] },
+        { peerId: "p1", displayName: "B", monsters: [foeA, foeB] },
+      ],
+    });
+    g.state.board.grid = grid(LAYOUT);
+    g.state.players[1].monsters[0]!.charge = 1;
+    g.state.players[1].monsters[1]!.charge = 6;
+    g.state.players[1].monsters[1]!.sealed = 1; // the fuller one is locked already
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.casts[0]!.effects[0]).toMatchObject({ kind: "seal", monsterId: "fa" });
+    expect(g.state.players[1].monsters[0]!.sealed).toBe(2);
+  });
+
   it("afterburn makes the team's burns last longer (and grows at ★★)", () => {
     const wing = fireMon("w", [], 99, { afterburn: 1 });
     const g = newGame(fireMon("a", [{ kind: "dot", dot: "burn", amount: 3, turns: 2 }]), filler, {}, wing);

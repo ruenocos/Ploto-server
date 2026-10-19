@@ -500,9 +500,13 @@ export class MatchMonstersGame {
       }
       case "seal": {
         if (popBubble(defender)) return { kind: "seal", target: foeIdx, monsterId: null, turns: e.turns, blocked: true };
-        // The rival monster closest to firing (most charge; a coin flip on ties).
-        const most = Math.max(...defender.monsters.map((m) => m.charge));
-        const target = this.pick(defender.monsters.filter((m) => m.charge === most), 1)[0];
+        // The rival monster closest to firing (most charge; a coin flip on ties), skipping one that's
+        // already sealed: it can't charge anyway, so it would stay on top and soak up every seal.
+        // Only when both are sealed does it top one up.
+        const open = defender.monsters.filter((m) => m.sealed === 0);
+        const pool = open.length ? open : defender.monsters;
+        const most = Math.max(...pool.map((m) => m.charge));
+        const target = this.pick(pool.filter((m) => m.charge === most), 1)[0];
         if (target) target.sealed = Math.max(target.sealed, e.turns);
         return { kind: "seal", target: foeIdx, monsterId: target?.def.id ?? null, turns: e.turns };
       }
@@ -768,7 +772,7 @@ export function describeEffects(effects: readonly Effect[], element: Element): s
       case "convert": return e.partner ? `turn ${e.count} tiles into your partner's element` : `turn ${e.count} tiles into ${element}`;
       case "sap": return `drain ${e.count} charge from each rival monster`;
       case "slow": return `the rival loses ${e.count} move${e.count === 1 ? "" : "s"} next turn`;
-      case "seal": return `seal the rival monster closest to firing: it can't charge for ${e.turns} turns`;
+      case "seal": return `seal the rival monster closest to firing that isn't sealed yet: it can't charge for ${e.turns} turns`;
       case "haste": return `gain ${e.count} extra move${e.count === 1 ? "" : "s"}`;
       case "cleanse": return "cure burns and poison";
       case "empower": return `give ${e.count} charge to your partner`;

@@ -99,6 +99,11 @@ class Client:
         if "status: failed" in text or "error" in text.lower()[:200]:
             raise RuntimeError(f"job {job_id}: {text[:300]}")
         images = [base64.b64decode(c["data"]) for c in content if c["type"] == "image"]
+        # long animations come back with only their first few frames inline: fetch the rest one by one
+        frames = next((int(l.split(":", 1)[1]) for l in text.splitlines() if l.startswith("frames:")), len(images))
+        for i in range(len(images), frames):
+            more = self.call("get_image", {"job_id": job_id, "index": i})
+            images += [base64.b64decode(c["data"]) for c in more if c["type"] == "image"]
         if not images:
             url = next((l.split(":", 1)[1].strip() for l in text.splitlines() if l.startswith("download:")), None)
             if url:

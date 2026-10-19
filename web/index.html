@@ -305,6 +305,7 @@
        */
       .rig .hd-art { position: absolute; left: var(--hx); top: var(--hy); width: calc(var(--hu) * 64); height: calc(var(--hu) * 64);
         background: 0 0 / calc(var(--hu) * 64 * var(--n)) 100% no-repeat; image-rendering: pixelated; }
+      .side.foe .rig .hd-art.turn { transform: scaleX(-1); } /* a three-quarter view faces right: the rival's copy turns round */
       .rig .hd-art.idle { animation: hdIdle calc(var(--n) * 150ms) steps(var(--n)) infinite; }
       @keyframes hdIdle { to { background-position-x: calc(var(--hu) * -64 * var(--n)); } }
       .core { position: absolute; width: 0; height: 0; }
@@ -1005,7 +1006,7 @@
           // 64px art: one image; a still one breathes like a rig's body, an idle sheet plays its own frames.
           const s = px.stages[stage];
           return `<div class="rig"><div class="part r-${s.idle ? "still" : "body"}" style="transform-origin:${U(24)} ${U(47)}">` +
-            `<div class="hd-art${s.idle ? " idle" : ""}" style="background-image:url(${s.idle || s.flat});--n:${s.idle ? s.n : 1}"></div></div></div>`;
+            `<div class="hd-art${s.idle ? " idle" : ""}${s.face === "right" ? " turn" : ""}" style="background-image:url(${s.idle || s.flat});--n:${s.idle ? s.n : 1}"></div></div></div>`;
         }
         const parts = px.stages[stage].parts;
         const kids = new Map();

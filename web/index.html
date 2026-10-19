@@ -66,7 +66,12 @@
         overflow-x: hidden; min-height: 100vh;
         -webkit-font-smoothing: none; font-smooth: never;
       }
-      body.in-game { overflow: hidden; height: 100vh; height: 100dvh; }
+      /*
+       * In a match the page is pinned to the visible screen: a fixed body can't
+       * scroll, so the HUD can never slide up under a phone's address bar
+       * (100vh there is the height with the bar hidden).
+       */
+      body.in-game { position: fixed; inset: 0; overflow: hidden; }
       .hidden { display: none !important; }
       .muted { color: var(--c-mute); }
       .ell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
@@ -210,7 +215,7 @@
 
       /* ---------------------------------------------------------------- game */
       #game {
-        height: 100vh; height: 100dvh; max-width: 560px; margin: 0 auto;
+        height: 100%; max-width: 560px; margin: 0 auto;
         display: flex; flex-direction: column; gap: 6px;
         padding: calc(6px + env(safe-area-inset-top)) 10px calc(6px + env(safe-area-inset-bottom));
       }
@@ -453,7 +458,9 @@
 
       /* ---------------------------------------------------------------- sheet / overlays */
       .scrim { position: fixed; inset: 0; background: rgba(6, 8, 14, 0.7); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
-      .sheet { width: 100%; max-width: 480px; padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); animation: sheetUp 0.2s steps(4); max-height: 85vh; overflow: auto; }
+      .sheet { width: 100%; max-width: 480px; padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); animation: sheetUp 0.2s steps(4); max-height: 85vh; max-height: 88dvh; overflow: auto; overscroll-behavior: contain; }
+      /* a long sheet scrolls, but its buttons stay pinned to the bottom edge, so Close is always in reach */
+      .sheet .s-actions { position: sticky; bottom: calc(-18px - env(safe-area-inset-bottom)); margin-bottom: calc(-18px - env(safe-area-inset-bottom)); padding: 10px 0 calc(18px + env(safe-area-inset-bottom)); background: var(--c-panel); z-index: 1; }
       @media (min-width: 600px) { .scrim { align-items: center; } }
       @keyframes sheetUp { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
       .sheet .s-art { display: flex; justify-content: center; margin-bottom: 6px; }
@@ -845,6 +852,8 @@
        * canvas, at `u` CSS px per sprite pixel (whole device pixels at 2 / 3).
        */
       const CARD_CROP = [6, 14, 36, 34]; // the Base forms sit in the bottom of the canvas
+      /** Sheet hero crops per stage: stage art grows 1 → 1.2 → 1.38 from the feet up, so trim the empty headroom above it. */
+      const HERO_CROP = [[0, 12, 48, 36], [0, 6, 48, 42], [0, 0, 48, 48]];
       /** Evolution-line scale: ~1.5 sprite px, snapped to whole device pixels, so a ★★ there stays smaller than the 3× hero above it. */
       const lineUnit = () => { const dpr = window.devicePixelRatio || 1; return Math.max(1, Math.round(1.5 * dpr)) / dpr; };
       function rigView(id, stage, u, crop = [0, 0, 48, 48]) {
@@ -1005,7 +1014,7 @@
         const arch = mon.archetype?.title;
         sheet.innerHTML =
           `<div class="sheet" style="--el: var(--${mon.element})">` +
-          `<div class="s-art">${rigView(mon.id, 0, 3)}</div>` +
+          `<div class="s-art">${rigView(mon.id, 0, 3, HERO_CROP[0])}</div>` +
           `<h2>${esc(mon.name)}</h2>` +
           `<div class="s-sub">${gemIcon(mon.element, 16)} ${EL_LABEL[mon.element]}${arch ? ` · ${esc(arch)}` : ""}</div>` +
           (pxMon(mon.id)
@@ -1282,6 +1291,7 @@
         $("game").classList.toggle("hidden", !game);
         $("draft").classList.toggle("hidden", !draft);
         document.body.classList.toggle("in-game", game);
+        window.scrollTo(0, 0); // each screen starts at its top (the lobby may have been scrolled)
         if (game) requestAnimationFrame(() => { sizeArena(); sizeBoard(); });
       }
 
@@ -1547,7 +1557,7 @@
         const evo = mon.evolution || 0;
         sheet.innerHTML =
           `<div class="sheet" style="--el: var(--${mon.element})">` +
-          `<div class="s-art">${rigView(mon.id, evo, 3)}</div>` +
+          `<div class="s-art">${rigView(mon.id, evo, innerHeight < 820 ? 2 : 3, HERO_CROP[evo])}</div>` +
           `<h2>${esc(mon.name)}${evo ? `<span class="stars">${stars(evo, "star", 3)}</span>` : ""}</h2>` +
           `<div class="s-sub">${gemIcon(mon.element, 16)} ${EL_LABEL[mon.element]}${rosterById(mon.id)?.archetype ? ` · ${esc(rosterById(mon.id).archetype.title)}` : ""}</div>` +
           (pxMon(mon.id)
@@ -1862,7 +1872,7 @@
           else if (d.phase === "pick") { if (d.yourMove) action = "pick"; else label = "Your rival is picking"; }
           sheet.innerHTML =
             `<div class="sheet" style="--el: var(--${mon.element})">` +
-            `<div class="s-art">${rigView(mon.id, 0, 3)}</div>` +
+            `<div class="s-art">${rigView(mon.id, 0, 3, HERO_CROP[0])}</div>` +
             `<h2>${esc(mon.name)}</h2>` +
             `<div class="s-sub">${gemIcon(mon.element, 16)} ${EL_LABEL[mon.element]}${mon.archetype?.title ? ` · ${esc(mon.archetype.title)}` : ""}</div>` +
             `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">${ic("charge")}${mon.chargeCost} charge</span></div>` +

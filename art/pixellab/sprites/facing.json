@@ -1,9 +1,11 @@
 {
  "boulder_beetle": {
+  "0": "front",
   "1": "right",
   "2": "front"
  },
  "bubble_jelly": {
+  "0": "front",
   "1": "front",
   "2": "front"
  },
@@ -13,10 +15,12 @@
   "2": "right"
  },
  "crystal_ox": {
+  "0": "front",
   "1": "right",
   "2": "right"
  },
  "dawn_sprite": {
+  "0": "front",
   "1": "front",
   "2": "front"
  },
@@ -26,18 +30,22 @@
   "2": "right"
  },
  "frost_imp": {
+  "0": "front",
   "1": "right",
   "2": "front"
  },
  "halo_moth": {
+  "0": "front",
   "1": "front",
   "2": "front"
  },
  "kraken_pup": {
+  "0": "front",
   "1": "front",
   "2": "front"
  },
  "lumen_stag": {
+  "0": "front",
   "1": "front",
   "2": "front"
  },
@@ -47,6 +55,7 @@
   "2": "right"
  },
  "petal_fawn": {
+  "0": "front",
   "1": "right",
   "2": "right"
  },
@@ -56,30 +65,37 @@
   "2": "right"
  },
  "prism_owl": {
+  "0": "front",
   "1": "front",
   "2": "front"
  },
  "quake_mole": {
+  "0": "front",
   "1": "right",
   "2": "right"
  },
  "shroom_knight": {
+  "0": "front",
   "1": "front",
   "2": "front"
  },
  "stone_golem": {
+  "0": "front",
   "1": "right",
   "2": "right"
  },
  "thorn_sprite": {
+  "0": "front",
   "1": "front",
   "2": "front"
  },
  "tide_serpent": {
+  "0": "front",
   "1": "right",
   "2": "right"
  },
  "vine_lurker": {
+  "0": "front",
   "1": "front",
   "2": "front"
  }

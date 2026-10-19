@@ -3,9 +3,14 @@
   "2": "right"
  },
  "ember_pup": {
+  "1": "right",
   "2": "front"
  },
+ "magma_titan": {
+  "2": "right"
+ },
  "phoenix_chick": {
+  "1": "right",
   "2": "right"
  }
 }

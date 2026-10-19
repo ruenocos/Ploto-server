@@ -53,6 +53,7 @@ def main() -> None:
     ap.add_argument("--colors", help="try another colour scheme than the roster's")
     ap.add_argument("--extra", default="", help="appended to the stage description")
     ap.add_argument("--from-next", action="store_true", help="draw from the picked next (older) stage")
+    ap.add_argument("--palette-only", action="store_true", help="with --from-next: take only its colours, not the reference")
     a = ap.parse_args()
 
     def mon(mid: str) -> dict:
@@ -69,10 +70,11 @@ def main() -> None:
             older = Image.open(HERE / "sprites" / f"{mid}-{a.stage + 1}.png").convert("RGBA")
             buf = io.BytesIO()
             older.crop(older.getchannel("A").getbbox()).save(buf, format="PNG")
-            out["reference_images"] = [{"base64": base64.b64encode(buf.getvalue()).decode(),
-                                        "usage": "this creature's next, older evolution: draw its younger stage as the same "
-                                                 "species with the same colours, face, markings and signature feature, "
-                                                 "smaller and less developed"}]
+            if not a.palette_only:
+                out["reference_images"] = [{"base64": base64.b64encode(buf.getvalue()).decode(),
+                                            "usage": "this creature's next, older evolution: draw its younger stage as the same "
+                                                     "species with the same colours, face, markings and signature feature, "
+                                                     "smaller and less developed"}]
             out["palette"] = ["#%02x%02x%02x" % c[:3] for c in sorted({c for c in older.get_flattened_data() if c[3]})]
         return out
 

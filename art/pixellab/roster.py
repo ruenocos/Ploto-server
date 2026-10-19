@@ -40,8 +40,8 @@ ROSTER: dict[str, dict] = {
         "stages": (
             "a small clay shisa lion-dog pup sitting, round body, a little curl of teal glaze on its head, "
             "one small glowing crack",
-            "a shisa guardian lion-dog standing on four legs, a curly teal glazed mane and curly tail like a temple "
-            "statue, a few glowing orange cracks",
+            "a young shisa lion-dog sitting upright like a temple statue, mouth closed, the teal glaze only half "
+            "covers its curly mane with drips running down onto bare terracotta clay, two small glowing orange cracks",
             "a big shisa temple guardian lion standing proud on a small stone base, a huge curly teal glazed mane "
             "and tail, open fierce mouth, many glowing orange cracks across the clay",
         ),
@@ -51,8 +51,9 @@ ROSTER: dict[str, dict] = {
         "name": "Magmaul",
         "myth": "Zaratan, the turtle mistaken for an island: Eruption, the island on its back is a volcano",
         "signature": "a volcano growing on its shell",
-        "colors": "charcoal grey basalt shell, olive green scaly skin, glowing orange lava",
-        "accents": ["ffa214", "ffc825", "33984b"],
+        "colors": "black obsidian rock skin with glowing orange-yellow magma veins, dark charcoal basalt shell, "
+                  "glowing orange lava",
+        "accents": ["ffa214", "ffc825", "ffeb57"],
         "stages": (
             "a tiny turtle hatchling with a dark pebble shell, a small warm orange glow in one crack of the shell",
             "a sturdy turtle whose dark rock shell has grown into a small smoking cone with a glowing orange tip",

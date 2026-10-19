@@ -75,7 +75,10 @@ def pixellab_monster(mid: str) -> dict | None:
         assert img.size == (48, 48), f"{p.name} is {img.size}, expected 48x48"
         x0, y0, x1, y1 = img.getchannel("A").getbbox()
         stage = {"flat": data_url(img), "face": facing.get(str(st), "front"),
-                 "core": [round((x0 + x1) / 2, 1), round((y0 + y1) / 2 + (y1 - y0) * 0.08, 1)]}
+                 "core": [round((x0 + x1) / 2, 1), round((y0 + y1) / 2 + (y1 - y0) * 0.08, 1)],
+                 # the drawn pixels' bounds: only this takes taps, so the empty canvas around a
+                 # front monster doesn't cover the one behind it
+                 "box": [x0, y0, x1, y1]}
         idle = PIXELLAB / f"{mid}-{st}-idle.png"
         if idle.exists():
             strip = Image.open(idle).convert("RGBA")

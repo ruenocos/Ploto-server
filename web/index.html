@@ -282,8 +282,10 @@
        */
       .fighter { position: absolute; width: calc(var(--u) * 48); margin-left: calc(var(--u) * -24); display: flex; flex-direction: column; align-items: center; cursor: pointer; pointer-events: none; }
       /* only the sprite's parts and the badge take taps, so the empty canvas of the front monster doesn't steal the back one's */
-      /* the fighter box itself lets taps through (it overlaps its neighbour); the sprite and its badge take them */
-      .fighter .part > img, .fighter .hd-art, .fighter .cbadge { pointer-events: auto; }
+      /* the fighter box itself lets taps through (it overlaps its neighbour); the drawn sprite and its badge take them:
+         rig parts, or for a sprite sheet just its drawn pixels' bounds (.hit), never the empty canvas around them */
+      .fighter .part > img, .fighter .hit, .fighter .cbadge { pointer-events: auto; }
+      .rig .hit { position: absolute; }
       .fighter.f0 { --u: var(--ub); bottom: 38%; }
       .fighter.f1 { bottom: 0; }
       .side.me .f0 { left: 32%; } .side.me .f1 { left: 64%; }
@@ -992,7 +994,9 @@
           // 64px art: one image; a still one breathes like a rig's body, an idle sheet plays its own frames.
           const s = px.stages[stage];
           return `<div class="rig"><div class="part r-${s.idle ? "still" : "body"}" style="transform-origin:${U(24)} ${U(47)}">` +
-            `<div class="hd-art${s.idle ? " idle" : ""}" style="background-image:url(${s.idle || s.flat});--n:${s.idle ? s.n : 1}"></div></div></div>`;
+            `<div class="hd-art${s.idle ? " idle" : ""}" style="background-image:url(${s.idle || s.flat});--n:${s.idle ? s.n : 1}"></div>` +
+            (s.box ? `<i class="hit" style="left:${U(s.box[0])};top:${U(s.box[1])};width:${U(s.box[2] - s.box[0])};height:${U(s.box[3] - s.box[1])}"></i>` : "") +
+            `</div></div>`;
         }
         const parts = px.stages[stage].parts;
         const kids = new Map();

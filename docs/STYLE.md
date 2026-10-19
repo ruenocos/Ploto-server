@@ -134,10 +134,10 @@ No rounded corners, no blur, no soft drop shadows. Depth is bevels only.
   room id so both players see the same one, and two cloud layers drifting at
   different speeds, one sprite pixel per step.
 - **Battle intro** (once per match, on its first move): each team runs in
-  from its own side, back monster first (stock backIn presets); the arena
-  dims while two name plates with the teams slide in and a VS slams down
-  between them; then the board rises in and the turn call follows. A bot
-  that moves first waits for it. Reduced motion shows the VS card still.
+  from its own side, back monster first (stock backIn presets); a VS lands in
+  the arena between the two teams; then the gems fall onto the board row by
+  row from the bottom (stock bounceInDown) and the turn call follows. A bot
+  that moves first waits for it. Reduced motion shows the VS still.
 - **The end card** opens with a stepped circular wipe; a winning team
   cheers; your damage, best hit and best combo count up.
 - Small life: now and then a glint runs across one gem; gems squash for one

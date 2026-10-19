@@ -79,7 +79,7 @@
       h1, h2, h3 { font-family: var(--f-label); font-weight: 700; }
 
       /* ---- the frame: pixel-cut corners (one UI pixel), 1-UI-pixel ink outline, bevel ---- */
-      button, input[type="text"], .frame, .pcard, .hud-card, .banner, .board-wrap, .sheet, .end-card, .toast, .invite, .invite-card, .vs-plate,
+      button, input[type="text"], .frame, .pcard, .hud-card, .banner, .board-wrap, .sheet, .end-card, .toast, .invite, .invite-card,
       .chip, .el-arch, .badge-n, .pcost, .pick-no, .slot, .cast-name, .peer-warn, .bubble, .s-next, .evo-st.cur, .cbadge .evo, .cbadge .lock,
       .hp .bar, .cbar, .arena {
         --n: var(--px);
@@ -641,20 +641,15 @@
       .reduce-motion .float { animation: fadeOnly 1s ease forwards; }
       /*
        * Battle intro: while .entering, the monsters wait off stage (each runs in
-       * with a stock backIn preset) and the board is hidden until it rises in.
-       * Then the VS card: two name plates with the teams, a VS slammed between.
+       * with a stock backIn preset) and the board is empty; the VS lands in the
+       * arena between the two teams; then the gems fall in (bounceInDown, row
+       * by row from the bottom) and the match starts.
        */
       .arena.entering .bounce:not(.animate__animated), .arena.entering .cbadge { visibility: hidden; }
-      .board-wrap.intro .board { visibility: hidden; }
-      .vs-call { position: fixed; inset: 0; z-index: 36; pointer-events: none; display: grid; place-items: center; padding: 0 10px; }
-      .vs-row { width: min(100%, 520px); display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 6px; }
-      .vs-plate { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; padding: 10px 8px; border: var(--px) solid var(--c-ink); color: #fff; text-align: center;
-        box-shadow: inset 0 var(--px) 0 var(--hi), inset 0 calc(var(--px) * -2) 0 var(--lo); background: var(--bg); }
-      .vs-plate.me { --bg: var(--c-accent); --hi: var(--c-accent-hi); --lo: var(--c-accent-lo); }
-      .vs-plate.foe { --bg: var(--c-bad); --hi: var(--c-bad-hi); --lo: #7c1626; }
-      .vs-plate .vs-team { display: flex; flex: none; gap: 2px; }
-      .vs-plate .vs-name { max-width: 100%; font: 700 var(--fs-s)/1.1 var(--f-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .vs-mark { font: 700 var(--fl-6)/1 var(--f-label); color: var(--c-cream);
+      .board-wrap.intro .board, .board-wrap.intro::after { visibility: hidden; } /* no "Rival's turn" over an empty board */
+      .board.dropping .gem:not(.animate__animated) { visibility: hidden; }
+      .arena-vs { position: absolute; left: 50%; top: 52%; translate: -50% -50%; z-index: 6; pointer-events: none;
+        font: 700 var(--fl-6)/1 var(--f-label); color: var(--c-cream);
         text-shadow: calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-accent-lo), calc(var(--px) * 3) calc(var(--px) * 3) 0 var(--c-ink); }
 
       /* YOUR TURN: the one big call in the middle of the screen */
@@ -832,7 +827,6 @@
     <div id="end" class="scrim hidden"></div>
     <div id="toast" class="toast"></div>
     <div id="turnCall" class="turn-call hidden" role="status" aria-live="assertive"></div>
-    <div id="vsCall" class="vs-call hidden" role="status" aria-live="polite"></div>
     <div id="inviteCard" class="invite-card hidden"></div>
     <div id="fx" aria-hidden="true"></div>
 
@@ -1437,10 +1431,11 @@
 
       /**
        * Battle intro, once per match when it opens on its first move: each team
-       * runs in from its own side (back monster first; stock backIn presets),
-       * two name plates slide in and a VS slams down between them, then the
-       * board rises in. It joins the animation queue, so a bot that moves first
-       * waits for it. Reduced motion shows the VS card still, briefly.
+       * runs in from its own side (back monster first; stock backIn presets), a
+       * VS lands in the arena between them, then the gems fall onto the board
+       * row by row (stock bounceInDown) and the match starts. It joins the
+       * animation queue, so a bot that moves first waits for it. Reduced
+       * motion shows the VS for a moment and the board as it is.
        */
       let introFor = null; // the room the intro has played (or been skipped) for
       let introDone = Promise.resolve();
@@ -1451,55 +1446,53 @@
         introDone = battleIntro().catch((e) => console.error(e));
         animQueue = animQueue.then(() => introDone);
       }
-      const vsPlate = (seat) => {
-        const p = state.players[seat], mine = seat === room.seat;
-        return `<div class="vs-plate ${mine ? "me" : "foe"}"><div class="vs-team">${p.monsters.map((m) => art(m.id, 32)).join("")}</div>` +
-          `<div class="vs-name">${esc(p.displayName)}</div></div>`;
-      };
       async function battleIntro() {
-        const arena = $("arena"), wrap = $("boardWrap"), vs = $("vsCall");
+        const arena = $("arena"), wrap = $("boardWrap"), board = $("board");
         const me = room.seat, foe = me === 0 ? 1 : 0;
         animating = true;
-        vs.innerHTML = `<div class="vs-row">${vsPlate(me)}<div class="vs-mark">VS</div>${vsPlate(foe)}</div>`;
-        const [left, mark, right] = vs.firstElementChild.children;
+        const vs = document.createElement("div");
+        vs.className = "arena-vs";
+        vs.setAttribute("role", "status");
+        vs.textContent = "VS";
         try {
           if (reduceMotion) {
-            vs.classList.remove("hidden");
-            await sleep(1100);
+            arena.appendChild(vs);
+            await sleep(900);
             return;
           }
           arena.classList.add("entering");
           wrap.classList.add("intro");
           await sleep(150);
           // The teams run in: back monsters first, then the front pair.
-          const entries = [[me, 0], [foe, 0], [me, 1], [foe, 1]].map(([seat, i], k) => sleep(k * 140).then(() => {
-            const b = sideOf(seat).querySelector(`.fighter.f${i} .bounce`);
-            if (k === 0 || k === 2) cue("swap");
-            return playPreset(b, seat === me ? "backInLeft" : "backInRight", { speed: "fast", keep: true });
-          }));
-          await Promise.all(entries);
+          await Promise.all([[me, 0], [foe, 0], [me, 1], [foe, 1]].map(([seat, i], k) => sleep(k * 140).then(() => {
+            if (k % 2 === 0) cue("swap");
+            return playPreset(sideOf(seat).querySelector(`.fighter.f${i} .bounce`), seat === me ? "backInLeft" : "backInRight", { speed: "fast", keep: true });
+          })));
           for (const b of arena.querySelectorAll(".bounce")) b.classList.remove("animate__animated", "animate__backInLeft", "animate__backInRight", "animate__fast");
           arena.classList.remove("entering");
-          // VS: the arena dims, the plates slide in from their sides, the VS slams down between them.
-          arena.classList.add("casting");
-          vs.classList.remove("hidden");
-          playPreset(left, "backInLeft", { speed: "faster" });
-          playPreset(right, "backInRight", { speed: "faster" });
-          mark.style.visibility = "hidden";
-          await sleep(380);
-          mark.style.visibility = "";
+          // VS lands between the two teams.
+          arena.appendChild(vs);
           cue("cast");
-          await playPreset(mark, "zoomInDown", { speed: "faster" });
-          impact(centerOf(mark), "light", { k: fxUnit(2), dur: 420 });
-          await sleep(600);
-          await Promise.all([left, mark, right].map((el) => playPreset(el, "fadeOut", { speed: "faster", keep: true })));
-          arena.classList.remove("casting");
+          await playPreset(vs, "zoomInDown", { speed: "faster" });
+          impact(centerOf(vs), "light", { k: fxUnit(2), dur: 420 });
+          await sleep(450);
+          // The gems fall in, bottom row first, each column a beat after the last.
+          board.classList.add("dropping");
           wrap.classList.remove("intro");
-          await playPreset($("board"), "fadeInUp", { speed: "faster" });
+          playPreset(vs, "fadeOut", { speed: "faster", keep: true });
+          const H = state.board.length;
+          const drops = [...board.querySelectorAll(".tile")].map((t) => {
+            const gem = t.querySelector(".gem");
+            const delay = (H - 1 - +t.dataset.y) * 70 + +t.dataset.x * 18;
+            return gem ? sleep(delay).then(() => playPreset(gem, "bounceInDown", { speed: "faster", keep: true })) : Promise.resolve();
+          });
+          setTimeout(() => cue("match"), (H - 1) * 70 + 300);
+          await Promise.all(drops);
+          for (const g of board.querySelectorAll(".gem.animate__animated")) g.classList.remove("animate__animated", "animate__bounceInDown", "animate__faster");
         } finally {
-          vs.classList.add("hidden");
-          vs.innerHTML = "";
-          arena.classList.remove("entering", "casting");
+          vs.remove();
+          board.classList.remove("dropping");
+          arena.classList.remove("entering");
           wrap.classList.remove("intro");
           animating = false;
           armHint();

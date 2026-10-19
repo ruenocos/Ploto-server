@@ -2,11 +2,13 @@
 // charge its own monsters) and reports match length, first-player edge, and
 // win share per element. Usage: npm run sim  (env: N=600 SEED=777)
 import { MatchMonstersGame } from '../dist/game/matchmonsters/engine.js';
+import { Rng } from '../dist/game/matchmonsters/rng.js';
 import { chooseEvolution, chooseMove } from '../dist/game/matchmonsters/bot.js';
 import { MONSTERS } from '../dist/game/matchmonsters/monsters.js';
 const ids = Object.keys(MONSTERS);
-let seed = Number(process.env.SEED ?? 777);
-const rng = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+// The engine's own PRNG (mulberry32): a plain LCG here made consecutive draws correlated, so
+// some teams came up 3x as often as others and kept meeting the same few rivals.
+const rng = ((r) => () => r.next())(new Rng(Number(process.env.SEED ?? 777)));
 function team() { const a = ids[Math.floor(rng()*ids.length)]; let b; do { b = ids[Math.floor(rng()*ids.length)]; } while (b === a); return [MONSTERS[a], MONSTERS[b]]; }
 const N = Number(process.env.N ?? 600); let fin = 0, moves = 0, turns = 0, lens = [], firstWins = 0; const elWins = {}, elGames = {};
 for (let i = 0; i < N; i++) {

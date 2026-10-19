@@ -10,12 +10,14 @@
 //        Several runs with different SEEDs can be merged: MERGE=a.json,b.json node scripts/duo-sim.mjs
 import { readFileSync, writeFileSync } from 'node:fs';
 import { MatchMonstersGame } from '../dist/game/matchmonsters/engine.js';
+import { Rng } from '../dist/game/matchmonsters/rng.js';
 import { chooseEvolution, chooseMove } from '../dist/game/matchmonsters/bot.js';
 import { MONSTERS } from '../dist/game/matchmonsters/monsters.js';
 
 const ids = Object.keys(MONSTERS);
-let seed = Number(process.env.SEED ?? 777);
-const rng = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+// The engine's own PRNG (mulberry32): a plain LCG here made consecutive draws correlated, so
+// some teams came up 3x as often as others and kept meeting the same few rivals.
+const rng = ((r) => () => r.next())(new Rng(Number(process.env.SEED ?? 777)));
 const pick = (exclude = []) => { let id; do { id = ids[Math.floor(rng() * ids.length)]; } while (exclude.includes(id)); return id; };
 const key = (a, b) => [a, b].sort().join('+');
 

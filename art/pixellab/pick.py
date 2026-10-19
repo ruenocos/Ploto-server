@@ -8,9 +8,9 @@ the stage's colour count, stray pixels dropped), placed bottom-centre on the
 64x64 canvas and written to sprites/<id>-<stage>.png. build.py turns those
 into the game's art; evolve.py draws the next stage from them.
 
-Facing: a three-quarter view is stored facing right (a left-facing pick is
-mirrored) and noted in sprites/facing.json, so the game can turn the rival's
-copy round to face yours. Front views stay as drawn.
+Facing: every sprite is stored facing right, your side (a left-facing pick is
+mirrored); the game mirrors all of the rival's monsters so both teams face each
+other. sprites/facing.json notes which picks are front views.
 """
 from __future__ import annotations
 

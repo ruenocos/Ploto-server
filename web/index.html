@@ -289,7 +289,7 @@
       .fighter.f1 { bottom: 0; }
       .side.me .f0 { left: 32%; } .side.me .f1 { left: 64%; }
       .side.foe .f0 { left: 68%; } .side.foe .f1 { left: 36%; }
-      .side.foe .rig { scale: -1 1; }
+      .side.foe .rig { scale: -1 1; } /* every monster is drawn facing right; the rival's copies turn round to face yours */
       .stage { position: relative; z-index: 1; width: calc(var(--u) * 48); height: calc(var(--u) * 48); }
       .fighter.f1 .stage { z-index: 2; }
       .fighter.spot .stage, .fighter.spot .cbadge { z-index: 5; }
@@ -304,7 +304,6 @@
        */
       .rig .hd-art { position: absolute; left: 0; top: 0; width: calc(var(--u) * 48); height: calc(var(--u) * 48);
         background: 0 0 / calc(var(--u) * 48 * var(--n)) 100% no-repeat; image-rendering: pixelated; }
-      .side.foe .rig .hd-art.turn { transform: scaleX(-1); } /* a three-quarter view faces right: the rival's copy turns round */
       .rig .hd-art.idle { animation: hdIdle calc(var(--n) * 150ms) steps(var(--n)) infinite; }
       @keyframes hdIdle { to { background-position-x: calc(var(--u) * -48 * var(--n)); } }
       .core { position: absolute; width: 0; height: 0; }
@@ -998,7 +997,7 @@
           // 64px art: one image; a still one breathes like a rig's body, an idle sheet plays its own frames.
           const s = px.stages[stage];
           return `<div class="rig"><div class="part r-${s.idle ? "still" : "body"}" style="transform-origin:${U(24)} ${U(47)}">` +
-            `<div class="hd-art${s.idle ? " idle" : ""}${s.face === "right" ? " turn" : ""}" style="background-image:url(${s.idle || s.flat});--n:${s.idle ? s.n : 1}"></div></div></div>`;
+            `<div class="hd-art${s.idle ? " idle" : ""}" style="background-image:url(${s.idle || s.flat});--n:${s.idle ? s.n : 1}"></div></div></div>`;
         }
         const parts = px.stages[stage].parts;
         const kids = new Map();

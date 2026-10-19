@@ -6,7 +6,8 @@ Check lines before approving them: facing on both sides of the arena, and growth
 Prints each stage's visible height and flags a line whose stages don't grow
 enough (baby ~26, teen ~33, adult ~40 px tall: at least GROW px each step).
 The sheet shows every stage as drawn on your side (should face right) and as
-the game shows it on the rival's side (should face left).
+the game shows it on the rival's side: always mirrored (`.side.foe .rig`), so it
+faces left.
 """
 from __future__ import annotations
 
@@ -40,7 +41,7 @@ def main() -> None:
             heights.append(y1 - y0)
             y = 26 + r * C
             sheet.alpha_composite(im.resize((48 * Z, 48 * Z), Image.NEAREST), (10 + st * C, y))
-            rival = im.transpose(Image.Transpose.FLIP_LEFT_RIGHT) if face[mid][str(st)] == "right" else im
+            rival = im.transpose(Image.Transpose.FLIP_LEFT_RIGHT)  # the game mirrors every rival monster
             sheet.alpha_composite(rival.resize((48 * Z, 48 * Z), Image.NEAREST), (3 * C + 40 + st * C, y))
         ok = heights[1] - heights[0] >= GROW and heights[2] - heights[1] >= GROW
         print(f"{mid:16} heights {heights}  {'ok' if ok else 'GROWTH TOO SMALL'}  facing {[face[mid][str(s)] for s in range(3)]}")

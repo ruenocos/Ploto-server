@@ -735,7 +735,7 @@ export function describeEffects(effects: readonly Effect[], element: Element): s
     switch (e.kind) {
       case "damage": return `deal ${e.amount} ${e.pierce ? "piercing damage (ignores shields)" : "damage"}`;
       case "heal": return `heal ${e.amount} HP`;
-      case "shield": return `gain a ${e.amount} shield`;
+      case "shield": return `gain ${e.amount} shield`;
       case "drain": return `steal ${e.amount} HP`;
       case "dot": return `${e.dot} ${e.amount}/turn for ${e.turns} turns` + (e.dot === "poison" ? " (halves their healing)" : "");
       case "ignite": return "detonate the rival's burns for all their remaining damage";

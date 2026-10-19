@@ -47,8 +47,9 @@ describe("DraftRoom", () => {
     room.handleRequest("a", "mm:ban", { monsterId: "ember_pup" });
     vi.advanceTimersByTime(1000); // bot bans
     vi.advanceTimersByTime(1000); // bot picks first (it moves second)
-    room.handleRequest("a", "mm:pick", { monsterId: "frost_imp" });
-    room.handleRequest("a", "mm:pick", { monsterId: "kraken_pup" });
+    // The bot bans and picks at random, so take whatever is still free.
+    room.handleRequest("a", "mm:pick", { monsterId: room.draft.available()[0]! });
+    room.handleRequest("a", "mm:pick", { monsterId: room.draft.available()[0]! });
     vi.advanceTimersByTime(1000); // bot's last pick
     expect(done).not.toBeNull();
     const all = [...done![0], ...done![1]].map((m) => m.id);

@@ -83,7 +83,7 @@
         --b: var(--c-accent); --b-hi: var(--c-accent-hi); --b-lo: var(--c-accent-lo);
         font: 700 var(--fs-s)/1 var(--f-label); text-transform: uppercase; color: #fff;
         border: var(--px) solid var(--c-ink); background: var(--b); cursor: pointer;
-        padding: 12px 12px 14px; position: relative; white-space: nowrap;
+        padding: 13px 12px 14px; position: relative; white-space: nowrap;
         box-shadow: inset 0 var(--px) 0 var(--b-hi), inset 0 calc(var(--px) * -2) 0 var(--b-lo);
         text-shadow: var(--px) var(--px) 0 var(--b-lo);
       }
@@ -661,7 +661,7 @@
         <div class="hud-card foe" id="foeHud"></div>
       </div>
       <div id="peerWarn" class="peer-warn hidden">Your rival disconnected — waiting for them to come back…</div>
-      <!-- The battlefield: rival's monsters at the back, yours in front. -->
+      <!-- The battlefield: your monsters on the left, the rival's on the right. -->
       <div class="arena" id="arena">
         <div class="arena-top">
           <div id="turnBanner" class="banner"></div>
@@ -797,12 +797,6 @@
         return `left:${U(c[0])};top:${U(c[1])}`;
       };
       /**
-       * A rigged monster: every part is a full-canvas layer (so nested parts share
-       * coordinates) pivoting at its joint, with its cropped image placed inside.
-       * Children with z < 0 paint behind their parent, the rest in front, like
-       * rigkit.tree_order. Sizes are in sprite pixels times --u.
-       */
-      /**
        * A live, idling rig outside the arena (lobby cards, sheets, end card): the
        * monster's own parts moving, cropped to a window [x, y, w, h] of its 48px
        * canvas, at `u` CSS px per sprite pixel (whole device pixels at 2 / 3).
@@ -817,6 +811,12 @@
           `<div class="rig-canvas" style="left:${-x * u}px;top:${-y * u}px">${rigHtml(id, stage)}</div></div>`;
       }
 
+      /**
+       * A rigged monster: every part is a full-canvas layer (so nested parts share
+       * coordinates) pivoting at its joint, with its cropped image placed inside.
+       * Children with z < 0 paint behind their parent, the rest in front, like
+       * rigkit.tree_order. Sizes are in sprite pixels times --u.
+       */
       function rigHtml(id, stage) {
         const px = pxMon(id);
         if (!px) return `<div class="rig">${art(id, 64)}</div>`;
@@ -2681,7 +2681,7 @@
       /* ---- invites ---- */
       async function sendInvite(friendId) {
         const f = friendsData.friends.find((x) => x.id === friendId);
-        if (picks.length < 2) { closePanel(); return toast("Pick your two monsters first, then invite", 2600); }
+        if (!draftMode && picks.length < 2) { closePanel(); return toast("Pick your two monsters first, then invite", 2600); }
         try {
           const sock = await ensureLobby();
           const res = await sock.request("mm:invite", payload({ friendId }));
@@ -2865,6 +2865,10 @@
         $("menuForfeit").onclick = () => { sheet.classList.add("hidden"); confirmForfeit(); };
       }
       $("gameMenuBtn").addEventListener("click", openGameMenu);
+      document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape" || $("sheet").classList.contains("hidden")) return;
+        if (panel) closePanel(); else $("sheet").classList.add("hidden");
+      });
       for (const b of document.querySelectorAll("[data-dbg]")) {
         b.addEventListener("click", async () => {
           try {
@@ -2903,7 +2907,7 @@
       if (invited) {
         toggleFriendRow(true);
         $("code").value = invited.toUpperCase();
-        $("lobbyStatus").textContent = `Invited to room ${invited.toUpperCase()} — pick two monsters, then Join.`;
+        $("lobbyStatus").textContent = `Invited to room ${invited.toUpperCase()}. Tap Join (for a blind-pick room, pick two monsters first).`;
       }
 
       (async () => {

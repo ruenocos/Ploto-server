@@ -42,7 +42,7 @@ STAGE_NOTE = (
 EYES = "black oval eyes with one white shine pixel"
 STYLE = (
     "monster for a creature-collecting RPG in the style of Game Boy Advance Pokemon sprites, full body, "
-    "three-quarter view, dark outline, simple cel shading lit from the top left with hue-shifted shadows, "
+    "three-quarter view with the body turned to the side and the head toward the viewer, dark outline, simple cel shading lit from the top left with hue-shifted shadows, "
     "big simple shapes, a bold readable silhouette, at most three features, few colours, "
     "nothing else in the picture"
 )

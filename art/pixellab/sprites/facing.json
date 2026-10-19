@@ -1,5 +1,6 @@
 {
  "cinder_hound": {
+  "0": "right",
   "1": "right",
   "2": "right"
  },
@@ -9,6 +10,7 @@
   "2": "front"
  },
  "magma_titan": {
+  "0": "right",
   "1": "right",
   "2": "right"
  },

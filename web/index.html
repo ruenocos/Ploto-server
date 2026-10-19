@@ -328,10 +328,11 @@
       .st-shell { position: absolute; width: calc(var(--u) * 48); height: calc(var(--u) * 48); display: none; pointer-events: none; z-index: 2;
         background: var(--st-bubble) 0 0 / 100% 100% no-repeat; image-rendering: pixelated; opacity: 0.9; }
       .side.has-bubble .st-shell { display: block; }
-      .st-wall { position: absolute; bottom: calc(var(--u) * 6); width: calc(var(--u) * 12); height: calc(var(--u) * 40); display: none; pointer-events: none; z-index: 3;
-        background: var(--st-shield) 0 0 / 100% 100% no-repeat; image-rendering: pixelated; opacity: 0.85; }
-      .side.me .st-wall { left: calc(64% + var(--u) * 22); } .side.foe .st-wall { left: calc(36% - var(--u) * 34); }
-      .side.has-shield .st-wall { display: block; }
+      /* the team's shield: held up by the front monster, on the side facing the rival */
+      .st-wall { position: absolute; bottom: calc(var(--u) * 4); width: calc(var(--u) * 18); height: calc(var(--u) * 22); display: none; pointer-events: none; z-index: 3;
+        background: var(--st-shield) 0 0 / 100% 100% no-repeat; image-rendering: pixelated; opacity: 0.92; }
+      .side.me .st-wall { left: calc(var(--u) * 29); } .side.foe .st-wall { left: calc(var(--u) * 1); }
+      .side.has-shield .fighter.f1 .st-wall { display: block; }
       .fighter.fainted .stage { opacity: 0.35; filter: grayscale(1); }
       /* evolution: the monster becomes a white silhouette while it changes */
       .bounce.silhouette { filter: brightness(0) invert(1); }
@@ -806,8 +807,8 @@
           <button id="gameMenuBtn" class="ghost icon-btn" aria-label="Menu: settings, forfeit" title="Menu"><svg class="px-icon" viewBox="0 0 8 7" width="16" height="14" aria-hidden="true"><rect x="0" y="0" width="8" height="1"/><rect x="0" y="3" width="8" height="1"/><rect x="0" y="6" width="8" height="1"/></svg></button>
         </div>
         <div class="clouds far" aria-hidden="true"></div><div class="clouds near" aria-hidden="true"></div>
-        <div class="side foe" id="foeSide"><div class="s-fx"></div><i class="st-wall"></i></div>
-        <div class="side me" id="meSide"><div class="s-fx"></div><i class="st-wall"></i></div>
+        <div class="side foe" id="foeSide"><div class="s-fx"></div></div>
+        <div class="side me" id="meSide"><div class="s-fx"></div></div>
         <div id="cast" class="cast"></div>
       </div>
       <div class="board-wrap" id="boardWrap">
@@ -1666,7 +1667,7 @@
             const plat = window.PIXELART ? `<img class="platform px" src="${themeArt()?.platform ?? PIXELART.platform}" alt="" draggable="false">` : "";
             f.innerHTML =
               `<div class="stage">${plat}<div class="bounce">${rigHtml(mon.id, evo)}` +
-              `</div></div><div class="cbadge"></div>`;
+              `</div><i class="st-wall"></i></div><div class="cbadge"></div>`;
             // Inside the rig, so it mirrors with the rival's sprites and moves with poses.
             f.querySelector(".rig").insertAdjacentHTML("beforeend", `<i class="core" style="${coreStyle(mon.id, evo)}"></i>${statusLayer(mon.id, evo)}`);
             side.appendChild(f);

@@ -186,7 +186,7 @@ NAMES = list(RAMPS)
 
 # ---------------------------------------------------------------- statuses
 # Small loops that sit on the monsters while a status lasts (4 frames, 12x12),
-# plus two still overlays: the bubble shell (48x48) and the shield wall (12x40).
+# plus two still overlays: the bubble shell (48x48) and the shield (18x22).
 S = 12
 
 
@@ -249,21 +249,37 @@ def _bubble_shell() -> Image.Image:
 
 
 def _shield_wall() -> Image.Image:
-    """A thin pane of glass: bright edges, a dithered body, diagonal glints."""
-    w, h = 12, 40
+    """A heater shield (18x22): straight top, sides curving in to a point, dark outline,
+    silver-blue rim, the face split light and dark down the middle (lit from the left),
+    a glint top left and a small diamond boss."""
+    w, h = 18, 22
+    ink, rim, dark, face, white = "#12305a", "#bfe9ff", "#2f7cc0", "#5ab8f0", "#ffffff"
+
+    def half(y: int) -> float:  # half-width at row y, outline included
+        if y < 10:
+            return 9 if y else 8  # bevelled top corners
+        t = (y - 9) / (h - 9)
+        return 9 * (1 - t ** 1.7)
+
+    inside = {(x, y) for y in range(h) for x in range(w) if abs(x + 0.5 - w / 2) <= half(y) + 0.01}
+    out = lambda x, y: (x, y) not in inside
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    for y in range(h):
-        for x in range(w):
-            if x in (0, w - 1):
-                if 1 <= y < h - 1:
-                    img.putpixel((x, y), hex_rgb("#bfe9ff") + (255,))
-            elif (x + y) % 2 == 0 and 1 <= y < h - 1:
-                img.putpixel((x, y), hex_rgb("#5ab8f0") + (255,))
-    # two diagonal glints, like light on glass
-    for x0, y0, n in ((3, 9, 5), (3, 15, 3), (4, 28, 4)):
-        for i in range(n):
-            if 1 <= x0 + i < w - 1:
-                img.putpixel((x0 + i, y0 - i), (255, 255, 255, 255))
+    for x, y in inside:
+        if any(out(x + dx, y + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+            c = ink
+        elif any(out(x + dx, y + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1)) or any(out(x + dx, y + dy) for dx, dy in ((2, 0), (-2, 0), (0, 2), (0, -2))):
+            c = rim
+        else:
+            c = face if x < w // 2 else dark
+        img.putpixel((x, y), hex_rgb(c) + (255,))
+    for i in range(3):  # glint
+        img.putpixel((4 + i, 6 - i), hex_rgb(white) + (255,))
+    img.putpixel((4, 7), hex_rgb(white) + (255,))
+    for x, y in ((8, 8), (9, 8), (7, 9), (8, 9), (9, 9), (10, 9), (8, 10), (9, 10)):  # boss
+        img.putpixel((x, y), hex_rgb(rim) + (255,))
+    img.putpixel((8, 8), hex_rgb(white) + (255,))
+    for x, y in ((10, 10), (9, 11), (8, 11)):
+        img.putpixel((x, y), hex_rgb(ink) + (255,))
     return img
 
 

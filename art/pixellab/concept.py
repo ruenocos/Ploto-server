@@ -54,6 +54,7 @@ def main() -> None:
     ap.add_argument("--extra", default="", help="appended to the stage description")
     ap.add_argument("--from-next", action="store_true", help="draw from the picked next (older) stage")
     ap.add_argument("--palette-only", action="store_true", help="with --from-next: take only its colours, not the reference")
+    ap.add_argument("--redraw", action="store_true", help="redraw the picked sprite of this stage (same design and colours), e.g. in another view")
     a = ap.parse_args()
 
     def mon(mid: str) -> dict:
@@ -66,6 +67,14 @@ def main() -> None:
 
     def args(mid: str) -> dict:
         out = pro_concept_args(mon(mid), a.stage, a.seed)
+        if a.redraw:
+            same = Image.open(HERE / "sprites" / f"{mid}-{a.stage}.png").convert("RGBA")
+            buf = io.BytesIO()
+            same.crop(same.getchannel("A").getbbox()).save(buf, format="PNG")
+            out["reference_images"] = [{"base64": base64.b64encode(buf.getvalue()).decode(),
+                                        "usage": "this exact creature: keep its design, colours, markings and features, "
+                                                 "only change the pose and view as described"}]
+            out["palette"] = ["#%02x%02x%02x" % c[:3] for c in sorted({c for c in same.get_flattened_data() if c[3]})]
         if a.from_next:
             older = Image.open(HERE / "sprites" / f"{mid}-{a.stage + 1}.png").convert("RGBA")
             buf = io.BytesIO()

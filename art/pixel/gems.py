@@ -10,10 +10,12 @@ G = 16
 
 
 # ---------------------------------------------------------------- element gems
-# Five cut gems, one construction: a flat-toned facet band around a flat "table"
-# with the element's marking, a 1px outline and one white glint, lit from the top
-# left. Each element differs in corners (water 1, nature 2, fire 3, earth 4,
-# light 6), size and colour, so they read apart by shape alone.
+# Five cut gems in one construction, after Match Monsters' own tiles: every gem
+# fills ~85% of its tile (14 of 16 px) and they differ only subtly in cut, plus
+# colour and an engraved symbol on a big flat table. A narrow bevel lit from the
+# top left (light, mid, dark by which way each edge faces), a 1px outline and
+# one white glint. Cuts: fire octagon, water round cushion, earth clipped square,
+# nature hexagon, light blunt diamond.
 LIGHT_DIR = (-0.62, -0.78)  # towards the light: up and to the left
 
 
@@ -82,36 +84,46 @@ def _circle(cx, cy, r, a0, a1, n):
     return [(cx + r * math.cos(math.radians(a0 + (a1 - a0) * i / n)), cy + r * math.sin(math.radians(a0 + (a1 - a0) * i / n))) for i in range(n + 1)]
 
 
-def fire() -> _Img:  # 3 corners: a wide ruby triangle with a little flame
-    poly = [(8, 0.9), (15.4, 14.8), (0.6, 14.8)]
-    ramp = {"outline": "#3a0c08", "dark": "#8e1a12", "mid": "#d93a22", "light": "#ff8a5c", "table": "#f25a34", "mark": "#ffe9c8"}
-    return _Img("fire", cut_gem("fire", poly, 0.36, ramp, [(8, 9), (7, 10), (8, 10), (8, 11), (9, 11), (7, 11)], [(6, 6), (5, 8)]))
+def _mark(rows: dict[int, list[int]]) -> list[tuple[int, int]]:
+    return [(x, y) for y, xs in rows.items() for x in xs]
 
 
-def water() -> _Img:  # 1 corner: a sapphire droplet with a wave
-    poly = [(8, 0.4)] + _circle(8, 9.8, 5.9, -38, 218, 24)
-    ramp = {"outline": "#0a1f45", "dark": "#124c9e", "mid": "#2a84e8", "light": "#7cc8ff", "table": "#4aa6f8", "mark": "#e6f6ff"}
-    return _Img("water", cut_gem("water", poly, 0.42, ramp, [(6, 10), (7, 11), (8, 10), (9, 11), (10, 10)], [(5, 7), (4, 9), (6, 6)]))
+FLAME = _mark({4: [8], 5: [7, 8], 6: [7, 8, 9], 7: [6, 7, 8, 9], 8: [6, 7, 8, 9, 10], 9: [6, 7, 8, 9, 10], 10: [7, 8, 9]})
+DROP = _mark({4: [7, 8], 5: [7, 8], 6: [6, 7, 8, 9], 7: [6, 7, 8, 9], 8: [5, 6, 7, 8, 9, 10], 9: [5, 6, 7, 8, 9, 10], 10: [6, 7, 8, 9]})
+MOUNTAIN = _mark({5: [7, 8], 6: [6, 7, 8, 9], 7: [5, 6, 7, 8, 9, 10], 8: [4, 5, 6, 7, 8, 9, 10, 11], 9: [4, 5, 6, 7, 8, 9, 10, 11]})
+LEAF = _mark({4: [10, 11], 5: [8, 9, 10, 11], 6: [7, 8, 9, 10], 7: [6, 7, 8, 9, 10], 8: [6, 7, 8, 9], 9: [5, 6, 7], 10: [4, 5]})
+SPARKLE = _mark({4: [7, 8], 5: [7, 8], 6: [6, 7, 8, 9], 7: [4, 5, 6, 7, 8, 9, 10, 11], 8: [4, 5, 6, 7, 8, 9, 10, 11], 9: [6, 7, 8, 9], 10: [7, 8], 11: [7, 8]})
+TABLE = 0.66  # the flat face: most of the gem, a narrow bevel around it
 
 
-def earth() -> _Img:  # 4 corners: a small, squat amber square with a mountain
-    poly = [(2.2, 2.2), (13.8, 2.2), (13.8, 13.8), (2.2, 13.8)]
-    ramp = {"outline": "#2e1a0a", "dark": "#6e3e14", "mid": "#a86a26", "light": "#e0aa5e", "table": "#c88a40", "mark": "#fbe0b0"}
-    return _Img("earth", cut_gem("earth", poly, 0.42, ramp, [(8, 6), (7, 7), (8, 7), (9, 7), (6, 8), (7, 8), (8, 8), (9, 8), (10, 8)], [(4, 4), (5, 4), (4, 5)]))
+def fire() -> _Img:  # octagon, ruby, flame
+    poly = [(5, 1), (11, 1), (15, 5), (15, 11), (11, 15), (5, 15), (1, 11), (1, 5)]
+    ramp = {"outline": "#3a0c08", "dark": "#8e1a12", "mid": "#c8301c", "light": "#ff7a54", "table": "#e2432a", "mark": "#ff8e6a"}
+    return _Img("fire", cut_gem("fire", poly, TABLE, ramp, FLAME, [(4, 3), (3, 4)]))
 
 
-def nature() -> _Img:  # 2 corners: a long emerald leaf with its vein
-    a, b, w = (1.0, 15.0), (15.0, 1.0), 5.6
-    side1 = [(a[0] + (b[0] - a[0]) * t - 0.707 * w * math.sin(math.pi * t), a[1] + (b[1] - a[1]) * t - 0.707 * w * math.sin(math.pi * t)) for t in [i / 12 for i in range(13)]]
-    side2 = [(a[0] + (b[0] - a[0]) * t + 0.707 * w * math.sin(math.pi * t), a[1] + (b[1] - a[1]) * t + 0.707 * w * math.sin(math.pi * t)) for t in [i / 12 for i in range(12, 0, -1)]]
-    ramp = {"outline": "#0b2e14", "dark": "#1a6a2c", "mid": "#33a84e", "light": "#86e68e", "table": "#4cc464", "mark": "#d8ffd0"}
-    return _Img("nature", cut_gem("nature", side1 + side2, 0.5, ramp, [(5, 10), (6, 9), (7, 8), (8, 7), (9, 6), (10, 5)], [(3, 9), (4, 7)]))
+def water() -> _Img:  # round cushion, aquamarine, droplet
+    poly = _circle(8, 8, 7.1, 0, 360, 28)[:-1]
+    ramp = {"outline": "#08223e", "dark": "#14609c", "mid": "#2a8ed8", "light": "#7ad0ff", "table": "#38a6ec", "mark": "#86d4ff"}
+    return _Img("water", cut_gem("water", poly, TABLE, ramp, DROP, [(4, 4), (3, 5)]))
 
 
-def light() -> _Img:  # 6 corners: a topaz hexagon with a sparkle
-    poly = [(4.2, 1.6), (11.8, 1.6), (15.4, 8), (11.8, 14.4), (4.2, 14.4), (0.6, 8)]
-    ramp = {"outline": "#3d2c02", "dark": "#b07a08", "mid": "#eeb01a", "light": "#ffe680", "table": "#ffcc2e", "mark": "#ffffff"}
-    return _Img("light", cut_gem("light", poly, 0.45, ramp, [(8, 6), (8, 7), (6, 8), (7, 8), (8, 8), (9, 8), (10, 8), (8, 9), (8, 10)], [(4, 4), (3, 5)]))
+def earth() -> _Img:  # square with clipped corners, amber, mountain
+    poly = [(3, 1.4), (13, 1.4), (14.6, 3), (14.6, 13), (13, 14.6), (3, 14.6), (1.4, 13), (1.4, 3)]
+    ramp = {"outline": "#2e1a0a", "dark": "#7a4614", "mid": "#b07026", "light": "#eab268", "table": "#c88438", "mark": "#ecbc78"}
+    return _Img("earth", cut_gem("earth", poly, TABLE, ramp, MOUNTAIN, [(3, 3), (4, 3)]))
+
+
+def nature() -> _Img:  # pointy-top hexagon, emerald, leaf
+    poly = [(8, 0.6), (14.8, 4.4), (14.8, 11.6), (8, 15.4), (1.2, 11.6), (1.2, 4.4)]
+    ramp = {"outline": "#0b2e14", "dark": "#1a6a2c", "mid": "#2f9a46", "light": "#86e68e", "table": "#40b85a", "mark": "#8ee49a"}
+    return _Img("nature", cut_gem("nature", poly, TABLE, ramp, LEAF, [(4, 5), (5, 4)]))
+
+
+def light() -> _Img:  # diamond with blunt tips, topaz, sparkle
+    poly = [(6.6, 1), (9.4, 1), (15, 6.6), (15, 9.4), (9.4, 15), (6.6, 15), (1, 9.4), (1, 6.6)]
+    ramp = {"outline": "#3d2c02", "dark": "#a87406", "mid": "#e2a414", "light": "#ffe680", "table": "#f6c22a", "mark": "#fff0a8"}
+    return _Img("light", cut_gem("light", poly, TABLE, ramp, SPARKLE, [(5, 3), (4, 4)]))
 
 
 def berry() -> _Img:  # two cherries on one stem: same flat facets as the gems

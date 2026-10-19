@@ -23,17 +23,17 @@ HERE = Path(__file__).resolve().parent
 CAND = HERE / "candidates"
 SIZE = 32
 
-GEM = ("a single cut gemstone for a match-3 puzzle game board, seen straight from the front, filling most of the "
-       "canvas, a big flat polished top face with a soft engraved symbol in a lighter tint of the gem's colour, a "
-       "narrow bevelled rim, glossy, lit from the top left with one small white shine, clean dark outline, simple "
-       "pixel art, nothing else in the picture")
+GEM = ("a single cut gemstone for a match-3 puzzle game board, seen straight from the front, square proportions "
+       "(as wide as it is tall), filling most of the canvas, a big flat polished top face with a simple bold engraved "
+       "symbol in a lighter tint of the gem's colour, a narrow bevelled rim, glossy, lit from the top left with one "
+       "small white shine, clean dark outline, simple pixel art, nothing else in the picture")
 
 TILES = {
-    "fire": f"an octagon-cut ruby red gem with an engraved flame symbol. {GEM}",
+    "fire": f"an octagon-cut ruby red gem, a square with its four corners cut off, with a simple engraved flame symbol. {GEM}",
     "water": f"a round cushion-cut aquamarine blue gem with an engraved water droplet symbol. {GEM}",
     "earth": f"a square-cut earthy brown and tan topaz gem, as wide as it is tall, with small clipped corners and an engraved mountain symbol, brown not orange. {GEM}",
-    "nature": f"a wide hexagon-cut emerald green gem, as wide as it is tall, with an engraved leaf symbol. {GEM}",
-    "light": f"a diamond-shaped topaz yellow gem with blunt tips and an engraved star sparkle symbol. {GEM}",
+    "nature": f"a flat-topped hexagon-cut emerald green gem, as wide as it is tall, with a simple engraved leaf symbol. {GEM}",
+    "light": f"a round brilliant-cut topaz yellow gem, a circle, with a simple engraved four-point star symbol. {GEM}",
     "berry": ("a pair of shiny red cherries on one stem with a small green leaf, filling most of the canvas, "
               "match-3 puzzle game tile, glossy, lit from the top left, clean dark outline, simple pixel art"),
     "stone": ("a dull grey rough rock with a crack, filling most of the canvas, a blocker tile in a match-3 puzzle "
@@ -45,14 +45,21 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("names", nargs="*", default=list(TILES))
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--style", help="a picked tile whose shape language, bevel and glyph style the others should match")
     a = ap.parse_args()
+    style = None
+    if a.style:
+        import base64
+        style = base64.b64encode((HERE / a.style).read_bytes()).decode()
     jobs = []
     for name in a.names:
         out = CAND / "tiles" / f"{name}-{a.seed}.png"
         if not out.exists():
-            jobs.append((out, "create_image_pro", {"description": TILES[name], "width": SIZE, "height": SIZE,
-                                                   "no_background": True, "palette": ["#" + h for h in POOL],
-                                                   "palette_name": "Endesga 64", "max_colors": 10, "seed": a.seed}))
+            args = {"description": TILES[name], "width": SIZE, "height": SIZE, "no_background": True,
+                    "palette": ["#" + h for h in POOL], "palette_name": "Endesga 64", "max_colors": 10, "seed": a.seed}
+            if style:  # match the picked tile's outline, detail and shading, not its colours
+                args.update(style_image_base64=style, style_copy=["outline", "detail", "shading"])
+            jobs.append((out, "create_image_pro", args))
     client = Client()
     print(f"{len(jobs)} calls", flush=True)
     run_jobs(client, jobs)

@@ -1,25 +1,32 @@
-"""16x16 board tiles: five element gems (own shape, size and marking each), berries and stone."""
+"""
+Board tiles: five element gems, berries and stone, all built one way.
+
+Every gem is the same size and square (about 88% of its tile), after Match
+Monsters' own board: a 1px outline, a bevel band lit from the top left (light,
+mid or dark by which way each edge faces), a big flat table, an engraved glyph
+(a lighter fill with a thin darker line) and one white glint. They differ only
+in cut, colour and glyph:
+
+  water   rounded-square cushion   droplet
+  earth   square, small clipped corners   mountain
+  fire    octagon (big clipped corners)   flame
+  nature  hexagon with flat top and bottom   leaf
+  light   round brilliant   four-point star
+
+Shapes are drawn in a 32-unit space, so the same gems render as 32x32 board
+tiles (`TILES`) and 16x16 icons for chips and badges (`SPRITES`).
+"""
 from __future__ import annotations
 
 import math
 
 from PIL import Image
 
-
-G = 16
-
-
-# ---------------------------------------------------------------- element gems
-# Five cut gems in one construction, after Match Monsters' own tiles: every gem
-# fills ~85% of its tile (14 of 16 px) and they differ only subtly in cut, plus
-# colour and an engraved symbol on a big flat table. A narrow bevel lit from the
-# top left (light, mid, dark by which way each edge faces), a 1px outline and
-# one white glint. Cuts: fire octagon, water round cushion, earth clipped square,
-# nature hexagon, light blunt diamond.
 LIGHT_DIR = (-0.62, -0.78)  # towards the light: up and to the left
+U = 32  # design space
 
 
-def _inside(poly: list[tuple[float, float]], x: float, y: float) -> bool:
+def _inside(poly, x: float, y: float) -> bool:
     hit = False
     for (x1, y1), (x2, y2) in zip(poly, poly[1:] + poly[:1]):
         if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
@@ -36,39 +43,95 @@ def _edge_shade(poly, x: float, y: float) -> float:
         t = max(0.0, min(1.0, ((x - x1) * dx + (y - y1) * dy) / (L * L)))
         d = math.hypot(x - (x1 + t * dx), y - (y1 + t * dy))
         if d < best:
-            # outward normal of a clockwise (screen) polygon edge
-            nx, ny = dy / L, -dx / L
-            best, shade = d, nx * LIGHT_DIR[0] + ny * LIGHT_DIR[1]
+            best, shade = d, (dy / L) * LIGHT_DIR[0] + (-dx / L) * LIGHT_DIR[1]
     return shade
 
 
-def cut_gem(name: str, poly, table_scale: float, ramp: dict[str, str], mark: list[tuple[int, int]],
-            glint: list[tuple[int, int]], mark_tone: str = "mark") -> Image.Image:
-    """ramp: outline, dark, mid, light, table, mark."""
-    # make the polygon clockwise on screen so the normals point outwards
+def _clockwise(poly):
     area = sum(x1 * y2 - x2 * y1 for (x1, y1), (x2, y2) in zip(poly, poly[1:] + poly[:1]))
-    if area < 0:
-        poly = poly[::-1]
+    return poly if area > 0 else poly[::-1]
+
+
+def _arc(cx, cy, r, a0, a1, n):
+    return [(cx + r * math.cos(math.radians(a0 + (a1 - a0) * i / n)), cy + r * math.sin(math.radians(a0 + (a1 - a0) * i / n)))
+            for i in range(n + 1)]
+
+
+def _rounded_square(x0, y0, x1, y1, r, n=5):
+    pts = []
+    for cx, cy, a in ((x1 - r, y0 + r, -90), (x1 - r, y1 - r, 0), (x0 + r, y1 - r, 90), (x0 + r, y0 + r, 180)):
+        pts += _arc(cx, cy, r, a, a + 90, n)
+    return pts
+
+
+def _rgba(h: str) -> tuple[int, int, int, int]:
+    return int(h[1:3], 16), int(h[3:5], 16), int(h[5:7], 16), 255
+
+
+def cut_gem(poly, glyph, ramp: dict[str, str], size: int, table: float = 0.7, glint: bool = True) -> Image.Image:
+    """poly and glyph in the 32-unit space; ramp: outline, dark, mid, light, table, line, fill."""
+    k = U / size
+    poly = _clockwise(poly)
     cx = sum(p[0] for p in poly) / len(poly)
     cy = sum(p[1] for p in poly) / len(poly)
-    table = [(cx + (x - cx) * table_scale, cy + (y - cy) * table_scale) for x, y in poly]
-    inside = {(x, y) for y in range(G) for x in range(G) if _inside(poly, x + 0.5, y + 0.5)}
-    img = Image.new("RGBA", (G, G), (0, 0, 0, 0))
-    rgb = lambda k: tuple(int(ramp[k][i:i + 2], 16) for i in (1, 3, 5)) + (255,)
+    tab = [(cx + (x - cx) * table, cy + (y - cy) * table) for x, y in poly]
+    sample = lambda x, y: ((x + 0.5) * k, (y + 0.5) * k)
+    inside = {(x, y) for y in range(size) for x in range(size) if _inside(poly, *sample(x, y))}
+    in_glyph = {(x, y) for x, y in inside if glyph and _inside(glyph, *sample(x, y))}
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    n4 = ((1, 0), (-1, 0), (0, 1), (0, -1))
+    lit = []
     for x, y in inside:
-        if any((x + dx, y + dy) not in inside for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
-            k = "outline"
-        elif _inside(table, x + 0.5, y + 0.5):
-            k = "table"
+        if any((x + dx, y + dy) not in inside for dx, dy in n4):
+            c = "outline"
+        elif (x, y) in in_glyph:
+            c = "line" if any((x + dx, y + dy) not in in_glyph for dx, dy in n4) else "fill"
+        elif _inside(tab, *sample(x, y)):
+            c = "table"
         else:
-            s = _edge_shade(poly, x + 0.5, y + 0.5)
-            k = "light" if s > 0.3 else "dark" if s < -0.3 else "mid"
-        img.putpixel((x, y), rgb(k))
-    for p in mark:
-        img.putpixel(p, rgb(mark_tone))
-    for p in glint:
-        img.putpixel(p, (255, 255, 255, 255))
+            s = _edge_shade(poly, *sample(x, y))
+            c = "light" if s > 0.3 else "dark" if s < -0.3 else "mid"
+            if c == "light":
+                lit.append((x, y))
+        img.putpixel((x, y), _rgba(ramp[c]))
+    if glint and lit:  # a short white glint on the lit bevel, nearest the top-left corner
+        x0, y0, x1, y1 = (min(p[0] for p in inside), min(p[1] for p in inside), max(p[0] for p in inside), max(p[1] for p in inside))
+        tx, ty = x0 + (x1 - x0) * 0.22, y0 + (y1 - y0) * 0.22
+        gx, gy = min(lit, key=lambda p: (p[0] - tx) ** 2 + (p[1] - ty) ** 2)
+        for p in ((gx, gy), (gx + 1, gy - 1), (gx - 1, gy + 1))[: 3 if size >= 24 else 1]:
+            if p in lit:
+                img.putpixel(p, (255, 255, 255, 255))
     return img
+
+
+# ---------------------------------------------------------------- cuts and glyphs (32-unit space)
+BOX = (2, 2, 30, 30)  # every gem spans the same square
+
+CUTS = {
+    "water": _rounded_square(*BOX, 7),
+    "earth": [(5, 2), (27, 2), (30, 5), (30, 27), (27, 30), (5, 30), (2, 27), (2, 5)],
+    "fire": [(10.5, 2), (21.5, 2), (30, 10.5), (30, 21.5), (21.5, 30), (10.5, 30), (2, 21.5), (2, 10.5)],
+    "nature": [(9, 2.5), (23, 2.5), (30, 16), (23, 29.5), (9, 29.5), (2, 16)],
+    "light": _arc(16, 16, 14.2, 0, 360, 40)[:-1],
+}
+
+GLYPHS = {
+    "water": [(16, 8.5)] + _arc(16, 18.5, 5.6, -35, 215, 18),
+    "earth": [(8.5, 22.5), (13.5, 13.5), (15.5, 16), (18.5, 10), (23.5, 22.5)],
+    "fire": [(16.5, 8), (20.5, 13), (22, 17.5), (21, 21.5), (16, 24), (11, 21.5), (10, 17.5), (11.8, 13.6), (13.6, 16.2), (14.4, 12)],
+    "nature": ([(9.5 + 13 * t - 4.6 * math.sin(math.pi * t) * 0.7071, 22.5 - 13 * t - 4.6 * math.sin(math.pi * t) * 0.7071) for t in [i / 10 for i in range(11)]] +
+               [(9.5 + 13 * t + 4.6 * math.sin(math.pi * t) * 0.7071, 22.5 - 13 * t + 4.6 * math.sin(math.pi * t) * 0.7071) for t in [i / 10 for i in range(9, 0, -1)]]),
+    "light": [(16 + (7.5 if i % 2 == 0 else 2.6) * math.cos(math.radians(-90 + 45 * i)),
+               16 + (7.5 if i % 2 == 0 else 2.6) * math.sin(math.radians(-90 + 45 * i))) for i in range(8)],
+}
+
+RAMPS = {  # outline, bevel dark / mid / light, table, glyph line and fill
+    "water": {"outline": "#08223e", "dark": "#14609c", "mid": "#2a8ed8", "light": "#86d8ff", "table": "#3aa6ee", "line": "#14609c", "fill": "#8ad6ff"},
+    "earth": {"outline": "#2a160a", "dark": "#5e3416", "mid": "#8a5428", "light": "#c8945a", "table": "#9c6232", "line": "#5e3416", "fill": "#d8a46a"},
+    "fire": {"outline": "#3a0a0a", "dark": "#8a1616", "mid": "#c82a24", "light": "#ff7a5a", "table": "#dc3a2c", "line": "#8a1616", "fill": "#ff9a72"},
+    "nature": {"outline": "#0a2a12", "dark": "#196428", "mid": "#2c9a42", "light": "#86e68e", "table": "#38b052", "line": "#196428", "fill": "#9cec98"},
+    "light": {"outline": "#3a2802", "dark": "#a87006", "mid": "#e09e12", "light": "#ffe680", "table": "#f4bc24", "line": "#a87006", "fill": "#fff0a0"},
+}
 
 
 class _Img:
@@ -80,73 +143,40 @@ class _Img:
         return self.img
 
 
-def _circle(cx, cy, r, a0, a1, n):
-    return [(cx + r * math.cos(math.radians(a0 + (a1 - a0) * i / n)), cy + r * math.sin(math.radians(a0 + (a1 - a0) * i / n))) for i in range(n + 1)]
+def _gem(name: str, size: int) -> _Img:
+    return _Img(name, cut_gem(CUTS[name], GLYPHS[name], RAMPS[name], size))
 
 
-def _mark(rows: dict[int, list[int]]) -> list[tuple[int, int]]:
-    return [(x, y) for y, xs in rows.items() for x in xs]
-
-
-FLAME = _mark({4: [8], 5: [7, 8], 6: [7, 8, 9], 7: [6, 7, 8, 9], 8: [6, 7, 8, 9, 10], 9: [6, 7, 8, 9, 10], 10: [7, 8, 9]})
-DROP = _mark({4: [7, 8], 5: [7, 8], 6: [6, 7, 8, 9], 7: [6, 7, 8, 9], 8: [5, 6, 7, 8, 9, 10], 9: [5, 6, 7, 8, 9, 10], 10: [6, 7, 8, 9]})
-MOUNTAIN = _mark({5: [7, 8], 6: [6, 7, 8, 9], 7: [5, 6, 7, 8, 9, 10], 8: [4, 5, 6, 7, 8, 9, 10, 11], 9: [4, 5, 6, 7, 8, 9, 10, 11]})
-LEAF = _mark({4: [10, 11], 5: [8, 9, 10, 11], 6: [7, 8, 9, 10], 7: [6, 7, 8, 9, 10], 8: [6, 7, 8, 9], 9: [5, 6, 7], 10: [4, 5]})
-SPARKLE = _mark({4: [7, 8], 5: [7, 8], 6: [6, 7, 8, 9], 7: [4, 5, 6, 7, 8, 9, 10, 11], 8: [4, 5, 6, 7, 8, 9, 10, 11], 9: [6, 7, 8, 9], 10: [7, 8], 11: [7, 8]})
-TABLE = 0.66  # the flat face: most of the gem, a narrow bevel around it
-
-
-def fire() -> _Img:  # octagon, ruby, flame
-    poly = [(5, 1), (11, 1), (15, 5), (15, 11), (11, 15), (5, 15), (1, 11), (1, 5)]
-    ramp = {"outline": "#3a0c08", "dark": "#8e1a12", "mid": "#c8301c", "light": "#ff7a54", "table": "#e2432a", "mark": "#ff8e6a"}
-    return _Img("fire", cut_gem("fire", poly, TABLE, ramp, FLAME, [(4, 3), (3, 4)]))
-
-
-def water() -> _Img:  # round cushion, aquamarine, droplet
-    poly = _circle(8, 8, 7.1, 0, 360, 28)[:-1]
-    ramp = {"outline": "#08223e", "dark": "#14609c", "mid": "#2a8ed8", "light": "#7ad0ff", "table": "#38a6ec", "mark": "#86d4ff"}
-    return _Img("water", cut_gem("water", poly, TABLE, ramp, DROP, [(4, 4), (3, 5)]))
-
-
-def earth() -> _Img:  # square with clipped corners, amber, mountain
-    poly = [(3, 1.4), (13, 1.4), (14.6, 3), (14.6, 13), (13, 14.6), (3, 14.6), (1.4, 13), (1.4, 3)]
-    ramp = {"outline": "#2e1a0a", "dark": "#7a4614", "mid": "#b07026", "light": "#eab268", "table": "#c88438", "mark": "#ecbc78"}
-    return _Img("earth", cut_gem("earth", poly, TABLE, ramp, MOUNTAIN, [(3, 3), (4, 3)]))
-
-
-def nature() -> _Img:  # pointy-top hexagon, emerald, leaf
-    poly = [(8, 0.6), (14.8, 4.4), (14.8, 11.6), (8, 15.4), (1.2, 11.6), (1.2, 4.4)]
-    ramp = {"outline": "#0b2e14", "dark": "#1a6a2c", "mid": "#2f9a46", "light": "#86e68e", "table": "#40b85a", "mark": "#8ee49a"}
-    return _Img("nature", cut_gem("nature", poly, TABLE, ramp, LEAF, [(4, 5), (5, 4)]))
-
-
-def light() -> _Img:  # diamond with blunt tips, topaz, sparkle
-    poly = [(6.6, 1), (9.4, 1), (15, 6.6), (15, 9.4), (9.4, 15), (6.6, 15), (1, 9.4), (1, 6.6)]
-    ramp = {"outline": "#3d2c02", "dark": "#a87406", "mid": "#e2a414", "light": "#ffe680", "table": "#f6c22a", "mark": "#fff0a8"}
-    return _Img("light", cut_gem("light", poly, TABLE, ramp, SPARKLE, [(5, 3), (4, 4)]))
-
-
-def berry() -> _Img:  # two cherries on one stem: same flat facets as the gems
-    ramp = {"outline": "#3a0612", "dark": "#a0142a", "mid": "#e02a44", "light": "#ff7a8a", "table": "#e02a44", "mark": "#ffffff"}
-    img = Image.new("RGBA", (G, G), (0, 0, 0, 0))
-    left = cut_gem("c1", _circle(4.9, 11.2, 3.9, 0, 360, 16)[:-1], 0.01, ramp, [], [(3, 9), (3, 10)])
-    right = cut_gem("c2", _circle(11.2, 10.8, 3.9, 0, 360, 16)[:-1], 0.01, ramp, [], [(9, 9), (9, 10)])
+def _berry(size: int) -> _Img:
+    """Two cherries on one stem, with the same bevel lighting as the gems."""
+    ramp = {"outline": "#3a0612", "dark": "#a0142a", "mid": "#e02a44", "light": "#ff7a8a", "table": "#e02a44", "line": "#e02a44", "fill": "#e02a44"}
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    k = U / size
+    right = cut_gem(_arc(21.5, 21, 7.4, 0, 360, 24)[:-1], None, ramp, size, table=0.01)
+    left = cut_gem(_arc(10.5, 22.5, 7.4, 0, 360, 24)[:-1], None, ramp, size, table=0.01)
     stem, leaf, ink = (90, 58, 28, 255), (76, 196, 100, 255), (11, 46, 20, 255)
-    for x, y in ((5, 6), (6, 5), (7, 4), (8, 3), (9, 2), (11, 6), (11, 5), (10, 4), (10, 3), (9, 2)):
-        img.putpixel((x, y), stem)
-    for x, y in ((10, 1), (11, 1), (12, 1), (11, 0), (12, 0), (13, 1), (12, 2)):
-        img.putpixel((x, y), leaf)
-    for x, y in ((10, 0), (13, 0), (14, 1), (13, 2), (11, 2)):
-        img.putpixel((x, y), ink)
+    for t in range(13):
+        for (x0, y0), (x1, y1) in (((11, 15), (18, 3.5)), ((21, 14), (18, 3.5))):
+            x, y = x0 + (x1 - x0) * t / 12, y0 + (y1 - y0) * t / 12
+            img.putpixel((int(x / k), int(y / k)), stem)
+    leafpoly = [(18, 4), (22, 1.5), (27.5, 2), (24, 5.5)]
+    for y in range(size):
+        for x in range(size):
+            if _inside(leafpoly, (x + 0.5) * k, (y + 0.5) * k):
+                img.putpixel((x, y), leaf)
     img.alpha_composite(right)
     img.alpha_composite(left)
     return _Img("berry", img)
 
 
-def stone() -> _Img:  # a dull rock: no table, no shine, just facets and a crack
-    poly = [(3, 4), (8, 1), (13, 2.4), (15.2, 7.4), (14, 13.6), (8.6, 15.2), (2.6, 13.8), (0.8, 8.6)]
-    ramp = {"outline": "#16171c", "dark": "#4a4c56", "mid": "#70737e", "light": "#a2a6b2", "table": "#70737e", "mark": "#2a2b32"}
-    return _Img("stone", cut_gem("stone", poly, 0.01, ramp, [(8, 4), (8, 5), (9, 6), (8, 7), (7, 8), (7, 9), (10, 7), (11, 8), (6, 10)], []))
+def _stone(size: int) -> _Img:
+    """A dull blocker: the same square box, matte facets, no table or shine, a crack."""
+    poly = [(6, 3), (25, 2.5), (30, 9), (29, 26), (23, 30), (7, 29.5), (2, 23), (2.5, 8)]
+    ramp = {"outline": "#16171c", "dark": "#4a4c56", "mid": "#70737e", "light": "#a2a6b2", "table": "#70737e", "line": "#2a2b32", "fill": "#2a2b32"}
+    crack = [(16, 6), (17.5, 11), (15, 15), (19, 19), (17, 24), (16, 24), (18, 19), (14, 15), (16.5, 11), (15, 6)]
+    return _Img("stone", cut_gem(poly, crack, ramp, size, table=0.01, glint=False))
 
 
-SPRITES = [fire, water, earth, nature, light, berry, stone]
+ORDER = ["fire", "water", "earth", "nature", "light"]
+SPRITES = [lambda n=n: _gem(n, 16) for n in ORDER] + [lambda: _berry(16), lambda: _stone(16)]  # icons, chips, badges
+TILES = [lambda n=n: _gem(n, 32) for n in ORDER] + [lambda: _berry(32), lambda: _stone(32)]  # the board

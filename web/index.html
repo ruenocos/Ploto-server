@@ -1026,7 +1026,7 @@
         return px ? `<img class="px gem-icon" src="${px}" width="${size}" height="${size}" alt="" draggable="false">` : EMOJI[gem] || "";
       };
       const gemHtml = (gem) => {
-        const px = window.PIXELART && PIXELART.gems[gem];
+        const px = window.PIXELART && ((PIXELART.tiles && PIXELART.tiles[gem]) || PIXELART.gems[gem]);
         return px
           ? `<img class="gem px" src="${px}" alt="" draggable="false">`
           : `<svg class="gem" viewBox="0 0 100 100"><use href="#gem-${gem}"/></svg>`;

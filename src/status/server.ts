@@ -76,8 +76,9 @@ export function buildStatusServer(config: ServerConfig): FastifyInstance {
   });
 
   // Sound and haptics (web/feedback.js), the generated sound set (web/sounds.js),
-  // and jsfxr, the synth that plays it (pinned npm dependency).
-  for (const name of ["feedback.js", "sounds.js"]) {
+  // the pixel icons (web/icons.js), and jsfxr, the synth that plays the sounds
+  // (pinned npm dependency).
+  for (const name of ["feedback.js", "sounds.js", "icons.js"]) {
     app.get(`/play/${name}`, async (_req, reply) => {
       reply.header("content-type", "application/javascript; charset=utf-8");
       return loadWebFile(name);

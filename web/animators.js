@@ -46,7 +46,8 @@
  * @property {(at: Pt, color: string, count?: number, spread?: number) => void} burst
  * @property {(el: Element | null) => void} bump   a quick stock pulse ("this changed")
  * @property {(el: Element | null, preset: string, opts?: { speed?: "" | "fast" | "faster" | "slow" | "slower", keep?: boolean }) => Promise<void>} play   play an Animate.css preset (name without the animate__ prefix)
- * @property {(host: HTMLElement, text: string, color: string) => void} floatText
+ * @property {(host: HTMLElement, text: string, color: string, icons?: string[]) => void} floatText   a floating label, led by pixel icons (web/icons.js names)
+ * @property {(name: string, scale?: number) => string} icon   a pixel icon (web/icons.js) as inline SVG markup
  * @property {(seat: 0 | 1, kind: LandKind, amount: number, color?: string) => void} land   apply + show a number on a player
  * @property {(seat: 0 | 1, monsterId: string, delta: number) => void} charge   move a monster's shown charge
  * @property {(x: number, y: number, gem: Gem, cls?: string) => void} setTile   change one tile (with an entrance class)
@@ -83,7 +84,7 @@ async function blocked(/** @type {CastCtx} */ ctx, /** @type {0 | 1} */ target) 
   const { fx } = ctx;
   await orbTo(ctx, target, "#bfefff");
   fx.burst(fx.hitOf(target), "#bfefff", 10, 34);
-  fx.floatText(fx.sideOf(target), "🫧 blocked", "#bfefff");
+  fx.floatText(fx.sideOf(target), "blocked", "#bfefff", ["bubble"]);
   void fx.pose(target, null, "cheer");
   await fx.sleep(380);
 }
@@ -131,7 +132,7 @@ const EFFECTS = {
       const { fx } = ctx;
       await orbTo(ctx, e.target, "#7fd0ff");
       if (e.amount > 0) fx.land(e.target, "shield", e.amount);
-      else fx.floatText(fx.sideOf(e.target), "🛡 max", "#7fd0ff");
+      else fx.floatText(fx.sideOf(e.target), "max", "#7fd0ff", ["shield"]);
       await fx.sleep(90);
     },
   },
@@ -172,7 +173,7 @@ const EFFECTS = {
       await orbTo(ctx, e.target, "#ff9a3c", 260);
       fx.burst(at, "#ff6a2a", 14, 56);
       fx.burst(at, "#ffd23c", 8, 30);
-      fx.floatText(fx.sideOf(e.target), e.burns > 1 ? `🔥 ignite ×${e.burns}` : "🔥 ignite", "#ffb04a");
+      fx.floatText(fx.sideOf(e.target), e.burns > 1 ? `ignite ×${e.burns}` : "ignite", "#ffb04a", ["burn"]);
       fx.land(e.target, "pierce", e.amount, "#ff7a2a");
       await fx.sleep(240);
     },
@@ -184,7 +185,7 @@ const EFFECTS = {
       const { fx } = ctx;
       await orbTo(ctx, e.target, "#92e27c");
       for (const c of fx.sideOf(e.target).querySelectorAll(".core")) fx.burst(fx.centerOf(c), "#92e27c", 6, 24);
-      fx.floatText(fx.sideOf(e.target), `✚ ${e.amount}/turn ×${e.turns}`, "#92e27c");
+      fx.floatText(fx.sideOf(e.target), `${e.amount}/turn ×${e.turns}`, "#92e27c", ["heal"]);
       void fx.pose(e.target, null, "cheer");
       await fx.sleep(300);
     },
@@ -196,7 +197,7 @@ const EFFECTS = {
       const { fx } = ctx;
       await orbTo(ctx, e.target, "#bfefff");
       for (const c of fx.sideOf(e.target).querySelectorAll(".core")) fx.burst(fx.centerOf(c), "#bfefff", 8, 30);
-      fx.floatText(fx.sideOf(e.target), e.count > 1 ? `🫧 ×${e.count}` : "🫧 bubble", "#bfefff");
+      fx.floatText(fx.sideOf(e.target), e.count > 1 ? `×${e.count}` : "bubble", "#bfefff", ["bubble"]);
       void fx.pose(e.target, null, "cheer");
       await fx.sleep(300);
     },
@@ -239,7 +240,7 @@ const EFFECTS = {
         await Promise.all(flights);
       }
       board.animate([{ filter: "none" }, { filter: "brightness(1.25) saturate(0.4) hue-rotate(160deg)" }, { filter: "none" }], { duration: 420 });
-      fx.floatText(fx.sideOf(e.target), `❄ ${e.count} next turn`, "#bfe9ff");
+      fx.floatText(fx.sideOf(e.target), `${e.count} next turn`, "#bfe9ff", ["frozen"]);
       void fx.pose(e.target, null, "hurt");
       await fx.sleep(300);
     },
@@ -293,7 +294,7 @@ const EFFECTS = {
       if (e.blocked) return blocked(ctx, e.target);
       await orbTo(ctx, e.target, fx.COLOR.water ?? "#3aa0ff");
       void fx.pose(e.target, null, "dizzy");
-      fx.floatText(fx.sideOf(e.target), e.count > 0 ? `🐌 −${e.count} move next turn` : "🐌 already slowed", "#9bf6ff");
+      fx.floatText(fx.sideOf(e.target), e.count > 0 ? `-${e.count} move next turn` : "already slowed", "#9bf6ff", ["slow"]);
       await fx.sleep(420);
     },
   },
@@ -310,7 +311,7 @@ const EFFECTS = {
       if (fighter instanceof HTMLElement && stage instanceof HTMLElement && e.monsterId) {
         const stamp = document.createElement("div");
         stamp.className = "stamp";
-        stamp.textContent = "🔒";
+        stamp.innerHTML = fx.icon("seal", 4);
         stage.appendChild(stamp);
         void fx.play(stamp, "zoomInDown", { speed: "faster" });
         void fx.pose(e.target, e.monsterId, "hurt");
@@ -346,7 +347,7 @@ const EFFECTS = {
         fx.burst(c, "#fff6c2", 7, 26);
       }
       void fx.pose(cast.by, null, "cheer");
-      if (e.removed > 0) fx.floatText(side, "✨ cleansed", "#fff6c2");
+      if (e.removed > 0) fx.floatText(side, "cleansed", "#fff6c2", ["cleanse"]);
       await fx.sleep(360);
     },
   },

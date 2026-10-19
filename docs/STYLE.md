@@ -27,7 +27,7 @@ things (gems, charge bars, element tags, move names).
 | `--c-panel` | `#232a46` | panels and cards |
 | `--c-raise` | `#2f375c` | raised: ghost buttons, bubbles |
 | `--c-edge` | `#4a5486` | bevel highlight, dividers |
-| `--c-mute` | `#8e97bf` | secondary text |
+| `--c-mute` | `#9aa3cb` | secondary text |
 | `--c-text` | `#eef0ff` | text |
 | `--c-cream` | `#fff4d6` | headings, names, numbers |
 | `--c-accent-lo` / `--c-accent` / `--c-accent-hi` | `#33267d` / `#6a4fe0` / `#a08cff` | primary actions, your turn, links |
@@ -40,11 +40,23 @@ things (gems, charge bars, element tags, move names).
 
 | Role | Font | Where |
 |---|---|---|
-| Label | **Silkscreen** 700 (`--f-label`) | headings, names, buttons, numbers, tags, the HUD |
-| Text | **Pixelify Sans** 400/600/700 (`--f-text`) | descriptions, chat, inputs, toasts |
+| Label | **Silkscreen** 700 (`--f-label`) | buttons, headings, titles, monster and move names in sheets, HP and charge numbers, the turn banner |
+| Text | **Pixelify Sans** 400/600/700 (`--f-text`) | everything small: player names, card names, chips, tags, badges, section heads, descriptions, chat, inputs, toasts |
 
-Sizes: `--fs-xs` 11, `--fs-s` 13, `--fs-m` 15, `--fs-l` 18, `--fs-xl` 24,
-`--fs-xxl` 32 px. Silkscreen reads as small caps, so never add letter-spacing.
+**Silkscreen only at its grid.** It's drawn on an 8 px grid (125 font units per
+pixel), so it's crisp only when each of its pixels is a whole number of device
+pixels. Its sizes are `--fl-1` … `--fl-6`: 8 font pixels at 1.5, 2, 3, 4 and 6
+CSS px each, snapped per screen by `sizeType()` (on a 3× phone `--fl-1` is
+13.3 px, on a 2× phone 12 px, on a desktop 16 px; `--fl-2` is 16, `--fl-3` 24,
+`--fl-4` 32, `--fl-6` 48). Never set it in raw px or below `--fl-1`. The arena's
+charge badges size it from their own pixel unit (`8 × --gu`), so the number and
+the gem beside it share one pixel size.
+
+**Pixelify Sans for anything smaller,** at `--fs-xs` 12, `--fs-s` 13 or
+`--fs-m` 15 px, scaled by the Text size setting (`--ts`). Nothing is under 12 px.
+Uppercase Pixelify labels get 1 px letter-spacing; Silkscreen never does (it
+reads as small caps already). Player names stay in their own case.
+
 Both fonts are self-hosted from pinned `@fontsource` packages
 (`/play/fonts/…`). Font smoothing is off so edges stay crisp.
 
@@ -74,10 +86,15 @@ No rounded corners, no blur, no soft drop shadows. Depth is bevels only.
 - **Bars** (HP, charge): ink track, flat fill with a one-UI-pixel highlight, and
   HP segmented every 10% so you can count chunks. A cream "ghost" shows damage
   just taken. Shield is a striped overlay.
-- **Chips and tags:** small wells in the label font. Element tags fill with
-  the element hue and ink text.
-- **Icons:** pixel sprites (the gem art) instead of emoji wherever an element
-  or berry is shown.
+- **Chips and tags:** small wells in Pixelify Sans 700, a pixel icon first.
+  Element tags fill with the element hue and ink text.
+- **Icons:** never emoji (every phone draws them differently, and some can't
+  draw them at all). Elements and berries use the gem sprites; everything else
+  (shield, burn, poison, slow, bubble, heal, halved healing, seal, charge,
+  passive, stars, ban, pierce, frozen, cleanse, battle, chat, friends,
+  forfeit) is a 7×7 grid in `web/icons.js`, drawn as SVG in the current text
+  colour at one icon pixel per UI pixel (`ic(name)`; floating numbers use 3 CSS
+  px per icon pixel). Add new icons there, as ASCII grids.
 - **Pips (MOVES):** gold squares with an ink outline. Spent pips go dark.
 
 ## Motion

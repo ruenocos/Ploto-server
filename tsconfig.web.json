@@ -13,5 +13,5 @@
     "skipLibCheck": true,
     "types": []
   },
-  "files": ["web/animators.js"]
+  "files": ["web/icons.js", "web/animators.js"]
 }

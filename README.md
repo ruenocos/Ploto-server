@@ -64,7 +64,7 @@ have no timer, and the bot drafts counters too.
 **Accounts & friends.** Claim a username (no password: the server hands back a
 secret key that stays in the browser's localStorage; copy it from your profile to
 sign in on another device). Then add friends by username, chat with them, and
-tap **⚔️ Invite** to start a match without sharing codes. Your profile shows your
+tap **Invite** to start a match without sharing codes. Your profile shows your
 record and recent matches.
 
 **Solo?** Tap **Bot**. In blind pick the bot takes a random team; it plays a

@@ -88,14 +88,6 @@ export const MONSTERS: Record<string, Monster> = {
     { followUp: 3 }),
 };
 
-export const ELEMENT_EMOJI: Record<Element, string> = {
-  fire: "🔥",
-  water: "💧",
-  earth: "🪨",
-  nature: "🌿",
-  light: "✨",
-};
-
 /** One-line identity per element, shown in the picker. */
 export const ARCHETYPES: Record<Element, { title: string; blurb: string }> = {
   fire: { title: "Destroyer", blurb: "Big hits, burns, and blasts that clear the board" },

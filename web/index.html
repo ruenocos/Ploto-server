@@ -38,11 +38,19 @@
         --c-bad: #d8364b;   --c-bad-hi: #ff8080;
         --c-gold: #ffcc33;  --c-gold-lo: #a8740e;
         --fire: #ff6b3d; --water: #3aa0ff; --earth: #c98a46; --nature: #4ccb6b; --light: #ffd23c;
-        /* type: Silkscreen for labels, numbers and headings; Pixelify Sans for reading */
+        /*
+         * type: Silkscreen for labels, numbers and headings; Pixelify Sans for reading.
+         * Silkscreen is drawn on an 8px grid, so it's only crisp when each of its
+         * pixels is a whole number of device pixels: --fl-* are 8 font pixels at
+         * k = 1.5, 2, 3, 4, 6 CSS px each, snapped per screen by sizeType()
+         * (phones ~12-13 / 16 / 24 / 32 / 48 px; desktop 16 / 16 / 24 / 32 / 48).
+         * Nothing smaller uses it: small text is Pixelify Sans, at least 12px.
+         */
         --f-label: "Silkscreen", ui-monospace, monospace;
         --f-text: "Pixelify Sans", ui-sans-serif, system-ui, sans-serif;
-        --ts: 1; /* text size setting: 1, 1.15, 1.3 */
-        --fs-xs: calc(11px * var(--ts)); --fs-s: calc(13px * var(--ts)); --fs-m: calc(15px * var(--ts)); --fs-l: calc(18px * var(--ts)); --fs-xl: calc(24px * var(--ts)); --fs-xxl: calc(32px * var(--ts));
+        --fl-1: 12px; --fl-2: 16px; --fl-3: 24px; --fl-4: 32px; --fl-6: 48px;
+        --ts: 1; /* text size setting (Pixelify Sans only): 1, 1.15, 1.3 */
+        --fs-xs: calc(12px * var(--ts)); --fs-s: calc(13px * var(--ts)); --fs-m: calc(15px * var(--ts));
         /* spacing: 4px grid */
         --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s6: 24px;
         /* legacy names used by inline styles in the markup */
@@ -81,7 +89,7 @@
       /* ---- buttons: a raised block with a 2-UI-pixel lip that presses down ---- */
       button {
         --b: var(--c-accent); --b-hi: var(--c-accent-hi); --b-lo: var(--c-accent-lo);
-        font: 700 var(--fs-s)/1 var(--f-label); text-transform: uppercase; color: #fff;
+        font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: #fff;
         border: var(--px) solid var(--c-ink); background: var(--b); cursor: pointer;
         padding: 13px 12px 14px; position: relative; white-space: nowrap;
         box-shadow: inset 0 var(--px) 0 var(--b-hi), inset 0 calc(var(--px) * -2) 0 var(--b-lo);
@@ -91,7 +99,7 @@
       button:disabled { --b: #3a3f57; --b-hi: #4b5170; --b-lo: #2a2e42; color: #8b90a8; cursor: default; transform: none; text-shadow: none; }
       button.ghost { --b: var(--c-raise); --b-hi: var(--c-edge); --b-lo: var(--c-well); color: var(--c-text); }
       button.danger { --b: var(--c-bad); --b-hi: var(--c-bad-hi); --b-lo: #7c1626; }
-      button.small { padding: 8px 10px 10px; font-size: var(--fs-xs); }
+      button.small { padding: 10px 10px 12px; }
       input[type="text"] {
         font: 600 var(--fs-m)/1.2 var(--f-text); width: 100%; min-width: 0; color: var(--c-text);
         background: var(--c-well); border: var(--px) solid var(--c-ink); padding: 11px 12px; outline: none;
@@ -102,13 +110,15 @@
       a { color: var(--c-accent-hi); }
 
       /* ---- chips and tags ---- */
-      .chip { font: 700 var(--fs-xs)/1 var(--f-label); padding: 4px 6px; background: var(--c-well); color: var(--c-text); white-space: nowrap; }
+      .chip { display: inline-flex; align-items: center; gap: 4px; font: 700 var(--fs-xs)/1 var(--f-text); padding: 4px 6px; background: var(--c-well); color: var(--c-text); white-space: nowrap; }
       .chips { display: flex; gap: var(--s1); flex-wrap: wrap; }
       .gem-icon { display: inline-block; vertical-align: middle; }
-      .chip .gem-icon { margin: -4px 2px -4px -2px; }
+      .chip .gem-icon { margin: -4px 0 -4px -2px; }
+      .px-icon.ic { display: inline-block; vertical-align: middle; flex: none; }
+      button .ic { margin: -4px 4px -2px 0; }
       .chip.bubble { color: #bfefff; } .chip.regen { color: var(--c-good-hi); }
       .chip.shield { color: #8fd8ff; } .chip.dot-fx { color: #ffa24a; } .chip.berry { color: #ff9cc0; } .chip.slow { color: #9bf6ff; }
-      .badge-n { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; margin-left: 6px; background: var(--c-bad); color: #fff; font: 700 var(--fs-xs)/1 var(--f-label); }
+      .badge-n { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; margin-left: 6px; background: var(--c-bad); color: #fff; font: 700 var(--fs-xs)/1 var(--f-text); }
       .dot { width: 8px; height: 8px; background: var(--c-good); flex: none; box-shadow: 0 0 0 var(--px) var(--c-ink); }
       .dot.off { background: var(--c-bad); }
 
@@ -116,28 +126,30 @@
       #lobby { max-width: 980px; margin: 0 auto; padding: 18px 16px calc(var(--dock-h, 160px) + 16px); }
       .brand { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 10px; row-gap: 6px; }
       .brand .tag { grid-column: 1; }
-      .brand h1 { font-size: min(var(--fs-xxl), 6.4vw); white-space: nowrap; line-height: 1; margin: 0; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
-      .brand .tag { font: 700 var(--fs-xs)/1 var(--f-label); color: var(--c-accent-hi); text-transform: uppercase; }
+      .brand h1 { font-size: var(--fl-3); white-space: nowrap; line-height: 1; margin: 0; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
+      .brand .tag { font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-accent-hi); text-transform: uppercase; letter-spacing: 1px; }
+      @media (max-width: 379px) { .brand h1 { font-size: var(--fl-2); } }
+      @media (min-width: 760px) { .brand h1 { font-size: var(--fl-4); } }
       .intro { color: var(--c-mute); margin: 8px 0 14px; max-width: 640px; }
       .acct { max-width: 520px; margin-bottom: 6px; display: grid; gap: 6px; }
       .acct-guest, .acct-user, .row-input { display: flex; gap: 8px; }
       .acct-guest button, .row-input button { flex: none; }
       .acct-hint { font-size: var(--fs-s); }
-      .sheet h3 { font-size: var(--fs-xs); color: var(--c-mute); margin: 16px 0 6px; text-transform: uppercase; }
+      .sheet h3 { font: 700 var(--fs-xs)/1.2 var(--f-text); letter-spacing: 1px; color: var(--c-mute); margin: 16px 0 6px; text-transform: uppercase; }
       .frow { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: var(--px) solid var(--c-well); min-width: 0; }
       .frow .fname { flex: 1; min-width: 0; font-weight: 700; }
       .frow button { flex: none; }
       .frow .muted { font-size: var(--fs-s); }
       .empty { color: var(--c-mute); padding: 8px 0; }
       .chat-head { display: flex; align-items: center; gap: 8px; }
-      .chat-head b { font: 700 var(--fs-l)/1 var(--f-label); }
+      .chat-head b { font: 700 var(--fl-2)/1 var(--f-label); }
       .chat-log { height: 46vh; overflow: auto; display: flex; flex-direction: column; gap: 6px; padding: 10px 0; }
       .bubble { max-width: 80%; padding: 8px 10px; background: var(--c-raise); align-self: flex-start; overflow-wrap: anywhere; white-space: pre-wrap; animation: bubbleIn 0.2s steps(3); }
       .bubble.mine { align-self: flex-end; background: var(--c-accent); }
-      .bubble time { display: block; font: 400 10px/1.2 var(--f-label); color: rgba(238, 240, 255, 0.6); margin-top: 2px; }
+      .bubble time { display: block; font: 400 var(--fs-xs)/1.2 var(--f-text); color: rgba(238, 240, 255, 0.6); margin-top: 2px; }
       @keyframes bubbleIn { from { transform: translateY(6px); opacity: 0; } }
       .match-row { font-size: var(--fs-s); padding: 6px 0; border-bottom: var(--px) solid var(--c-well); display: flex; gap: 8px; }
-      .match-row .res { font: 700 var(--fs-s)/1.35 var(--f-label); width: 18px; }
+      .match-row .res { font: 700 var(--fl-1)/1.35 var(--f-label); width: 18px; }
       .match-row .res.w { color: var(--c-good-hi); } .match-row .res.l { color: var(--c-bad-hi); }
       .invite-card {
         position: fixed; left: 50%; top: calc(10px + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 50;
@@ -151,8 +163,8 @@
       .invite-card .ic-timer { height: var(--px); background: var(--c-accent-hi); margin-top: 10px; transform-origin: left; }
       .el-group { margin: 22px 0 8px; }
       .el-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-      .el-head .el-title { font: 700 var(--fs-l)/1 var(--f-label); color: var(--c-cream); display: flex; align-items: center; gap: 6px; }
-      .el-head .el-arch { font: 700 var(--fs-xs)/1 var(--f-label); text-transform: uppercase; padding: 4px 6px; background: var(--el); color: var(--c-ink); }
+      .el-head .el-title { font: 700 var(--fl-2)/1 var(--f-label); color: var(--c-cream); display: flex; align-items: center; gap: 6px; }
+      .el-head .el-arch { font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; padding: 4px 6px; background: var(--el); color: var(--c-ink); }
       .el-head .el-blurb { color: var(--c-mute); font-size: var(--fs-s); }
       .pick-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; max-width: 640px; } /* four monsters per element: one row each */
       .pcard { position: relative; padding: 8px 4px 10px; cursor: pointer; user-select: none; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; color: inherit; font: inherit; text-transform: none; text-shadow: none; }
@@ -160,14 +172,14 @@
       .pcard:active { transform: translateY(var(--px)); }
       .pcard.sel { border-color: var(--el); background: color-mix(in srgb, var(--el) 16%, var(--c-panel)); box-shadow: inset 0 0 0 var(--px) var(--el), inset 0 calc(var(--px) * -3) 0 rgba(10, 12, 20, 0.45); }
       .pcard.dim { opacity: 0.7; }
-      .pcard .pname.long { font-size: clamp(8px, 2.2vw, var(--fs-xs)); }
-      .pcard .pick-no { position: absolute; top: 5px; right: 5px; width: 18px; height: 18px; background: var(--el); color: var(--c-ink); font: 700 var(--fs-xs)/1 var(--f-label); display: grid; place-items: center; }
+      .pcard .pname.long { font-size: var(--fs-xs); }
+      .pcard .pick-no { position: absolute; top: 5px; right: 5px; width: 18px; height: 18px; background: var(--el); color: var(--c-ink); font: 700 var(--fs-xs)/1 var(--f-text); display: grid; place-items: center; }
       .pcard .art { display: flex; justify-content: center; padding: 4px 0; }
-      .pcard .pname { font: 700 clamp(9px, 2.5vw, var(--fs-xs))/1.1 var(--f-label); text-align: center; color: var(--c-cream); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .pcard .pname { font: 700 var(--fs-s)/1.1 var(--f-text); text-align: center; color: var(--c-cream); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .pcard .pmove { color: var(--el); font-weight: 700; font-size: var(--fs-s); }
       .pcard .pdesc { color: var(--c-mute); font-size: var(--fs-s); line-height: 1.3; }
       .pcard .ppass { color: var(--c-accent-hi); font-size: var(--fs-s); line-height: 1.3; }
-      .pcard .pcost { position: absolute; top: 8px; left: 8px; font: 700 var(--fs-xs)/1 var(--f-label); padding: 3px 5px; background: var(--c-well); color: var(--el); }
+      .pcard .pcost { position: absolute; top: 8px; left: 8px; font: 700 var(--fs-xs)/1 var(--f-text); padding: 3px 5px; background: var(--c-well); color: var(--el); }
 
       .dock {
         position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--c-panel);
@@ -176,16 +188,16 @@
       }
       .dock-inner { max-width: 980px; margin: 0 auto; display: grid; gap: 8px; }
       .team-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
-      .slot { width: 36px; height: 36px; background: var(--c-well); border: var(--px) dashed var(--c-edge); display: grid; place-items: center; flex: none; color: var(--c-mute); font: 700 var(--fs-s)/1 var(--f-label); }
+      .slot { width: 36px; height: 36px; background: var(--c-well); border: var(--px) dashed var(--c-edge); display: grid; place-items: center; flex: none; color: var(--c-mute); font: 700 var(--fl-1)/1 var(--f-label); }
       .slot svg { display: block; }
-      .team-label { flex: 1; min-width: 0; font: 700 var(--fs-s)/1.2 var(--f-label); color: var(--c-cream); }
+      .team-label { flex: 1; min-width: 0; font: 700 var(--fl-1)/1.2 var(--f-label); color: var(--c-cream); }
       .actions { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
       button.ghost.on { --b: var(--c-well); --b-hi: var(--c-ink); --b-lo: var(--c-well); color: var(--c-accent-hi); }
       .join-row { display: flex; gap: 8px; }
-      .join-row input { font-family: var(--f-label); text-transform: uppercase; letter-spacing: 3px; }
+      .join-row input { font: 700 var(--fl-2)/1.2 var(--f-label); text-transform: uppercase; letter-spacing: 3px; }
       .join-row button { flex: none; }
       .invite { background: color-mix(in srgb, var(--c-accent) 18%, var(--c-panel)); padding: 12px; text-align: center; }
-      .code-big { font: 700 var(--fs-xxl)/1 var(--f-label); letter-spacing: 6px; color: var(--c-cream); margin: 6px 0 10px; }
+      .code-big { font: 700 var(--fl-4)/1 var(--f-label); letter-spacing: 6px; color: var(--c-cream); margin: 6px 0 10px; }
       .status { color: var(--c-mute); font-size: var(--fs-s); }
       .status:empty { display: none; }
       @media (min-width: 760px) {
@@ -207,7 +219,7 @@
       .hud-card { padding: 6px 8px 8px; min-width: 0; position: relative; }
       .hud-card.active { border-color: var(--c-accent-hi); background: color-mix(in srgb, var(--c-accent) 22%, var(--c-panel)); }
       .hud-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
-      .hud-name { font: 700 var(--fs-s)/1.1 var(--f-label); flex: 1; min-width: 0; color: var(--c-cream); }
+      .hud-name { font: 700 var(--fs-s)/1.1 var(--f-text); flex: 1; min-width: 0; color: var(--c-cream); }
       .hud-card.foe .hud-top { flex-direction: row-reverse; }
       .hud-card.foe .hud-name { text-align: right; }
       .hud-card.foe .chips { justify-content: flex-end; }
@@ -220,7 +232,7 @@
       .hp .fill { position: relative; height: 100%; background: var(--c-good); box-shadow: inset 0 var(--px) 0 var(--c-good-hi); transition: width 0.25s steps(4); }
       .hp .fill.low { background: var(--c-bad); box-shadow: inset 0 var(--px) 0 var(--c-bad-hi); }
       .hp .shieldfill { position: absolute; inset: 0 auto 0 0; background: repeating-linear-gradient(90deg, rgba(143, 216, 255, 0.75) 0 var(--px), rgba(143, 216, 255, 0.35) var(--px) calc(var(--px) * 2)); transition: width 0.45s steps(4); }
-      .hp .num { font: 700 var(--fs-s)/1 var(--f-label); color: var(--c-cream); font-variant-numeric: tabular-nums; min-width: 40px; text-align: right; }
+      .hp .num { font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-cream); font-variant-numeric: tabular-nums; min-width: 40px; text-align: right; }
       .hud-card.foe .hp .num { text-align: left; }
 
       /* Arena: the pixel meadow; ink frame like every other surface */
@@ -302,27 +314,29 @@
       .cbar { position: relative; height: calc(var(--gu) * 11); min-width: calc(var(--gu) * 34); margin-left: calc(var(--gu) * -5); padding: 0 7px 0 calc(var(--gu) * 7);
         background: var(--c-ink); display: flex; align-items: center; gap: 4px; overflow: hidden; }
       .cbar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: color-mix(in srgb, var(--el) 70%, var(--c-ink)); box-shadow: inset 0 var(--px) 0 color-mix(in srgb, var(--el) 70%, #fff); transition: width 0.25s steps(4); }
-      .cbar-num { position: relative; font: 700 var(--fs-xs)/1 var(--f-label); color: #fff; font-variant-numeric: tabular-nums; text-shadow: var(--px) var(--px) 0 var(--c-ink); }
-      .cbar-stars { position: relative; font-size: 10px; color: var(--c-gold); text-shadow: var(--px) var(--px) 0 var(--c-ink); }
+      .cbar-num { position: relative; font: 700 calc(var(--gu) * 8)/1 var(--f-label); color: #fff; font-variant-numeric: tabular-nums; text-shadow: var(--px) var(--px) 0 var(--c-ink); }
+      .cbar-stars { position: relative; display: flex; gap: var(--gu); color: var(--c-gold); filter: drop-shadow(var(--gu) var(--gu) 0 var(--c-ink)); }
+      .cbar-stars .ic { width: calc(var(--gu) * 5); height: calc(var(--gu) * 5); }
       .fighter.ready .cbar-num { color: var(--c-cream); }
-      .cbadge .lock, .cbadge .evo { position: absolute; bottom: calc(100% + 2px); font: 700 10px/1 var(--f-label); padding: 3px 5px; white-space: nowrap; }
+      .cbadge .lock, .cbadge .evo { position: absolute; bottom: calc(100% + 2px); font: 700 calc(var(--gu) * 8)/1 var(--f-label); padding: calc(var(--gu) * 2) calc(var(--gu) * 3); white-space: nowrap; display: flex; align-items: center; gap: var(--gu); }
+      .cbadge .lock .ic { width: calc(var(--gu) * 7); height: calc(var(--gu) * 7); }
       .cbadge .lock { right: -4px; background: #3a2f55; color: #d8c8ff; }
       .cbadge .evo { left: 50%; translate: -50% 0; background: var(--c-accent); color: #fff; }
-      .stamp { position: absolute; left: 50%; top: 55%; translate: -50% -50%; z-index: 5; font-size: 30px; pointer-events: none; }
+      .stamp { position: absolute; left: 50%; top: 55%; translate: -50% -50%; z-index: 5; color: #d8c8ff; filter: drop-shadow(var(--px) var(--px) 0 var(--c-ink)); pointer-events: none; }
 
       /* turn banner: round · whose turn · MOVES pips */
-      .banner { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font: 700 var(--fs-s)/1 var(--f-label); padding: 8px 10px; position: relative; border: var(--px) solid var(--c-ink); }
+      .banner { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font: 700 var(--fl-1)/1 var(--f-label); padding: 8px 10px; position: relative; border: var(--px) solid var(--c-ink); }
       .banner.you { background: var(--c-accent); color: #fff; box-shadow: inset 0 var(--px) 0 var(--c-accent-hi), inset 0 calc(var(--px) * -2) 0 var(--c-accent-lo); }
       .banner.them { background: rgba(18, 22, 38, 0.88); color: var(--c-mute); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
-      .banner .round { font-size: var(--fs-xs); min-width: 52px; opacity: 0.8; }
+      .banner .round { font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; min-width: 60px; opacity: 0.85; }
       .banner .who { flex: 1; text-align: center; }
-      .banner .pips { display: flex; gap: 4px; min-width: 52px; justify-content: flex-end; align-items: center; }
-      .banner .pips::before { content: "MOVES"; font-size: 9px; opacity: 0.8; margin-right: 2px; }
+      .banner .pips { display: flex; gap: 4px; min-width: 60px; justify-content: flex-end; align-items: center; }
+      .banner .pips::before { content: "MOVES"; font: 700 var(--fs-xs)/1 var(--f-text); opacity: 0.85; margin-right: 2px; }
       .pip { width: 10px; height: 10px; background: var(--c-gold); box-shadow: inset 0 calc(var(--px) * -1) 0 var(--c-gold-lo), 0 0 0 var(--px) var(--c-ink); }
       .pip.used { background: var(--c-ink); box-shadow: 0 0 0 var(--px) var(--c-ink); opacity: 0.5; }
       .pip.new { animation: pipIn 0.5s steps(5); }
       @keyframes pipIn { 0% { transform: scale(0); } 60% { transform: scale(1.6); } 100% { transform: scale(1); } }
-      .banner .sd { flex-basis: 100%; text-align: center; font-size: 10px; color: #ffb07a; }
+      .banner .sd { flex-basis: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; font: 700 var(--fs-xs)/1 var(--f-text); color: #ffb07a; }
       .icon-btn { flex: none; padding: 0 12px; font-size: 16px; }
       .arena-top .icon-btn { --b: rgba(18, 22, 38, 0.88); --b-hi: var(--c-edge); --b-lo: var(--c-ink); }
 
@@ -340,7 +354,7 @@
       .board-wrap.waiting .board { filter: saturate(0.45) brightness(0.7); }
       .board-wrap.waiting::after {
         content: attr(data-wait); position: absolute; left: 50%; top: 50%; translate: -50% -50%; pointer-events: none;
-        font: 700 var(--fs-s)/1 var(--f-label); text-transform: uppercase; color: var(--c-mute); white-space: nowrap;
+        font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-mute); white-space: nowrap;
         background: var(--c-panel); border: var(--px) solid var(--c-ink); padding: 8px 12px; box-shadow: inset 0 var(--px) 0 var(--c-edge);
       }
       .board.falling { overflow: hidden; } /* new tiles enter from above the board */
@@ -378,14 +392,14 @@
       .cast { position: absolute; left: 0; right: 0; top: 24%; display: none; justify-content: center; pointer-events: none; z-index: 7; }
       .cast.show { display: flex; }
       .cast-name {
-        font: 700 var(--fs-l)/1 var(--f-label); text-transform: uppercase; color: #fff; padding: 8px 14px 10px; white-space: nowrap;
+        font: 700 var(--fl-3)/1 var(--f-label); text-transform: uppercase; color: #fff; padding: 8px 14px 10px; white-space: nowrap;
         background: color-mix(in srgb, var(--el) 45%, var(--c-ink)); border: var(--px) solid var(--c-ink);
         box-shadow: inset 0 var(--px) 0 color-mix(in srgb, var(--el) 80%, #fff), inset 0 calc(var(--px) * -2) 0 rgba(10, 12, 20, 0.5), 0 0 22px -2px var(--el);
         text-shadow: var(--px) var(--px) 0 var(--c-ink);
       }
       .combo {
         position: absolute; left: 50%; top: 50%; z-index: 8; pointer-events: none; white-space: nowrap;
-        font: 700 40px/1 var(--f-label); color: var(--c-cream);
+        font: 700 var(--fl-6)/1 var(--f-label); color: var(--c-cream);
         text-shadow: calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-accent-lo), calc(var(--px) * 3) calc(var(--px) * 3) 0 var(--c-ink);
       }
 
@@ -400,17 +414,19 @@
       /* floating numbers: pixel font with a hard ink outline */
       .float {
         position: absolute; left: 50%; top: 4px; transform: translateX(-50%); z-index: 8; pointer-events: none; white-space: nowrap;
-        font: 700 var(--fs-xl)/1 var(--f-label);
+        display: flex; align-items: center; gap: 4px;
+        font: 700 var(--fl-3)/1 var(--f-label);
         text-shadow: var(--px) 0 0 var(--c-ink), calc(var(--px) * -1) 0 0 var(--c-ink), 0 var(--px) 0 var(--c-ink), 0 calc(var(--px) * -1) 0 var(--c-ink), var(--px) calc(var(--px) * 2) 0 var(--c-ink);
         animation: floatUp 1.05s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
       }
       .float.attack, .float.pierce { color: #ff6a4d; } .float.regen { color: var(--c-good-hi); } .float.heal { color: var(--c-good-hi); } .float.shield { color: #8fd8ff; }
       .float.burn { color: #ffa24a; } .float.poison { color: var(--c-good-hi); } .float.fatigue { color: #ffb07a; }
-      .float.small { font-size: var(--fs-s); }
+      .float.small { font-size: var(--fl-2); }
+      .float .ic { filter: drop-shadow(var(--px) var(--px) 0 var(--c-ink)); }
       @keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, 6px) scale(1.6); } 18% { opacity: 1; transform: translate(-50%, 0) scale(1); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -30px); } }
 
-      .debug-bar { flex: none; display: flex; align-items: center; justify-content: center; gap: 8px; font: 700 var(--fs-xs)/1 var(--f-label); }
-      .peer-warn { flex: none; text-align: center; font: 700 var(--fs-xs)/1.3 var(--f-label); color: #2a1a00; background: var(--c-gold); padding: 6px; }
+      .debug-bar { flex: none; display: flex; align-items: center; justify-content: center; gap: 8px; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; }
+      .peer-warn { flex: none; text-align: center; font: 700 var(--fs-xs)/1.3 var(--f-text); color: #2a1a00; background: var(--c-gold); padding: 6px; }
 
       /* idle bob for creature art outside the arena */
       .bob svg, .bob img { animation: bob 2.6s steps(2) infinite; transform-origin: 50% 80%; }
@@ -428,29 +444,32 @@
       @media (min-width: 600px) { .scrim { align-items: center; } }
       @keyframes sheetUp { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
       .sheet .s-art { display: flex; justify-content: center; margin-bottom: 6px; }
-      .sheet h2 { margin: 0; text-align: center; font-size: var(--fs-xl); color: var(--c-cream); }
-      .sheet .s-sub { text-align: center; color: var(--el); font: 700 var(--fs-xs)/1.4 var(--f-label); text-transform: uppercase; margin-bottom: 12px; }
+      .sheet h2 { margin: 0; text-align: center; font-size: var(--fl-3); color: var(--c-cream); display: flex; justify-content: center; align-items: center; gap: 6px; flex-wrap: wrap; }
+      .sheet h2 .stars { display: inline-flex; gap: 2px; color: var(--c-gold); }
+      .sheet .s-sub { text-align: center; color: var(--el); font: 700 var(--fs-xs)/1.4 var(--f-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
       .sheet .s-move { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-      .sheet .s-move b { color: var(--el); font: 700 var(--fs-l)/1.1 var(--f-label); }
-      .sheet .s-move .muted { font: 700 var(--fs-xs)/1 var(--f-label); }
+      .sheet .s-move b { color: var(--el); font: 700 var(--fl-2)/1.1 var(--f-label); }
+      .sheet .s-move .muted { font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; display: inline-flex; align-items: center; gap: 4px; flex: none; }
       .sheet .s-desc { margin: 6px 0; }
       .sheet .s-pass { color: var(--c-accent-hi); margin: 6px 0; }
+      .sheet .s-pass .ic, .sheet .s-meta .ic { margin: -2px 4px 0 0; }
       .sheet .s-meta { color: var(--c-mute); font-size: var(--fs-s); margin: 6px 0 14px; }
       .sheet .s-actions { display: grid; gap: 8px; }
       .sheet .s-next { background: var(--c-well); padding: 10px 12px; margin: 0 0 14px; box-shadow: inset 0 var(--px) 0 var(--c-ink); }
-      .sheet .s-next h3 { margin: 0 0 6px; font-size: var(--fs-xs); color: var(--c-accent-hi); }
+      .sheet .s-next h3 { margin: 0 0 6px; color: var(--c-accent-hi); display: flex; align-items: center; gap: 4px; }
       .sheet .s-next ul { margin: 0; padding-left: 18px; font-size: var(--fs-s); display: grid; gap: 2px; }
       .evo-line { display: flex; justify-content: center; align-items: flex-end; gap: 6px; margin: 0 0 12px; }
-      .evo-line .evo-st { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; font: 700 10px/1 var(--f-label); color: var(--c-gold); min-width: 52px; }
+      .evo-line .evo-st { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; color: var(--c-gold); min-width: 52px; }
+      .evo-line .evo-st > span { display: flex; gap: 2px; min-height: 10px; align-items: center; }
       .evo-line .evo-st.locked img { opacity: 0.45; filter: grayscale(0.6); }
       .evo-line .evo-st.cur { background: var(--c-well); box-shadow: inset 0 0 0 var(--px) var(--el); }
-      .evo-line .arrow { color: var(--c-mute); padding-bottom: 22px; font-family: var(--f-label); }
+      .evo-line .arrow { color: var(--c-mute); padding-bottom: 22px; }
 
       .end-card { width: min(92vw, 380px); padding: 24px; text-align: center; margin: auto; }
       .end-team { display: flex; justify-content: center; gap: 8px; margin: -8px 0 0; }
       .end-team.lost img { filter: grayscale(1) brightness(0.7); }
       .end-team.lost .rig .part { animation: none; } /* a defeated team doesn't idle */
-      .end-card .big { font: 700 var(--fs-xxl)/1 var(--f-label); margin: 8px 0 8px; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
+      .end-card .big { font: 700 var(--fl-4)/1 var(--f-label); margin: 8px 0 8px; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
       .end-card p { color: var(--c-mute); margin: 0 0 16px; }
       .end-actions { display: grid; gap: 8px; }
       .end-hint { color: var(--c-mute); font-size: var(--fs-s); margin-bottom: 6px; min-height: 1.3em; }
@@ -475,31 +494,31 @@
       /* draft screen */
       #draft { max-width: 560px; margin: 0 auto; padding: calc(8px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
       .dr-head { display: flex; align-items: center; gap: 8px; }
-      .dr-title { font: 700 var(--fs-l)/1 var(--f-label); color: var(--c-cream); text-transform: uppercase; }
-      .dr-status { flex: 1; min-width: 0; font: 700 var(--fs-s)/1.2 var(--f-label); color: var(--c-mute); text-align: center; }
+      .dr-title { font: 700 var(--fl-2)/1 var(--f-label); color: var(--c-cream); text-transform: uppercase; }
+      .dr-status { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 var(--fl-1)/1.2 var(--f-label); color: var(--c-mute); text-align: center; }
       .dr-status.go { color: var(--c-gold); }
-      .dr-timer { position: relative; height: calc(var(--px) * 5); background: var(--c-ink); border: var(--px) solid var(--c-ink); }
+      .dr-timer { position: relative; height: calc(var(--px) * 8); background: var(--c-ink); border: var(--px) solid var(--c-ink); }
       .dr-timer-fill { position: absolute; inset: 0 auto 0 0; width: 100%; background: var(--c-gold); box-shadow: inset 0 var(--px) 0 #fff1a8; }
-      .dr-timer-num { position: absolute; right: 4px; top: 50%; translate: 0 -50%; font: 700 10px/1 var(--f-label); color: var(--c-ink); }
+      .dr-timer-num { position: absolute; right: 4px; top: 50%; translate: 0 -50%; font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-ink); }
       .dr-team { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
       .dr-team.turn { border-color: var(--c-gold); }
-      .dr-team .dr-name { flex: 1; min-width: 0; font: 700 var(--fs-s)/1.1 var(--f-label); color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .dr-slot, .dr-ban { width: 44px; height: 44px; flex: none; display: grid; place-items: center; background: var(--c-well); border: var(--px) dashed var(--c-edge); font: 700 var(--fs-s)/1 var(--f-label); color: var(--c-mute); position: relative; overflow: hidden; }
+      .dr-team .dr-name { flex: 1; min-width: 0; font: 700 var(--fs-s)/1.1 var(--f-text); color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .dr-slot, .dr-ban { width: 44px; height: 44px; flex: none; display: grid; place-items: center; background: var(--c-well); border: var(--px) dashed var(--c-edge); font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-mute); position: relative; overflow: hidden; }
       .dr-slot.filled { border-style: solid; border-color: var(--c-ink); }
       .dr-ban { border-color: rgba(216, 54, 75, 0.6); }
       .dr-ban.filled .rig-view { filter: grayscale(1) brightness(0.6); }
-      .dr-ban.filled::after { content: "✕"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--c-bad-hi); font: 700 22px/1 var(--f-label); text-shadow: var(--px) var(--px) 0 var(--c-ink); }
+      /* a banned monster: a pixel ✕ over it (an element, so its hard shadow isn't masked away) */
+      .ban-x { position: absolute; inset: 0; display: grid; place-items: center; color: var(--c-bad-hi); filter: drop-shadow(var(--px) var(--px) 0 var(--c-ink)); pointer-events: none; }
       .dr-slot.next { border-color: var(--c-gold); color: var(--c-gold); }
       .dr-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
       .dr-card { padding: 4px 2px 6px; }
-      .dr-card .pname { font-size: clamp(8px, 2.2vw, 10px); }
+      .dr-card .pname { font-size: var(--fs-xs); }
       .dr-card.banned .art, .dr-card.banned .pname { opacity: 0.35; filter: grayscale(1); } /* the ✕ stays full strength */
-      .dr-card.banned::after { content: "✕"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--c-bad-hi); font: 700 28px/1 var(--f-label); text-shadow: var(--px) var(--px) 0 var(--c-ink); }
       .dr-card.mine { border-color: var(--c-accent-hi); background: color-mix(in srgb, var(--c-accent) 22%, var(--c-panel)); }
       .dr-card.theirs { border-color: var(--c-bad); background: color-mix(in srgb, var(--c-bad) 18%, var(--c-panel)); }
       .dr-card.taken { opacity: 0.85; }
       .dr-card.myban { outline: var(--px) dashed var(--c-bad-hi); outline-offset: calc(var(--px) * -4); }
-      .dr-card .dr-badge { position: absolute; top: 3px; left: 3px; font: 700 8px/1 var(--f-label); padding: 2px 3px; text-transform: uppercase; }
+      .dr-card .dr-badge { position: absolute; top: 3px; left: 3px; font: 700 var(--fs-xs)/1 var(--f-text); padding: 2px 4px; text-transform: uppercase; }
       .dr-badge.who { left: auto; right: 3px; background: var(--c-ink); color: var(--c-cream); }
 
       /* settings */
@@ -507,10 +526,10 @@
       .px-icon { display: block; fill: currentColor; shape-rendering: crispEdges; }
       .icon-btn .px-icon { margin: 0 auto; }
       .settings h2 { margin-bottom: 12px; }
-      .set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: var(--px) solid var(--c-well); }
-      .set-label { font: 700 var(--fs-s)/1.2 var(--f-label); color: var(--c-cream); display: grid; gap: 4px; }
+      .set-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 10px; padding: 10px 0; border-bottom: var(--px) solid var(--c-well); }
+      .set-label { font: 700 var(--fs-m)/1.2 var(--f-text); color: var(--c-cream); display: grid; gap: 4px; flex: 1 1 140px; }
       .set-note { font: 400 var(--fs-xs)/1.3 var(--f-text); color: var(--c-mute); text-transform: none; }
-      .seg { display: flex; gap: 4px; flex: none; }
+      .seg { display: flex; gap: 4px; flex: none; margin-left: auto; }
       .seg button[aria-pressed="true"] { --b: var(--c-accent); --b-hi: var(--c-accent-hi); --b-lo: var(--c-accent-lo); color: #fff; }
       .settings .s-actions { margin-top: 14px; }
 
@@ -533,8 +552,8 @@
           100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%,
           var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n)));
       }
-      .turn-call .tc-big { font: 700 var(--fs-xxl)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
-      .turn-call .tc-sub { margin-top: 6px; font: 700 var(--fs-xs)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); }
+      .turn-call .tc-big { font: 700 var(--fl-4)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
+      .turn-call .tc-sub { margin-top: 6px; font: 700 var(--fs-s)/1 var(--f-text); text-transform: uppercase; letter-spacing: 1px; color: var(--c-cream); }
     </style>
   </head>
   <body>
@@ -614,7 +633,7 @@
         </div>
         <div id="acctUser" class="acct-user hidden">
           <button id="profileBtn" class="ghost small">@<span id="acctName"></span></button>
-          <button id="friendsBtn" class="ghost small">👥 Friends<span id="friendsBadge" class="badge-n hidden"></span></button>
+          <button id="friendsBtn" class="ghost small"><span data-icon="friends"></span> Friends<span id="friendsBadge" class="badge-n hidden"></span></button>
         </div>
         <div id="acctHint" class="acct-hint muted">Keeps your record and friends. No password. <a href="#" id="useKey">Have a key?</a></div>
       </div>
@@ -675,9 +694,9 @@
         <div id="board" class="board"></div>
       </div>
       <div id="debugBar" class="debug-bar hidden">
-        <span class="muted">🛠 Practice</span>
-        <button class="small ghost" data-dbg="berries">+4 🍓</button>
-        <button class="small ghost" data-dbg="charge">⚡ Charge up</button>
+        <span class="muted">Practice</span>
+        <button class="small ghost" data-dbg="berries">+4 <span data-gem="berry"></span></button>
+        <button class="small ghost" data-dbg="charge"><span data-icon="charge"></span> Charge up</button>
       </div>
     </section>
 
@@ -705,6 +724,7 @@
     <script src="/play/sfxr.js"></script>
     <script src="/play/sounds.js"></script>
     <script src="/play/feedback.js"></script>
+    <script src="/play/icons.js"></script>
     <script src="/play/plotomon.js"></script>
     <script src="/play/animators.js"></script>
     <script src="/play/pixelart.js"></script>
@@ -729,6 +749,16 @@
       );
       const systemReduce = window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : null;
       let reduceMotion = false;
+      /** Snap the Silkscreen sizes (--fl-*) so each font pixel is whole device pixels on this screen. */
+      function sizeType() {
+        const dpr = window.devicePixelRatio || 1;
+        const root = document.documentElement.style;
+        for (const [name, k] of [["--fl-1", 1.5], ["--fl-2", 2], ["--fl-3", 3], ["--fl-4", 4], ["--fl-6", 6]]) {
+          root.setProperty(name, (8 * Math.max(1, Math.round(k * dpr))) / dpr + "px");
+        }
+      }
+      sizeType();
+      window.addEventListener("resize", sizeType); // zooming changes the device pixel ratio
       function applySettings() {
         reduceMotion = settings.motion === "reduced" || !!systemReduce?.matches;
         document.documentElement.classList.toggle("reduce-motion", reduceMotion);
@@ -836,6 +866,10 @@
         };
         return `<div class="rig">${byZ(kids.get(null)).map(node).join("")}</div>`;
       }
+      /** A pixel UI icon (web/icons.js) as inline SVG; `scale` CSS px per icon pixel. */
+      const ic = (name, scale = 2) => window.MM_ICONS?.icon(name, scale) ?? "";
+      /** Evolution stars as pixel icons (small ones by default). */
+      const stars = (n, name = "starS", scale = 2) => Array.from({ length: n }, () => ic(name, scale)).join("");
       /** A gem sprite as a small inline icon (element, berry), at whole-pixel scale; emoji only as a fallback. */
       const gemIcon = (gem, size = 16) => {
         const px = window.PIXELART && PIXELART.gems[gem];
@@ -946,12 +980,12 @@
           `<div class="s-sub">${gemIcon(mon.element, 16)} ${EL_LABEL[mon.element]}${arch ? ` · ${esc(arch)}` : ""}</div>` +
           (pxMon(mon.id)
             ? `<div class="evo-line" aria-label="Evolution line">` +
-              [0, 1, 2].map((st) => `<div class="evo-st${st === 0 ? " cur" : ""}">${rigView(mon.id, st, lineUnit())}<span>${st ? "★".repeat(st) : "Base"}</span></div>`)
+              [0, 1, 2].map((st) => `<div class="evo-st${st === 0 ? " cur" : ""}">${rigView(mon.id, st, lineUnit())}<span>${st ? stars(st) : "Base"}</span></div>`)
                 .join(`<span class="arrow">›</span>`) + `</div>`
             : "") +
-          `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">⚡ ${mon.chargeCost} charge</span></div>` +
+          `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">${ic("charge")}${mon.chargeCost} charge</span></div>` +
           `<div class="s-desc">${esc(mon.ability.description)}</div>` +
-          (mon.ability.passive ? `<div class="s-pass">✦ ${esc(mon.ability.passive)}</div>` : "") +
+          (mon.ability.passive ? `<div class="s-pass">${ic("passive")}${esc(mon.ability.passive)}</div>` : "") +
           `<div class="s-actions">${draftMode ? "" : `<button id="pickSelect" class="${i >= 0 ? "ghost" : ""}">${esc(label)}</button>`}` +
           `<button class="ghost" id="sheetClose">Close</button></div></div>`;
         sheet.classList.remove("hidden");
@@ -1257,7 +1291,7 @@
         const ml = state.movesLeft ?? 2;
         const round = Math.floor((state.turnPasses || 0) / 2) + 1;
         let sd = "";
-        if (state.fatigueNext > 0) sd = `<span class="sd">☠ Sudden death — ${state.fatigueNext} damage at turn start</span>`;
+        if (state.fatigueNext > 0) sd = `<span class="sd">${ic("skull")}Sudden death — ${state.fatigueNext} damage at turn start</span>`;
         else if (state.suddenDeathIn > 0 && state.suddenDeathIn <= 6) {
           const rounds = Math.ceil(state.suddenDeathIn / 2);
           sd = `<span class="sd">Sudden death in ${rounds} round${rounds === 1 ? "" : "s"}</span>`;
@@ -1328,17 +1362,17 @@
         const dots = p.dots || [];
         const dotTotal = dots.reduce((s, d) => s + d.amount, 0);
         const chips = [];
-        if (p.shield > 0) chips.push(`<span class="chip shield">🛡 ${p.shield}</span>`);
+        if (p.shield > 0) chips.push(`<span class="chip shield" title="Shield">${ic("shield")}${p.shield}</span>`);
         if (dotTotal > 0) {
-          const icon = dots.some((d) => d.kind === "poison") ? (dots.some((d) => d.kind !== "poison") ? "🔥☠" : "☠") : "🔥";
-          chips.push(`<span class="chip dot-fx">${icon} ${dotTotal}/t</span>`);
+          const poisoned = dots.some((d) => d.kind === "poison"), burning = dots.some((d) => d.kind !== "poison");
+          chips.push(`<span class="chip dot-fx" title="Damage at the start of each turn">${burning ? ic("burn") : ""}${poisoned ? ic("skull") : ""}${dotTotal}/t</span>`);
         }
-        if (p.slow > 0) chips.push(`<span class="chip slow">🐌 −${p.slow}</span>`);
-        if (p.bubble > 0) chips.push(`<span class="chip bubble" title="Blocks the next harmful effect">🫧 ${p.bubble}</span>`);
+        if (p.slow > 0) chips.push(`<span class="chip slow" title="Fewer moves next turn">${ic("slow")}-${p.slow}</span>`);
+        if (p.bubble > 0) chips.push(`<span class="chip bubble" title="Blocks the next harmful effect">${ic("bubble")}${p.bubble}</span>`);
         const regen = (p.regen || []).reduce((sum, r) => sum + r.amount, 0);
-        if (regen > 0) chips.push(`<span class="chip regen" title="Heals at the start of each turn">✚ ${regen}/t</span>`);
-        if (dots.some((d) => d.kind === "poison")) chips.push(`<span class="chip dot-fx" title="Poisoned: healing is halved">½✚</span>`);
-        chips.push(`<span class="chip berry" data-berry>${gemIcon("berry", 16)}<b>${p.berries || 0}</b>/${BERRIES_TO_EVOLVE}</span>`);
+        if (regen > 0) chips.push(`<span class="chip regen" title="Heals at the start of each turn">${ic("heal")}${regen}/t</span>`);
+        if (dots.some((d) => d.kind === "poison")) chips.push(`<span class="chip dot-fx" title="Poisoned: healing is halved">${ic("halfHeal")}</span>`);
+        chips.push(`<span class="chip berry" data-berry>${gemIcon("berry", 16)}<span><b>${p.berries || 0}</b>/${BERRIES_TO_EVOLVE}</span></span>`);
         const card = hudOf(seat);
         card.classList.toggle("active", state.phase === "awaiting-move" && state.turn === seat);
         card.innerHTML =
@@ -1389,9 +1423,9 @@
           f.querySelector(".cbadge").innerHTML =
             (gems[mon.element] ? `<img class="px" src="${gems[mon.element]}" alt="" draggable="false">` : `<span>${EMOJI[mon.element]}</span>`) +
             `<div class="cbar"><div class="cbar-fill" style="width:${Math.round((c / cost) * 100)}%"></div>` +
-            `<span class="cbar-num">${c}/${cost}</span>${evo ? `<span class="cbar-stars">${"★".repeat(evo)}</span>` : ""}</div>` +
+            `<span class="cbar-num">${c}/${cost}</span>${evo ? `<span class="cbar-stars">${stars(evo)}</span>` : ""}</div>` +
             (evolvable ? `<span class="evo animate__animated animate__pulse animate__infinite">EVOLVE</span>` : "") +
-            (mon.sealed > 0 ? `<span class="lock">🔒 ${mon.sealed}</span>` : "");
+            (mon.sealed > 0 ? `<span class="lock">${ic("seal")}${mon.sealed}</span>` : "");
           f.onclick = () => openSheet(mon, isMe, evolvable);
         });
       }
@@ -1477,26 +1511,26 @@
         sheet.innerHTML =
           `<div class="sheet" style="--el: var(--${mon.element})">` +
           `<div class="s-art">${rigView(mon.id, evo, 3)}</div>` +
-          `<h2>${esc(mon.name)}${evo ? " " + "★".repeat(evo) : ""}</h2>` +
+          `<h2>${esc(mon.name)}${evo ? `<span class="stars">${stars(evo, "star", 3)}</span>` : ""}</h2>` +
           `<div class="s-sub">${gemIcon(mon.element, 16)} ${EL_LABEL[mon.element]}${evo ? ` · Evolution ${evo}/${MAX_EVOLUTION}` : ""}</div>` +
           (pxMon(mon.id)
             ? `<div class="evo-line" aria-label="Evolution line">` +
               [0, 1, 2].map((s) =>
-                `<div class="evo-st${s === evo ? " cur" : s > evo ? " locked" : ""}">${rigView(mon.id, s, lineUnit())}<span>${s ? "★".repeat(s) : "Base"}</span></div>`,
+                `<div class="evo-st${s === evo ? " cur" : s > evo ? " locked" : ""}">${rigView(mon.id, s, lineUnit())}<span>${s ? stars(s) : "Base"}</span></div>`,
               ).join(`<span class="arrow">›</span>`) + `</div>`
             : "") +
-          `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">⚡ ${mon.chargeCost} charge</span></div>` +
+          `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">${ic("charge")}${mon.chargeCost} charge</span></div>` +
           `<div class="s-desc">${esc(mon.ability.description)}</div>` +
-          (mon.ability.passive ? `<div class="s-pass">✦ ${esc(mon.ability.passive)}</div>` : "") +
+          (mon.ability.passive ? `<div class="s-pass">${ic("passive")}${esc(mon.ability.passive)}</div>` : "") +
           `<div class="s-meta">Charge ${Math.min(mon.charge, mon.chargeCost)}/${mon.chargeCost}` +
-          (mon.sealed > 0 ? ` · 🔒 sealed for ${mon.sealed} turn${mon.sealed === 1 ? "" : "s"}` : "") +
+          (mon.sealed > 0 ? ` · ${ic("seal")}sealed for ${mon.sealed} turn${mon.sealed === 1 ? "" : "s"}` : "") +
           (evo >= MAX_EVOLUTION ? " · Fully evolved" : "") + `</div>` +
           (mon.ability.nextEvolution && mon.ability.nextEvolution.length
-            ? `<div class="s-next"><h3>Next evolution · ${"★".repeat(evo + 1)}</h3><ul>` +
+            ? `<div class="s-next"><h3>Next evolution · ${stars(evo + 1)}</h3><ul>` +
               mon.ability.nextEvolution.map((c) => `<li>${esc(c)}</li>`).join("") + `</ul></div>`
             : "") +
           `<div class="s-actions">` +
-          (isMine && canEvolve ? `<button id="sheetEvolve">Evolve · 🍓${BERRIES_TO_EVOLVE}</button>` : "") +
+          (isMine && canEvolve ? `<button id="sheetEvolve">Evolve · ${gemIcon("berry", 16)} ${BERRIES_TO_EVOLVE}</button>` : "") +
           (isMine && !canEvolve && evo < MAX_EVOLUTION && state.players[room.seat].berries >= BERRIES_TO_EVOLVE
             ? `<button disabled>Evolve on your turn</button>` : "") +
           `<button class="ghost" id="sheetClose">Close</button></div></div>`;
@@ -1525,8 +1559,8 @@
         const say = (m) => { if (!quiet) toast(m); return false; };
         if (!myTurn()) return say("Not your turn");
         if (state.board[y]?.[x] == null) return false;
-        if (state.board[y][x] === "stone") return say("🪨 Stone can't be moved — match next to it to break it");
-        if ((state.ice?.[y]?.[x] ?? 0) > 0) return say("❄ That tile is frozen");
+        if (state.board[y][x] === "stone") return say("Stone can't be moved — match next to it to break it");
+        if ((state.ice?.[y]?.[x] ?? 0) > 0) return say("That tile is frozen");
         return true;
       }
       async function sendMove(from, to) {
@@ -1688,7 +1722,7 @@
         // Teams: ban slot + two picks; the next empty slot of whoever's turn it is glows.
         const team = (seat, label) => {
           const ban = d.bans[seat];
-          const banCell = typeof ban === "string" ? `<div class="dr-ban filled" title="Banned">${rigView(ban, 0, 1, CARD_CROP)}</div>`
+          const banCell = typeof ban === "string" ? `<div class="dr-ban filled" title="Banned">${rigView(ban, 0, 1, CARD_CROP)}<span class="ban-x">${ic("ban", 3)}</span></div>`
             : `<div class="dr-ban" title="Ban">${ban === false ? "—" : d.phase === "ban" ? "?" : ""}</div>`;
           const slots = [0, 1].map((i) => {
             const id = d.picks[seat][i];
@@ -1725,7 +1759,8 @@
           card.classList.toggle("mine", who === "mine");
           card.classList.toggle("theirs", who === "theirs");
           card.classList.toggle("myban", d.bans[me] === id && d.phase === "ban");
-          card.querySelectorAll(".dr-badge").forEach((b) => b.remove());
+          card.querySelectorAll(".dr-badge, .ban-x").forEach((b) => b.remove());
+          if (isBanned) card.insertAdjacentHTML("beforeend", `<span class="ban-x">${ic("ban", 4)}</span>`);
           if (who) card.insertAdjacentHTML("beforeend", `<span class="dr-badge who">${who === "mine" ? "You" : "Rival"}</span>`);
           card.setAttribute("aria-label", `${mon.name}${isBanned ? ", banned" : who === "mine" ? ", your pick" : who === "theirs" ? ", rival's pick" : ""}`);
         }
@@ -1766,9 +1801,9 @@
             `<div class="s-art">${rigView(mon.id, 0, 3)}</div>` +
             `<h2>${esc(mon.name)}</h2>` +
             `<div class="s-sub">${gemIcon(mon.element, 16)} ${EL_LABEL[mon.element]}${mon.archetype?.title ? ` · ${esc(mon.archetype.title)}` : ""}</div>` +
-            `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">⚡ ${mon.chargeCost} charge</span></div>` +
+            `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">${ic("charge")}${mon.chargeCost} charge</span></div>` +
             `<div class="s-desc">${esc(mon.ability.description)}</div>` +
-            (mon.ability.passive ? `<div class="s-pass">✦ ${esc(mon.ability.passive)}</div>` : "") +
+            (mon.ability.passive ? `<div class="s-pass">${ic("passive")}${esc(mon.ability.passive)}</div>` : "") +
             `<div class="s-actions">` +
             (action ? `<button id="drAct" class="${action === "ban" ? "danger" : ""}">${action === "ban" ? "Ban" : "Pick"} ${esc(mon.name)}</button>` : `<button disabled>${label}</button>`) +
             `<button class="ghost" id="sheetClose">Close</button></div></div>`;
@@ -1986,13 +2021,13 @@
       /** A quick stock pulse to say "this changed". */
       const bump = (el) => { if (!reduceMotion && el) playPreset(el, "pulse", { speed: "faster" }); };
 
-      /** Floating label over an element (pip bonus, etc.). */
-      function floatText(host, text, color) {
+      /** Floating label over an element (pip bonus, etc.), led by optional pixel icons. */
+      function floatText(host, text, color, icons = []) {
         const f = document.createElement("div");
         f.className = "float small";
         f.style.color = color;
         f.style.top = "-6px";
-        f.textContent = text;
+        f.innerHTML = icons.map((name) => ic(name)).join("") + esc(text);
         host.appendChild(f);
         setTimeout(() => f.remove(), 1100);
       }
@@ -2173,17 +2208,18 @@
         el.innerHTML = "";
       }
 
+      /** How each number shows: colour, pixel icon (web/icons.js), sign. */
       const EVENT_STYLE = {
-        attack: { color: null, icon: "", sign: "−" },
-        heal: { color: "#4fd17a", icon: "✚", sign: "+" },
-        shield: { color: "#7fd0ff", icon: "🛡", sign: "+" },
-        burn: { color: "#ff9a3c", icon: "🔥", sign: "", suffix: "/t" },
-        poison: { color: "#8be27f", icon: "☠", sign: "", suffix: "/t" },
-        "burn-tick": { color: "#ff9a3c", icon: "🔥", sign: "−" },
-        "poison-tick": { color: "#8be27f", icon: "☠", sign: "−" },
-        pierce: { color: null, icon: "➹", sign: "−" },
-        "regen-tick": { color: "#92e27c", icon: "✚", sign: "+" },
-        fatigue: { color: "#ff9a6b", icon: "☠", sign: "−" },
+        attack: { color: null, icon: "", sign: "-" },
+        heal: { color: "#4fd17a", icon: "heal", sign: "+" },
+        shield: { color: "#7fd0ff", icon: "shield", sign: "+" },
+        burn: { color: "#ff9a3c", icon: "burn", sign: "", suffix: "/t" },
+        poison: { color: "#8be27f", icon: "skull", sign: "", suffix: "/t" },
+        "burn-tick": { color: "#ff9a3c", icon: "burn", sign: "-" },
+        "poison-tick": { color: "#8be27f", icon: "skull", sign: "-" },
+        pierce: { color: null, icon: "pierce", sign: "-" },
+        "regen-tick": { color: "#92e27c", icon: "heal", sign: "+" },
+        fatigue: { color: "#ff9a6b", icon: "skull", sign: "-" },
       };
 
       /** Apply a number to a player's shown HP/shield and react: flash, monsters flinch or cheer, HUD shakes, float. */
@@ -2218,7 +2254,7 @@
         }
         const f = document.createElement("div");
         f.className = `float ${kind.replace("-tick", "")}`;
-        f.textContent = `${style.icon}${style.sign}${amount}${style.suffix || ""}`;
+        f.innerHTML = (style.icon ? ic(style.icon, 3) : "") + esc(`${style.sign}${amount}${style.suffix || ""}`);
         const at = hitOf(seat), box = side.getBoundingClientRect();
         f.style.top = Math.max(0, at.y - box.top - 22) + "px";
         side.querySelector(".s-fx").appendChild(f);
@@ -2252,7 +2288,7 @@
         banner: () => $("turnBanner"),
         fly, burst,
         bump, play: (el, preset, opts) => playPreset(el, preset, opts),
-        floatText, land, setTile, playStep,
+        floatText, land, setTile, playStep, icon: ic,
         charge: chargeBy,
         pose,
         shuffle: () => shuffleBoard(),
@@ -2283,7 +2319,8 @@
         cue("evolve");
         burst(at, "#ffd23c", 12, 52);
         burst(at, "#fff6c2", 6, 30);
-        floatText(f.querySelector(".stage"), "★".repeat(state.players[seat].monsters.find((m) => m.id === monsterId)?.evolution || 1), "#ffe14d");
+        const evo = state.players[seat].monsters.find((m) => m.id === monsterId)?.evolution || 1;
+        floatText(f.querySelector(".stage"), "", "#ffe14d", Array(evo).fill("star"));
         await arrived;
         f.classList.remove("spot");
       }
@@ -2340,7 +2377,7 @@
           state.ice = data.ice;
           renderBoard();
           markFresh(prevBoard, prevIce);
-          if (data.reshuffled) { toast("🔀 Board reshuffled"); await A.board.reshuffle.animate(fx); }
+          if (data.reshuffled) { toast("Board reshuffled"); await A.board.reshuffle.animate(fx); }
           else await A.board.iceLanded.animate(data.iceLanded || [], fx);
           const ticks = (data.abilities || []).filter((a) => a.type.endsWith("-tick") || a.type === "fatigue");
           await A.board.turnStart.animate(ticks, fx);
@@ -2554,7 +2591,7 @@
           `<h2>Friends</h2><div class="s-sub" style="--el: var(--accent2)">You're @${esc(account.username)}</div>` +
           `<div class="row-input"><input id="addFriend" type="text" placeholder="Add a friend by username" maxlength="16" autocomplete="off" /><button id="addFriendBtn" class="small">Add</button></div>` +
           (invites.length ? `<h3>Battle invites</h3>` + invites.map((i) => frow(
-            `<span class="fname ell">⚔️ ${esc(i.from.username)}</span><button class="small ghost" data-act="declineInv" data-id="${i.inviteId}">Decline</button><button class="small" data-act="acceptInv" data-id="${i.inviteId}">Accept</button>`)).join("") : "") +
+            `<span class="fname ell">${ic("battle")} ${esc(i.from.username)}</span><button class="small ghost" data-act="declineInv" data-id="${i.inviteId}">Decline</button><button class="small" data-act="acceptInv" data-id="${i.inviteId}">Accept</button>`)).join("") : "") +
           (f.incoming.length || f.outgoing.length ? `<h3>Requests</h3>` : "") +
           f.incoming.map((a) => frow(
             `<span class="fname ell">${esc(a.username)}</span><button class="small ghost" data-act="remove" data-id="${a.id}">Decline</button><button class="small" data-act="accept" data-id="${a.id}">Accept</button>`)).join("") +
@@ -2563,8 +2600,8 @@
           `<h3>Friends · ${f.friends.length}</h3>` +
           (f.friends.length ? f.friends.map((a) => frow(
             `<span class="dot ${a.online ? "" : "off"}"></span><span class="fname ell">${esc(a.username)}${a.unread ? `<span class="badge-n">${a.unread}</span>` : ""}</span>` +
-            `<button class="small ghost" data-act="chat" data-id="${a.id}" aria-label="Message">💬</button>` +
-            `<button class="small" data-act="invite" data-id="${a.id}" ${a.online ? "" : "disabled"}>⚔️ Invite</button>`)).join("")
+            `<button class="small ghost" data-act="chat" data-id="${a.id}" aria-label="Message">${ic("chat")}</button>` +
+            `<button class="small" data-act="invite" data-id="${a.id}" ${a.online ? "" : "disabled"}>${ic("battle")} Invite</button>`)).join("")
             : `<div class="empty">No friends yet. Ask yours for their username and add them above.</div>`) +
           `<div class="s-actions" style="margin-top:16px"><button class="ghost" data-act="close">Close</button></div>`);
         const add = async () => {
@@ -2612,7 +2649,7 @@
         const el = showPanel("chat",
           `<div class="chat-head"><button class="ghost small" data-act="back" aria-label="Back">‹</button><b class="ell">${esc(f.username)}</b>` +
           `<span class="dot ${f.online ? "" : "off"}" id="chatDot"></span><span style="flex:1"></span>` +
-          `<button class="ghost small" data-act="invite" ${f.online ? "" : "disabled"}>⚔️</button><button class="ghost small" data-act="unfriend">Unfriend</button></div>` +
+          `<button class="ghost small" data-act="invite" aria-label="Invite to battle" ${f.online ? "" : "disabled"}>${ic("battle")}</button><button class="ghost small" data-act="unfriend">Unfriend</button></div>` +
           `<div id="chatLog" class="chat-log"><div class="empty">Loading…</div></div>` +
           `<div class="row-input"><input id="chatInput" type="text" placeholder="Message ${esc(f.username)}" maxlength="500" autocomplete="off" /><button id="chatSend" class="small">Send</button></div>`);
         chatWith = id;
@@ -2641,7 +2678,7 @@
         try {
           const msgs = await api("GET", `/api/messages/${id}`);
           if (chatWith !== id) return;
-          $("chatLog").innerHTML = msgs.length ? "" : `<div class="empty">Say hi 👋</div>`;
+          $("chatLog").innerHTML = msgs.length ? "" : `<div class="empty">Say hi</div>`;
           for (const m of msgs) appendMessage(m);
           f.unread = 0;
           updateBadge();
@@ -2651,8 +2688,8 @@
 
       /* ---- live updates from the lobby socket ---- */
       function onSocialChanged(d) {
-        if (d.reason === "request") toast(`👥 ${d.from} wants to be friends`, 2600);
-        if (d.reason === "accepted" && d.from) toast(`👥 ${d.from} is now your friend`, 2600);
+        if (d.reason === "request") toast(`${d.from} wants to be friends`, 2600);
+        if (d.reason === "accepted" && d.from) toast(`${d.from} is now your friend`, 2600);
         loadFriends();
       }
 
@@ -2667,7 +2704,7 @@
         if (f) f.unread = (f.unread || 0) + 1;
         updateBadge();
         if (panel === "friends") renderFriends();
-        toast(`💬 ${m.fromUsername}: ${m.body.length > 48 ? m.body.slice(0, 47) + "…" : m.body}`, 3000);
+        toast(`${m.fromUsername}: ${m.body.length > 48 ? m.body.slice(0, 47) + "…" : m.body}`, 3000);
       }
 
       function onPresence(d) {
@@ -2699,7 +2736,7 @@
         incomingInvites.set(inv.inviteId, inv);
         updateBadge();
         if (panel === "friends") renderFriends();
-        if (room) return toast(`⚔️ ${inv.from.username} challenged you — finish this game first`, 3000);
+        if (room) return toast(`${inv.from.username} challenged you — finish this game first`, 3000);
         showInviteCard(inv);
       }
 
@@ -2710,7 +2747,7 @@
         card.innerHTML =
           `<div class="ic-top">${inv.draft ? "" : `<div class="ic-team">${art(m0, 40)}${art(m1, 40)}</div>`}` +
           `<div class="ell"><b>${esc(inv.from.username)}</b> challenges you!<div class="muted" style="font-size:12px">${note}</div></div></div>` +
-          `<div class="ic-actions"><button class="ghost" data-ic="decline">Decline</button><button data-ic="accept">Accept ⚔️</button></div><div class="ic-timer"></div>`;
+          `<div class="ic-actions"><button class="ghost" data-ic="decline">Decline</button><button data-ic="accept">${ic("battle")} Accept</button></div><div class="ic-timer"></div>`;
         card.dataset.invite = inv.inviteId;
         card.classList.remove("hidden");
         card.querySelector(".ic-timer").animate([{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }], { duration: inv.expiresInMs || 90000, fill: "forwards" });
@@ -2823,7 +2860,7 @@
         const el = showPanel("forfeit",
           `<h2>Give up this match?</h2>` +
           `<p class="muted" style="text-align:center;margin:8px 0 16px">Your rival wins, and it counts as a loss.</p>` +
-          `<div class="s-actions"><button class="danger" data-act="forfeit">🏳️ Forfeit</button><button class="ghost" data-act="close">Keep playing</button></div>`);
+          `<div class="s-actions"><button class="danger" data-act="forfeit">${ic("forfeit")} Forfeit</button><button class="ghost" data-act="close">Keep playing</button></div>`);
         el.onclick = (e) => {
           const btn = e.target.closest("[data-act]");
           if (!btn) return;
@@ -2865,6 +2902,8 @@
         $("menuForfeit").onclick = () => { sheet.classList.add("hidden"); confirmForfeit(); };
       }
       $("gameMenuBtn").addEventListener("click", openGameMenu);
+      for (const el of document.querySelectorAll("[data-icon]")) el.outerHTML = ic(el.dataset.icon);
+      for (const el of document.querySelectorAll("[data-gem]")) el.outerHTML = gemIcon(el.dataset.gem, 16);
       document.addEventListener("keydown", (e) => {
         if (e.key !== "Escape" || $("sheet").classList.contains("hidden")) return;
         if (panel) closePanel(); else $("sheet").classList.add("hidden");
@@ -2874,7 +2913,7 @@
           try {
             await gameSock.request("mm:debug", { action: b.dataset.dbg });
             await refresh();
-            toast(b.dataset.dbg === "berries" ? "+4 berries — tap a monster to evolve" : "⚡ Charged — your next match fires both moves");
+            toast(b.dataset.dbg === "berries" ? "+4 berries — tap a monster to evolve" : "Charged — your next match fires both moves");
           } catch (e) { toast(e.message); }
         });
       }

@@ -79,7 +79,8 @@ class Client:
 
     def submit(self, tool: str, args: dict) -> str:
         text = self.call(tool, args)[0]["text"]
-        if "rate limit" in text or "concurrent" in text.lower():
+        # PixelLab's own overload ("QueuePool limit ... reached") is a busy signal too: wait and resubmit
+        if "rate limit" in text or "concurrent" in text.lower() or "QueuePool" in text:
             raise Busy(text)
         try:
             data = json.loads(text)

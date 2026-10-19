@@ -27,23 +27,26 @@ CAND = HERE / "candidates"
 
 def run_jobs(client: Client, jobs: list[tuple[Path, str, dict]], poll: float = 6) -> None:
     """Submit (out_path, tool, args) jobs as fast as the plan allows; save each result's first image."""
-    pending: dict[str, Path] = {}
+    pending: dict[str, tuple[Path, str, dict]] = {}
     queue = list(jobs)
     while queue or pending:
         while queue:
-            out, tool, args = queue[0]
             try:
-                pending[client.submit(tool, args)] = out
+                pending[client.submit(*queue[0][1:])] = queue[0]
                 queue.pop(0)
             except Busy:
                 break
         time.sleep(poll)
-        for jid, out in list(pending.items()):
+        for jid, job in list(pending.items()):
+            out = job[0]
             try:
                 imgs = client.fetch(jid)
             except RuntimeError as e:
-                print("failed", out.name, e, file=sys.stderr)
                 del pending[jid]
+                if "QueuePool" in str(e):  # PixelLab was overloaded, not our request: try it again
+                    queue.append(job)
+                else:
+                    print("failed", out.name, e, file=sys.stderr)
                 continue
             if imgs is None:
                 continue

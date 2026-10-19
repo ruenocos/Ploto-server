@@ -68,8 +68,9 @@ def _rgba(h: str) -> tuple[int, int, int, int]:
     return int(h[1:3], 16), int(h[3:5], 16), int(h[5:7], 16), 255
 
 
-def cut_gem(poly, glyph, ramp: dict[str, str], size: int, table: float = 0.7, glint: bool = True) -> Image.Image:
-    """poly and glyph in the 32-unit space; ramp: outline, dark, mid, light, table, line, fill."""
+def cut_gem(poly, glyph, ramp: dict[str, str], size: int, table: float = 0.62, glint: bool = True) -> Image.Image:
+    """poly and glyph in the 32-unit space; ramp: outline, lo, dark, mid, light, hi (bevel facets, darkest to
+    brightest), table, gloss (the lit top-left of the table), line, fill (the glyph)."""
     k = U / size
     poly = _clockwise(poly)
     cx = sum(p[0] for p in poly) / len(poly)
@@ -87,11 +88,13 @@ def cut_gem(poly, glyph, ramp: dict[str, str], size: int, table: float = 0.7, gl
         elif (x, y) in in_glyph:
             c = "line" if any((x + dx, y + dy) not in in_glyph for dx, dy in n4) else "fill"
         elif _inside(tab, *sample(x, y)):
-            c = "table"
+            px, py = sample(x, y)
+            # a glossy band across the top-left of the table, as on a polished face
+            c = "gloss" if (px - cx) + (py - cy) < -(U / 2) * table * 0.55 else "table"
         else:
             s = _edge_shade(poly, *sample(x, y))
-            c = "light" if s > 0.3 else "dark" if s < -0.3 else "mid"
-            if c == "light":
+            c = "hi" if s > 0.62 else "light" if s > 0.2 else "mid" if s > -0.2 else "dark" if s > -0.62 else "lo"
+            if c in ("hi", "light"):
                 lit.append((x, y))
         img.putpixel((x, y), _rgba(ramp[c]))
     if glint and lit:  # a short white glint on the lit bevel, nearest the top-left corner
@@ -125,12 +128,17 @@ GLYPHS = {
                16 + (7.5 if i % 2 == 0 else 2.6) * math.sin(math.radians(-90 + 45 * i))) for i in range(8)],
 }
 
-RAMPS = {  # outline, bevel dark / mid / light, table, glyph line and fill
-    "water": {"outline": "#08223e", "dark": "#14609c", "mid": "#2a8ed8", "light": "#86d8ff", "table": "#3aa6ee", "line": "#14609c", "fill": "#8ad6ff"},
-    "earth": {"outline": "#2a160a", "dark": "#5e3416", "mid": "#8a5428", "light": "#c8945a", "table": "#9c6232", "line": "#5e3416", "fill": "#d8a46a"},
-    "fire": {"outline": "#3a0a0a", "dark": "#8a1616", "mid": "#c82a24", "light": "#ff7a5a", "table": "#dc3a2c", "line": "#8a1616", "fill": "#ff9a72"},
-    "nature": {"outline": "#0a2a12", "dark": "#196428", "mid": "#2c9a42", "light": "#86e68e", "table": "#38b052", "line": "#196428", "fill": "#9cec98"},
-    "light": {"outline": "#3a2802", "dark": "#a87006", "mid": "#e09e12", "light": "#ffe680", "table": "#f4bc24", "line": "#a87006", "fill": "#fff0a0"},
+RAMPS = {  # outline; bevel facets lo .. hi; table, its gloss; glyph line and fill
+    "water": {"outline": "#08223e", "lo": "#0e3f78", "dark": "#155fa6", "mid": "#2386d6", "light": "#5cbcf6", "hi": "#a8e4ff",
+              "table": "#2f98e6", "gloss": "#4cb0f2", "line": "#155fa6", "fill": "#9ad8ff"},
+    "earth": {"outline": "#2a160a", "lo": "#3e2210", "dark": "#5e3416", "mid": "#82502a", "light": "#b47e48", "hi": "#e2b27a",
+              "table": "#93602f", "gloss": "#a8743e", "line": "#4e2a12", "fill": "#dcaa70"},
+    "fire": {"outline": "#3a0a0a", "lo": "#5e0e10", "dark": "#8a1616", "mid": "#c02622", "light": "#f05a42", "hi": "#ffa486",
+              "table": "#d63428", "gloss": "#ea4c34", "line": "#7e1414", "fill": "#ffa080"},
+    "nature": {"outline": "#0a2a12", "lo": "#0f4a1e", "dark": "#196428", "mid": "#28903e", "light": "#58c868", "hi": "#a8f0a4",
+               "table": "#30a44a", "gloss": "#46ba5c", "line": "#165a24", "fill": "#a4eea0"},
+    "light": {"outline": "#3a2802", "lo": "#6e4a04", "dark": "#a87006", "mid": "#d89a10", "light": "#f8cc3c", "hi": "#fff0a0",
+              "table": "#eeb21e", "gloss": "#fcc838", "line": "#9a6806", "fill": "#fff3b0"},
 }
 
 
@@ -149,7 +157,8 @@ def _gem(name: str, size: int) -> _Img:
 
 def _berry(size: int) -> _Img:
     """Two cherries on one stem, with the same bevel lighting as the gems."""
-    ramp = {"outline": "#3a0612", "dark": "#a0142a", "mid": "#e02a44", "light": "#ff7a8a", "table": "#e02a44", "line": "#e02a44", "fill": "#e02a44"}
+    ramp = {"outline": "#3a0612", "lo": "#6e0a1e", "dark": "#a0142a", "mid": "#d0223c", "light": "#f25064", "hi": "#ffa0aa",
+            "table": "#e02a44", "gloss": "#e02a44", "line": "#e02a44", "fill": "#e02a44"}
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     k = U / size
     right = cut_gem(_arc(21.5, 21, 7.4, 0, 360, 24)[:-1], None, ramp, size, table=0.01)
@@ -172,7 +181,8 @@ def _berry(size: int) -> _Img:
 def _stone(size: int) -> _Img:
     """A dull blocker: the same square box, matte facets, no table or shine, a crack."""
     poly = [(6, 3), (25, 2.5), (30, 9), (29, 26), (23, 30), (7, 29.5), (2, 23), (2.5, 8)]
-    ramp = {"outline": "#16171c", "dark": "#4a4c56", "mid": "#70737e", "light": "#a2a6b2", "table": "#70737e", "line": "#2a2b32", "fill": "#2a2b32"}
+    ramp = {"outline": "#16171c", "lo": "#3a3c44", "dark": "#4e505a", "mid": "#6c6f7a", "light": "#8e929e", "hi": "#b2b6c2",
+            "table": "#70737e", "gloss": "#70737e", "line": "#2a2b32", "fill": "#2a2b32"}
     crack = [(16, 6), (17.5, 11), (15, 15), (19, 19), (17, 24), (16, 24), (18, 19), (14, 15), (16.5, 11), (15, 6)]
     return _Img("stone", cut_gem(poly, crack, ramp, size, table=0.01, glint=False))
 

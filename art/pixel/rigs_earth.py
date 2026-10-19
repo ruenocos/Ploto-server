@@ -35,7 +35,6 @@ def craggol(stage: int) -> Rig:
         r.pxs("moss", [(11, 11), (12, 10), (13, 10), (14, 10), (18, 10), (19, 10), (20, 11), (21, 11)])
         eyes(r, 16, 16, 6)
         r.pxs("ink", [(15, 22), (16, 22)])
-        r.pxs("blush", [(10, 20), (22, 20)])
         r.pxs("crack", [(22, 14), (23, 15), (9, 24), (10, 25)])
         r.part("sprout", "fx", pivot=(16, 10), parent="body", z=1)
         r.pxs("moss", [(16, 7), (16, 8), (16, 9)])
@@ -123,7 +122,6 @@ def rubbug(stage: int) -> Rig:
         r.part("head", "head", pivot=(16, 28), parent="body", z=1)
         r.ellipse(16, 24.2, 7.8, 6.2, "babyhead")
         eyes(r, 16, 22, 6)
-        r.pxs("blush", [(10, 26), (22, 26)])
         r.pxs("ink", [(15, 27), (16, 27)])
         r.pxs("horn", [(16, 17), (15, 18), (16, 18)])
     elif stage == 1:
@@ -280,7 +278,6 @@ def gemox(stage: int) -> Rig:
         r.ellipse(16, 22.6, 5, 2.8, "muzzle")
         r.pxs("ink", [(14, 22), (17, 22)])
         eyes(r, 16, 16, 6)
-        r.pxs("blush", [(10, 20), (22, 20)])
         r.pxs("gem", [(15, 12), (16, 12), (15, 13), (16, 13)])
         r.pxs("shine", [(15, 12)])
         for side in ("ear-l", "ear-r"):

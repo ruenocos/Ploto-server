@@ -724,9 +724,11 @@ export function effectiveCost(def: Monster, evolution: number): number {
 }
 
 function describeShape(shape: MatchShape, size: number): string {
-  if (shape === "row") return size === 1 ? "match a random row" : `match ${size} random rows`;
-  if (shape === "col") return size === 1 ? "match a random column" : `match ${size} random columns`;
-  return `match a ${size}×${size} area`;
+  // "Clear", not "match": players match gems themselves; a blast clears them for you.
+  const what = shape === "row" ? (size === 1 ? "a random row" : `${size} random rows`)
+    : shape === "col" ? (size === 1 ? "a random column" : `${size} random columns`)
+    : `a ${size}×${size} area`;
+  return `clear ${what} (its gems charge you)`;
 }
 
 /** Human-readable text for a list of effects. */
@@ -737,7 +739,7 @@ export function describeEffects(effects: readonly Effect[], element: Element): s
       case "heal": return `heal ${e.amount} HP`;
       case "shield": return `gain ${e.amount} shield`;
       case "drain": return `steal ${e.amount} HP`;
-      case "dot": return `${e.dot} ${e.amount}/turn for ${e.turns} turns` + (e.dot === "poison" ? " (halves their healing)" : "");
+      case "dot": return `${e.dot} the rival for ${e.amount} damage/turn over ${e.turns} turns` + (e.dot === "poison" ? " (halves their healing)" : "");
       case "ignite": return "detonate the rival's burns for all their remaining damage";
       case "regen": return `regenerate ${e.amount} HP/turn for ${e.turns} turns`;
       case "bubble": return e.count === 1 ? "block the next harmful effect on you" : `block the next ${e.count} harmful effects on you`;
@@ -745,11 +747,11 @@ export function describeEffects(effects: readonly Effect[], element: Element): s
       case "freeze": return `freeze ${e.count} tiles for the rival's ` + (e.turns > 1 ? `next ${e.turns} turns` : "turn");
       case "petrify": return `turn ${e.count} tiles to stone`;
       case "convert": return `turn ${e.count} tiles into ${element}`;
-      case "sap": return `drain ${e.count} charge from each rival`;
-      case "slow": return `rival loses ${e.count} move${e.count === 1 ? "" : "s"} next turn`;
-      case "seal": return `a rival monster can't charge for ${e.turns} turns`;
+      case "sap": return `drain ${e.count} charge from each rival monster`;
+      case "slow": return `the rival loses ${e.count} move${e.count === 1 ? "" : "s"} next turn`;
+      case "seal": return `seal a random rival monster: it can't charge for ${e.turns} turns`;
       case "haste": return `gain ${e.count} extra move${e.count === 1 ? "" : "s"}`;
-      case "cleanse": return "cure burns & poison";
+      case "cleanse": return "cure burns and poison";
       case "empower": return `give ${e.count} charge to your partner`;
     }
   });

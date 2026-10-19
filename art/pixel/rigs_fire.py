@@ -12,6 +12,9 @@ from rigkit import Rig, eyes, mirror_poly, mirror_pts, sym_poly
 
 OUT_FIRE = "#1a0606"
 FIRE_SOFT = ["#9a2a14", "#d2481f", "#f7703a", "#ffab6e"]  # babies: a touch lighter
+# Scorchpaw is sooty red-brown with a bright flame mane, so it never reads as a recoloured Pyrup.
+SOOT_SOFT = ["#4a1612", "#7a261c", "#b23c26", "#e0643a"]
+SOOT = ["#2e1012", "#5a1c1a", "#8e2c22", "#c24a2e"]
 
 
 def _mirror_px(pts):
@@ -123,8 +126,8 @@ def scorchpaw(stage: int) -> Rig:
     r = Rig(
         "scorchpaw",
         base_materials(
-            fur=Material(FIRE_SOFT if stage == 0 else ["#7a1d10", "#b9341b", "#e9562c", "#ff9455"]), belly=Material(PEACH),
-            mane=Material(["#2a0609", "#541014", "#841b1d", "#b8352a"]), horn=Material(BONE),
+            fur=Material(SOOT_SOFT if stage == 0 else SOOT), belly=Material(PEACH),
+            mane=Material(FLAME), horn=Material(BONE),
             flame=Material(FLAME), nose=Material([INK], flat=True), brow=Material(["#3a0a0c"], flat=True),
             eye=Material(["#ffd23c"], flat=True), pupil=Material([INK], flat=True), fang=Material(["#ffffff"], flat=True),
             lava=Material(["#ffb23a"], flat=True),
@@ -147,7 +150,6 @@ def scorchpaw(stage: int) -> Rig:
         eyes(r, 16, 15, 6)
         r.pxs("nose", [(15, 19), (16, 19)])
         r.pxs("pupil", [(15, 21), (16, 21)])
-        r.pxs("blush", [(9, 19), (10, 19), (21, 19), (22, 19)])
         for side, c in (("ear-l", (9.4, 12)), ("ear-r", (22.6, 12))):
             r.part(side, side, pivot=c, parent="head", z=-1)
             r.ellipse(c[0], c[1], 2.4, 2.4, "fur")

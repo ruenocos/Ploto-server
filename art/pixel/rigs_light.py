@@ -1,4 +1,4 @@
-"""Light rigs: Lumowl, Glintling, Lumistag, Lumoth (three stages each).
+"""Light rigs: Lumowl, Glintling, Dawnhart (lumistag), Halomoth (lumoth) (three stages each).
 
 Each line follows EVOLUTION.md: a round baby, a lankier adolescent with one new
 feature, and an adult with its own silhouette.
@@ -7,10 +7,10 @@ feature, and an adult with its own silhouette.
   great owl with prism-tipped wings spread wide.
 - Glintling: a chubby sitting star -> a comet with a trailing tail -> a robed
   dawn spirit with a sunburst halo, holding two starlets.
-- Lumistag: a big-headed fawn with antler buds -> a long-legged yearling (three
+- Dawnhart: a big-headed fawn with antler buds -> a long-legged yearling (three
   quarter view) with forked antlers -> a stag with a gold mane and wide,
   starlit antlers.
-- Lumoth: a fuzzy haloed larva -> an upright moth with small round wings -> a
+- Halomoth: a fuzzy haloed larva -> an upright moth with small round wings -> a
   luna-moth adult with pointed forewings and long streamers.
 """
 from __future__ import annotations
@@ -49,7 +49,6 @@ def lumowl(stage: int) -> Rig:
         eyes(r, 16, 17, 6)
         r.pxs("beak", [(15, 22), (16, 22), (15, 23), (16, 23)])
         r.pxs("mark", [(12, 26), (13, 27), (19, 26), (18, 27)])
-        r.pxs("blush", [(7, 23), (24, 23)])
         for side in ("ear-l", "ear-r"):
             r.part(side, side, pivot=(10, 12) if side == "ear-l" else (22, 12), parent="body", z=-1)
             pts = [(8.4, 13.6), (7.2, 6.2), (12.8, 10.8)]
@@ -175,7 +174,7 @@ def glintling(stage: int) -> Rig:
     return r
 
 
-# ------------------------------------------------------------------ Lumistag
+# ------------------------------------------------------------------ Dawnhart
 def lumistag(stage: int) -> Rig:
     r = Rig("lumistag", base_materials(fur=Material(["#8a7a5a", "#d8cdb0", "#f6f0e0", "#ffffff"]), muzzle=Material(["#9a9488", "#cfc8b8", "#ece6d8", "#ffffff"]),
                                        antler=Material(GOLD), gem=Material(["#ffd23c"], flat=True), glow=Material(["#ffd56a"], flat=True),
@@ -194,7 +193,6 @@ def lumistag(stage: int) -> Rig:
         r.ellipse(16, 19.2, 3.4, 2.2, "muzzle")
         r.pxs("ink", [(15, 18), (16, 18)])
         eyes(r, 16, 13, 6)
-        r.pxs("blush", [(10, 17), (21, 17)])
         r.pxs("gem", [(15, 10), (16, 10)])
         for side in ("ear-l", "ear-r"):
             r.part(side, side, pivot=(10, 14) if side == "ear-l" else (22, 14), parent="head", z=-1)
@@ -261,7 +259,7 @@ def lumistag(stage: int) -> Rig:
     return r
 
 
-# ------------------------------------------------------------------ Lumoth
+# ------------------------------------------------------------------ Halomoth
 def lumoth(stage: int) -> Rig:
     r = Rig("lumoth", base_materials(wing=Material(["#8a5a0c", "#d39a17", "#ffd23c", "#fff0a0"]), wing2=Material(["#8a2c4c", "#d0517a", "#ff8fb3", "#ffc6d8"]),
                                      fuzz=Material(["#a08a62", "#ecd9ae", "#fff3d6", "#ffffff"]), body=Material(["#7a5a14", "#c49a2a", "#f0c850", "#ffe48a"]),

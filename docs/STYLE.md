@@ -87,7 +87,17 @@ No rounded corners, no blur, no soft drop shadows. Depth is bevels only.
   HP segmented every 10% so you can count chunks. A cream "ghost" shows damage
   just taken. Shield is a striped overlay.
 - **Chips and tags:** small wells in Pixelify Sans 700, a pixel icon first.
-  Element tags fill with the element hue and ink text.
+  Status chips list buffs before debuffs and carry a one-UI-pixel underline
+  (green for buffs, red for debuffs); timed ones end in `×turns`. Element tags
+  fill with the element hue and ink text.
+- **Element hues** are the `--fire` … `--light` tokens (plus `--berry`,
+  `--stone`) and nothing else: tiles, motes, bursts and tags all read them.
+- **Toasts** sit at the top of the screen, clear of the dock, the board and
+  the thumb. Plain text, sentence case, no exclamation marks.
+- **Questions** ("Forfeit this match?", "Sign out?") are the in-game sheet
+  via `confirmPanel`, never the browser's confirm box.
+- **Your name** gets a small YOU tag rather than a "(you)" suffix, so it never
+  pushes the name into an ellipsis.
 - **Icons:** never emoji (every phone draws them differently, and some can't
   draw them at all). Elements and berries use the gem sprites; everything else
   (shield, burn, poison, slow, bubble, heal, halved healing, seal, charge,
@@ -126,7 +136,19 @@ No rounded corners, no blur, no soft drop shadows. Depth is bevels only.
   forces it on).
 - Text colours meet WCAG AA (4.5:1) on the surfaces they sit on. Gems differ
   in shape as well as colour.
-- Keyboard focus shows as an inset cream ring.
+- Keyboard focus shows as an inset cream ring. The board takes focus: arrow
+  keys move a dashed cursor, Enter or Space picks and swaps, Escape lets go.
+  Monsters are focusable (Enter opens their sheet). Sheets are modal dialogs:
+  focus moves in, Tab stays inside, Escape closes, and focus returns to what
+  opened them.
+- Small buttons are at least 40 px tall, main buttons 44 px.
+
+## Voice
+
+Plain and short. Sentence case, no em dashes, no exclamation marks, no emoji.
+Say "rival" for the other player and "bot" for the practice opponent. Server
+errors reach players through `errText()`, which capitalises them and turns
+internal failures into a plain "Something went wrong. Try again".
 
 ## Evolutions
 

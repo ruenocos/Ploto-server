@@ -119,13 +119,13 @@ export function registerApi(app: FastifyInstance, s: Services): void {
   // Balance data only: monsters, matchups, teams. No humans in here.
   const labGate = (req: FastifyRequest, reply: FastifyReply): boolean => {
     if (!s.statsKey) {
-      reply.code(503).send({ error: "🔒 the lab is closed (set STATS_KEY on the server)" });
+      reply.code(503).send({ error: "the lab is closed (set STATS_KEY on the server)" });
       return false;
     }
     const given = String(req.headers["x-lab-key"] ?? (req.query as Record<string, unknown>)["key"] ?? "");
     const a = Buffer.from(given), b = Buffer.from(s.statsKey);
     if (a.length !== b.length || !timingSafeEqual(a, b)) {
-      reply.code(403).send({ error: "🧪 wrong lab key, no monsters for you" });
+      reply.code(403).send({ error: "wrong lab key" });
       return false;
     }
     return true;

@@ -16,6 +16,9 @@ from rigkit import Rig, eyes, mirror_poly, sparkle, sym_poly
 
 WATER_BODY = ["#123a7d", "#1f63b8", "#3aa0ff", "#8fd3ff"]
 DEEP = ["#0a1c3c", "#14325e", "#22508a", "#3a74b0"]  # adult accent: darker shell/plates
+# Krakling is deep-sea indigo, so it never reads as a blue blob next to Bublob's pale jelly.
+INDIGO = ["#1c1a5e", "#33309a", "#5458d6", "#8d92f2"]
+INDIGO_DEEP = ["#0e0c30", "#1c1856", "#2c2a80", "#4644a8"]
 
 
 def flip(pts):
@@ -209,8 +212,8 @@ def frostnip(stage: int) -> Rig:
 
 # --------------------------------------------------------------------- Krakling
 def krakling(stage: int) -> Rig:
-    r = Rig("krakling", base_materials(body=Material(WATER_BODY), tent=Material(WATER_BODY),
-                                       spot=Material(["#0f2f6b", "#174f9a", "#2a7fd6", "#4d9fe8"]), plate=Material(DEEP),
+    r = Rig("krakling", base_materials(body=Material(INDIGO), tent=Material(INDIGO),
+                                       spot=Material(["#120f3e", "#24206e", "#3c3aa8", "#6a6ad8"]), plate=Material(INDIGO_DEEP),
                                        sucker=Material(["#9cd6ff"], flat=True), fin=Material(AQUA),
                                        glow=Material(["#7ff7ff"], flat=True), eye=Material(["#ffa040"], flat=True)), "#071026", stage)
     if stage == 0:
@@ -225,7 +228,6 @@ def krakling(stage: int) -> Rig:
         r.ellipse(16, 24.4, 8.3, 3.4, "body")
         r.pxs("spot", [(9, 12), (10, 12), (9, 13), (21, 11), (22, 11), (22, 12), (13, 10)])
         eyes(r, 16, 17, 6)
-        r.pxs("blush", [(8, 22), (9, 22), (22, 22), (23, 22)])
         r.pxs("ink", [(15, 23), (16, 23)])
         return r
 

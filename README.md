@@ -61,7 +61,8 @@ kits beat or combo with which is for players to discover). Quick Play gives 20
 seconds per step (then no ban or a random pick); friend rooms and bot practice
 have no timer, and the bot drafts counters too.
 
-**Accounts & friends.** Claim a username (no password: the server hands back a
+**Accounts & friends.** Optional, and never in the way: play first, then tap
+**Claim a username** in the lobby (no password: the server hands back a
 secret key that stays in the browser's localStorage; copy it from your profile to
 sign in on another device). Then add friends by username, chat with them, and
 tap **Invite** to start a match without sharing codes. Your profile shows your
@@ -82,7 +83,7 @@ Animate.css presets: they wind up to cast, strike, flinch when hit, cheer on
 heals and shields, wobble when slowed, and flash into their next stage when
 they evolve. Tap one for its move, passive and evolution line.
 
-- Drag a gem onto a neighbour to swap (or tap one, then the other). Any swap is allowed: one that makes no
+- Drag a gem onto a neighbour to swap (or tap one, then the other; on a keyboard, arrow keys move a cursor and Enter picks and swaps). Any swap is allowed: one that makes no
   match just moves the tile (handy for setting up a combo) and still uses a move,
   so the board can never lock you in.
 - Stuck? After 8 seconds without a move, the best swap on the board nudges.
@@ -108,12 +109,12 @@ they evolve. Tap one for its move, passive and evolution line.
 | ------- | --------- | ---------- |
 | 🔥 Fire | Destroyer | big hits, burns (Pyrup detonates them), blasts that match rows/columns/areas (the tiles charge you) |
 | 💧 Water | Controller | freeze the rival's best tiles for their turn, drain rival charge, make the rival lose a move; Bublob's bubble blocks the rival's control |
-| ⛰️ Earth | Fortress | stone the rival's element tiles, quakes, big shields and heals |
-| 🌿 Nature | Sustain | poison (halves the rival's healing), life-steal, seal a rival monster's charge, overgrowth |
-| ✨ Light | Tempo | burst, piercing hits that ignore shields, extra moves, regeneration, charging its partner |
+| ⛰️ Earth | Guardian | stone the rival's element tiles, quakes, big shields and heals |
+| 🌿 Nature | Survivor | poison (halves the rival's healing), life-steal, seal a rival monster's charge, overgrowth |
+| ✨ Light | Striker | burst, piercing hits that ignore shields, extra moves, regeneration, charging its partner |
 
 20 monsters, each with its own move; some have passives (Scorchpaw goes
-**berserk** at low HP, Lumoth **follows up** whenever its partner hits).
+**berserk** at low HP, Halomoth **follows up** whenever its partner hits).
 
 ## Run it
 

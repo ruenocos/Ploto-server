@@ -393,7 +393,7 @@ export class SignalingServer {
           firstTurn,
           players: [
             { peerId: peer.id, displayName: this.nameFor(peer, req.displayName), monsters: req.monsters },
-            { peerId: `bot:${randomUUID()}`, displayName: "Practice Bot", monsters: randomPicks() },
+            { peerId: `bot:${randomUUID()}`, displayName: "Bot", monsters: randomPicks() },
           ],
           stepMs: req.draft ? null : undefined, // the bot drafts too; no timer
           options: this.roomOptions("practice", peer.id, null, { botSeat: 1 }),

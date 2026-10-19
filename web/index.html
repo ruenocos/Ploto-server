@@ -37,7 +37,8 @@
         --c-good: #36b65b;  --c-good-hi: #92e27c;
         --c-bad: #d8364b;   --c-bad-hi: #ff8080;
         --c-gold: #ffcc33;  --c-gold-lo: #a8740e;
-        --fire: #ff6b3d; --water: #3aa0ff; --earth: #c98a46; --nature: #4ccb6b; --light: #ffd23c;
+        --fire: #ff6b3d; --water: #3aa0ff; --earth: #c98a46; --nature: #4ccb6b; --light: #ffd23c; --berry: #e8304a; --stone: #9aa0ad;
+        /* the element hues above are the only ones: tiles, motes, bursts and tags all read them */
         /*
          * type: Silkscreen for labels, numbers and headings; Pixelify Sans for reading.
          * Silkscreen is drawn on an 8px grid, so it's only crisp when each of its
@@ -99,7 +100,7 @@
       button:disabled { --b: #3a3f57; --b-hi: #4b5170; --b-lo: #2a2e42; color: #8b90a8; cursor: default; transform: none; text-shadow: none; }
       button.ghost { --b: var(--c-raise); --b-hi: var(--c-edge); --b-lo: var(--c-well); color: var(--c-text); }
       button.danger { --b: var(--c-bad); --b-hi: var(--c-bad-hi); --b-lo: #7c1626; }
-      button.small { padding: 10px 10px 12px; }
+      button.small { padding: 11px 10px 13px; }
       input[type="text"] {
         font: 600 var(--fs-m)/1.2 var(--f-text); width: 100%; min-width: 0; color: var(--c-text);
         background: var(--c-well); border: var(--px) solid var(--c-ink); padding: 11px 12px; outline: none;
@@ -117,22 +118,23 @@
       .px-icon.ic { display: inline-block; vertical-align: middle; flex: none; }
       button .ic { margin: -4px 4px -2px 0; }
       .chip.bubble { color: #bfefff; } .chip.regen { color: var(--c-good-hi); }
+      .chip.buff { box-shadow: inset 0 calc(var(--px) * -1) 0 var(--c-good); } .chip.debuff { box-shadow: inset 0 calc(var(--px) * -1) 0 var(--c-bad); }
       .chip.shield { color: #8fd8ff; } .chip.dot-fx { color: #ffa24a; } .chip.berry { color: #ff9cc0; } .chip.slow { color: #9bf6ff; }
       .badge-n { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; margin-left: 6px; background: var(--c-bad); color: #fff; font: 700 var(--fs-xs)/1 var(--f-text); }
       .dot { width: 8px; height: 8px; background: var(--c-good); flex: none; box-shadow: 0 0 0 var(--px) var(--c-ink); }
       .dot.off { background: var(--c-bad); }
 
       /* ---------------------------------------------------------------- lobby */
-      #lobby { max-width: 980px; margin: 0 auto; padding: 18px 16px calc(var(--dock-h, 160px) + 16px); }
+      #lobby { max-width: 720px; margin: 0 auto; padding: 18px 16px calc(var(--dock-h, 160px) + 16px); }
       .brand { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 10px; row-gap: 6px; }
       .brand .tag { grid-column: 1; }
       .brand h1 { font-size: var(--fl-3); white-space: nowrap; line-height: 1; margin: 0; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
       .brand .tag { font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-accent-hi); text-transform: uppercase; letter-spacing: 1px; }
       @media (max-width: 379px) { .brand h1 { font-size: var(--fl-2); } }
       @media (min-width: 760px) { .brand h1 { font-size: var(--fl-4); } }
-      .intro { color: var(--c-mute); margin: 8px 0 14px; max-width: 640px; }
+      .intro { color: var(--c-mute); margin: 8px 0 14px; }
       .acct { max-width: 520px; margin-bottom: 6px; display: grid; gap: 6px; }
-      .acct-guest, .acct-user, .row-input { display: flex; gap: 8px; }
+      .acct-guest, .acct-user, .row-input { display: flex; gap: 8px; align-items: center; }
       .acct-guest button, .row-input button { flex: none; }
       .acct-hint { font-size: var(--fs-s); }
       .sheet h3 { font: 700 var(--fs-xs)/1.2 var(--f-text); letter-spacing: 1px; color: var(--c-mute); margin: 16px 0 6px; text-transform: uppercase; }
@@ -166,7 +168,7 @@
       .el-head .el-title { font: 700 var(--fl-2)/1 var(--f-label); color: var(--c-cream); display: flex; align-items: center; gap: 6px; }
       .el-head .el-arch { font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; padding: 4px 6px; background: var(--el); color: var(--c-ink); }
       .el-head .el-blurb { color: var(--c-mute); font-size: var(--fs-s); }
-      .pick-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; max-width: 640px; } /* four monsters per element: one row each */
+      .pick-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; } /* four monsters per element: one row each */
       .pcard { position: relative; padding: 8px 4px 10px; cursor: pointer; user-select: none; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; color: inherit; font: inherit; text-transform: none; text-shadow: none; }
       .pcard:focus-visible { outline: var(--px) solid var(--c-cream); outline-offset: var(--px); }
       .pcard:active { transform: translateY(var(--px)); }
@@ -186,7 +188,7 @@
         border-top: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge);
         padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
       }
-      .dock-inner { max-width: 980px; margin: 0 auto; display: grid; gap: 8px; }
+      .dock-inner { max-width: 688px; margin: 0 auto; display: grid; gap: 8px; }
       .team-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
       .slot { width: 36px; height: 36px; background: var(--c-well); border: var(--px) dashed var(--c-edge); display: grid; place-items: center; flex: none; color: var(--c-mute); font: 700 var(--fl-1)/1 var(--f-label); }
       .slot svg { display: block; }
@@ -219,7 +221,9 @@
       .hud-card { padding: 6px 8px 8px; min-width: 0; position: relative; }
       .hud-card.active { border-color: var(--c-accent-hi); background: color-mix(in srgb, var(--c-accent) 22%, var(--c-panel)); }
       .hud-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
-      .hud-name { font: 700 var(--fs-s)/1.1 var(--f-text); flex: 1; min-width: 0; color: var(--c-cream); }
+      .hud-name { font: 700 var(--fs-s)/1.1 var(--f-text); flex: 0 1 auto; min-width: 0; color: var(--c-cream); }
+      .hud-top::after { content: ""; flex: 1; order: 9; }
+      .you-tag { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; letter-spacing: 1px; padding: 2px 4px; background: var(--c-accent); color: #fff; }
       .hud-card.foe .hud-top { flex-direction: row-reverse; }
       .hud-card.foe .hud-name { text-align: right; }
       .hud-card.foe .chips { justify-content: flex-end; }
@@ -350,6 +354,11 @@
       .tile.dragging { z-index: 2; }
       .tile.dragging .gem { filter: drop-shadow(0 calc(var(--px) * 2) 0 rgba(10, 12, 20, 0.6)); }
       .tile.hint { box-shadow: inset 0 0 0 var(--px) rgba(255, 244, 214, 0.55); }
+      /* keyboard cursor: a dashed cream bracket, only while the board has keyboard focus */
+      .board:focus { outline: none; }
+      .board:focus-visible .tile.kb { outline: var(--px) dashed var(--c-cream); outline-offset: calc(var(--px) * -1); z-index: 1; }
+      .fighter:focus { outline: none; }
+      .fighter:focus-visible .cbadge { outline: var(--px) solid var(--c-cream); outline-offset: var(--px); }
       /* the rival's turn: the board stays dimmed the whole time, their moves included */
       .board-wrap.waiting .board { filter: saturate(0.45) brightness(0.7); }
       .board-wrap.waiting::after {
@@ -360,20 +369,24 @@
       .board.falling { overflow: hidden; } /* new tiles enter from above the board */
       .tile { --el: #8a8f9c; position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: transform 0.12s steps(2); }
       .tile .gem { width: 100%; height: 100%; display: block; pointer-events: none; }
-      .tile.fire { --el: #ff5a36; --gc: #e8452c; } .tile.water { --el: #2fb0f0; --gc: #2b9fe0; } .tile.earth { --el: #c98a46; --gc: #b97636; }
-      .tile.nature { --el: #5ccf3c; --gc: #4fb935; } .tile.light { --el: #ffcc33; --gc: #f0b922; } .tile.berry { --el: #e8304a; }
+      .tile.fire { --el: var(--fire); --gc: #e8452c; } .tile.water { --el: var(--water); --gc: #2b9fe0; } .tile.earth { --el: var(--earth); --gc: #b97636; }
+      .tile.nature { --el: var(--nature); --gc: #4fb935; } .tile.light { --el: var(--light); --gc: #f0b922; } .tile.berry { --el: var(--berry); } /* --gc: the vector fallback gems only */
       .tile.stone { --el: #6d717c; cursor: not-allowed; }
       /* selection: a pixel bracket in cream, not a glow */
       .tile.sel { background: rgba(255, 244, 214, 0.12); box-shadow: inset 0 0 0 var(--px) var(--c-cream), 0 0 0 var(--px) var(--c-ink); }
       .tile.sel .gem { animation: gemWiggle 0.5s steps(2) infinite alternate; }
       @keyframes gemWiggle { from { transform: translateY(0); } to { transform: translateY(-8%); } }
+      /* ice: a flat pale sheet with a hard one-UI-pixel rim and a pixel glint (no rounding, no gradient) */
       .tile.iced::after {
-        content: ""; position: absolute; inset: 0; border-radius: 10px;
-        background: linear-gradient(150deg, rgba(225,245,255,0.6), rgba(140,200,255,0.18) 55%, rgba(225,245,255,0.45));
-        box-shadow: inset 0 0 0 2px rgba(215,242,255,0.85);
+        content: ""; position: absolute; inset: 0;
+        background:
+          linear-gradient(#fff, #fff) calc(var(--px) * 3) calc(var(--px) * 3) / calc(var(--px) * 3) var(--px) no-repeat,
+          linear-gradient(#fff, #fff) calc(var(--px) * 3) calc(var(--px) * 3) / var(--px) calc(var(--px) * 3) no-repeat,
+          rgba(190, 232, 255, 0.45);
+        box-shadow: inset 0 0 0 var(--px) rgba(225, 246, 255, 0.95);
       }
-      .tile.iced.fresh::after { animation: frostIn 520ms ease-out; }
-      @keyframes frostIn { 0% { opacity: 0; transform: scale(1.25); } 60% { opacity: 1; } 100% { transform: scale(1); } }
+      .tile.iced.fresh::after { animation: frostIn 320ms steps(4); }
+      @keyframes frostIn { 0% { opacity: 0; transform: scale(1.25); } 100% { opacity: 1; transform: scale(1); } }
       .tile.stone.fresh .gem { animation: stoneIn 520ms cubic-bezier(0.2, 1.5, 0.4, 1); }
       @keyframes stoneIn { 0% { transform: scale(1.5) translateY(-20%); opacity: 0; filter: brightness(2); } 100% { transform: none; opacity: 1; } }
       .tile.swapin { animation: swapin 180ms ease; }
@@ -455,6 +468,7 @@
       .sheet .s-pass .ic, .sheet .s-meta .ic { margin: -2px 4px 0 0; }
       .sheet .s-meta { color: var(--c-mute); font-size: var(--fs-s); margin: 6px 0 14px; }
       .sheet .s-actions { display: grid; gap: 8px; }
+      .sheet .s-status { margin: 0; padding: 10px 0; text-align: center; color: var(--c-mute); font: 700 var(--fs-s)/1.2 var(--f-text); text-transform: uppercase; letter-spacing: 1px; }
       .sheet .s-next { background: var(--c-well); padding: 10px 12px; margin: 0 0 14px; box-shadow: inset 0 var(--px) 0 var(--c-ink); }
       .sheet .s-next h3 { margin: 0 0 6px; color: var(--c-accent-hi); display: flex; align-items: center; gap: 4px; }
       .sheet .s-next ul { margin: 0; padding-left: 18px; font-size: var(--fs-s); display: grid; gap: 2px; }
@@ -479,7 +493,7 @@
       @media (prefers-reduced-motion: reduce) { button.pulse { animation: none; } }
 
       .toast {
-        position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translate(-50%, 10px);
+        position: fixed; left: 50%; top: calc(12px + env(safe-area-inset-top)); transform: translate(-50%, -10px);
         padding: 10px 14px; font: 600 var(--fs-m)/1.3 var(--f-text); opacity: 0; pointer-events: none;
         transition: opacity 0.18s steps(3), transform 0.18s steps(3); z-index: 60; max-width: 92vw; text-align: center;
       }
@@ -502,7 +516,7 @@
       .dr-timer-num { position: absolute; right: 4px; top: 50%; translate: 0 -50%; font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-ink); }
       .dr-team { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
       .dr-team.turn { border-color: var(--c-gold); }
-      .dr-team .dr-name { flex: 1; min-width: 0; font: 700 var(--fs-s)/1.1 var(--f-text); color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .dr-team .dr-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; font: 700 var(--fs-s)/1.1 var(--f-text); color: var(--c-cream); }
       .dr-slot, .dr-ban { width: 44px; height: 44px; flex: none; display: grid; place-items: center; background: var(--c-well); border: var(--px) dashed var(--c-edge); font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-mute); position: relative; overflow: hidden; }
       .dr-slot.filled { border-style: solid; border-color: var(--c-ink); }
       .dr-ban { border-color: rgba(216, 54, 75, 0.6); }
@@ -624,18 +638,17 @@
     </svg>
     <!-- ============================================================ LOBBY -->
     <section id="lobby">
-      <div class="brand"><h1>Match Monsters</h1><span class="tag">Plotomon</span><button id="settingsBtn" class="ghost small icon-btn settings-btn" aria-label="Settings" title="Settings"><svg class="px-icon" viewBox="0 0 9 7" width="18" height="14" aria-hidden="true"><rect x="0" y="1" width="9" height="1"/><rect x="2" y="0" width="2" height="3"/><rect x="0" y="5" width="9" height="1"/><rect x="5" y="4" width="2" height="3"/></svg></button></div>
-      <p class="intro">Pick two monsters. Match their gems to charge them up. Knock out your rival.</p>
+      <div class="brand"><h1>Match Monsters</h1><button id="settingsBtn" class="ghost small icon-btn settings-btn" aria-label="Settings" title="Settings"><svg class="px-icon" viewBox="0 0 9 7" width="18" height="14" aria-hidden="true"><rect x="0" y="1" width="9" height="1"/><rect x="2" y="0" width="2" height="3"/><rect x="0" y="5" width="9" height="1"/><rect x="5" y="4" width="2" height="3"/></svg></button></div>
+      <p class="intro">Match gems to charge your monsters. Knock out your rival.</p>
       <div id="acct" class="acct">
         <div id="acctGuest" class="acct-guest">
-          <input id="name" type="text" placeholder="Pick a username" maxlength="16" autocomplete="nickname" />
-          <button id="claim" class="small">Claim</button>
+          <button id="claimOpen" class="ghost small">Claim a username</button>
+          <span class="acct-hint muted">to keep your record and add friends</span>
         </div>
         <div id="acctUser" class="acct-user hidden">
           <button id="profileBtn" class="ghost small">@<span id="acctName"></span></button>
           <button id="friendsBtn" class="ghost small"><span data-icon="friends"></span> Friends<span id="friendsBadge" class="badge-n hidden"></span></button>
         </div>
-        <div id="acctHint" class="acct-hint muted">Keeps your record and friends. No password. <a href="#" id="useKey">Have a key?</a></div>
       </div>
       <div id="picker"></div>
     </section>
@@ -679,7 +692,7 @@
         <div class="hud-card me" id="meHud"></div>
         <div class="hud-card foe" id="foeHud"></div>
       </div>
-      <div id="peerWarn" class="peer-warn hidden">Your rival disconnected — waiting for them to come back…</div>
+      <div id="peerWarn" class="peer-warn hidden">Your rival disconnected. Waiting for them to come back…</div>
       <!-- The battlefield: your monsters on the left, the rival's on the right. -->
       <div class="arena" id="arena">
         <div class="arena-top">
@@ -691,7 +704,7 @@
         <div id="cast" class="cast"></div>
       </div>
       <div class="board-wrap" id="boardWrap">
-        <div id="board" class="board"></div>
+        <div id="board" class="board" tabindex="0" role="application" aria-label="Gem board. Arrow keys move, Enter picks a gem, then Enter on a neighbour swaps"></div>
       </div>
       <div id="debugBar" class="debug-bar hidden">
         <span class="muted">Practice</span>
@@ -884,6 +897,23 @@
       const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
+      /**
+       * A failure as players should read it: known connection errors in plain
+       * words, internal ones as a generic retry, server messages capitalised.
+       */
+      const ERROR_TEXT = {
+        "not connected": "Not connected. Check your connection and try again",
+        "connection closed": "The connection dropped. Try again",
+        "connection failed": "Couldn't reach the server",
+        "timed out": "The server didn't answer. Try again",
+      };
+      function errText(e) {
+        const m = String(e?.message ?? e ?? "").trim();
+        if (ERROR_TEXT[m]) return ERROR_TEXT[m];
+        if (!m || /^parse\(\)|required$|payload|coordinate|unknown (lobby )?method|not seated|^HTTP \d|unsupported/.test(m)) return "Something went wrong. Try again";
+        return m[0].toUpperCase() + m.slice(1);
+      }
+
       function toast(msg, ms = 1800) {
         const t = $("toast");
         t.textContent = msg;
@@ -1033,7 +1063,7 @@
         $("join").disabled = $("code").value.trim().length < 4; // the host's mode decides; the server checks picks
       }
 
-      const displayName = () => (account ? account.username : $("name").value.trim() || "Player");
+      const displayName = () => (account ? account.username : store.get("mm.name") || "Player");
       const payload = (extra = {}) => ({ gameId: "match_monsters", mode: "casual", displayName: displayName(), monsters: picks, draft: draftMode, ...extra });
 
       /** Blind pick (choose your team here) or Draft (ban and pick against your rival in the match). */
@@ -1043,7 +1073,7 @@
         try { localStorage.setItem("mm.draftMode", JSON.stringify(on)); } catch {}
         $("modeBlind").setAttribute("aria-pressed", String(!on));
         $("modeDraft").setAttribute("aria-pressed", String(on));
-        $("modeHint").textContent = on ? "Ban & pick in the match" : "Pick your team below";
+        $("modeHint").textContent = on ? "Ban and pick in the match" : "Pick your team below";
         $("dock").classList.toggle("drafting", on);
         refreshButtons();
       }
@@ -1092,17 +1122,17 @@
         setBusy(true);
         $("lobbyStatus").textContent = label;
         try { await fn(await ensureLobby()); }
-        catch (e) { $("lobbyStatus").textContent = "Error: " + e.message; setBusy(false); }
+        catch (e) { $("lobbyStatus").textContent = errText(e); setBusy(false); }
       }
 
       const quickPlay = () =>
-        lobbyAction("Finding an opponent…", async (sock) => {
+        lobbyAction("Looking for a rival…", async (sock) => {
           const res = await sock.request("mm:enqueue", payload());
-          $("lobbyStatus").textContent = res.queued ? "Waiting for an opponent… (or invite a friend)" : "Matched! Starting…";
+          $("lobbyStatus").textContent = res.queued ? "Waiting for a rival… You can invite a friend meanwhile" : "Rival found. Starting…";
         });
 
       const practice = () =>
-        lobbyAction("Summoning the practice bot…", async (sock) => {
+        lobbyAction("Starting a match against the bot…", async (sock) => {
           await sock.request("mm:practice", payload());
           $("lobbyStatus").textContent = "Starting…";
         });
@@ -1115,7 +1145,7 @@
           $("invite").classList.remove("hidden");
           $("copyLink").onclick = async () => {
             try {
-              if (navigator.share) await navigator.share({ title: "Match Monsters", text: "Battle me in Match Monsters!", url: link });
+              if (navigator.share) await navigator.share({ title: "Match Monsters", text: "Battle me in Match Monsters", url: link });
               else { await navigator.clipboard.writeText(link); toast("Invite link copied"); }
             } catch { toast(link, 4000); }
           };
@@ -1127,7 +1157,7 @@
         if (code.length < 4) return toast("Enter the room code");
         return lobbyAction(`Joining ${code}…`, async (sock) => {
           await sock.request("mm:joinRoom", payload({ code }));
-          $("lobbyStatus").textContent = "Joined! Starting…";
+          $("lobbyStatus").textContent = "Joined. Starting…";
         });
       };
 
@@ -1177,7 +1207,7 @@
         sock.on("mm:draftDone", live(async () => {
           cue("evolve");
           await refresh();
-          toast("Teams locked in!", 1800);
+          toast("Teams locked in", 1800);
         }));
         sock.on("mm:draftCancelled", live((d) => {
           if (d.by !== room.seat) toast("Your rival left the draft", 3000);
@@ -1188,7 +1218,7 @@
         if (state && state.phase === "finished") showEnd(state.winner === room.seat, state.forfeitedBy);
         if (state && !store.get("mm.tipChips")) {
           store.set("mm.tipChips", true);
-          toast("Tip: tap any monster to see what its move does", 3500);
+          toast("Tap any monster to see what its move does", 3500);
         }
       }
 
@@ -1197,7 +1227,7 @@
         if (state?.phase === "finished") return;
         if (ev && ev.code === 4004) { // a CloseEvent, or a failed reconnect's error
           // The server restarted (e.g. woke from sleep) and the room is gone.
-          toast("That game ended — the server restarted", 4000);
+          toast("That game ended because the server restarted", 4000);
           return leaveGame();
         }
         // Phones drop sockets on lock/background; quietly try to come back.
@@ -1291,7 +1321,7 @@
         const ml = state.movesLeft ?? 2;
         const round = Math.floor((state.turnPasses || 0) / 2) + 1;
         let sd = "";
-        if (state.fatigueNext > 0) sd = `<span class="sd">${ic("skull")}Sudden death — ${state.fatigueNext} damage at turn start</span>`;
+        if (state.fatigueNext > 0) sd = `<span class="sd">${ic("skull")}Sudden death: ${state.fatigueNext} damage at turn start</span>`;
         else if (state.suddenDeathIn > 0 && state.suddenDeathIn <= 6) {
           const rounds = Math.ceil(state.suddenDeathIn / 2);
           sd = `<span class="sd">Sudden death in ${rounds} round${rounds === 1 ? "" : "s"}</span>`;
@@ -1362,22 +1392,25 @@
         const dots = p.dots || [];
         const dotTotal = dots.reduce((s, d) => s + d.amount, 0);
         const chips = [];
-        if (p.shield > 0) chips.push(`<span class="chip shield" title="Shield">${ic("shield")}${p.shield}</span>`);
+        // Buffs first, then debuffs (a green or red underline says which); timed ones show turns left.
+        const turnsLeft = (list) => Math.max(...list.map((x) => x.turns));
+        if (p.shield > 0) chips.push(`<span class="chip buff shield" title="Shield">${ic("shield")}${p.shield}</span>`);
+        if (p.bubble > 0) chips.push(`<span class="chip buff bubble" title="Blocks the next harmful effect">${ic("bubble")}${p.bubble}</span>`);
+        const regens = p.regen || [];
+        const regen = regens.reduce((sum, r) => sum + r.amount, 0);
+        if (regen > 0) chips.push(`<span class="chip buff regen" title="Heals ${regen} at the start of each turn, ${turnsLeft(regens)} more turns">${ic("heal")}${regen}/t ×${turnsLeft(regens)}</span>`);
         if (dotTotal > 0) {
           const poisoned = dots.some((d) => d.kind === "poison"), burning = dots.some((d) => d.kind !== "poison");
-          chips.push(`<span class="chip dot-fx" title="Damage at the start of each turn">${burning ? ic("burn") : ""}${poisoned ? ic("skull") : ""}${dotTotal}/t</span>`);
+          chips.push(`<span class="chip debuff dot-fx" title="Takes ${dotTotal} at the start of each turn, ${turnsLeft(dots)} more turns">${burning ? ic("burn") : ""}${poisoned ? ic("skull") : ""}${dotTotal}/t ×${turnsLeft(dots)}</span>`);
         }
-        if (p.slow > 0) chips.push(`<span class="chip slow" title="Fewer moves next turn">${ic("slow")}-${p.slow}</span>`);
-        if (p.bubble > 0) chips.push(`<span class="chip bubble" title="Blocks the next harmful effect">${ic("bubble")}${p.bubble}</span>`);
-        const regen = (p.regen || []).reduce((sum, r) => sum + r.amount, 0);
-        if (regen > 0) chips.push(`<span class="chip regen" title="Heals at the start of each turn">${ic("heal")}${regen}/t</span>`);
-        if (dots.some((d) => d.kind === "poison")) chips.push(`<span class="chip dot-fx" title="Poisoned: healing is halved">${ic("halfHeal")}</span>`);
+        if (dots.some((d) => d.kind === "poison")) chips.push(`<span class="chip debuff dot-fx" title="Poisoned: healing is halved">${ic("halfHeal")}</span>`);
+        if (p.slow > 0) chips.push(`<span class="chip debuff slow" title="${p.slow} fewer move${p.slow === 1 ? "" : "s"} next turn">${ic("slow")}-${p.slow}</span>`);
         chips.push(`<span class="chip berry" data-berry>${gemIcon("berry", 16)}<span><b>${p.berries || 0}</b>/${BERRIES_TO_EVOLVE}</span></span>`);
         const card = hudOf(seat);
         card.classList.toggle("active", state.phase === "awaiting-move" && state.turn === seat);
         card.innerHTML =
           `<div class="hud-top"><span class="dot ${connected ? "" : "off"}"></span>` +
-          `<span class="hud-name ell">${esc(p.displayName)}${isMe ? " (you)" : ""}</span></div>` +
+          `<span class="hud-name ell">${esc(p.displayName)}</span>${isMe ? `<span class="you-tag">You</span>` : ""}</div>` +
           `<div class="hp"><div class="bar"><div class="ghost" style="width:${hpPct}%"></div>` +
           `<div class="fill ${hpPct <= 30 ? "low" : ""}" style="width:${hpPct}%"></div>` +
           `<div class="shieldfill" style="width:${shieldPct}%"></div></div>` +
@@ -1427,6 +1460,9 @@
             (evolvable ? `<span class="evo animate__animated animate__pulse animate__infinite">EVOLVE</span>` : "") +
             (mon.sealed > 0 ? `<span class="lock">${ic("seal")}${mon.sealed}</span>` : "");
           f.onclick = () => openSheet(mon, isMe, evolvable);
+          f.tabIndex = 0;
+          f.setAttribute("role", "button");
+          f.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSheet(mon, isMe, evolvable); } };
         });
       }
 
@@ -1477,6 +1513,7 @@
             t.dataset.y = y;
             if (gem) t.innerHTML = gemHtml(gem);
             if (selected && selected.x === x && selected.y === y) t.classList.add("sel");
+            if (kb.x === x && kb.y === y) t.classList.add("kb");
             grid.appendChild(t);
           });
         });
@@ -1512,7 +1549,7 @@
           `<div class="sheet" style="--el: var(--${mon.element})">` +
           `<div class="s-art">${rigView(mon.id, evo, 3)}</div>` +
           `<h2>${esc(mon.name)}${evo ? `<span class="stars">${stars(evo, "star", 3)}</span>` : ""}</h2>` +
-          `<div class="s-sub">${gemIcon(mon.element, 16)} ${EL_LABEL[mon.element]}${evo ? ` · Evolution ${evo}/${MAX_EVOLUTION}` : ""}</div>` +
+          `<div class="s-sub">${gemIcon(mon.element, 16)} ${EL_LABEL[mon.element]}${rosterById(mon.id)?.archetype ? ` · ${esc(rosterById(mon.id).archetype.title)}` : ""}</div>` +
           (pxMon(mon.id)
             ? `<div class="evo-line" aria-label="Evolution line">` +
               [0, 1, 2].map((s) =>
@@ -1532,7 +1569,7 @@
           `<div class="s-actions">` +
           (isMine && canEvolve ? `<button id="sheetEvolve">Evolve · ${gemIcon("berry", 16)} ${BERRIES_TO_EVOLVE}</button>` : "") +
           (isMine && !canEvolve && evo < MAX_EVOLUTION && state.players[room.seat].berries >= BERRIES_TO_EVOLVE
-            ? `<button disabled>Evolve on your turn</button>` : "") +
+            ? `<p class="s-status">You can evolve it on your turn</p>` : "") +
           `<button class="ghost" id="sheetClose">Close</button></div></div>`;
         sheet.classList.remove("hidden");
         const close = () => sheet.classList.add("hidden");
@@ -1546,7 +1583,7 @@
         if (animating) return;
         // The mm:evolved broadcast plays the transformation and refreshes.
         try { await gameSock.request("mm:evolve", { monsterId }); }
-        catch (e) { toast(e.message); }
+        catch (e) { toast(errText(e)); }
       }
 
       /* ------------------------------------------------------------ input
@@ -1559,7 +1596,7 @@
         const say = (m) => { if (!quiet) toast(m); return false; };
         if (!myTurn()) return say("Not your turn");
         if (state.board[y]?.[x] == null) return false;
-        if (state.board[y][x] === "stone") return say("Stone can't be moved — match next to it to break it");
+        if (state.board[y][x] === "stone") return say("Stone can't be moved. Match next to it to break it");
         if ((state.ice?.[y]?.[x] ?? 0) > 0) return say("That tile is frozen");
         return true;
       }
@@ -1567,7 +1604,7 @@
         selected = null;
         renderBoard();
         try { await gameSock.request("mm:move", { from, to }); }
-        catch (e) { toast(e.message); }
+        catch (e) { toast(errText(e)); }
       }
       async function onTile(x, y) {
         if (!canMove(x, y)) return;
@@ -1577,6 +1614,33 @@
         if (!adjacent) { selected = { x, y }; cue("select"); return renderBoard(); }
         sendMove(selected, { x, y });
       }
+
+      /**
+       * Keyboard play: arrow keys move a cursor over the board, Enter or Space
+       * acts like a tap (pick a gem, then a neighbour to swap), Escape lets go.
+       */
+      const kb = { x: 0, y: 0 };
+      $("board").addEventListener("keydown", (e) => {
+        if (!state) return;
+        const H = state.board.length, Wd = state.board[0].length;
+        const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+        if (step) {
+          e.preventDefault();
+          kb.x = Math.max(0, Math.min(Wd - 1, kb.x + step[0]));
+          kb.y = Math.max(0, Math.min(H - 1, kb.y + step[1]));
+          for (const t of $("board").querySelectorAll(".tile.kb")) t.classList.remove("kb");
+          tileAt(kb.x, kb.y)?.classList.add("kb");
+          armHint();
+        } else if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          armHint();
+          onTile(kb.x, kb.y);
+        } else if (e.key === "Escape" && selected) {
+          e.stopPropagation();
+          selected = null;
+          renderBoard();
+        }
+      });
 
       /** Drag to swap: the gem follows your finger (up to half a tile); past DRAG_SWAP of a tile it swaps. */
       const DRAG_START = 8; // px of travel before a press counts as a drag rather than a tap
@@ -1713,7 +1777,7 @@
         let status;
         if (d.phase === "ban") status = d.yourMove ? "Ban a monster" : `Waiting for ${rival} to ban…`;
         else if (d.phase === "pick") status = d.yourMove ? `Your pick (${d.picks[me].length + 1} of 2)` : `${rival} is picking…`;
-        else status = "Locked in!";
+        else status = "Teams locked in";
         $("drStatus").innerHTML = status;
         $("drStatus").classList.toggle("go", d.yourMove);
         if (d.yourMove && !draftHadMove) cue("turn");
@@ -1730,10 +1794,10 @@
             const next = d.phase === "pick" && d.turn === seat && i === d.picks[seat].length;
             return `<div class="dr-slot${next ? " next" : ""}">${i + 1}</div>`;
           }).join("");
-          return `<div class="dr-name">${label}</div>${banCell}${slots}`;
+          return `<div class="dr-name"><span class="ell">${label}</span>${seat === me ? `<span class="you-tag">You</span>` : ""}</div>${banCell}${slots}`;
         };
         $("drFoe").innerHTML = team(foe, rival);
-        $("drMe").innerHTML = team(me, `${esc(names[me])} (you)`);
+        $("drMe").innerHTML = team(me, esc(names[me]));
         $("drFoe").classList.toggle("turn", d.phase === "pick" && d.turn === foe);
         $("drMe").classList.toggle("turn", d.yourMove);
 
@@ -1747,7 +1811,7 @@
             card.className = "pcard dr-card";
             card.dataset.id = mon.id;
             card.style.setProperty("--el", `var(--${mon.element})`);
-            card.innerHTML = `<div class="art">${rigView(mon.id, 0, lineUnit(), CARD_CROP)}</div><div class="pname">${esc(mon.name)}</div>`;
+            card.innerHTML = `<div class="art">${rigView(mon.id, 0, 2, CARD_CROP)}</div><div class="pname">${esc(mon.name)}</div>`;
             card.addEventListener("click", () => openDraftSheet(mon));
             grid.appendChild(card);
           }
@@ -1794,8 +1858,8 @@
           let action = "", label = "";
           if (isBanned) label = "Banned";
           else if (taken) label = d.picks[me].includes(mon.id) ? "On your team" : "Taken by your rival";
-          else if (d.phase === "ban") { if (d.yourMove) action = "ban"; else label = d.bans[me] ? "You've banned" : "Waiting…"; }
-          else if (d.phase === "pick") { if (d.yourMove) action = "pick"; else label = "Rival's pick"; }
+          else if (d.phase === "ban") { if (d.yourMove) action = "ban"; else label = d.bans[me] ? "Banned. Waiting for your rival" : "Waiting for your rival"; }
+          else if (d.phase === "pick") { if (d.yourMove) action = "pick"; else label = "Your rival is picking"; }
           sheet.innerHTML =
             `<div class="sheet" style="--el: var(--${mon.element})">` +
             `<div class="s-art">${rigView(mon.id, 0, 3)}</div>` +
@@ -1805,7 +1869,7 @@
             `<div class="s-desc">${esc(mon.ability.description)}</div>` +
             (mon.ability.passive ? `<div class="s-pass">${ic("passive")}${esc(mon.ability.passive)}</div>` : "") +
             `<div class="s-actions">` +
-            (action ? `<button id="drAct" class="${action === "ban" ? "danger" : ""}">${action === "ban" ? "Ban" : "Pick"} ${esc(mon.name)}</button>` : `<button disabled>${label}</button>`) +
+            (action ? `<button id="drAct" class="${action === "ban" ? "danger" : ""}">${action === "ban" ? "Ban" : "Pick"} ${esc(mon.name)}</button>` : `<p class="s-status">${label}</p>`) +
             `<button class="ghost" id="sheetClose">Close</button></div></div>`;
           $("sheetClose").onclick = () => sheet.classList.add("hidden");
           const act = $("drAct");
@@ -1816,7 +1880,7 @@
                 await gameSock.request(action === "ban" ? "mm:ban" : "mm:pick", { monsterId: mon.id });
                 cue(action === "ban" ? "hit" : "select");
                 sheet.classList.add("hidden");
-              } catch (e) { toast(e.message); render(); }
+              } catch (e) { toast(errText(e)); render(); }
             };
             act.focus();
           }
@@ -1826,27 +1890,18 @@
         sheet.onclick = (e) => { if (e.target === sheet) sheet.classList.add("hidden"); };
       }
 
-      function leaveDraft() {
-        const el = showPanel("leave-draft",
-          `<h2>Leave the draft?</h2>` +
-          `<p class="muted" style="text-align:center;margin:8px 0 16px">The match is cancelled for both of you.</p>` +
-          `<div class="s-actions"><button class="danger" data-act="leave">Leave</button><button class="ghost" data-act="close">Keep drafting</button></div>`);
-        el.onclick = async (e) => {
-          const btn = e.target.closest("[data-act]");
-          if (!btn) return;
-          closePanel();
-          if (btn.dataset.act !== "leave") return;
-          try { await gameSock?.request("mm:leaveDraft", {}); } catch {}
-          leaveGame();
-        };
+      async function leaveDraft() {
+        if (!(await confirmPanel({ title: "Leave the draft?", body: "The match is cancelled for both of you.", yes: "Leave", no: "Keep drafting" }))) return;
+        try { await gameSock?.request("mm:leaveDraft", {}); } catch {}
+        leaveGame();
       }
 
       /* ------------------------------------------------------------ settings sheet */
       const SETTING_ROWS = [
         { key: "sound", label: "Sound", options: [[true, "On"], [false, "Off"]] },
         { key: "haptics", label: "Vibration", options: [[true, "On"], [false, "Off"]], test: true,
-          note: () => (window.MM_FEEDBACK?.canVibrate ? "Feel nothing? Take your phone off mute: Android silences app vibration then" : "Not supported on this device (iPhones don't allow it)") },
-        { key: "hints", label: "Hints", options: [[true, "On"], [false, "Off"]], note: () => "A good swap nudges after 8 seconds idle" },
+          note: () => (window.MM_FEEDBACK?.canVibrate ? "Feel nothing? Turn off silent mode: Android mutes vibration in it" : "Not supported on this device (iPhones don't allow it)") },
+        { key: "hints", label: "Hints", options: [[true, "On"], [false, "Off"]], note: () => "A good swap wiggles after 8 seconds without a move" },
         { key: "text", label: "Text size", options: [[1, "Normal"], [1.15, "Large"], [1.3, "Larger"]] },
         { key: "motion", label: "Motion", options: [["device", "Device"], ["reduced", "Reduced"]], note: () => (systemReduce?.matches ? "Your device asks for reduced motion" : "") },
       ];
@@ -1870,7 +1925,7 @@
           if (e.target === sheet) return close();
           if (e.target.closest?.("[data-test]")) {
             if (!settings.haptics) return toast("Vibration is off");
-            return toast(window.MM_FEEDBACK?.testBuzz() ? "Bzzt! Nothing? Check your phone isn't on mute" : "Your browser blocked vibration", 3000);
+            return toast(window.MM_FEEDBACK?.testBuzz() ? "Buzzing now. Feel nothing? Check that silent mode is off" : "Your browser blocked vibration", 3000);
           }
           const b = e.target.closest?.("[data-key]");
           if (!b) return;
@@ -1889,7 +1944,8 @@
        * dimmed board; its effect travels as an orb to the target, which flashes,
        * shakes (scaled to damage) and drains its HP bar in two stages.
        */
-      const COLOR = { fire: "#ff5a36", water: "#2fb0f0", earth: "#c98a46", nature: "#5ccf3c", light: "#ffcc33", berry: "#e8304a", stone: "#9aa0ad" };
+      /** Element hues for motes, bursts and orbs: read from the CSS tokens, so there's one set. */
+      const COLOR = Object.fromEntries([...ORDER, "berry", "stone"].map((k) => [k, getComputedStyle(document.documentElement).getPropertyValue(`--${k}`).trim()]));
       const tileAt = (x, y) => $("board").querySelector(`[data-x="${x}"][data-y="${y}"]`);
       const centerOf = (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
       /** A monster's fighter element on the battlefield, by id. */
@@ -2417,16 +2473,17 @@
         let label = "Rematch", hint = won ? "Same teams. They'll open the next game." : "Same teams. You'll open the next game.";
         let disabled = false, invited = false;
         if (!rivalOnline) { disabled = true; hint = "Your rival left the arena."; }
-        else if (mine) { label = "Waiting for rival…"; disabled = true; hint = "Rematch requested — they just need to accept."; }
-        else if (theirs) { label = "Accept rematch"; hint = "Your rival wants a rematch!"; invited = true; }
+        else if (mine) { label = "Waiting for rival…"; disabled = true; hint = "Rematch requested. Waiting for your rival to accept."; }
+        else if (theirs) { label = "Accept rematch"; hint = "Your rival wants a rematch"; invited = true; }
         $("end").innerHTML =
           `<div class="end-card"><div class="end-team${won ? " won" : " lost"}">${endTeam()}</div>` +
-          `<div class="big">${won ? "Victory!" : "Defeat"}</div>` +
-          `<p>${forfeit === "them" ? "Your rival gave up." : forfeit === "me" ? "You forfeited this one." : won ? "Your monsters carried the day." : "Your rival takes this one."}</p>` +
+          `<div class="big">${won ? "Victory" : "Defeat"}</div>` +
+          `<p>${forfeit === "them" ? "Your rival forfeited." : forfeit === "me" ? "You forfeited." : won ? "You knocked out their team." : "Your team was knocked out."}</p>` +
           `<div class="end-actions">` +
           `<button id="rematch" class="${invited ? "pulse" : ""}"${disabled ? " disabled" : ""}>${label}</button>` +
           `<div class="end-hint${invited ? " hot" : ""}">${hint}</div>` +
-          `<button id="again" class="ghost">Back to lobby</button></div></div>`;
+          `<button id="again" class="ghost">Back to lobby</button></div>` +
+          (account ? "" : `<p class="end-hint" style="margin:12px 0 0">Claim a username in the lobby to keep a record of your matches.</p>`) + `</div>`;
         $("rematch").onclick = requestRematch;
         $("again").onclick = leaveGame;
       }
@@ -2442,7 +2499,7 @@
           if (!endInfo) return;
           endInfo.mine = false;
           renderEnd();
-          toast(`Couldn't start a rematch — ${e.message || "connection lost"}`, 3000);
+          toast(`Couldn't start a rematch. ${errText(e)}`, 3000);
         }
       }
 
@@ -2460,7 +2517,7 @@
         selected = null;
         try {
           await openGame();
-          toast(state && state.turn === room.seat ? "Rematch! You go first" : "Rematch! Rival goes first", 2500);
+          toast(state && state.turn === room.seat ? "Rematch: you go first" : "Rematch: your rival goes first", 2500);
         } catch {
           toast("Couldn't join the rematch", 3000);
           leaveGame();
@@ -2504,7 +2561,6 @@
       function renderAccount() {
         $("acctGuest").classList.toggle("hidden", !!account);
         $("acctUser").classList.toggle("hidden", !account);
-        $("acctHint").classList.toggle("hidden", !!account);
         if (account) $("acctName").textContent = account.username;
         updateBadge();
       }
@@ -2516,14 +2572,33 @@
         b.classList.toggle("hidden", n === 0);
       }
 
-      async function claimName() {
+      /** Claiming a username, in a sheet (offered in the lobby and after a match, never as a gate). */
+      function openClaim() {
+        const el = showPanel("claim",
+          `<h2>Claim a username</h2>` +
+          `<p class="muted" style="text-align:center;margin:8px 0 14px">It keeps your record and lets friends find you. No password: this device keeps a key.</p>` +
+          `<div class="row-input"><input id="name" type="text" placeholder="Username" maxlength="16" autocomplete="nickname" /><button id="claim" class="small">Claim</button></div>` +
+          `<p class="muted" style="font-size:var(--fs-s);margin:10px 0 0">Played on another device? <a href="#" id="useKey">Sign in with your key</a></p>` +
+          `<div class="s-actions" style="margin-top:16px"><button class="ghost" data-act="close">Close</button></div>`);
+        const input = el.querySelector("#name");
+        input.value = store.get("mm.name") || "";
+        input.oninput = () => store.set("mm.name", input.value.trim());
+        input.onkeydown = (e) => { if (e.key === "Enter") claimName(input.value); };
+        el.querySelector("#claim").onclick = () => claimName(input.value);
+        el.querySelector("#useKey").onclick = (e) => { e.preventDefault(); openKeyPrompt(); };
+        el.querySelector('[data-act="close"]').onclick = closePanel;
+        input.focus();
+      }
+
+      async function claimName(name) {
         try {
-          const res = await api("POST", "/api/accounts", { username: $("name").value });
+          const res = await api("POST", "/api/accounts", { username: name });
           local.set("mm.key", res.key);
           setAccount({ id: res.id, username: res.username });
-          toast(`Welcome, ${res.username}! You're signed in on this device.`, 2600);
+          toast(`Signed in as ${res.username} on this device`, 2600);
+          if (panel === "claim") closePanel();
           await connectLobby();
-        } catch (e) { toast(e.message, 2600); }
+        } catch (e) { toast(errText(e), 2600); }
       }
 
       async function signInWithKey(key) {
@@ -2538,7 +2613,7 @@
           return true;
         } catch (e) {
           if (before) local.set("mm.key", before); else local.del("mm.key");
-          toast(e.status === 401 ? "That key doesn't match an account" : e.message);
+          toast(e.status === 401 ? "That key doesn't match an account" : errText(e));
           return false;
         }
       }
@@ -2550,7 +2625,7 @@
           setAccount({ id: me.id, username: me.username });
         } catch (e) {
           // 401: the key no longer exists (e.g. the server's data was reset).
-          if (e.status === 401) { local.del("mm.key"); setAccount(null); toast("Your account wasn't found — claim a name again", 3000); }
+          if (e.status === 401) { local.del("mm.key"); setAccount(null); toast("Your account wasn't found. Claim a name again", 3000); }
           else renderAccount();
         }
         if (account) connectLobby().catch(() => {});
@@ -2579,8 +2654,33 @@
       }
       function closePanel() {
         $("sheet").classList.add("hidden");
+        if (panel === "confirm") confirmPanel.cancel?.();
         panel = null;
         chatWith = null;
+      }
+
+      /**
+       * An in-game yes/no question in the bottom sheet (never the browser's own
+       * confirm box). Resolves true for yes; closing it any other way is no.
+       * `yes` is trusted markup (it may hold an icon); the rest is text.
+       */
+      function confirmPanel({ title, body, yes, no = "Cancel", danger = true }) {
+        return new Promise((resolve) => {
+          const el = showPanel("confirm",
+            `<h2>${esc(title)}</h2>` +
+            `<p class="muted" style="text-align:center;margin:8px 0 16px">${esc(body)}</p>` +
+            `<div class="s-actions"><button class="${danger ? "danger" : ""}" data-act="yes">${yes}</button><button class="ghost" data-act="no">${esc(no)}</button></div>`);
+          let answered = false;
+          const answer = (v) => { if (answered) return; answered = true; resolve(v); };
+          confirmPanel.cancel = () => answer(false);
+          el.onclick = (e) => {
+            const btn = e.target.closest("[data-act]");
+            if (!btn) return;
+            answer(btn.dataset.act === "yes"); // before closePanel, which would answer no
+            closePanel();
+          };
+          el.querySelector('[data-act="no"]').focus();
+        });
       }
 
       const frow = (inner) => `<div class="frow">${inner}</div>`;
@@ -2611,7 +2711,7 @@
             const r = await api("POST", "/api/friends", { username: name });
             toast(r.status === "accepted" ? `You and ${r.friend.username} are now friends` : `Request sent to ${r.friend.username}`);
             await loadFriends();
-          } catch (e) { toast(e.message); }
+          } catch (e) { toast(errText(e)); }
         };
         el.querySelector("#addFriendBtn").onclick = add;
         el.querySelector("#addFriend").onkeydown = (e) => { if (e.key === "Enter") add(); };
@@ -2627,7 +2727,7 @@
             if (btn.dataset.act === "invite") return sendInvite(id);
             if (btn.dataset.act === "acceptInv") return acceptInvite(id);
             if (btn.dataset.act === "declineInv") { declineInvite(id); renderFriends(); }
-          } catch (err) { toast(err.message); }
+          } catch (err) { toast(errText(err)); }
         };
       }
 
@@ -2659,7 +2759,7 @@
           if (!body) return;
           input.value = "";
           try { appendMessage(await api("POST", `/api/messages/${id}`, { body })); }
-          catch (e) { input.value = body; toast(e.message); }
+          catch (e) { input.value = body; toast(errText(e)); }
         };
         el.querySelector("#chatSend").onclick = send;
         el.querySelector("#chatInput").onkeydown = (e) => { if (e.key === "Enter") send(); };
@@ -2669,8 +2769,8 @@
           if (btn.dataset.act === "back") return renderFriends();
           if (btn.dataset.act === "invite") return sendInvite(id);
           if (btn.dataset.act === "unfriend") {
-            if (!confirm(`Remove ${f.username} from your friends?`)) return;
-            await api("DELETE", `/api/friends/${id}`).catch((err) => toast(err.message));
+            if (!(await confirmPanel({ title: `Unfriend ${f.username}?`, body: "You can add each other again later.", yes: "Unfriend" }))) return openChat(id);
+            await api("DELETE", `/api/friends/${id}`).catch((err) => toast(errText(err)));
             await loadFriends();
             renderFriends();
           }
@@ -2682,7 +2782,7 @@
           for (const m of msgs) appendMessage(m);
           f.unread = 0;
           updateBadge();
-        } catch (e) { toast(e.message); }
+        } catch (e) { toast(errText(e)); }
         el.querySelector("#chatInput").focus();
       }
 
@@ -2724,19 +2824,19 @@
           const res = await sock.request("mm:invite", payload({ friendId }));
           myInvite = { inviteId: res.inviteId, friendId, name: f ? f.username : "your friend" };
           closePanel();
-          $("lobbyStatus").innerHTML = `Invite sent to ${esc(myInvite.name)} — waiting… <a href="#" id="cancelInvite">Cancel</a>`;
+          $("lobbyStatus").innerHTML = `Invite sent to ${esc(myInvite.name)}. Waiting… <a href="#" id="cancelInvite">Cancel</a>`;
           $("cancelInvite").onclick = (e) => {
             e.preventDefault();
             sock.request("mm:cancelInvite", { inviteId: res.inviteId }).catch(() => {});
           };
-        } catch (e) { toast(e.message); }
+        } catch (e) { toast(errText(e)); }
       }
 
       function onInvite(inv) {
         incomingInvites.set(inv.inviteId, inv);
         updateBadge();
         if (panel === "friends") renderFriends();
-        if (room) return toast(`${inv.from.username} challenged you — finish this game first`, 3000);
+        if (room) return toast(`${inv.from.username} challenged you. Finish this game first`, 3000);
         showInviteCard(inv);
       }
 
@@ -2746,7 +2846,7 @@
         const note = inv.draft ? "A draft match: you'll ban and pick together" : picks.length === 2 ? "Accept to battle with your current team" : "Pick two monsters, then accept";
         card.innerHTML =
           `<div class="ic-top">${inv.draft ? "" : `<div class="ic-team">${art(m0, 40)}${art(m1, 40)}</div>`}` +
-          `<div class="ell"><b>${esc(inv.from.username)}</b> challenges you!<div class="muted" style="font-size:12px">${note}</div></div></div>` +
+          `<div class="ell"><b>${esc(inv.from.username)}</b> challenges you<div class="muted" style="font-size:12px">${note}</div></div></div>` +
           `<div class="ic-actions"><button class="ghost" data-ic="decline">Decline</button><button data-ic="accept">${ic("battle")} Accept</button></div><div class="ic-timer"></div>`;
         card.dataset.invite = inv.inviteId;
         card.classList.remove("hidden");
@@ -2770,7 +2870,7 @@
           $("inviteCard").classList.add("hidden");
           await startGame(res);
         } catch (e) {
-          toast(e.message);
+          toast(errText(e));
           incomingInvites.delete(inviteId);
           $("inviteCard").classList.add("hidden");
           updateBadge();
@@ -2822,10 +2922,10 @@
               setAccount({ id: r.id, username: r.username });
               toast(`You're now @${r.username}`);
               openProfile();
-            } catch (err) { toast(err.message); }
+            } catch (err) { toast(errText(err)); }
           }
           if (btn.dataset.act === "signout") {
-            if (!confirm("Sign out? You'll need your key to get this account back — copy it first.")) return;
+            if (!(await confirmPanel({ title: "Sign out?", body: "You'll need your key to get this account back, so copy it first.", yes: "Sign out", no: "Stay signed in" }))) return openProfile();
             local.del("mm.key");
             setAccount(null);
             friendsData = { friends: [], incoming: [], outgoing: [] };
@@ -2855,19 +2955,9 @@
       }
 
       /* ------------------------------------------------------------ forfeit */
-      function confirmForfeit() {
+      async function confirmForfeit() {
         if (!room) return;
-        const el = showPanel("forfeit",
-          `<h2>Give up this match?</h2>` +
-          `<p class="muted" style="text-align:center;margin:8px 0 16px">Your rival wins, and it counts as a loss.</p>` +
-          `<div class="s-actions"><button class="danger" data-act="forfeit">${ic("forfeit")} Forfeit</button><button class="ghost" data-act="close">Keep playing</button></div>`);
-        el.onclick = (e) => {
-          const btn = e.target.closest("[data-act]");
-          if (!btn) return;
-          if (btn.dataset.act === "close") return closePanel();
-          closePanel();
-          forfeit();
-        };
+        if (await confirmPanel({ title: "Forfeit this match?", body: "Your rival wins, and it counts as a loss.", yes: `${ic("forfeit")} Forfeit`, no: "Keep playing" })) forfeit();
       }
 
       async function forfeit() {
@@ -2908,22 +2998,54 @@
         if (e.key !== "Escape" || $("sheet").classList.contains("hidden")) return;
         if (panel) closePanel(); else $("sheet").classList.add("hidden");
       });
+      /*
+       * Sheets are modal dialogs: when one opens, focus moves into it and Tab
+       * cycles inside; when it closes, focus goes back to what opened it.
+       */
+      (() => {
+        const sheet = $("sheet");
+        const focusables = () => [...sheet.querySelectorAll("button:not([disabled]), input, a[href], [tabindex]:not([tabindex='-1'])")];
+        let opener = null, wasOpen = false, lastOutside = null;
+        // Builders often focus a button inside the sheet before this sees it open, so remember the last focus outside.
+        document.addEventListener("focusin", (e) => { if (!sheet.contains(e.target)) lastOutside = e.target; });
+        new MutationObserver(() => {
+          const open = !sheet.classList.contains("hidden");
+          const dialog = sheet.firstElementChild;
+          if (open && dialog) {
+            dialog.setAttribute("role", "dialog");
+            dialog.setAttribute("aria-modal", "true");
+            const title = dialog.querySelector("h2");
+            if (title) dialog.setAttribute("aria-label", title.textContent.trim());
+            if (!wasOpen) opener = lastOutside;
+            if (!sheet.contains(document.activeElement)) focusables()[0]?.focus();
+          } else if (!open && wasOpen) {
+            if (opener && document.contains(opener)) opener.focus();
+            opener = null;
+          }
+          wasOpen = open;
+        }).observe(sheet, { attributes: true, attributeFilter: ["class"], childList: true });
+        sheet.addEventListener("keydown", (e) => {
+          if (e.key !== "Tab") return;
+          const list = focusables();
+          if (!list.length) return;
+          const first = list[0], last = list[list.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        });
+      })();
       for (const b of document.querySelectorAll("[data-dbg]")) {
         b.addEventListener("click", async () => {
           try {
             await gameSock.request("mm:debug", { action: b.dataset.dbg });
             await refresh();
-            toast(b.dataset.dbg === "berries" ? "+4 berries — tap a monster to evolve" : "Charged — your next match fires both moves");
-          } catch (e) { toast(e.message); }
+            toast(b.dataset.dbg === "berries" ? "+4 berries. Tap a monster to evolve it" : "Charged. Your next match fires both moves");
+          } catch (e) { toast(errText(e)); }
         });
       }
       $("join").addEventListener("click", joinRoom);
       $("code").addEventListener("input", refreshButtons);
       $("code").addEventListener("keydown", (e) => { if (e.key === "Enter" && !$("join").disabled) joinRoom(); });
-      $("name").value = store.get("mm.name") || "";
-      $("claim").addEventListener("click", claimName);
-      $("name").addEventListener("keydown", (e) => { if (e.key === "Enter") claimName(); });
-      $("useKey").addEventListener("click", (e) => { e.preventDefault(); openKeyPrompt(); });
+      $("claimOpen").addEventListener("click", openClaim);
       $("friendsBtn").addEventListener("click", () => { renderFriends(); loadFriends(); });
       $("profileBtn").addEventListener("click", openProfile);
       renderAccount();
@@ -2952,7 +3074,7 @@
       (async () => {
         restoreAccount();
         // The roster first: resuming straight into a draft needs it.
-        try { await loadRoster(); } catch (e) { $("lobbyStatus").textContent = "Failed to load monsters: " + e.message; }
+        try { await loadRoster(); } catch (e) { $("lobbyStatus").textContent = "Couldn't load the monsters. Reload to try again"; }
         const resumed = await resumeIfAny();
         if (!resumed) showScreen("lobby");
       })();

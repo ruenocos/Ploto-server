@@ -5,9 +5,9 @@
  * stack of effects — usually damage plus a twist — and a few have passives:
  *   🔥 fire   — Destroyer: big hits, burns, blasts that match board regions
  *   💧 water  — Controller: freeze tiles, sap rival charge, steal rival moves
- *   🪨 earth  — Fortress: stone blockers, quakes, big shields and heals
- *   🌿 nature — Sustain: poison, life-steal, sealing rival charge, overgrowth
- *   ✨ light  — Tempo: burst, extra moves, cleansing, empowering your partner
+ *   🪨 earth  — Guardian: stone blockers, quakes, big shields and heals
+ *   🌿 nature — Survivor: poison, life-steal, sealing rival charge, overgrowth
+ *   ✨ light  — Striker: burst, extra moves, regeneration, empowering your partner
  * Display text is generated from the effects (see describeEffects), so the
  * numbers here are the single source of truth. IDs are stable.
  */
@@ -56,7 +56,7 @@ export const MONSTERS: Record<string, Monster> = {
     // The answer to control: the bubble eats the next freeze, slow, seal, burn or poison.
     [shield(10), dmg(8), { kind: "bubble", count: 1 }]),
 
-  // 🪨 earth — Fortress
+  // 🪨 earth — Guardian
   stone_golem: m("stone_golem", "Craggol", "earth", 9, "Stone Skin", [shield(18), dmg(9)]),
   boulder_beetle: m("boulder_beetle", "Rubbug", "earth", 8, "Petrify",
     [dmg(14), { kind: "petrify", count: 3 }]),
@@ -64,26 +64,26 @@ export const MONSTERS: Record<string, Monster> = {
     [dmg(10), { kind: "match", shape: "col" }]),
   crystal_ox: m("crystal_ox", "Gemox", "earth", 10, "Crystal Mend", [heal(16), shield(6), dmg(9)]),
 
-  // 🌿 nature — Sustain
+  // 🌿 nature — Survivor
   thorn_sprite: m("thorn_sprite", "Thornkin", "nature", 7, "Thorn Prick",
     // Poison halves the rival's healing while it lasts: the counter to sustain teams.
     [dmg(4), { kind: "dot", dot: "poison", amount: 4, turns: 3 }]),
-  vine_lurker: m("vine_lurker", "Vinecoil", "nature", 10, "Leech Vine", [{ kind: "drain", amount: 13 }]),
+  vine_lurker: m("vine_lurker", "Tanglet", "nature", 10, "Leech Vine", [{ kind: "drain", amount: 13 }]),
   shroom_knight: m("shroom_knight", "Myconite", "nature", 9, "Spore Cloud",
     [dmg(6), { kind: "seal", turns: 2 }]),
   petal_fawn: m("petal_fawn", "Petalope", "nature", 7, "Overgrowth",
     [dmg(5), heal(10), { kind: "convert", count: 4 }]),
 
-  // ✨ light — Tempo
+  // ✨ light — Striker
   prism_owl: m("prism_owl", "Lumowl", "light", 10, "Smite",
     // Piercing: ignores shields, the counter to Earth.
     [{ kind: "damage", amount: 17, pierce: true }, { kind: "match", shape: "square" }]),
   dawn_sprite: m("dawn_sprite", "Glintling", "light", 8, "Starstep",
     [dmg(12), { kind: "haste", count: 1 }]),
-  lumen_stag: m("lumen_stag", "Lumistag", "light", 8, "Radiance",
+  lumen_stag: m("lumen_stag", "Dawnhart", "light", 8, "Radiance",
     // Healing over time (the mirror of a burn): strong if you can outlast poison.
     [dmg(11), { kind: "regen", amount: 4, turns: 3 }]),
-  halo_moth: m("halo_moth", "Lumoth", "light", 7, "Kindred Glow",
+  halo_moth: m("halo_moth", "Halomoth", "light", 7, "Kindred Glow",
     [dmg(6), { kind: "empower", count: 2 }],
     { followUp: 3 }),
 };
@@ -92,9 +92,9 @@ export const MONSTERS: Record<string, Monster> = {
 export const ARCHETYPES: Record<Element, { title: string; blurb: string }> = {
   fire: { title: "Destroyer", blurb: "Big hits, burns, and blasts that clear the board" },
   water: { title: "Controller", blurb: "Freeze tiles, sap charge, steal rival moves" },
-  earth: { title: "Fortress", blurb: "Stone blockers, quakes, big shields and heals" },
-  nature: { title: "Sustain", blurb: "Poison that halves healing, life-steal, sealing, overgrowth" },
-  light: { title: "Tempo", blurb: "Piercing burst, extra moves, regeneration, teamwork" },
+  earth: { title: "Guardian", blurb: "Stone blockers, quakes, big shields and heals" },
+  nature: { title: "Survivor", blurb: "Poison that halves healing, life-steal, sealing, overgrowth" },
+  light: { title: "Striker", blurb: "Piercing burst, extra moves, regeneration, teamwork" },
 };
 
 export function monsterById(id: string): Monster | undefined {

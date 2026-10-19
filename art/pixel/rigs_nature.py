@@ -1,4 +1,4 @@
-"""Nature rigs: Thornkin, Vinecoil, Myconite, Petalope (three stages each).
+"""Nature rigs: Thornkin, Tanglet (vinecoil), Myconite, Petalope (three stages each).
 
 Each line follows EVOLUTION.md: a round baby, an adolescent that stands up and
 gains a feature, and an adult with its own silhouette.
@@ -106,7 +106,7 @@ def thornkin(stage: int) -> Rig:
     return r
 
 
-# ------------------------------------------------------------------ vinecoil: curled sprout -> rearing vine -> flytrap hood
+# ------------------------------------------------------------------ tanglet (vinecoil): curled sprout -> rearing vine -> flytrap hood
 def vinecoil(stage: int) -> Rig:
     r = Rig("vinecoil", base_materials(body=Material(VINE), leaf=Material(LEAF), petal=Material(BLOSSOM), pollen=Material(["#ffe14d"], flat=True),
                                        tongue=Material(["#e0344a"], flat=True), thorn=Material(BARK),
@@ -125,7 +125,6 @@ def vinecoil(stage: int) -> Rig:
         eyes(r, 10, 17, 5)
         r.pxs("ink", [(9, 22), (10, 22)])
         r.pxs("tongue", [(10, 23)])
-        r.pxs("blush", [(5, 21), (14, 21)])
         r.part("flower", "fx", pivot=(10, 14), parent="head", z=1)
         r.pxs("petal", [(11, 9), (10, 10), (12, 10), (11, 11)])
         r.pxs("pollen", [(11, 10)])
@@ -192,7 +191,6 @@ def myconite(stage: int) -> Rig:
         r.ellipse(16, 25.4, 6, 5.6, "stem")
         eyes(r, 16, 22, 4)
         r.pxs("ink", [(15, 26), (16, 26)])
-        r.pxs("blush", [(11, 26), (20, 26)])
         r.part("cap", "head", pivot=(16, 19), parent="body", z=1)
         r.ellipse(16, 14.6, 10.8, 7.8, "cap")
         cut_below(20)

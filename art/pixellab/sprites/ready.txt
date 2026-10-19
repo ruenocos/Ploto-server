@@ -1,1 +1,5 @@
 # Approved PixelLab lines (monster ids), one per line: build.py swaps these in for their rigs.
+ember_pup
+cinder_hound
+magma_titan
+phoenix_chick

@@ -124,8 +124,9 @@ No rounded corners, no blur, no soft drop shadows. Depth is bevels only.
   labels get gold at ×4 and orange at ×6, and the match sound stops rising at
   ×5.
 - **Statuses show on the monsters:** flames while burning, bubbles while
-  poisoned, plus signs while regenerating (4-frame loops), a bubble shell and
-  a glass shield wall while those last.
+  poisoned, plus signs while regenerating (4-frame loops), a bubble shell
+  while bubbled, and a heater shield held at the front monster's edge, facing
+  the rival, while the team has a shield.
 - **Evolution is staged:** the arena dims, the monster turns into a white
   silhouette, old and new silhouettes trade places (each swap at least
   340 ms apart, so never more than 3 a second, per WCAG 2.3.1), one burst of
@@ -179,6 +180,14 @@ Plain and short. Sentence case, no em dashes, no exclamation marks, no emoji.
 Say "rival" for the other player and "bot" for the practice opponent. Server
 errors reach players through `errText()`, which capitalises them and turns
 internal failures into a plain "Something went wrong. Try again".
+
+## Monsters
+
+Monsters are being redrawn with PixelLab, one approved line at a time; see
+[`art/pixellab/README.md`](../art/pixellab/README.md) for the rules (a myth per
+line, a signature carried through the stages, 32/40/48 px, one colour pool,
+three-quarter view facing right, mirrored on the rival's side). Lines not yet
+redrawn keep their rigs.
 
 ## Evolutions
 

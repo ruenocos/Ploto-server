@@ -38,8 +38,8 @@ ROSTER: dict[str, dict] = {
         "colors": "terracotta orange-brown clay body, glossy teal glaze mane and tail, glowing orange cracks",
         "accents": ["ffa214", "ffc825", "0098dc"],
         "stages": (
-            "a small clay shisa lion-dog pup sitting, round body, a little curl of teal glaze on its head, "
-            "one small glowing crack",
+            "a tiny round shisa lion-dog pup sitting, bare unglazed terracotta clay, just one small drip of teal "
+            "glaze on top of its head, one tiny glowing orange crack",
             "a young shisa lion-dog sitting upright like a temple statue, mouth closed, the teal glaze only half "
             "covers its curly mane with drips running down onto bare terracotta clay, two small glowing orange cracks",
             "a big shisa temple guardian lion standing proud on a small stone base, a huge curly teal glazed mane "
@@ -55,7 +55,8 @@ ROSTER: dict[str, dict] = {
                   "glowing orange lava",
         "accents": ["ffa214", "ffc825", "ffeb57"],
         "stages": (
-            "a tiny turtle hatchling with a dark pebble shell, a small warm orange glow in one crack of the shell",
+            "a tiny round turtle hatchling with a smooth black obsidian pebble shell, one small glowing orange crack "
+            "on the shell, big head",
             "a sturdy turtle whose dark rock shell has grown into a small smoking cone with a glowing orange tip",
             "a giant turtle carrying a whole volcano island on its shell, a glowing orange crater on top, lava "
             "running down the rock, thick stumpy legs",

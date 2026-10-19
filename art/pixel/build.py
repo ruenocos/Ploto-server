@@ -7,8 +7,8 @@ Writes PNGs to art/pixel/out/ and web/pixelart.js, which the client loads:
 
   window.PIXELART = {
     monsters: { <id>: { icon, stages: [ { flat, core:[x,y], parts: [ {n, role, parent, z, pivot:[x,y], at:[x,y], size:[w,h], src} ] } x3 ] } },
-      // or, for a monster drawn with PixelLab (art/pixellab/sprites): 64x64 stages, no parts
-      <id>: { res: 64, icon, stages: [ { flat, idle?, n?, face, core:[x,y] } x3 ] },  // idle: an n x 64 frame strip; face: front|right
+      // or, for a monster drawn with PixelLab (art/pixellab/sprites): one 48x48 image per stage, no parts
+      <id>: { res: 48, icon, stages: [ { flat, idle?, n?, face, core:[x,y] } x3 ] },  // idle: an n x 48 frame strip; face: front|right
     gems: { fire, water, earth, nature, light, berry, stone },
     arena, platform,  // the day meadow (kept for older clients)
     themes: { day|dusk|night: { arena, platform, cloudsFar, cloudsNear } },  // 160x100 backdrop, 40x14 platform, 160x40 cloud strips
@@ -20,8 +20,7 @@ Writes PNGs to art/pixel/out/ and web/pixelart.js, which the client loads:
 Monster stages are 48x48 canvases; `parts` are cropped layers placed `at` an
 offset, with a pivot for animation (canvas pixels). `icon` is the 32x32 base form.
 A monster with all three stages in art/pixellab/sprites/ uses those instead of
-its rig; its `core` is still in 48-canvas units (the client draws 64px art at
-0.75 of the stage's pixel unit, feet on the same row).
+its rig (same 48x48 canvas, feet on the bottom row).
 """
 from __future__ import annotations
 
@@ -69,17 +68,16 @@ def pixellab_monster(mid: str) -> dict | None:
     stages = []
     for st, p in enumerate(paths):
         img = Image.open(p).convert("RGBA")
-        assert img.size == (64, 64), f"{p.name} is {img.size}, expected 64x64"
+        assert img.size == (48, 48), f"{p.name} is {img.size}, expected 48x48"
         x0, y0, x1, y1 = img.getchannel("A").getbbox()
-        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2 + (y1 - y0) * 0.08
         stage = {"flat": data_url(img), "face": facing.get(str(st), "front"),
-                 "core": [round(24 + (cx - 32) * 0.75, 1), round(48 + (cy - 64) * 0.75, 1)]}
+                 "core": [round((x0 + x1) / 2, 1), round((y0 + y1) / 2 + (y1 - y0) * 0.08, 1)]}
         idle = PIXELLAB / f"{mid}-{st}-idle.png"
         if idle.exists():
             strip = Image.open(idle).convert("RGBA")
-            stage.update(idle=data_url(strip), n=strip.width // 64)
+            stage.update(idle=data_url(strip), n=strip.width // 48)
         stages.append(stage)
-    return {"res": 64, "icon": stages[0]["flat"], "stages": stages}
+    return {"res": 48, "icon": stages[0]["flat"], "stages": stages}
 
 
 def main() -> None:

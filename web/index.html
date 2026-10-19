@@ -285,7 +285,7 @@
       .fighter { position: absolute; width: calc(var(--u) * 48); margin-left: calc(var(--u) * -24); display: flex; flex-direction: column; align-items: center; cursor: pointer; pointer-events: none; }
       /* only the sprite's parts and the badge take taps, so the empty canvas of the front monster doesn't steal the back one's */
       .fighter .part > img, .fighter .cbadge { pointer-events: auto; }
-      .fighter.f0 { --u: var(--ub); --hu: var(--hub); --hx: var(--hxb); --hy: var(--hyb); bottom: 38%; }
+      .fighter.f0 { --u: var(--ub); bottom: 38%; }
       .fighter.f1 { bottom: 0; }
       .side.me .f0 { left: 32%; } .side.me .f1 { left: 64%; }
       .side.foe .f0 { left: 68%; } .side.foe .f1 { left: 36%; }
@@ -299,15 +299,14 @@
       .rig .part { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
       .rig .part > img { position: absolute; display: block; image-rendering: pixelated; }
       /*
-       * 64px art (art/pixellab): one image on its own pixel unit --hu (about 0.75 --u,
-       * snapped to whole device pixels), bottom-centre in the 48-unit stage at
-       * (--hx, --hy). An idle sheet steps through its --n frames.
+       * PixelLab art (art/pixellab): one 48px image per stage on the stage's own pixel
+       * unit, or an idle strip stepping through its --n frames.
        */
-      .rig .hd-art { position: absolute; left: var(--hx); top: var(--hy); width: calc(var(--hu) * 64); height: calc(var(--hu) * 64);
-        background: 0 0 / calc(var(--hu) * 64 * var(--n)) 100% no-repeat; image-rendering: pixelated; }
+      .rig .hd-art { position: absolute; left: 0; top: 0; width: calc(var(--u) * 48); height: calc(var(--u) * 48);
+        background: 0 0 / calc(var(--u) * 48 * var(--n)) 100% no-repeat; image-rendering: pixelated; }
       .side.foe .rig .hd-art.turn { transform: scaleX(-1); } /* a three-quarter view faces right: the rival's copy turns round */
       .rig .hd-art.idle { animation: hdIdle calc(var(--n) * 150ms) steps(var(--n)) infinite; }
-      @keyframes hdIdle { to { background-position-x: calc(var(--hu) * -64 * var(--n)); } }
+      @keyframes hdIdle { to { background-position-x: calc(var(--u) * -48 * var(--n)); } }
       .core { position: absolute; width: 0; height: 0; }
       .rig-view { position: relative; overflow: hidden; flex: none; max-width: 100%; }
       .rig-canvas { position: absolute; width: calc(var(--u) * 48); height: calc(var(--u) * 48); } /* body centre: where motes and orbs aim */
@@ -932,13 +931,6 @@
       // Pixel sprites (web/pixelart.js) at the biggest whole-number scale that fits
       // the slot; the vector art is only a fallback.
       const pxMon = (id) => (window.PIXELART && PIXELART.monsters[id]) || null;
-      /** 64px art's own pixel unit for a stage drawn at `u` per 48-canvas pixel: whole device pixels, art bottom-centre. */
-      const hdUnit = (u) => {
-        const dpr = window.devicePixelRatio || 1;
-        const hu = Math.max(1, Math.floor(u * 0.75 * dpr)) / dpr;
-        const dev = (v) => Math.round(v * dpr) / dpr;
-        return { hu, hx: dev(24 * u - 32 * hu), hy: dev(48 * u - 64 * hu) };
-      };
       const art = (id, size) => {
         const px = pxMon(id);
         if (px?.res) {
@@ -988,8 +980,7 @@
       function rigView(id, stage, u, crop = [0, 0, 48, 48]) {
         if (!pxMon(id)) return art(id, 32 * u);
         const [x, y, w, h] = crop;
-        const hd = hdUnit(u);
-        return `<div class="rig-view" style="--u:${u}px;--hu:${hd.hu}px;--hx:${hd.hx}px;--hy:${hd.hy}px;width:${w * u}px;height:${h * u}px">` +
+        return `<div class="rig-view" style="--u:${u}px;width:${w * u}px;height:${h * u}px">` +
           `<div class="rig-canvas" style="left:${-x * u}px;top:${-y * u}px">${rigHtml(id, stage)}</div></div>`;
       }
 
@@ -1728,12 +1719,10 @@
         // Width: front monster stays on its half, back one inside the edge. Height: the back
         // monster stands 38% up and its top 40 rows must fit (the rest of the canvas is headroom).
         const u = snap(Math.min(half.clientWidth / 66, half.clientHeight / 64));
-        const ub = snap(u * 0.86), hd = hdUnit(u), hdb = hdUnit(ub);
         for (const side of [half, $("foeSide")]) {
           side.style.setProperty("--u", u + "px");
-          side.style.setProperty("--ub", ub + "px");
+          side.style.setProperty("--ub", snap(u * 0.86) + "px");
           side.style.setProperty("--gu", snap(u * 0.55) + "px");
-          for (const [k, v] of Object.entries({ hu: hd.hu, hx: hd.hx, hy: hd.hy, hub: hdb.hu, hxb: hdb.hx, hyb: hdb.hy })) side.style.setProperty(`--${k}`, v + "px");
         }
         if (window.PIXELART) {
           const k = Math.ceil(Math.max(W / 160, arena.clientHeight / 100) * dpr) / dpr;

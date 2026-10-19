@@ -1,15 +1,19 @@
 {
  "cinder_hound": {
+  "1": "right",
   "2": "right"
  },
  "ember_pup": {
+  "0": "right",
   "1": "right",
   "2": "front"
  },
  "magma_titan": {
+  "1": "right",
   "2": "right"
  },
  "phoenix_chick": {
+  "0": "right",
   "1": "right",
   "2": "right"
  }

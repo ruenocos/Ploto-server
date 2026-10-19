@@ -307,21 +307,22 @@
        * sprite's own pixel size, inside .rig so they mirror and move with it):
        * flames while burning, bubbles while poisoned, plus signs while
        * regenerating, a bubble shell while bubbled, a glass wall while shielded.
-       * The side's st-* classes switch them on.
+       * The side's has-* classes switch them on (not st-*: those name the sprites,
+       * and a side carrying .st-burn would tile the flame across the whole half).
        */
       .st { position: absolute; width: calc(var(--u) * 12); height: calc(var(--u) * 12); display: none; pointer-events: none; z-index: 2;
         background-repeat: no-repeat; background-size: calc(var(--u) * 48) calc(var(--u) * 12); image-rendering: pixelated; animation: stLoop 520ms steps(4) infinite; }
       .st.st-b { animation-delay: -260ms; }
       @keyframes stLoop { to { background-position: calc(var(--u) * -48) 0; } }
-      .st-burn { background-image: var(--st-burn); } .st-poison { background-image: var(--st-poison); } .st-regen { background-image: var(--st-regen); }
-      .side.st-burn .st-burn, .side.st-poison .st-poison, .side.st-regen .st-regen { display: block; }
+      .st.st-burn { background-image: var(--st-burn); } .st.st-poison { background-image: var(--st-poison); } .st.st-regen { background-image: var(--st-regen); }
+      .side.has-burn .st-burn, .side.has-poison .st-poison, .side.has-regen .st-regen { display: block; }
       .st-shell { position: absolute; width: calc(var(--u) * 48); height: calc(var(--u) * 48); display: none; pointer-events: none; z-index: 2;
         background: var(--st-bubble) 0 0 / 100% 100% no-repeat; image-rendering: pixelated; opacity: 0.9; }
-      .side.st-bubble .st-shell { display: block; }
+      .side.has-bubble .st-shell { display: block; }
       .st-wall { position: absolute; bottom: calc(var(--u) * 6); width: calc(var(--u) * 12); height: calc(var(--u) * 40); display: none; pointer-events: none; z-index: 3;
         background: var(--st-shield) 0 0 / 100% 100% no-repeat; image-rendering: pixelated; opacity: 0.85; }
       .side.me .st-wall { left: calc(64% + var(--u) * 22); } .side.foe .st-wall { left: calc(36% - var(--u) * 34); }
-      .side.st-shield .st-wall { display: block; }
+      .side.has-shield .st-wall { display: block; }
       .fighter.fainted .stage { opacity: 0.35; filter: grayscale(1); }
       /* evolution: the monster becomes a white silhouette while it changes */
       .bounce.silhouette { filter: brightness(0) invert(1); }
@@ -1628,11 +1629,11 @@
         const canEvolve = isMe && myTurn() && (p.berries || 0) >= BERRIES_TO_EVOLVE;
         const gems = (window.PIXELART && PIXELART.gems) || {};
         const dots = p.dots || [];
-        side.classList.toggle("st-burn", dots.some((d) => d.kind === "burn"));
-        side.classList.toggle("st-poison", dots.some((d) => d.kind === "poison"));
-        side.classList.toggle("st-regen", (p.regen || []).length > 0);
-        side.classList.toggle("st-bubble", (p.bubble || 0) > 0);
-        side.classList.toggle("st-shield", (p.shield || 0) > 0);
+        side.classList.toggle("has-burn", dots.some((d) => d.kind === "burn"));
+        side.classList.toggle("has-poison", dots.some((d) => d.kind === "poison"));
+        side.classList.toggle("has-regen", (p.regen || []).length > 0);
+        side.classList.toggle("has-bubble", (p.bubble || 0) > 0);
+        side.classList.toggle("has-shield", (p.shield || 0) > 0);
         p.monsters.forEach((mon, i) => {
           const evo = mon.evolution || 0;
           const key = `${mon.id}:${evo}:${arenaTheme}`; // rebuilt on evolution, or a new arena

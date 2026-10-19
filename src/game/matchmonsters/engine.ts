@@ -745,7 +745,7 @@ function describeShape(shape: MatchShape, size: number): string {
   const what = shape === "row" ? (size === 1 ? "a random row" : `${size} random rows`)
     : shape === "col" ? (size === 1 ? "a random column" : `${size} random columns`)
     : `a ${size}×${size} area`;
-  return `clear ${what} (its gems charge you)`;
+  return `clear ${what}`;
 }
 
 /** Human-readable text for a list of effects. */

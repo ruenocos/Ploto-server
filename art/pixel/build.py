@@ -19,8 +19,9 @@ Writes PNGs to art/pixel/out/ and web/pixelart.js, which the client loads:
 
 Monster stages are 48x48 canvases; `parts` are cropped layers placed `at` an
 offset, with a pivot for animation (canvas pixels). `icon` is the 32x32 base form.
-A monster with all three stages in art/pixellab/sprites/ uses those instead of
-its rig (same 48x48 canvas, feet on the bottom row).
+A monster listed in art/pixellab/sprites/ready.txt (an approved line, all three
+stages) uses those sprites instead of its rig (same 48x48 canvas, feet on the
+bottom row).
 """
 from __future__ import annotations
 
@@ -60,10 +61,12 @@ def data_url(img: Image.Image) -> str:
 
 
 def pixellab_monster(mid: str) -> dict | None:
-    """A PixelLab-drawn monster (art/pixellab), if all three of its stages are there."""
-    paths = [PIXELLAB / f"{mid}-{st}.png" for st in range(3)]
-    if not all(p.exists() for p in paths):
+    """A PixelLab-drawn monster (art/pixellab), once its line is listed in sprites/ready.txt (approved, all three stages)."""
+    ready = PIXELLAB / "ready.txt"
+    if not ready.exists() or mid not in ready.read_text().split():
         return None
+    paths = [PIXELLAB / f"{mid}-{st}.png" for st in range(3)]
+    assert all(p.exists() for p in paths), f"{mid} is in ready.txt but misses a stage"
     facing = json.loads((PIXELLAB / "facing.json").read_text()).get(mid, {}) if (PIXELLAB / "facing.json").exists() else {}
     stages = []
     for st, p in enumerate(paths):

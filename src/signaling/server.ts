@@ -372,6 +372,16 @@ export class SignalingServer {
         return { code, draft: req.draft };
       }
 
+      // What an invite link leads to, before joining: draft rooms are joined straight
+      // away, blind-pick rooms first need the guest's two monsters.
+      case "mm:roomInfo": {
+        const d = (data ?? {}) as Record<string, unknown>;
+        const code = typeof d["code"] === "string" ? d["code"].trim().toUpperCase() : "";
+        const pending = this.pendingRooms.get(code);
+        if (!pending) throw new Error("that invite has expired");
+        return { code, draft: pending.draft, host: pending.host.displayName };
+      }
+
       case "mm:joinRoom": {
         const req = parseEnqueue(data);
         const d = (data ?? {}) as Record<string, unknown>;

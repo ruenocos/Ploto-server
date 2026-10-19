@@ -354,10 +354,24 @@ describe("tempo & charge effects", () => {
   });
 
   it("seal stops a rival monster gaining charge", () => {
-    const g = newGame(fireMon("a", [{ kind: "seal", turns: 2 }]), rival);
+    const g = newGame(fireMon("a", [{ kind: "seal", moves: 2 }]), rival);
     g.applyMove(0, FIRE_SWAP);
     const sealed = g.state.players[1].monsters.filter((m) => m.sealed > 0);
     expect(sealed).toHaveLength(1);
+  });
+
+  it("a seal wears off one step per move of the sealed player, not per turn", () => {
+    const g = newGame(fireMon("a", [{ kind: "seal", moves: 2 }]), rival);
+    g.state.movesLeft = 1; // the seal lands on the caster's last move, so the rival moves next
+    g.applyMove(0, FIRE_SWAP);
+    const mon = g.state.players[1].monsters.find((m) => m.sealed > 0)!;
+    expect(mon.sealed).toBe(2);
+    expect(g.state.turn).toBe(1);
+    const move = () => { const mv = chooseMove(g, 1); if (!mv) throw new Error("no move"); g.applyMove(1, mv); };
+    move();
+    expect(mon.sealed).toBe(1);
+    move();
+    expect(mon.sealed).toBe(0);
   });
 
   it("haste grants an extra move this turn", () => {
@@ -456,15 +470,15 @@ describe("evolution milestones", () => {
   it("widens blasts and lengthens seals and burns at ★; adds a haste move at ★★", () => {
     const def = fireMon("a", [
       { kind: "match", shape: "row" },
-      { kind: "seal", turns: 2 },
+      { kind: "seal", moves: 2 },
       { kind: "dot", dot: "burn", amount: 5, turns: 3 },
       { kind: "haste", count: 1 },
     ]);
-    expect(scaledEffects(def, 0)).toMatchObject([{ shape: "row" }, { turns: 2 }, { turns: 3 }, { count: 1 }]);
-    expect(scaledEffects(def, 1)).toMatchObject([{ size: 2 }, { turns: 3 }, { turns: 4 }, { count: 1 }]);
-    expect(scaledEffects(def, 2)).toMatchObject([{ size: 2 }, { turns: 3 }, { turns: 4 }, { count: 2 }]);
+    expect(scaledEffects(def, 0)).toMatchObject([{ shape: "row" }, { moves: 2 }, { turns: 3 }, { count: 1 }]);
+    expect(scaledEffects(def, 1)).toMatchObject([{ size: 2 }, { moves: 3 }, { turns: 4 }, { count: 1 }]);
+    expect(scaledEffects(def, 2)).toMatchObject([{ size: 2 }, { moves: 4 }, { turns: 4 }, { count: 2 }]);
     expect(evolutionChanges(def, 0)).toContain("Blast 1 → 2 rows");
-    expect(evolutionChanges(def, 0)).toContain("Seal 2 → 3 turns");
+    expect(evolutionChanges(def, 0)).toContain("Seal 2 → 3 moves");
   });
 
   it("a ★ row blast clears two rows", () => {
@@ -596,7 +610,7 @@ describe("kit mechanics: pierce, ignite, regen, bubble, anti-heal", () => {
     const g = newGame(fireMon("a", [
       { kind: "dot", dot: "burn", amount: 5, turns: 2 },
       { kind: "slow", count: 1 },
-      { kind: "seal", turns: 2 },
+      { kind: "seal", moves: 2 },
     ]));
     const foe = g.state.players[1];
     foe.bubble = 2;
@@ -684,7 +698,7 @@ describe("kit mechanics: shield bash, feeding vine, shatter, bloom, targeted sea
     const g = new MatchMonstersGame({
       matchId: "t", seed: 123, board: { width: 5, height: 5, palette: ELEMENTS },
       players: [
-        { peerId: "p0", displayName: "A", monsters: [fireMon("a", [{ kind: "seal", turns: 2 }]), filler] },
+        { peerId: "p0", displayName: "A", monsters: [fireMon("a", [{ kind: "seal", moves: 2 }]), filler] },
         { peerId: "p1", displayName: "B", monsters: [foeA, foeB] },
       ],
     });
@@ -701,7 +715,7 @@ describe("kit mechanics: shield bash, feeding vine, shatter, bloom, targeted sea
     const g = new MatchMonstersGame({
       matchId: "t", seed: 123, board: { width: 5, height: 5, palette: ELEMENTS },
       players: [
-        { peerId: "p0", displayName: "A", monsters: [fireMon("a", [{ kind: "seal", turns: 2 }]), filler] },
+        { peerId: "p0", displayName: "A", monsters: [fireMon("a", [{ kind: "seal", moves: 2 }]), filler] },
         { peerId: "p1", displayName: "B", monsters: [foeA, foeB] },
       ],
     });
@@ -772,7 +786,7 @@ describe("effect events", () => {
         { kind: "heal", amount: 3 },
         { kind: "petrify", count: 2 },
         { kind: "sap", count: 2 },
-        { kind: "seal", turns: 1 },
+        { kind: "seal", moves: 1 },
         { kind: "freeze", count: 2, turns: 1 },
         { kind: "match", shape: "square" },
       ]),
@@ -788,7 +802,7 @@ describe("effect events", () => {
     const petrify = cast.effects[2] as { cells: { x: number; y: number }[] };
     expect(petrify.cells).toHaveLength(2);
     expect(cast.effects[3]).toEqual({ kind: "sap", target: 1, drained: { w: 1 } });
-    expect(cast.effects[4]).toMatchObject({ kind: "seal", target: 1, turns: 1 });
+    expect(cast.effects[4]).toMatchObject({ kind: "seal", target: 1, moves: 1 });
     const match = cast.effects[6] as { step: number; cells: unknown[] };
     expect(match.cells).toHaveLength(4);
     expect(r.effectSteps[match.step]).toBeDefined();

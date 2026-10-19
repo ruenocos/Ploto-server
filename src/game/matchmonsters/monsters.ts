@@ -79,7 +79,7 @@ export const MONSTERS: Record<string, Monster> = {
   // Feeding Vine: steals more the longer the rival burns or is poisoned (Thornkin, Emberwing, Pyrup).
   vine_lurker: m("vine_lurker", "Tanglet", "nature", 9, "Feeding Vine", [{ kind: "drain", amount: 12, perDotTurn: 2 }]),
   shroom_knight: m("shroom_knight", "Myconite", "nature", 9, "Spore Cloud",
-    [dmg(8), { kind: "seal", turns: 2 }]), // seals the rival monster closest to firing (an unsealed one first)
+    [dmg(8), { kind: "seal", moves: 5 }]), // seals the rival monster closest to firing (an unsealed one first) for 5 of their moves
   // Harvest Bloom: grows berries on the shared board (grab them before the rival does),
   // and Sweet tooth turns every berry you match into charge for it.
   petal_fawn: m("petal_fawn", "Petalope", "nature", 7, "Harvest Bloom",

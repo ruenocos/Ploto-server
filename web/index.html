@@ -141,7 +141,6 @@
       .acct { max-width: 520px; margin-bottom: 6px; display: grid; gap: 6px; }
       .acct-guest, .acct-user, .row-input { display: flex; gap: 8px; align-items: center; }
       .acct-guest button, .row-input button { flex: none; }
-      .acct-hint { font-size: var(--fs-s); }
       .sheet h3 { font: 700 var(--fs-xs)/1.2 var(--f-text); letter-spacing: 1px; color: var(--c-mute); margin: 16px 0 6px; text-transform: uppercase; }
       .frow { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: var(--px) solid var(--c-well); min-width: 0; }
       .frow .fname { flex: 1; min-width: 0; font-weight: 700; }
@@ -203,7 +202,6 @@
       .join-row { display: flex; gap: 8px; }
       .join-row input { font: 700 var(--fl-2)/1.2 var(--f-label); text-transform: uppercase; letter-spacing: 3px; }
       .join-row button { flex: none; }
-      .invite { background: color-mix(in srgb, var(--c-accent) 18%, var(--c-panel)); padding: 12px; text-align: center; }
       .code-big { font: 700 var(--fl-4)/1 var(--f-label); letter-spacing: 6px; color: var(--c-cream); margin: 6px 0 10px; }
       .status { color: var(--c-mute); font-size: var(--fs-s); }
       .status:empty { display: none; }
@@ -284,7 +282,8 @@
        */
       .fighter { position: absolute; width: calc(var(--u) * 48); margin-left: calc(var(--u) * -24); display: flex; flex-direction: column; align-items: center; cursor: pointer; pointer-events: none; }
       /* only the sprite's parts and the badge take taps, so the empty canvas of the front monster doesn't steal the back one's */
-      .fighter .part > img, .fighter .cbadge { pointer-events: auto; }
+      /* the fighter box itself lets taps through (it overlaps its neighbour); the sprite and its badge take them */
+      .fighter .part > img, .fighter .hd-art, .fighter .cbadge { pointer-events: auto; }
       .fighter.f0 { --u: var(--ub); bottom: 38%; }
       .fighter.f1 { bottom: 0; }
       .side.me .f0 { left: 32%; } .side.me .f1 { left: 64%; }
@@ -757,8 +756,7 @@
       <p class="intro">Match gems to charge your monsters. Knock out your rival.</p>
       <div id="acct" class="acct">
         <div id="acctGuest" class="acct-guest">
-          <button id="claimOpen" class="ghost small">Claim a username</button>
-          <span class="acct-hint muted">to keep your record and add friends</span>
+          <button id="nameBtn" class="ghost small" aria-haspopup="dialog">Playing as <b id="guestName">Player</b></button>
         </div>
         <div id="acctUser" class="acct-user hidden">
           <button id="profileBtn" class="ghost small">@<span id="acctName"></span></button>
@@ -783,19 +781,7 @@
         <div class="actions">
           <button id="play" disabled>Quick Play</button>
           <button id="practice" class="ghost" disabled>Bot</button>
-          <button id="friendToggle" class="ghost" aria-expanded="false" aria-controls="friendRow">Friend</button>
-        </div>
-        <!-- Playing a friend: make a code to share, or type theirs. Folded away until asked for. -->
-        <div id="friendRow" class="join-row hidden">
-          <button id="create" class="ghost" disabled>New code</button>
-          <input id="code" type="text" placeholder="CODE" maxlength="8" autocapitalize="characters" autocomplete="off" aria-label="Room code" />
-          <button id="join" class="ghost" disabled>Join</button>
-        </div>
-        <div id="invite" class="invite hidden">
-          <div class="muted">Send this to your friend</div>
-          <div class="code-big" id="codeBig"></div>
-          <button id="copyLink" class="small">Copy invite link</button>
-          <div class="muted" style="margin-top: 8px">Waiting for them to join…</div>
+          <button id="friendBtn" class="ghost" aria-haspopup="dialog">Friend</button>
         </div>
         <div id="lobbyStatus" class="status"></div>
       </div>
@@ -1207,13 +1193,48 @@
 
       function refreshButtons() {
         const ready = draftMode || picks.length === 2; // drafting picks teams in the match
-        $("play").disabled = !ready;
-        $("create").disabled = !ready;
+        // An open blind-pick invite turns the main button into "Join": it needs your two picks.
+        $("play").textContent = pendingJoin ? `Join ${pendingJoin.host}` : "Quick Play";
+        $("play").disabled = pendingJoin ? picks.length < 2 : !ready;
         $("practice").disabled = !ready;
-        $("join").disabled = $("code").value.trim().length < 4; // the host's mode decides; the server checks picks
       }
 
-      const displayName = () => (account ? account.username : store.get("mm.name") || "Player");
+      /* ---- your name: a guest picks one in a modal the first time it's needed ---- */
+      const guestName = () => { const n = local.get("mm.guestName"); return typeof n === "string" && n.trim() ? n.trim() : null; };
+      const displayName = () => (account ? account.username : guestName() || "Player");
+      let nameAsk = null; // resolves the open name modal
+      /** Ask for a name (or change it). Resolves the name, or null if closed. */
+      function askName({ title = "What should we call you?", body = "Your rival sees this name during the match.", go = "Let's play" } = {}) {
+        return new Promise((resolve) => {
+          const el = showPanel("name",
+            `<h2>${esc(title)}</h2>` +
+            `<p class="muted" style="text-align:center;margin:8px 0 14px">${esc(body)}</p>` +
+            `<form class="row-input" id="nameForm"><input id="nameInput" type="text" placeholder="Your name" maxlength="16" autocomplete="nickname" required />` +
+            `<button class="small" type="submit">${esc(go)}</button></form>` +
+            `<p class="muted" style="font-size:var(--fs-s);margin:12px 0 0;text-align:center">Want to keep your record and add friends? <a href="#" id="toClaim">Claim a username</a></p>`);
+          nameAsk = resolve;
+          const input = el.querySelector("#nameInput");
+          input.value = guestName() || "";
+          el.querySelector("#nameForm").onsubmit = (e) => {
+            e.preventDefault();
+            const name = input.value.trim();
+            if (!name) return input.focus();
+            local.set("mm.guestName", name);
+            renderAccount();
+            nameAsk = null;
+            closePanel();
+            resolve(name);
+          };
+          el.querySelector("#toClaim").onclick = (e) => { e.preventDefault(); nameAsk = null; resolve(null); openClaim(); };
+          input.focus();
+          input.select();
+        });
+      }
+      /** True once there's a name to play under: an account, a guest name, or one just given. */
+      async function ensureName(opts) {
+        if (account || guestName()) return true;
+        return (await askName(opts)) != null;
+      }
       const payload = (extra = {}) => ({ gameId: "match_monsters", mode: "casual", displayName: displayName(), monsters: picks, draft: draftMode, ...extra });
 
       /** Blind pick (choose your team here) or Draft (ban and pick against your rival in the match). */
@@ -1263,19 +1284,19 @@
       }
 
       function setBusy(b) {
-        for (const id of ["play", "create", "practice", "join"]) $(id).disabled = b;
+        for (const id of ["play", "practice"]) $(id).disabled = b;
         if (!b) refreshButtons();
       }
 
       async function lobbyAction(label, fn) {
-        store.set("mm.name", displayName());
+        if (!(await ensureName())) return;
         setBusy(true);
         $("lobbyStatus").textContent = label;
         try { await fn(await ensureLobby()); }
         catch (e) { $("lobbyStatus").textContent = errText(e); setBusy(false); }
       }
 
-      const quickPlay = () =>
+      const quickPlay = () => pendingJoin ? joinRoom(pendingJoin.code) :
         lobbyAction("Looking for a rival…", async (sock) => {
           const res = await sock.request("mm:enqueue", payload());
           $("lobbyStatus").textContent = res.queued ? "Waiting for a rival… You can invite a friend meanwhile" : "Rival found. Starting…";
@@ -1287,35 +1308,102 @@
           $("lobbyStatus").textContent = "Starting…";
         });
 
+      /* ---- playing a friend: one sheet to send a link or type a code ---- */
+      let hosting = null; // { code, link } while an invite of ours is open
+      let pendingJoin = null; // { code, host } from a blind-pick invite link, until we join or drop it
+
+      function openFriendSheet() {
+        if (hosting) return showHosting();
+        const blindNotReady = !draftMode && picks.length < 2;
+        const how = draftMode ? "You'll ban and pick your teams together when they join."
+          : picks.length === 2 ? `You'll play ${picks.map((id) => roster.find((m) => m.id === id)?.name).join(" + ")}. They pick their own team.`
+          : "Pick your two monsters first, or switch to Draft to pick together.";
+        const el = showPanel("friend",
+          `<h2>Play a friend</h2>` +
+          `<p class="muted" style="text-align:center;margin:8px 0 14px">${esc(how)}</p>` +
+          `<div class="s-actions" style="margin:0"><button id="fCreate"${blindNotReady ? " disabled" : ""}>Send an invite link</button></div>` +
+          `<p class="muted" style="text-align:center;margin:18px 0 8px;font-size:var(--fs-s)">Got a code from a friend?</p>` +
+          `<form class="row-input join-row" id="fJoin"><input id="fCode" type="text" placeholder="CODE" maxlength="8" autocapitalize="characters" autocomplete="off" aria-label="Room code" />` +
+          `<button class="small ghost" type="submit">Join</button></form>`);
+        el.querySelector("#fCreate").onclick = () => createRoom();
+        el.querySelector("#fJoin").onsubmit = (e) => {
+          e.preventDefault();
+          const code = el.querySelector("#fCode").value.trim().toUpperCase();
+          if (code.length < 4) return toast("Enter the room code");
+          closePanel();
+          joinFromCode(code);
+        };
+      }
+
+      function showHosting() {
+        const { code, link } = hosting;
+        const el = showPanel("hosting",
+          `<h2>Your invite</h2>` +
+          `<p class="muted" style="text-align:center;margin:8px 0 10px">Share the link. Your friend goes straight into the match.</p>` +
+          `<div class="code-big" style="text-align:center">${esc(code)}</div>` +
+          `<div class="s-actions"><button id="hShare">${navigator.share ? "Share link" : "Copy link"}</button><button class="ghost" id="hCancel">Cancel invite</button></div>` +
+          `<p class="muted" style="text-align:center;margin:10px 0 0">Waiting for them to join…</p>`);
+        el.querySelector("#hShare").onclick = async () => {
+          try {
+            if (navigator.share) await navigator.share({ title: "Match Monsters", text: "Battle me in Match Monsters", url: link });
+            else { await navigator.clipboard.writeText(link); toast("Invite link copied"); }
+          } catch { toast(link, 4000); }
+        };
+        el.querySelector("#hCancel").onclick = cancelHosting;
+      }
+
+      async function cancelHosting() {
+        hosting = null;
+        closePanel();
+        $("lobbyStatus").textContent = "";
+        try { await lobbySock?.request("mm:cancelRoom", {}); } catch {}
+      }
+
       const createRoom = () =>
-        lobbyAction("Creating room…", async (sock) => {
+        lobbyAction("Creating your invite…", async (sock) => {
           const res = await sock.request("mm:createRoom", payload());
-          const link = `${location.origin}/play?room=${res.code}`;
-          $("codeBig").textContent = res.code;
-          $("invite").classList.remove("hidden");
-          $("copyLink").onclick = async () => {
-            try {
-              if (navigator.share) await navigator.share({ title: "Match Monsters", text: "Battle me in Match Monsters", url: link });
-              else { await navigator.clipboard.writeText(link); toast("Invite link copied"); }
-            } catch { toast(link, 4000); }
-          };
-          $("lobbyStatus").textContent = "";
+          hosting = { code: res.code, link: `${location.origin}/play?room=${res.code}` };
+          $("lobbyStatus").innerHTML = `Invite ${esc(res.code)} is open. <a href="#" id="reopenInvite">Show it</a>`;
+          $("reopenInvite").onclick = (e) => { e.preventDefault(); showHosting(); };
+          setBusy(false);
+          showHosting();
         });
 
-      const joinRoom = () => {
-        const code = $("code").value.trim().toUpperCase();
-        if (code.length < 4) return toast("Enter the room code");
-        return lobbyAction(`Joining ${code}…`, async (sock) => {
+      const joinRoom = (code) =>
+        lobbyAction(`Joining ${code}…`, async (sock) => {
           await sock.request("mm:joinRoom", payload({ code }));
+          pendingJoin = null;
           $("lobbyStatus").textContent = "Joined. Starting…";
         });
-      };
+
+      /**
+       * Joining by code or invite link: a draft room is joined straight away (teams
+       * are picked in the match); a blind-pick room waits for your two monsters.
+       */
+      async function joinFromCode(code) {
+        if (!(await ensureName({ title: "You've been invited", body: "Pick a name. Your friend sees it during the match.", go: "Join" }))) {
+          $("lobbyStatus").textContent = "Invite saved. Open Friend and enter the code when you're ready.";
+          return;
+        }
+        let info;
+        try { info = await (await ensureLobby()).request("mm:roomInfo", { code }); }
+        catch (e) { toast(errText(e), 3000); return; }
+        if (info.draft) return joinRoom(info.code);
+        pendingJoin = { code: info.code, host: info.host };
+        setDraftMode(false);
+        $("lobbyStatus").innerHTML = `${esc(info.host)} invited you to a blind-pick match. Pick your two monsters, then tap Join. <a href="#" id="dropJoin">Not now</a>`;
+        $("dropJoin").onclick = (e) => { e.preventDefault(); pendingJoin = null; $("lobbyStatus").textContent = ""; refreshButtons(); };
+        if (picks.length === 2) $("play").focus();
+        refreshButtons();
+      }
 
       /* ------------------------------------------------------------ game lifecycle */
       async function startGame(matched) {
         if (room) return;
         room = { roomId: matched.roomId, seat: matched.seat };
         store.set("mm.room", room);
+        hosting = null;
+        pendingJoin = null;
         myInvite = null;
         $("inviteCard").classList.add("hidden");
         if (panel) closePanel();
@@ -1420,9 +1508,7 @@
         endInfo = null;
         store.del("mm.room");
         $("end").classList.add("hidden");
-        $("invite").classList.add("hidden");
         $("lobbyStatus").textContent = "";
-        $("code").value = "";
         showScreen("lobby");
         setBusy(false);
       }
@@ -1822,7 +1908,7 @@
           `<div class="s-desc">${esc(mon.ability.description)}</div>` +
           (mon.ability.passive ? `<div class="s-pass">${ic("passive")}${esc(mon.ability.passive)}</div>` : "") +
           `<div class="s-meta">Charge ${Math.min(mon.charge, mon.chargeCost)}/${mon.chargeCost}` +
-          (mon.sealed > 0 ? ` · ${ic("seal")}sealed for ${mon.sealed} turn${mon.sealed === 1 ? "" : "s"}` : "") +
+          (mon.sealed > 0 ? ` · ${ic("seal")}sealed for ${mon.sealed} more move${mon.sealed === 1 ? "" : "s"}` : "") +
           (evo >= MAX_EVOLUTION ? " · Fully evolved" : "") + `</div>` +
           (mon.ability.nextEvolution && mon.ability.nextEvolution.length
             ? `<div class="s-next"><h3>Next evolution · ${stars(evo + 2)}</h3><ul>` +
@@ -2994,6 +3080,7 @@
 
       function renderAccount() {
         $("acctGuest").classList.toggle("hidden", !!account);
+        $("guestName").textContent = guestName() || "Player";
         $("acctUser").classList.toggle("hidden", !account);
         if (account) $("acctName").textContent = account.username;
         updateBadge();
@@ -3015,8 +3102,7 @@
           `<p class="muted" style="font-size:var(--fs-s);margin:10px 0 0">Played on another device? <a href="#" id="useKey">Sign in with your key</a></p>` +
           `<div class="s-actions" style="margin-top:16px"><button class="ghost" data-act="close">Close</button></div>`);
         const input = el.querySelector("#name");
-        input.value = store.get("mm.name") || "";
-        input.oninput = () => store.set("mm.name", input.value.trim());
+        input.value = guestName() || "";
         input.onkeydown = (e) => { if (e.key === "Enter") claimName(input.value); };
         el.querySelector("#claim").onclick = () => claimName(input.value);
         el.querySelector("#useKey").onclick = (e) => { e.preventDefault(); openKeyPrompt(); };
@@ -3089,6 +3175,7 @@
       function closePanel() {
         $("sheet").classList.add("hidden");
         if (panel === "confirm") confirmPanel.cancel?.();
+        if (panel === "name" && nameAsk) { const r = nameAsk; nameAsk = null; r(null); }
         panel = null;
         chatWith = null;
       }
@@ -3409,7 +3496,6 @@
 
       /* ------------------------------------------------------------ boot */
       $("play").addEventListener("click", quickPlay);
-      $("create").addEventListener("click", createRoom);
       $("practice").addEventListener("click", practice);
       /** In-game menu: one button in the top bar instead of two, so the turn banner keeps its room. */
       function openGameMenu() {
@@ -3480,21 +3566,12 @@
           } catch (e) { toast(errText(e)); }
         });
       }
-      $("join").addEventListener("click", joinRoom);
-      $("code").addEventListener("input", refreshButtons);
-      $("code").addEventListener("keydown", (e) => { if (e.key === "Enter" && !$("join").disabled) joinRoom(); });
-      $("claimOpen").addEventListener("click", openClaim);
+      $("nameBtn").addEventListener("click", () => askName({ title: "Your name", body: "Your rival sees this name during the match.", go: "Save" }));
       $("friendsBtn").addEventListener("click", () => { renderFriends(); loadFriends(); });
       $("profileBtn").addEventListener("click", openProfile);
       renderAccount();
 
-      /** Show or hide the play-a-friend row (codes), keeping the dock to two rows otherwise. */
-      function toggleFriendRow(open = $("friendRow").classList.contains("hidden")) {
-        $("friendRow").classList.toggle("hidden", !open);
-        $("friendToggle").setAttribute("aria-expanded", String(open));
-        $("friendToggle").classList.toggle("on", open);
-      }
-      $("friendToggle").addEventListener("click", () => toggleFriendRow());
+      $("friendBtn").addEventListener("click", openFriendSheet);
       $("settingsBtn").addEventListener("click", openSettings);
       $("modeBlind").addEventListener("click", () => setDraftMode(false));
       $("modeDraft").addEventListener("click", () => setDraftMode(true));
@@ -3502,12 +3579,9 @@
       $("drLeave").addEventListener("click", leaveDraft);
       applySettings();
 
+      // An invite link (?room=CODE) goes straight to the match once the roster is in (see below).
       const invited = new URLSearchParams(location.search).get("room");
-      if (invited) {
-        toggleFriendRow(true);
-        $("code").value = invited.toUpperCase();
-        $("lobbyStatus").textContent = `Invited to room ${invited.toUpperCase()}. Tap Join (for a blind-pick room, pick two monsters first).`;
-      }
+      if (invited) history.replaceState(null, "", location.pathname);
 
       (async () => {
         restoreAccount();
@@ -3515,6 +3589,7 @@
         try { await loadRoster(); } catch (e) { $("lobbyStatus").textContent = "Couldn't load the monsters. Reload to try again"; }
         const resumed = await resumeIfAny();
         if (!resumed) showScreen("lobby");
+        if (!resumed && invited) joinFromCode(invited.trim().toUpperCase());
       })();
     </script>
   </body>

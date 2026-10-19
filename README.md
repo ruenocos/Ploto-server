@@ -95,7 +95,8 @@ they evolve. Tap one for its move, passive and evolution line.
 - 🍓 **Berries** appear on the board; collect **4** to **evolve** a monster.
   Every monster has three stages (★, ★★, ★★★), each with its own sprite.
   Every evolution: numbers +25%, tile/charge counts +1, charge cost −1,
-  passives grow. At ★★ blasts widen and seals/burns/poison last a turn longer;
+  passives grow; seals last one more move per evolution. At ★★ blasts widen and
+  burns/poison last a turn longer;
   at ★★★ haste gives an extra move and ice lasts longer. Tap a monster to see
   exactly what its next evolution changes.
 - 🪨 **Stone** tiles can't move and crumble when a neighbour is matched;

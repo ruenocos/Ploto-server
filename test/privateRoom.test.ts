@@ -91,6 +91,24 @@ describe("private rooms (shareable code)", () => {
     host.close(); friend.close(); gh.close(); gf.close();
   });
 
+  it("tells an invite link what it leads to before joining", async () => {
+    const host = new Client(port, "lobby", "info-host");
+    const guest = new Client(port, "lobby", "info-guest");
+    await host.open();
+    await guest.open();
+    const created = (await host.req("mm:createRoom", { displayName: "Host", monsters: [], draft: true })) as { data: { code: string } };
+    const info = (await guest.req("mm:roomInfo", { code: created.data.code.toLowerCase() })) as { ok: boolean; data: { draft: boolean; host: string } };
+    expect(info.ok).toBe(true);
+    expect(info.data).toMatchObject({ draft: true, host: "Host" });
+    // a draft room needs no picks from the guest
+    const joined = (await guest.req("mm:joinRoom", { code: created.data.code, displayName: "Guest", monsters: [] })) as { ok: boolean };
+    expect(joined.ok).toBe(true);
+    const gone = (await guest.req("mm:roomInfo", { code: created.data.code })) as { ok: boolean; errorReason?: string };
+    expect(gone.ok).toBe(false);
+    expect(gone.errorReason).toMatch(/expired/);
+    host.close(); guest.close();
+  });
+
   it("rejects an unknown code", async () => {
     const c = new Client(port, "lobby", "x");
     await c.open();

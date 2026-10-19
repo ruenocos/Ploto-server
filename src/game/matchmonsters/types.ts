@@ -88,8 +88,8 @@ export type Effect =
   | { readonly kind: "pluck"; readonly count: number }
   /** The rival gets this many fewer moves next turn. */
   | { readonly kind: "slow"; readonly count: number }
-  /** The rival monster with the most charge can't gain charge for this many of their turns. */
-  | { readonly kind: "seal"; readonly turns: number }
+  /** The rival monster closest to firing can't gain charge for this many of the rival's moves. */
+  | { readonly kind: "seal"; readonly moves: number }
   /** Extra moves this turn. */
   | { readonly kind: "haste"; readonly count: number }
   /** Remove your burns and poison. */
@@ -137,7 +137,7 @@ export type EffectEvent =
   /** Charge removed from each rival monster, by monster id. */
   | { readonly kind: "sap"; readonly target: 0 | 1; readonly drained: Readonly<Record<string, number>> }
   | { readonly kind: "slow"; readonly target: 0 | 1; readonly count: number; readonly blocked?: boolean }
-  | { readonly kind: "seal"; readonly target: 0 | 1; readonly monsterId: string | null; readonly turns: number; readonly blocked?: boolean }
+  | { readonly kind: "seal"; readonly target: 0 | 1; readonly monsterId: string | null; readonly moves: number; readonly blocked?: boolean }
   | { readonly kind: "haste"; readonly count: number }
   | { readonly kind: "cleanse"; readonly removed: number }
   | { readonly kind: "empower"; readonly monsterIds: readonly string[]; readonly count: number };
@@ -179,6 +179,7 @@ export interface MonsterState {
   /** Evolution level (0 = base); each level strengthens the move. */
   evolution: number;
   /** Owner turns left during which this monster can't gain charge. */
+  /** Moves of its own player left before it can charge again (0 = free). */
   sealed: number;
 }
 

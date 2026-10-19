@@ -1,72 +1,79 @@
 """
 What each monster looks like at each stage, for the PixelLab prompts.
 
-Keys are the game's monster ids. Per line (see README.md for the rules):
+Keys are the game's monster ids. Every line is built on a myth that fits its
+kit, so it has an idea of its own rather than "an animal plus its element".
+Per line (see README.md for the rules):
 
+- `myth`: what it is based on, and why that fits its move.
 - `signature`: the one feature that carries the line, named in the same words
   at every stage. Stage 2 shows it partly grown; the biggest change, where it
-  completes, is saved for stage 3.
+  completes, is saved for stage 3 (the adult is designed first).
 - `colors`: main hue, accent, contrast patch, in the same words every stage.
-  Lines of one element differ in value and accent, not just shape.
-- `accents`: pool colours stage 2-3 may add on top of the baby's own colours.
+  The element shows in one feature, not the whole body.
+- `accents`: pool colours later stages may add on top of the earlier stage's.
 - `stages`: what each stage looks like; `idle`: what moves in its idle loop.
 """
 
 ROSTER: dict[str, dict] = {
-    # Fire: Pyrup mid orange, Scorchpaw light gold, Magmaul dark charcoal, Emberwing deep red.
+    # Fire: four different values and materials, so they never read as four red animals.
     "ember_pup": {
         "name": "Pyrup",
-        "signature": "a flame-tipped tail",
-        "colors": "bright orange fur, cream muzzle chest and tail tip, dark brown paws and ear backs",
-        "accents": ["ffc825", "ffeb57", "ffa214"],
+        "myth": "Kitsune with kitsunebi (fox-fire): Ember Bite sets the rival's burns off like wisps bursting",
+        "signature": "floating orange fox-fire wisps at the tips of its tails",
+        "colors": "white and cream fur, red-orange markings on the face and ear tips, orange fox-fire wisps",
+        "accents": ["ffa214", "ffc825", "e07438"],
         "stages": (
-            "a tiny fox kit sitting, oversized pointed ears, a bushy tail with a small glowing ember on its tip",
-            "a lean young fox standing on four longer legs, a longer bushy tail with a small real flame on its tip, "
-            "tiny flames on the ear tips",
-            "a regal fox sitting tall, a thick cream ruff on its chest, two big tails made entirely of flame, "
-            "flames on the ear tips",
+            "a tiny kitsune fox kit sitting, big ears, one fluffy tail with a small fox-fire wisp floating at its tip",
+            "a young kitsune fox standing, three fluffy tails each with a fox-fire wisp floating at its tip",
+            "an elegant nine-tailed kitsune fox spirit sitting tall, nine tails fanned out behind it, "
+            "a fox-fire wisp floating at the tip of every tail",
         ),
-        "idle": "the flames flicker and the tail sways",
+        "idle": "the fox-fire wisps bob and flicker, the tails sway",
     },
     "cinder_hound": {
         "name": "Scorchpaw",
-        "signature": "a flame mane",
-        "colors": "golden yellow fur, cream muzzle and belly, a red-orange flame mane, charcoal claws",
-        "accents": ["c64524", "e07438", "3d3d3d"],
+        "myth": "Shisa guardian lion, made of kiln-fired clay: Berserk, the glaze cracks and glows when it is hurt",
+        "signature": "a glossy teal glazed mane with glowing orange cracks",
+        "colors": "terracotta orange-brown clay body, glossy teal glaze mane and tail, glowing orange cracks",
+        "accents": ["ffa214", "ffc825", "0098dc"],
         "stages": (
-            "a chubby lion cub sitting, round ears, big paws, a small tuft of flame on top of its head",
-            "a young lion standing on all fours, longer legs, a short scruffy mane with small flames at its edges",
-            "a muscular lion king standing upright on two legs, a huge mane made completely of fire, "
-            "two short charcoal horns, clawed hands",
+            "a small clay shisa lion-dog pup sitting, round body, a little curl of teal glaze on its head, "
+            "one small glowing crack",
+            "a shisa guardian lion-dog standing on four legs, a curly teal glazed mane and curly tail like a temple "
+            "statue, a few glowing orange cracks",
+            "a big shisa temple guardian lion standing proud on a small stone base, a huge curly teal glazed mane "
+            "and tail, open fierce mouth, many glowing orange cracks across the clay",
         ),
-        "idle": "the flame mane flickers",
+        "idle": "the glowing cracks pulse",
     },
     "magma_titan": {
         "name": "Magmaul",
-        "signature": "a cracked charcoal rock shell over glowing magma",
-        "colors": "charcoal grey rock with slate-blue highlights, glowing orange and yellow magma",
-        "accents": ["424c6e", "657392", "ffeb57"],
+        "myth": "Zaratan, the turtle mistaken for an island: Eruption, the island on its back is a volcano",
+        "signature": "a volcano growing on its shell",
+        "colors": "charcoal grey basalt shell, olive green scaly skin, glowing orange lava",
+        "accents": ["ffa214", "ffc825", "33984b"],
         "stages": (
-            "a small cute blob of glowing magma with stubby arms, wearing a cracked piece of charcoal rock on its "
-            "head like a helmet",
-            "a stocky magma creature on two short legs, the rock helmet has grown into a shell covering its head, "
-            "back and shoulders, a glowing magma belly",
-            "a hulking titan, its rock shell has become a volcano on its back with a glowing crater, rock armour on "
-            "its arms, huge fists on the ground, a glowing magma belly",
+            "a tiny turtle hatchling with a dark pebble shell, a small warm orange glow in one crack of the shell",
+            "a sturdy turtle whose dark rock shell has grown into a small smoking cone with a glowing orange tip",
+            "a giant turtle carrying a whole volcano island on its shell, a glowing orange crater on top, lava "
+            "running down the rock, thick stumpy legs",
         ),
-        "idle": "the magma glows and pulses",
+        "idle": "the lava glows and a little smoke rises",
     },
     "phoenix_chick": {
         "name": "Emberwing",
-        "signature": "a flame crest",
-        "colors": "deep red feathers, gold crest and wing tips, cream belly, yellow beak and legs",
-        "accents": ["ffc825", "edab50", "ffa214"],
+        "myth": "the Slavic Firebird, whose feathers keep glowing after they fall: Afterburn, its burns last longer",
+        "signature": "long plume feathers ending in glowing eye-spots",
+        "colors": "crimson and gold plumage, cream chest, glowing yellow-white eye-spots on the plumes",
+        "accents": ["ffeb57", "ffc825", "edab50"],
         "stages": (
-            "a round fluffy chick, tiny stubby wings, a small flame crest on its head",
-            "a gangly fledgling standing on long legs, wings folded against its body, a taller flame crest, "
-            "long tail feathers",
-            "a phoenix with its wings spread wide, the wing tips, the long tail and the tall crest are made of fire",
+            "a round fluffy firebird chick, gold down, a tiny crest, one long plume feather with a glowing eye-spot",
+            "a slender young firebird standing, a small flame crest, three long plume feathers with glowing "
+            "eye-spots trailing behind",
+            "a majestic firebird like a fiery peacock, a flame crown crest, wings half open, a long train of plume "
+            "feathers fanned out behind it, each ending in a glowing eye-spot",
         ),
-        "idle": "the flame crest flickers and the feathers shift",
+        "idle": "the plumes sway and the eye-spots glow",
     },
 }

@@ -6,12 +6,14 @@ roster stays one family. The rules and their sources are in README.md.
 from __future__ import annotations
 
 # Every stage is drawn natively on its own canvas (never rescaled), then placed
-# bottom-centre on a 64x64 one: the baby really is smaller, every stage has the
-# same pixel size.
-STAGE_SIZE = (44, 52, 64)
-CANVAS = 64
-# Colours per sprite after cleaning: the detail per pixel stays about level as the canvas grows.
-MAX_COLORS = (12, 14, 16)
+# bottom-centre on a 48x48 one (the game's monster canvas): the baby really is
+# smaller, every stage has the same pixel size. Small canvases force bold shapes
+# and few features, which is what keeps a roster readable and cohesive.
+STAGE_SIZE = (32, 40, 48)
+CANVAS = 48
+# Colours per sprite after cleaning. GBA-era Pokemon sprites had 16-colour palettes
+# (15 plus transparent); babies get fewer so detail per pixel stays level.
+MAX_COLORS = (11, 13, 15)
 
 # The roster's shared colour pool: 48 colours picked from Endesga 64 (hue-shifted
 # ramps, a near-black outline). Every sprite is snapped onto it, and stages 2-3
@@ -39,9 +41,10 @@ STAGE_NOTE = (
 )
 EYES = "black oval eyes with one white shine pixel"
 STYLE = (
-    "monster for a creature-collecting RPG, full body, front view facing the viewer, "
-    "clean dark outline, simple cel shading lit from the top left, bold readable silhouette, "
-    "16-bit SNES era pixel art, nothing else in the picture"
+    "monster for a creature-collecting RPG in the style of Game Boy Advance Pokemon sprites, full body, "
+    "three-quarter view, dark outline, simple cel shading lit from the top left with hue-shifted shadows, "
+    "big simple shapes, a bold readable silhouette, at most three features, few colours, "
+    "nothing else in the picture"
 )
 
 
@@ -49,6 +52,14 @@ def prompt(mon: dict, stage: int) -> str:
     """One stage's prompt: the line's name, colours and signature (same words every stage), the stage, the house style."""
     return (f"{mon['name']}: {mon['stages'][stage]}. Colours: {mon['colors']}. "
             f"Signature: {mon['signature']}. Eyes: {EYES}. {STAGE_NOTE[stage]}. {STYLE}")
+
+
+# Concepts: Pro, one call returns a grid of options (25 at 42-50 px, 36 at 36-41, 64 up to 32),
+# drawn for the colour pool. The adult is designed first, then the line is worked backwards.
+def pro_concept_args(mon: dict, stage: int, seed: int) -> dict:
+    size = STAGE_SIZE[stage]
+    return {"description": prompt(mon, stage), "width": size, "height": size, "no_background": True,
+            "palette": ["#" + h for h in POOL], "palette_name": "Endesga 64", "max_colors": MAX_COLORS[stage], "seed": seed}
 
 
 # Babies: Pixen, 1 generation per image, the cleanest small sprites PixelLab has.

@@ -57,7 +57,7 @@ export const MONSTERS: Record<string, Monster> = {
   // Pearl Snatch: a clam that pockets the rival's berries (slowing their evolutions, speeding yours),
   // and its bubble still eats the next freeze, slow, seal, burn or poison.
   bubble_jelly: m("bubble_jelly", "Bublob", "water", 8, "Pearl Snatch",
-    [shield(8), dmg(8), { kind: "pluck", count: 1 }, { kind: "bubble", count: 1 }]),
+    [dmg(12), { kind: "pluck", count: 1 }, { kind: "bubble", count: 1 }]),
 
   // 🪨 earth — Guardian
   // Shield Bash: shield up, then hit with it. Other shields (Bublob, Gemox) make the bash bigger.
@@ -83,7 +83,7 @@ export const MONSTERS: Record<string, Monster> = {
   // Harvest Bloom: grows berries on the shared board (grab them before the rival does),
   // and Sweet tooth turns every berry you match into charge for it.
   petal_fawn: m("petal_fawn", "Petalope", "nature", 7, "Harvest Bloom",
-    [dmg(5), heal(10), { kind: "grow", count: 2 }],
+    [dmg(5), heal(6), { kind: "grow", count: 2 }],
     { sweetTooth: 1 }),
 
   // ✨ light — Striker

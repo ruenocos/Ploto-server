@@ -3,7 +3,7 @@
  *
  * Rules (clean-room, like the real game):
  *  - Each player has one HP pool and fields two monsters. A monster has an
- *    element, a charge cost, a signature move, and sometimes a passive.
+ *    element, a charge cost, a signature move and a passive (one always-on rule).
  *  - On your turn you get 2 moves. A move swaps two adjacent tiles and must
  *    create a match; a line of 4+ grants an extra move.
  *  - Matched tiles clear, the board collapses and refills (cascades). Each tile
@@ -14,7 +14,7 @@
  *    if it banked enough). Element archetypes:
  *      fire   — big hits, burns, and blasts that match whole board regions
  *      water  — freeze tiles, sap rival charge, steal rival moves
- *      earth  — stone blockers, quakes, big shields and heals
+ *      earth  — stone blockers, quakes, shields and hides that blunt big hits
  *      nature — poison, life-steal, sealing rival charge, overgrowth
  *      light  — burst, extra moves, cleansing, empowering your partner
  *  - Shields soak damage before HP. Burns/poison tick at the start of the
@@ -29,6 +29,7 @@ import type {
   Cell,
   Effect,
   EffectEvent,
+  EffectEventFor,
   EffectKind,
   Element,
   Gem,
@@ -41,6 +42,8 @@ import type {
   MoveResult,
   NumericEventType,
   Passive,
+  PassiveKind,
+  PassiveOf,
   PlayerState,
   Tile,
 } from "./types.js";
@@ -306,6 +309,8 @@ export class MatchMonstersGame {
     if (mon.evolution >= MAX_EVOLUTION) return reject("monster is fully evolved");
     player.berries -= BERRIES_TO_EVOLVE;
     mon.evolution += 1;
+    // Daybreak: evolving recharges it fully.
+    if (mon.def.passive?.kind === "daybreak") mon.charge = Math.max(mon.charge, effectiveCost(mon.def, mon.evolution));
     return { ok: true, monsterId, evolution: mon.evolution, berries: player.berries };
   }
 
@@ -377,20 +382,26 @@ export class MatchMonstersGame {
   private fire(mon: MonsterState, ctx: FireContext): void {
     const def = mon.def;
     const { attacker } = ctx;
-    const berserk = scaledPassive(def, mon.evolution)?.berserk;
-    const raging = berserk !== undefined && attacker.hp <= berserk.threshold;
-    const effects: Effect[] = raging
+    const passive = passiveOf(mon);
+    const berserk = passive?.kind === "berserk" && attacker.hp <= passive.threshold ? passive : undefined;
+    let effects: Effect[] = berserk
       ? Array.from({ length: berserk.hits }, () => ({ kind: "damage" as const, amount: berserk.amount }))
       : scaledEffects(def, mon.evolution);
+    // Passives that make the move hit harder (Overheat, Rockslide, Feeds on pain) add to its first hit.
+    const bonus = this.moveBonus(mon, ctx);
+    const first = effects.findIndex((e) => e.kind === "damage" || e.kind === "drain");
+    if (bonus > 0 && first >= 0) {
+      effects = effects.map((e, i) => (i === first && (e.kind === "damage" || e.kind === "drain") ? { ...e, amount: e.amount + bonus } : e));
+    }
 
     const cast: CastEvent = {
       by: ctx.by,
       monsterId: def.id,
       monsterName: def.name,
       element: def.element,
-      moveName: raging ? `${def.ability.name} (Berserk)` : def.ability.name,
+      moveName: berserk ? `${def.ability.name} (Berserk)` : def.ability.name,
       kinds: effects.map((e) => e.kind),
-      ...(raging ? { via: "berserk" as const } : {}),
+      ...(berserk ? { via: "berserk" as const } : {}),
       effects: [],
     };
     ctx.casts.push(cast);
@@ -402,25 +413,131 @@ export class MatchMonstersGame {
       cast.effects.push(event);
       if ((event.kind === "damage" || event.kind === "drain") && event.amount > 0) dealtDamage = true;
     }
+    if (ctx.defender.hp > 0) this.afterMove(mon, ctx, dealtDamage);
+  }
 
-    // Partner follow-up strikes (a follow-up never triggers another).
-    if (dealtDamage && ctx.defender.hp > 0) {
-      for (const partner of attacker.monsters) {
-        const extra = scaledPassive(partner.def, partner.evolution)?.followUp;
-        if (partner === mon || !extra) continue;
-        this.hit(ctx, partner.def, extra);
+  /** Extra damage a monster's own passive adds to its move (spending Overheat's extra charge). */
+  private moveBonus(mon: MonsterState, ctx: FireContext): number {
+    const p = passiveOf(mon);
+    switch (p?.kind) {
+      case "overheat": {
+        const extra = mon.charge; // the cost is already paid: what's left is extra
+        mon.charge = 0;
+        return extra * p.amount;
+      }
+      case "rockslide":
+        return p.amount * this.cells((x, y) => this.state.board.grid[y]![x] === "stone").length;
+      case "feedsOnPain":
+        return p.amount * ctx.defender.dots.reduce((sum, d) => sum + d.turns, 0);
+      default:
+        return 0;
+    }
+  }
+
+  /**
+   * Passives that answer a move: the partner's (follow-up, Kindling, Mycelium) and the
+   * rival's (Crystal hide, Thorns, Lurk). They react to moves only, never to each other,
+   * so nothing here can chain.
+   */
+  private afterMove(mon: MonsterState, ctx: FireContext, hit: boolean): void {
+    const { attacker, defender, by, foeIdx } = ctx;
+    for (const partner of attacker.monsters) {
+      const p = passiveOf(partner);
+      if (partner === mon || !p || defender.hp <= 0) continue;
+      if (hit && p.kind === "followUp") {
+        const pierce = pierces(attacker);
+        const amount = this.hit(ctx, partner.def, p.amount);
+        if (amount <= 0) continue;
         ctx.casts.push({
-          by: ctx.by,
+          by,
           monsterId: partner.def.id,
           monsterName: partner.def.name,
           element: partner.def.element,
           moveName: "Follow-up",
           kinds: ["damage"],
           via: "followUp",
-          effects: [{ kind: "damage", target: ctx.foeIdx, amount: extra }],
+          effects: [{ kind: "damage", target: foeIdx, amount, ...(pierce ? { pierce: true } : {}) }],
         });
+      } else if (hit && p.kind === "kindling") {
+        this.passive(ctx, by, partner, () => this.applyDot(ctx, attacker, defender, foeIdx, partner.def, "burn", p.amount, p.turns));
+      } else if (p.kind === "mycelium") {
+        this.passive(ctx, by, partner, () => gainCharge(partner, by, p.count));
       }
     }
+    for (const foe of defender.monsters) {
+      const p = passiveOf(foe);
+      if (hit && p?.kind === "crystalHide") {
+        this.passive(ctx, foeIdx, foe, () => this.gainShield(ctx, defender, foeIdx, foe.def, p.amount));
+      } else if (hit && p?.kind === "thorns") {
+        this.passive(ctx, foeIdx, foe, () => this.applyDot(ctx, defender, attacker, by, foe.def, "poison", p.amount, p.turns));
+      } else if (p?.kind === "lurk") {
+        this.passive(ctx, foeIdx, foe, () => gainCharge(foe, foeIdx, p.count));
+      }
+    }
+  }
+
+  /**
+   * A passive going off: reported as its own cast (`via: "passive"`, named after the passive)
+   * with the one effect it had, so clients animate it like any move. The cast is listed before
+   * `run` resolves, so anything `run` sets off in turn (a Bubble shell) comes after it.
+   */
+  private passive(ctx: FireContext, seat: 0 | 1, mon: MonsterState, run: () => EffectEvent | null): void {
+    const p = passiveOf(mon);
+    if (!p) return;
+    const cast: CastEvent = {
+      by: seat,
+      monsterId: mon.def.id,
+      monsterName: mon.def.name,
+      element: mon.def.element,
+      moveName: PASSIVE_NAME[p.kind],
+      kinds: [],
+      via: "passive",
+      effects: [],
+    };
+    ctx.casts.push(cast);
+    const event = run();
+    if (!event) {
+      ctx.casts.splice(ctx.casts.indexOf(cast), 1);
+      return;
+    }
+    cast.effects.push(event);
+    cast.kinds.push(event.kind);
+  }
+
+  /** Burn or poison `victim` (seat `victimIdx`) on behalf of `team`; a bubble blocks it. */
+  private applyDot(
+    ctx: FireContext, team: PlayerState, victim: PlayerState, victimIdx: 0 | 1, def: Monster,
+    dot: "burn" | "poison", amount: number, baseTurns: number,
+  ): EffectEventFor<"dot"> {
+    // Afterburn (Emberwing): burns from this team last longer.
+    const extra = dot === "burn" ? Math.max(0, ...teamPassive(team, "afterburn").map(({ p }) => p.turns)) : 0;
+    const turns = baseTurns + extra;
+    const ev = { kind: "dot" as const, target: victimIdx, dot, amount, turns };
+    if (popBubble(victim)) return { ...ev, blocked: true };
+    victim.dots.push({ amount, turns, kind: dot, element: def.element });
+    ctx.abilities.push(evt(def, dot, amount, victimIdx));
+    this.landed(ctx, victim, victimIdx);
+    return ev;
+  }
+
+  /** A harmful effect got through to `victim`: Bubble shell blows a fresh bubble if they have none. */
+  private landed(ctx: FireContext, victim: PlayerState, victimIdx: 0 | 1): void {
+    if (victim.bubble > 0) return;
+    const shell = teamPassive(victim, "bubbleShell")[0];
+    if (!shell) return;
+    this.passive(ctx, victimIdx, shell.mon, () => {
+      victim.bubble = Math.min(MAX_BUBBLES, shell.p.count);
+      return { kind: "bubble", target: victimIdx, count: victim.bubble };
+    });
+  }
+
+  private gainShield(ctx: FireContext, player: PlayerState, idx: 0 | 1, def: Monster, amount: number): EffectEventFor<"shield"> {
+    const gained = Math.max(0, Math.min(amount, MAX_SHIELD - player.shield));
+    if (gained > 0) {
+      player.shield += gained;
+      ctx.abilities.push(evt(def, "shield", gained, idx));
+    }
+    return { kind: "shield", target: idx, amount: gained };
   }
 
   /**
@@ -434,43 +551,29 @@ export class MatchMonstersGame {
     switch (e.kind) {
       case "damage": {
         const amount = e.fromShield ? Math.max(e.amount, Math.floor(attacker.shield * e.fromShield)) : e.amount;
-        this.hit(ctx, def, amount, e.pierce);
-        return { kind: "damage", target: foeIdx, amount, ...(e.pierce ? { pierce: true } : {}) };
+        const pierce = e.pierce || pierces(attacker);
+        const dealt = this.hit(ctx, def, amount, pierce);
+        return { kind: "damage", target: foeIdx, amount: dealt, ...(pierce ? { pierce: true } : {}) };
       }
       case "heal":
         return { kind: "heal", target: by, amount: this.heal(ctx, def, e.amount) };
-      case "shield": {
-        const gained = Math.max(0, Math.min(e.amount, MAX_SHIELD - attacker.shield));
-        if (gained > 0) {
-          attacker.shield += gained;
-          ctx.abilities.push(evt(def, "shield", gained, by));
-        }
-        return { kind: "shield", target: by, amount: gained };
-      }
+      case "shield":
+        return this.gainShield(ctx, attacker, by, def, e.amount);
       case "drain": {
-        // It feeds on what's eating the rival: more for every burn or poison turn left.
+        // It can feed on what's eating the rival: more for every burn or poison turn left.
         const dotTurns = defender.dots.reduce((sum, d) => sum + d.turns, 0);
-        const amount = e.amount + (e.perDotTurn ?? 0) * dotTurns;
-        this.hit(ctx, def, amount);
+        const amount = this.hit(ctx, def, e.amount + (e.perDotTurn ?? 0) * dotTurns);
         const healed = this.heal(ctx, def, amount);
         return { kind: "drain", target: foeIdx, amount, healed };
       }
-      case "dot": {
-        // Afterburn (Emberwing): burns from this team last longer.
-        const extra = e.dot === "burn" ? Math.max(0, ...attacker.monsters.map((m) => scaledPassive(m.def, m.evolution)?.afterburn ?? 0)) : 0;
-        const turns = e.turns + extra;
-        const ev = { kind: "dot", target: foeIdx, dot: e.dot, amount: e.amount, turns } as const;
-        if (popBubble(defender)) return { ...ev, blocked: true };
-        defender.dots.push({ amount: e.amount, turns, kind: e.dot, element: def.element });
-        ctx.abilities.push(evt(def, e.dot, e.amount, foeIdx));
-        return ev;
-      }
+      case "dot":
+        return this.applyDot(ctx, attacker, defender, foeIdx, def, e.dot, e.amount, e.turns);
       case "ignite": {
         // Every burn on the rival goes off now for all the ticks it had left.
         const burns = defender.dots.filter((d) => d.kind === "burn");
-        const amount = burns.reduce((sum, d) => sum + d.amount * d.turns, 0);
+        const total = burns.reduce((sum, d) => sum + d.amount * d.turns, 0);
         defender.dots = defender.dots.filter((d) => d.kind !== "burn");
-        if (amount > 0) this.hit(ctx, def, amount, true); // burns ignore shields
+        const amount = this.hit(ctx, def, total, true); // burns ignore shields
         return { kind: "ignite", target: foeIdx, amount, burns: burns.length };
       }
       case "regen":
@@ -481,18 +584,19 @@ export class MatchMonstersGame {
         return { kind: "bubble", target: by, count: attacker.bubble };
       case "match": {
         const cells = this.shapeCells(e.shape, e.size ?? defaultShapeSize(e.shape));
-        const stones = e.shatter ? cells.filter((c) => b.grid[c.y]![c.x] === "stone").length : 0;
+        // Stones in the blast shatter into the rival (the effect's own shatter, or the team's Fault line).
+        const per = Math.max(e.shatter ?? 0, ...teamPassive(attacker, "faultLine").map(({ p }) => p.amount));
+        const stones = per > 0 ? cells.filter((c) => b.grid[c.y]![c.x] === "stone").length : 0;
         const step = this.matchRegion(cells, ctx);
-        if (!stones || !e.shatter) return { kind: "match", shape: e.shape, cells, step };
-        // Stones in the blast shatter into the rival.
-        const amount = stones * e.shatter;
-        this.hit(ctx, def, amount);
+        if (!stones) return { kind: "match", shape: e.shape, cells, step };
+        const amount = this.hit(ctx, def, stones * per);
         return { kind: "match", shape: e.shape, cells, step, shatter: { target: foeIdx, stones, amount } };
       }
       case "freeze":
         if (popBubble(defender)) return { kind: "freeze", target: foeIdx, count: e.count, turns: e.turns, blocked: true };
         // Lands when the turn passes, so it never blocks the caster's own moves.
         this.state.pendingFreeze.push({ count: e.count, turns: e.turns });
+        this.landed(ctx, defender, foeIdx);
         return { kind: "freeze", target: foeIdx, count: e.count, turns: e.turns };
       case "petrify": {
         // Stone the rival's element tiles (live moves first) to starve their charge.
@@ -551,10 +655,21 @@ export class MatchMonstersGame {
       }
       case "sap": {
         const drained: Record<string, number> = {};
+        let total = 0;
         for (const m of defender.monsters) {
           const lost = Math.min(m.charge, e.count);
           m.charge -= lost;
+          total += lost;
           if (lost > 0) drained[m.def.id] = lost;
+        }
+        // Undercurrent (Tidecoil): what it drains flows into its partner.
+        const partner = attacker.monsters.find((m) => m !== mon);
+        if (passiveOf(mon)?.kind === "undercurrent" && partner && total > 0) {
+          this.passive(ctx, by, mon, () => {
+            if (partner.sealed > 0) return null;
+            partner.charge += total;
+            return { kind: "empower", monsterIds: [partner.def.id], count: total };
+          });
         }
         return { kind: "sap", target: foeIdx, drained };
       }
@@ -562,6 +677,7 @@ export class MatchMonstersGame {
         if (popBubble(defender)) return { kind: "slow", target: foeIdx, count: 0, blocked: true };
         const before = defender.slow;
         defender.slow = Math.min(MOVES_PER_TURN - 1, defender.slow + e.count);
+        this.landed(ctx, defender, foeIdx);
         return { kind: "slow", target: foeIdx, count: defender.slow - before };
       }
       case "seal": {
@@ -574,6 +690,7 @@ export class MatchMonstersGame {
         const most = Math.max(...pool.map((m) => m.charge));
         const target = this.pick(pool.filter((m) => m.charge === most), 1)[0];
         if (target) target.sealed = Math.max(target.sealed, e.matches);
+        this.landed(ctx, defender, foeIdx);
         return { kind: "seal", target: foeIdx, monsterId: target?.def.id ?? null, matches: e.matches };
       }
       case "haste":
@@ -594,14 +711,25 @@ export class MatchMonstersGame {
         }
         return { kind: "empower", monsterIds: boosted, count: e.count };
       }
+      case "charge":
+        return gainCharge(mon, by, e.count) ?? { kind: "charge", target: by, monsterId: def.id, count: 0 };
     }
   }
 
-  private hit(ctx: FireContext, def: Monster, amount: number, pierce = false): boolean {
-    if (amount <= 0) return false;
-    dealDamage(ctx.defender, amount, pierce);
-    ctx.abilities.push(evt(def, "attack", amount, ctx.foeIdx));
-    return true;
+  /**
+   * Strike the rival; returns the damage that landed (after the rival's Frost armor and
+   * Bedrock). Keen eye on the attacking team makes every hit pierce shields.
+   */
+  private hit(ctx: FireContext, def: Monster, amount: number, pierce = false): number {
+    if (amount <= 0) return 0;
+    let dealt = amount;
+    const armor = Math.max(0, ...teamPassive(ctx.defender, "frostArmor").map(({ p }) => p.amount));
+    if (armor > 0 && this.state.ice.some((row) => row.some((v) => v > 0))) dealt -= armor;
+    for (const { p } of teamPassive(ctx.defender, "bedrock")) dealt = Math.min(dealt, p.cap);
+    if (dealt <= 0) return 0;
+    dealDamage(ctx.defender, dealt, pierce || pierces(ctx.attacker));
+    ctx.abilities.push(evt(def, "attack", dealt, ctx.foeIdx));
+    return dealt;
   }
 
   /** Heal the caster; poison halves it. Returns what was actually healed. */
@@ -779,6 +907,7 @@ export function scaledEffects(def: Monster, evolution: number): Effect[] {
       case "grow":
       case "sap":
       case "empower":
+      case "charge":
         return { ...e, count: e.count + evolution };
       case "pluck":
         return { ...e, count: e.count + atLeast(evolution, 2) };
@@ -792,25 +921,54 @@ export function scaledEffects(def: Monster, evolution: number): Effect[] {
   });
 }
 
-/** Passives after evolution: follow-ups and berserk strikes hit harder, berserk kicks in sooner. */
+/**
+ * Passives after evolution, by the same rules as moves: numbers +25% (min +1), charge
+ * counts +1 per level, burns/poison a turn longer at ★★, berserk kicks in sooner, Bedrock's
+ * cap drops 2 per level, and a second Bubble shell bubble at ★★★.
+ */
 export function scaledPassive(def: Monster, evolution: number): Passive | undefined {
   const p = def.passive;
   if (!p) return undefined;
-  return {
-    ...(p.berserk
-      ? {
-          berserk: {
-            threshold: p.berserk.threshold + 6 * evolution,
-            hits: p.berserk.hits,
-            amount: scaleAmount(p.berserk.amount, evolution),
-          },
-        }
-      : {}),
-    ...(p.followUp ? { followUp: scaleAmount(p.followUp, evolution) } : {}),
-    ...(p.afterburn ? { afterburn: p.afterburn + atLeast(evolution, 2) } : {}),
-    ...(p.sweetTooth ? { sweetTooth: p.sweetTooth } : {}), // never grows: berries already pile up as Harvest Bloom grows more
-  };
+  switch (p.kind) {
+    case "berserk":
+      return { ...p, threshold: p.threshold + 6 * evolution, amount: scaleAmount(p.amount, evolution) };
+    case "followUp":
+    case "overheat":
+    case "frostArmor":
+    case "rockslide":
+    case "faultLine":
+    case "crystalHide":
+    case "feedsOnPain":
+      return { ...p, amount: scaleAmount(p.amount, evolution) };
+    case "kindling":
+    case "thorns":
+      return { ...p, amount: scaleAmount(p.amount, evolution), turns: p.turns + atLeast(evolution, 1) };
+    case "afterburn":
+      return { ...p, turns: p.turns + atLeast(evolution, 2) };
+    case "lurk":
+    case "mycelium":
+      return { ...p, count: p.count + atLeast(evolution, 2) };
+    case "bubbleShell":
+      return { ...p, count: p.count + atLeast(evolution, 2) };
+    case "bedrock":
+      return { ...p, cap: p.cap - 2 * evolution };
+    case "sweetTooth": // never grows: berries already pile up as Harvest Bloom grows more
+    case "undercurrent":
+    case "keenEye":
+    case "daybreak":
+    case "glow": // the regen that feeds it already lasts longer
+      return p;
+  }
 }
+
+/** Passive names, as shown to players (and as the move name when a passive goes off). */
+export const PASSIVE_NAME: Record<Passive["kind"], string> = {
+  berserk: "Berserk", followUp: "Follow-up", afterburn: "Afterburn", sweetTooth: "Sweet tooth",
+  kindling: "Kindling", overheat: "Overheat", lurk: "Lurk", undercurrent: "Undercurrent",
+  frostArmor: "Frost armor", bubbleShell: "Bubble shell", bedrock: "Bedrock", rockslide: "Rockslide",
+  faultLine: "Fault line", crystalHide: "Crystal hide", thorns: "Thorns", feedsOnPain: "Feeds on pain",
+  mycelium: "Mycelium", keenEye: "Keen eye", daybreak: "Daybreak", glow: "Glow",
+};
 
 /** Charge cost after evolution: -1 per level, never below the floor (or the base, if lower). */
 export function effectiveCost(def: Monster, evolution: number): number {
@@ -851,28 +1009,71 @@ export function describeEffects(effects: readonly Effect[], element: Element): s
       case "haste": return `gain ${e.count} extra move${e.count === 1 ? "" : "s"}`;
       case "cleanse": return "cure burns and poison";
       case "empower": return `give ${e.count} charge to your partner`;
+      case "charge": return `gain ${e.count} charge`;
     }
   });
   const text = parts.join(", ");
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-/** Passive text, if any. */
+const turnsText = (n: number) => `${n} turn${n === 1 ? "" : "s"}`;
+
+/** A passive's rule in one line (without its name). */
+function passiveRule(p: Passive): string {
+  switch (p.kind) {
+    case "berserk": return `at ${p.threshold} HP or less, its move becomes ${p.hits} strikes of ${p.amount}`;
+    case "followUp": return `when its partner's move hits, it follows up for ${p.amount}`;
+    case "afterburn": return `your team's burns last ${turnsText(p.turns)} longer`;
+    case "sweetTooth": return `every berry your team collects gives it ${p.amount} charge (up to full)`;
+    case "kindling": return `when its partner's move hits, the rival catches a burn (${p.amount} damage/turn for ${turnsText(p.turns)})`;
+    case "overheat": return `when it fires, any charge it has beyond full is spent too, for +${p.amount} damage each`;
+    case "lurk": return `whenever a rival monster fires, it gains ${p.count} charge`;
+    case "undercurrent": return "the charge its move drains flows into its partner";
+    case "frostArmor": return `while any tile is frozen, rival hits on your team deal ${p.amount} less damage`;
+    case "bubbleShell": return `when a harmful effect lands on your team, it blows ${p.count === 1 ? "a bubble that blocks the next one" : `${p.count} bubbles that block the next ${p.count}`}`;
+    case "bedrock": return `no single rival hit deals more than ${p.cap} damage to your team`;
+    case "rockslide": return `its move deals +${p.amount} damage for every stone on the board`;
+    case "faultLine": return `stones caught in your team's blasts shatter into the rival for ${p.amount} damage each`;
+    case "crystalHide": return `when a rival move hits your team, gain ${p.amount} shield`;
+    case "thorns": return `when a rival move hits your team, poison the rival (${p.amount} damage/turn for ${turnsText(p.turns)})`;
+    case "feedsOnPain": return `its move steals +${p.amount} HP for every turn of burn or poison left on the rival`;
+    case "mycelium": return `whenever its partner fires, it gains ${p.count} charge`;
+    case "keenEye": return "your team's hits ignore shields";
+    case "daybreak": return "starts the match fully charged, and charges up fully whenever it evolves";
+    case "glow": return `each turn your team's regen ticks, it gains ${p.count} charge`;
+  }
+}
+
+/** Passive text ("Name: rule"), if any. */
 export function describePassive(def: Monster, evolution = 0): string | undefined {
   const p = scaledPassive(def, evolution);
-  if (!p) return undefined;
-  if (p.berserk) return `Berserk at ${p.berserk.threshold} HP or less: strike ${p.berserk.hits}× for ${p.berserk.amount}`;
-  if (p.followUp) return `When its partner's move hits, follow up for ${p.followUp}`;
-  if (p.afterburn) return `Afterburn: your team's burns last ${p.afterburn} turn${p.afterburn === 1 ? "" : "s"} longer`;
-  if (p.sweetTooth) return `Sweet tooth: every berry your team collects gives it ${p.sweetTooth} charge (up to full)`;
-  return undefined;
+  return p ? `${PASSIVE_NAME[p.kind]}: ${passiveRule(p)}` : undefined;
+}
+
+/** "Before → after" lines for what an evolution changes in a passive. */
+function passiveChanges(a: Passive, b: Passive): string[] {
+  if (a.kind !== b.kind) return [];
+  const name = PASSIVE_NAME[a.kind];
+  const before = a as unknown as Record<string, unknown>, after = b as unknown as Record<string, unknown>;
+  const out: string[] = [];
+  for (const key of Object.keys(before)) {
+    const x = before[key], y = after[key];
+    if (typeof x !== "number" || typeof y !== "number" || x === y) continue;
+    if (a.kind === "berserk") out.push(key === "threshold" ? `Berserk at ${x} → ${y} HP` : `Berserk strikes ${x} → ${y}`);
+    else if (key === "turns") out.push(a.kind === "afterburn" ? `Afterburn ${x} → ${y} turns` : `${name} lasts ${x} → ${y} turns`);
+    else if (key === "cap") out.push(`${name} cap ${x} → ${y}`);
+    else if (a.kind === "bubbleShell") out.push(`${name} ${x} → ${y} bubbles`);
+    else if (key === "count" || a.kind === "sweetTooth") out.push(`${name} ${x} → ${y} charge`);
+    else out.push(`${name} ${x} → ${y}`);
+  }
+  return out;
 }
 
 const EFFECT_LABEL: Record<EffectKind, string> = {
   damage: "Damage", heal: "Heal", shield: "Shield", drain: "Life steal", dot: "", match: "Blast",
   freeze: "Frozen tiles", petrify: "Stone tiles", convert: "Converted tiles", grow: "Berries grown", pluck: "Berries stolen", sap: "Charge drained",
   slow: "Moves stolen", seal: "Seal", haste: "Extra moves", cleanse: "Cleanse", empower: "Partner charge",
-  ignite: "Ignite", regen: "Regen", bubble: "Bubbles",
+  ignite: "Ignite", regen: "Regen", bubble: "Bubbles", charge: "Charge",
 };
 
 /**
@@ -910,19 +1111,7 @@ export function evolutionChanges(def: Monster, evolution: number): string[] {
     }
   });
   const pa = scaledPassive(def, evolution), pb = scaledPassive(def, evolution + 1);
-  if (pa?.followUp !== undefined && pb?.followUp !== undefined && pa.followUp !== pb.followUp) {
-    out.push(`Follow-up ${pa.followUp} → ${pb.followUp}`);
-  }
-  if (pa?.sweetTooth !== undefined && pb?.sweetTooth !== undefined && pa.sweetTooth !== pb.sweetTooth) {
-    out.push(`Sweet tooth ${pa.sweetTooth} → ${pb.sweetTooth} charge per berry`);
-  }
-  if (pa?.afterburn !== undefined && pb?.afterburn !== undefined && pa.afterburn !== pb.afterburn) {
-    out.push(`Afterburn ${pa.afterburn} → ${pb.afterburn} turns`);
-  }
-  if (pa?.berserk && pb?.berserk) {
-    if (pa.berserk.amount !== pb.berserk.amount) out.push(`Berserk strikes ${pa.berserk.amount} → ${pb.berserk.amount}`);
-    if (pa.berserk.threshold !== pb.berserk.threshold) out.push(`Berserk at ${pa.berserk.threshold} → ${pb.berserk.threshold} HP`);
-  }
+  if (pa && pb) out.push(...passiveChanges(pa, pb));
   const ca = effectiveCost(def, evolution), cb = effectiveCost(def, evolution + 1);
   if (ca !== cb) out.push(`Charge cost ${ca} → ${cb}`);
   return out;
@@ -970,12 +1159,38 @@ function feedCharge(player: PlayerState, counts: Partial<Record<Element, number>
  */
 function feedBerries(player: PlayerState, berries: number): void {
   if (berries <= 0) return;
-  for (const mon of player.monsters) {
-    const sweet = scaledPassive(mon.def, mon.evolution)?.sweetTooth ?? 0;
-    if (sweet <= 0 || mon.sealed > 0) continue;
+  for (const { mon, p } of teamPassive(player, "sweetTooth")) {
+    if (p.amount <= 0 || mon.sealed > 0) continue;
     const full = effectiveCost(mon.def, mon.evolution);
-    mon.charge = Math.max(mon.charge, Math.min(full, mon.charge + sweet * berries));
+    mon.charge = Math.max(mon.charge, Math.min(full, mon.charge + p.amount * berries));
   }
+}
+
+/** A monster's passive at its current evolution. */
+function passiveOf(mon: MonsterState): Passive | undefined {
+  return scaledPassive(mon.def, mon.evolution);
+}
+
+/** The monsters on a team with a given passive (at their current evolution). */
+function teamPassive<K extends PassiveKind>(player: PlayerState, kind: K): { mon: MonsterState; p: PassiveOf<K> }[] {
+  const out: { mon: MonsterState; p: PassiveOf<K> }[] = [];
+  for (const mon of player.monsters) {
+    const p = passiveOf(mon);
+    if (p?.kind === kind) out.push({ mon, p: p as PassiveOf<K> });
+  }
+  return out;
+}
+
+/** Keen eye: this team's hits ignore shields. */
+function pierces(player: PlayerState): boolean {
+  return teamPassive(player, "keenEye").length > 0;
+}
+
+/** A monster gains charge from a passive (sealed monsters can't: then nothing happens). */
+function gainCharge(mon: MonsterState, seat: 0 | 1, count: number): EffectEventFor<"charge"> | null {
+  if (mon.sealed > 0 || count <= 0) return null;
+  mon.charge += count;
+  return { kind: "charge", target: seat, monsterId: mon.def.id, count };
 }
 
 function tickDots(player: PlayerState, playerIdx: 0 | 1, events: AbilityEvent[]): void {
@@ -1019,6 +1234,8 @@ function tickRegen(player: PlayerState, playerIdx: 0 | 1, events: AbilityEvent[]
     player.hp = Math.min(player.maxHp, player.hp + healed);
     events.push({ monsterId: "regen", monsterName: "Regen", element: "light", type: "regen-tick", amount: healed, targetPlayer: playerIdx });
   }
+  // Glow (Dawnhare): a turn that starts with regen charges it (once, however many regens tick).
+  for (const { mon, p } of teamPassive(player, "glow")) gainCharge(mon, playerIdx, p.count);
   player.regen = player.regen.map((r) => ({ ...r, turns: r.turns - 1 })).filter((r) => r.turns > 0);
 }
 
@@ -1048,7 +1265,8 @@ function toPlayerState(p: PlayerSetup, hp: number): PlayerState {
     bubble: 0,
     berries: 0,
     slow: 0,
-    monsters: p.monsters.map((def): MonsterState => ({ def, charge: 0, evolution: 0, sealed: 0 })),
+    // Daybreak monsters start fully charged.
+    monsters: p.monsters.map((def): MonsterState => ({ def, charge: def.passive?.kind === "daybreak" ? def.chargeCost : 0, evolution: 0, sealed: 0 })),
   };
 }
 

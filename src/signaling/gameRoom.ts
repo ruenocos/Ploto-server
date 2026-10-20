@@ -335,6 +335,11 @@ function serializePlayer(p: PlayerState) {
   };
 }
 
+function sweetToothOf(m: MonsterState): number {
+  const p = scaledPassive(m.def, m.evolution);
+  return p?.kind === "sweetTooth" ? p.amount : 0;
+}
+
 function serializeMonster(m: MonsterState) {
   return {
     id: m.def.id,
@@ -345,7 +350,7 @@ function serializeMonster(m: MonsterState) {
     evolution: m.evolution,
     sealed: m.sealed,
     /** Charge per berry the team collects (Sweet tooth), so the client can show it land. */
-    sweetTooth: scaledPassive(m.def, m.evolution)?.sweetTooth ?? 0,
+    sweetTooth: sweetToothOf(m),
     ability: abilityView(m.def, m.evolution),
   };
 }

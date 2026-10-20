@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   MatchMonstersGame,
+  describePassive,
   effectiveCost,
   evolutionChanges,
   fatigueDamage,
@@ -19,8 +20,10 @@ import {
   MAX_SHIELD,
   STARTING_HP,
   type Effect,
+  type Element,
   type Gem,
   type Monster,
+  type MoveResult,
   type Passive,
   type Tile,
 } from "../src/game/matchmonsters/types.js";
@@ -312,7 +315,7 @@ describe("berries", () => {
   });
 
   it("sweet tooth charges on berries the team collects, not on stolen ones", () => {
-    const sweet: Monster = { id: "s", name: "S", element: "light", chargeCost: 50, ability: { name: "n", effects: [] }, passive: { sweetTooth: 2 } };
+    const sweet: Monster = { id: "s", name: "S", element: "light", chargeCost: 50, ability: { name: "n", effects: [] }, passive: { kind: "sweetTooth", amount: 2 } };
     const g = newGame(fireMon("a", [], 99), rival, {}, sweet);
     g.state.board.grid = grid(LAYOUT_BERRY);
     const r = g.applyMove(0, FIRE_SWAP);
@@ -323,7 +326,7 @@ describe("berries", () => {
   });
 
   it("sweet tooth ignores berries stolen with pluck", () => {
-    const sweet: Monster = { id: "s", name: "S", element: "light", chargeCost: 50, ability: { name: "n", effects: [] }, passive: { sweetTooth: 2 } };
+    const sweet: Monster = { id: "s", name: "S", element: "light", chargeCost: 50, ability: { name: "n", effects: [] }, passive: { kind: "sweetTooth", amount: 2 } };
     const g = newGame(fireMon("a", [{ kind: "pluck", count: 1 }]), rival, {}, sweet);
     g.state.players[1].berries = 3;
     const r = g.applyMove(0, FIRE_SWAP);
@@ -355,8 +358,8 @@ describe("no runaway loops", () => {
   });
 
   it("sweet tooth charges only up to full, and doesn't grow with evolution", () => {
-    const sweet: Monster = { id: "s", name: "S", element: "light", chargeCost: 5, ability: { name: "n", effects: [] }, passive: { sweetTooth: 1 } };
-    expect(scaledPassive(sweet, 2)?.sweetTooth).toBe(1);
+    const sweet: Monster = { id: "s", name: "S", element: "light", chargeCost: 5, ability: { name: "n", effects: [] }, passive: { kind: "sweetTooth", amount: 1 } };
+    expect(scaledPassive(sweet, 2)).toEqual({ kind: "sweetTooth", amount: 1 });
     const g = newGame(fireMon("a", [], 99), rival, {}, sweet);
     g.state.board.grid = grid(LAYOUT_BERRY);
     g.state.players[0].monsters[1]!.charge = 4;
@@ -484,7 +487,7 @@ describe("tempo & charge effects", () => {
 
 describe("passives", () => {
   it("berserk turns the move into multiple strikes at low HP", () => {
-    const g = newGame(fireMon("b", [dmg(30)], 3, { berserk: { threshold: 30, hits: 4, amount: 5 } }));
+    const g = newGame(fireMon("b", [dmg(30)], 3, { kind: "berserk", threshold: 30, hits: 4, amount: 5 }));
     g.state.players[0].hp = 25;
     const r = g.applyMove(0, FIRE_SWAP);
     expect(r.ok).toBe(true);
@@ -496,7 +499,7 @@ describe("passives", () => {
   it("follow-up strikes when the partner's move deals damage", () => {
     const helper: Monster = {
       id: "h", name: "H", element: "light", chargeCost: 99,
-      ability: { name: "n", effects: [] }, passive: { followUp: 5 },
+      ability: { name: "n", effects: [] }, passive: { kind: "followUp", amount: 5 },
     };
     const g = newGame(fireMon("a", [dmg(10)]), filler, {}, helper);
     const r = g.applyMove(0, FIRE_SWAP);
@@ -601,15 +604,23 @@ describe("evolution milestones", () => {
   });
 
   it("passives grow with evolution", () => {
-    const def = fireMon("a", [], 3, { followUp: 3, berserk: { threshold: 20, hits: 4, amount: 5 } });
-    expect(scaledPassive(def, 2)).toEqual({ followUp: 5, berserk: { threshold: 32, hits: 4, amount: 7 } });
-    expect(evolutionChanges(def, 0)).toEqual(
-      expect.arrayContaining(["Follow-up 3 → 4", "Berserk strikes 5 → 6", "Berserk at 20 → 26 HP"]),
-    );
+    const follow = fireMon("a", [], 3, { kind: "followUp", amount: 3 });
+    const berserk = fireMon("b", [], 3, { kind: "berserk", threshold: 20, hits: 4, amount: 5 });
+    expect(scaledPassive(follow, 2)).toEqual({ kind: "followUp", amount: 5 });
+    expect(scaledPassive(berserk, 2)).toEqual({ kind: "berserk", threshold: 32, hits: 4, amount: 7 });
+    expect(evolutionChanges(follow, 0)).toContain("Follow-up 3 → 4");
+    expect(evolutionChanges(berserk, 0)).toEqual(expect.arrayContaining(["Berserk strikes 5 → 6", "Berserk at 20 → 26 HP"]));
+    // Burns and poison from passives last a turn longer at ★, Bedrock tightens, Bubble shell adds a bubble at ★★.
+    const kindling = fireMon("k", [], 3, { kind: "kindling", amount: 2, turns: 2 });
+    expect(scaledPassive(kindling, 1)).toEqual({ kind: "kindling", amount: 3, turns: 3 });
+    expect(evolutionChanges(kindling, 0)).toEqual(expect.arrayContaining(["Kindling 2 → 3", "Kindling lasts 2 → 3 turns"]));
+    expect(scaledPassive(fireMon("c", [], 3, { kind: "bedrock", cap: 16 }), 2)).toEqual({ kind: "bedrock", cap: 12 });
+    expect(scaledPassive(fireMon("s", [], 3, { kind: "bubbleShell", count: 1 }), 1)).toEqual({ kind: "bubbleShell", count: 1 });
+    expect(scaledPassive(fireMon("s", [], 3, { kind: "bubbleShell", count: 1 }), 2)).toEqual({ kind: "bubbleShell", count: 2 });
   });
 
   it("an evolved partner's follow-up hits harder in play", () => {
-    const helper: Monster = { ...fireMon("h", [], 99, { followUp: 3 }), element: "light" };
+    const helper: Monster = { ...fireMon("h", [], 99, { kind: "followUp", amount: 3 }), element: "light" };
     const g = newGame(fireMon("a", [dmg(10)]), filler, {}, helper);
     g.state.players[0].monsters[1]!.evolution = 2;
     const r = g.applyMove(0, FIRE_SWAP);
@@ -825,12 +836,12 @@ describe("kit mechanics: shield bash, feeding vine, shatter, bloom, targeted sea
   });
 
   it("afterburn makes the team's burns last longer (and grows at ★★)", () => {
-    const wing = fireMon("w", [], 99, { afterburn: 1 });
+    const wing = fireMon("w", [], 99, { kind: "afterburn", turns: 1 });
     const g = newGame(fireMon("a", [{ kind: "dot", dot: "burn", amount: 3, turns: 2 }]), filler, {}, wing);
     const r = g.applyMove(0, FIRE_SWAP);
     if (!r.ok) throw new Error(r.reason);
     expect(r.casts[0]!.effects[0]).toMatchObject({ kind: "dot", dot: "burn", turns: 3 });
-    expect(scaledPassive(wing, 2)?.afterburn).toBe(2);
+    expect(scaledPassive(wing, 2)).toEqual({ kind: "afterburn", turns: 2 });
   });
 });
 
@@ -909,5 +920,198 @@ describe("effect events", () => {
     g.state.movesLeft = 1;
     const r = g.applyMove(0, FIRE_SWAP);
     expect(r.ok && r.iceLanded.length).toBe(2);
+  });
+});
+
+describe("roster: one move + one passive", () => {
+  it("every monster has a single-twist move and exactly one described passive", () => {
+    for (const def of Object.values(MONSTERS)) {
+      expect(def.ability.effects.length, def.name).toBeGreaterThanOrEqual(1);
+      expect(def.ability.effects.length, def.name).toBeLessThanOrEqual(2);
+      expect(def.passive, def.name).toBeDefined();
+      for (let evo = 0; evo <= 2; evo++) expect(describePassive(def, evo), def.name).toMatch(/^[A-Z][\w -]+: \w/);
+    }
+  });
+});
+
+describe("passive kits", () => {
+  const rival = (passive?: Passive, element: Element = "water"): Monster =>
+    ({ id: "r", name: "R", element, chargeCost: 50, ability: { name: "n", effects: [] }, ...(passive ? { passive } : {}) });
+  const ally = (passive: Passive): Monster =>
+    ({ id: "al", name: "Al", element: "light", chargeCost: 99, ability: { name: "n", effects: [] }, passive });
+  const fired = (g: MatchMonstersGame): MoveResult => {
+    const r = g.applyMove(g.state.turn, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    return r;
+  };
+  const procs = (r: MoveResult, name: string) => r.casts.filter((c) => c.via === "passive" && c.moveName === name);
+
+  it("Kindling: the partner's hit leaves the rival burning; Afterburn makes it last longer", () => {
+    const g = newGame(fireMon("a", [dmg(5)], 3, { kind: "afterburn", turns: 1 }), filler, {}, ally({ kind: "kindling", amount: 2, turns: 2 }));
+    const r = fired(g);
+    expect(procs(r, "Kindling")).toEqual([
+      expect.objectContaining({ by: 0, monsterId: "al", effects: [{ kind: "dot", target: 1, dot: "burn", amount: 2, turns: 3 }] }),
+    ]);
+    expect(g.state.players[1].dots).toEqual([{ kind: "burn", amount: 2, turns: 3, element: "light" }]);
+  });
+
+  it("Kindling doesn't go off on its own move, or on a move that dealt no damage", () => {
+    const own = newGame(fireMon("a", [dmg(5)], 3, { kind: "kindling", amount: 2, turns: 2 }));
+    expect(procs(fired(own), "Kindling")).toHaveLength(0);
+    const quiet = newGame(fireMon("a", [{ kind: "heal", amount: 5 }]), filler, {}, ally({ kind: "kindling", amount: 2, turns: 2 }));
+    expect(procs(fired(quiet), "Kindling")).toHaveLength(0);
+  });
+
+  it("Overheat: charge beyond full is spent on the move for extra damage", () => {
+    const g = newGame(fireMon("a", [dmg(10)], 3, { kind: "overheat", amount: 2 }));
+    g.state.players[0].monsters[0]!.charge = 4;
+    const r = fired(g);
+    const extra = 4 + (r.charged.fire ?? 0) - 3;
+    expect(r.casts[0]!.effects[0]).toEqual({ kind: "damage", target: 1, amount: 10 + 2 * extra });
+    expect(g.state.players[0].monsters[0]!.charge).toBe(0);
+  });
+
+  it("Lurk: a rival monster firing charges it, but it waits for its own turn to act", () => {
+    const g = newGame(fireMon("a", [dmg(5)]), { ...rival({ kind: "lurk", count: 2 }), chargeCost: 2 });
+    const r = fired(g);
+    expect(procs(r, "Lurk")).toEqual([
+      expect.objectContaining({ by: 1, monsterId: "r", effects: [{ kind: "charge", target: 1, monsterId: "r", count: 2 }] }),
+    ]);
+    expect(g.state.players[1].monsters[0]!.charge).toBe(2);
+    expect(r.casts.filter((c) => c.by === 1 && c.via !== "passive")).toHaveLength(0); // full, but it's not its turn
+  });
+
+  it("Undercurrent: charge the move drains flows into the partner", () => {
+    const g = newGame(fireMon("a", [{ kind: "sap", count: 2 }], 3, { kind: "undercurrent" }), rival());
+    g.state.players[1].monsters[0]!.charge = 5;
+    const r = fired(g);
+    expect(procs(r, "Undercurrent")[0]!.effects).toEqual([{ kind: "empower", monsterIds: ["x"], count: 2 }]);
+    expect(g.state.players[0].monsters[1]!.charge).toBe(2 + (r.charged.light ?? 0));
+    expect(g.state.players[1].monsters[0]!.charge).toBe(3);
+  });
+
+  it("Frost armor: while ice is on the board, rival hits deal less", () => {
+    const iced = newGame(fireMon("a", [dmg(10)]), rival({ kind: "frostArmor", amount: 3 }));
+    iced.state.ice[4]![4] = 2;
+    expect(fired(iced).casts[0]!.effects[0]).toMatchObject({ kind: "damage", amount: 7 });
+    const dry = newGame(fireMon("a", [dmg(10)]), rival({ kind: "frostArmor", amount: 3 }));
+    expect(fired(dry).casts[0]!.effects[0]).toMatchObject({ kind: "damage", amount: 10 });
+  });
+
+  it("Bubble shell: a harmful effect that lands blows a bubble, which blocks the next one", () => {
+    const g = newGame(
+      fireMon("a", [{ kind: "dot", dot: "burn", amount: 3, turns: 2 }, { kind: "slow", count: 1 }]),
+      rival({ kind: "bubbleShell", count: 1 }),
+    );
+    const r = fired(g);
+    const [burn, slow] = r.casts[0]!.effects;
+    expect(burn).not.toHaveProperty("blocked");
+    expect(procs(r, "Bubble shell")[0]!.effects).toEqual([{ kind: "bubble", target: 1, count: 1 }]);
+    expect(slow).toMatchObject({ kind: "slow", blocked: true });
+    expect(g.state.players[1].bubble).toBe(0);
+    expect(g.state.players[1].slow).toBe(0);
+  });
+
+  it("Bedrock: no single rival hit deals more than the cap", () => {
+    const g = newGame(fireMon("a", [dmg(30)]), rival({ kind: "bedrock", cap: 12 }));
+    expect(fired(g).casts[0]!.effects[0]).toMatchObject({ kind: "damage", amount: 12 });
+    expect(g.state.players[1].hp).toBe(STARTING_HP - 12);
+  });
+
+  it("Rockslide: the move hits harder for every stone on the board", () => {
+    const g = newGame(fireMon("a", [dmg(10)], 3, { kind: "rockslide", amount: 3 }));
+    g.state.board.grid[4]![3] = "stone";
+    g.state.board.grid[4]![4] = "stone";
+    const r = fired(g);
+    const stones = r.cascades.at(-1)!.after.flat().filter((t) => t === "stone").length;
+    expect(stones).toBeGreaterThan(0);
+    expect(r.casts[0]!.effects[0]).toMatchObject({ kind: "damage", amount: 10 + 3 * stones });
+  });
+
+  it("Fault line: stones in any of the team's blasts shatter into the rival", () => {
+    const g = newGame(fireMon("a", [{ kind: "match", shape: "col" }]), filler, {}, ally({ kind: "faultLine", amount: 3 }));
+    for (let x = 0; x < 5; x++) g.state.board.grid[4]![x] = "stone"; // one stone in every column
+    const r = fired(g);
+    expect(r.casts[0]!.effects[0]).toMatchObject({ kind: "match", shatter: { target: 1, stones: 1, amount: 3 } });
+    expect(g.state.players[1].hp).toBe(STARTING_HP - 3);
+  });
+
+  it("Crystal hide: a rival move that hits gives the team shield", () => {
+    const g = newGame(fireMon("a", [dmg(5)]), rival({ kind: "crystalHide", amount: 4 }));
+    const r = fired(g);
+    expect(procs(r, "Crystal hide")[0]).toMatchObject({ by: 1, effects: [{ kind: "shield", target: 1, amount: 4 }] });
+    expect(g.state.players[1].shield).toBe(4);
+  });
+
+  it("Thorns: a rival move that hits gets the attacker poisoned", () => {
+    const g = newGame(fireMon("a", [dmg(5)]), rival({ kind: "thorns", amount: 2, turns: 2 }, "nature"));
+    const r = fired(g);
+    expect(procs(r, "Thorns")[0]).toMatchObject({ by: 1, effects: [{ kind: "dot", target: 0, dot: "poison", amount: 2, turns: 2 }] });
+    expect(g.state.players[0].dots).toEqual([{ kind: "poison", amount: 2, turns: 2, element: "nature" }]);
+  });
+
+  it("Feeds on pain: the move steals more for every turn of burn or poison on the rival", () => {
+    const g = newGame(fireMon("a", [{ kind: "drain", amount: 10 }], 3, { kind: "feedsOnPain", amount: 2 }));
+    g.state.players[0].hp = 40;
+    g.state.players[1].dots = [
+      { kind: "burn", amount: 3, turns: 3, element: "fire" },
+      { kind: "poison", amount: 2, turns: 2, element: "nature" },
+    ];
+    expect(fired(g).casts[0]!.effects[0]).toMatchObject({ kind: "drain", amount: 20 });
+  });
+
+  it("Mycelium: the partner firing charges it", () => {
+    const g = newGame(fireMon("a", [dmg(5)]), filler, {}, ally({ kind: "mycelium", count: 2 }));
+    const r = fired(g);
+    expect(procs(r, "Mycelium")[0]!.effects).toEqual([{ kind: "charge", target: 0, monsterId: "al", count: 2 }]);
+    expect(g.state.players[0].monsters[1]!.charge).toBe(2 + (r.charged.light ?? 0));
+  });
+
+  it("Keen eye: the whole team's hits ignore shields", () => {
+    const g = newGame(fireMon("a", [dmg(10)]), filler, {}, ally({ kind: "keenEye" }));
+    g.state.players[1].shield = 20;
+    expect(fired(g).casts[0]!.effects[0]).toEqual({ kind: "damage", target: 1, amount: 10, pierce: true });
+    expect(g.state.players[1].shield).toBe(20);
+    expect(g.state.players[1].hp).toBe(STARTING_HP - 10);
+  });
+
+  it("Daybreak: starts fully charged, and evolving charges it fully again", () => {
+    const fresh = new MatchMonstersGame({
+      matchId: "d", seed: 1,
+      players: [
+        { peerId: "a", displayName: "A", monsters: [fireMon("a", [dmg(5)], 6, { kind: "daybreak" }), filler] },
+        { peerId: "b", displayName: "B", monsters: [filler, filler] },
+      ],
+    });
+    expect(fresh.state.players[0].monsters[0]!.charge).toBe(6);
+    const g = newGame(fireMon("a", [dmg(5)], 6, { kind: "daybreak" }));
+    const mon = g.state.players[0].monsters[0]!;
+    mon.charge = 1;
+    g.state.players[0].berries = 4;
+    expect(g.evolve(0, "a").ok).toBe(true);
+    expect(mon.charge).toBe(effectiveCost(mon.def, 1));
+  });
+
+  it("Glow: a turn that starts with regen ticking charges it", () => {
+    const g = newGame(fireMon("a", [{ kind: "regen", amount: 5, turns: 2 }], 3, { kind: "glow", count: 1 }));
+    g.state.players[0].hp = 50;
+    fired(g);
+    const mon = g.state.players[0].monsters[0]!;
+    const before = mon.charge;
+    g.state.turn = 1; g.state.movesLeft = 1; // hand the turn to the rival, whose move ends it
+    g.state.players[1].monsters.forEach((m) => (m.charge = 0));
+    g.applyMove(1, chooseMove(g, 1)!);
+    expect(mon.charge).toBe(before + 1);
+  });
+
+  it("reactions never chain: Thorns against Thorns poisons once, and passives never fire moves", () => {
+    const g = newGame(
+      fireMon("a", [dmg(5)], 3, { kind: "thorns", amount: 1, turns: 2 }),
+      { ...rival({ kind: "thorns", amount: 1, turns: 2 }), id: "b" },
+    );
+    const r = fired(g);
+    expect(r.casts.map((c) => c.via ?? "move")).toEqual(["move", "passive"]);
+    expect(g.state.players[0].dots).toHaveLength(1);
+    expect(g.state.players[1].dots).toHaveLength(0);
   });
 });

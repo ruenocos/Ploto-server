@@ -3419,6 +3419,12 @@
       /** A monster stepping up: spend its charge and (unless it's a follow-up) take the stage. */
       async function castIntro(cast) {
         if (cast.via === "followUp") return pose(cast.by, cast.monsterId, "cast");
+        // A passive going off spends no charge: just its name over the monster.
+        if (cast.via === "passive") {
+          const stage = chipOf(cast.by, cast.monsterId)?.el?.querySelector(".stage");
+          if (stage) floatText(stage, cast.moveName, "#fff6c2", ["passive"]);
+          return pose(cast.by, cast.monsterId, "cast");
+        }
         const chip = chipOf(cast.by, cast.monsterId);
         if (chip && disp) { const d = disp[cast.by]; d.charge[chip.idx] = Math.max(0, d.charge[chip.idx] - d.cost[chip.idx]); drawCharge(cast.by, chip.idx); }
         await showCastCard(cast);

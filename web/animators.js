@@ -426,6 +426,24 @@ const EFFECTS = {
       await fx.sleep(120);
     },
   },
+
+  // A monster charges itself (Lurk, Mycelium): sparks gather on it and its bar ticks up.
+  charge: {
+    async animate(e, ctx) {
+      const { fx, cast } = ctx;
+      const mon = fx.monOf(e.target, e.monsterId);
+      const color = fx.COLOR[cast.element] ?? "#ffd23c";
+      if (mon) {
+        const at = fx.centerOf(mon);
+        fx.burst(at, color, 6, 26);
+        fx.impact(at, cast.element);
+      }
+      fx.charge(e.target, e.monsterId, e.count);
+      void fx.pose(e.target, e.monsterId, "charge");
+      if (mon) fx.floatText(mon, `+${e.count}`, color, ["charge"]);
+      await fx.sleep(320);
+    },
+  },
 };
 
 /**

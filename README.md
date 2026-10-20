@@ -49,12 +49,18 @@ npm run dev        # web, status and WebSocket all on :8080
 
 Then both of you open **`http://<the-host's-LAN-ip>:8080/play`** (the host can
 use `http://localhost:8080/play`), or deploy it (see [`docs/DEPLOY.md`](docs/DEPLOY.md)).
-Choose **Blind pick** (each picks two monsters in the lobby), **Draft** or
-**Random**, then **Quick Play** (matched with anyone queuing in the same mode),
-**Bot**, or **Friend** (a 4-character code + a share link, `/play?room=CODE`;
-the host's mode decides). A link asks a new player for a name, then joins
-straight away: draft and random rooms at once, a blind-pick room as soon as
-they've picked two. No accounts needed.
+The lobby asks one thing per screen. Tap **Play**, then choose how:
+**Quick match** (matched with anyone queuing in the same mode), **A friend**,
+or **Practice** (the bot). Next, how teams are made: **Pick** (choose your two
+on the next screen, the rival picks theirs blind), **Draft** or **Random**; it
+remembers your last choice. A friend game ends on **Play a friend**: your
+friends with a one-tap Invite, or **Share an invite link** (a 4-character code
++ a link, `/play?room=CODE`; the host's mode decides). Got a code? Type it under
+Play or Play a friend. A link asks a new player for a name, then joins straight
+away: draft and random rooms at once, a blind-pick room as soon as they've
+picked two. Every screen has Back (and Escape); leaving a wait cancels it. No
+accounts needed. **Monsters** on the home screen is the roster: tap one for its
+evolution line and move, and **Play with** it.
 
 **Random.** Both players are dealt two random monsters. The match opens with
 the deal: four slots spin through the roster and lock in one by one,
@@ -72,12 +78,14 @@ have no timer, and the bot drafts counters too.
 filled in) (no password: the server hands back a
 secret key that stays in the browser's localStorage; copy it from your profile to
 sign in on another device). Then add friends by username, chat with them, and
-tap **Invite** to start a match without sharing codes: **Friend** lists your
-friends (online first) with a one-tap Invite, above the link and code options.
+tap **Invite** to start a match without sharing codes (you choose teams first):
+**Play a friend** lists your friends (online first) with a one-tap Invite,
+above the link and code options. Accepting a blind-pick invite without a team
+takes you to Your team, where the button reads **Accept**.
 After a match with a signed-in rival, **Add them as a friend** from the end
 screen. Your profile shows your record and recent matches.
 
-**Solo?** Tap **Bot**. In blind pick the bot takes a random team; it plays a
+**Solo?** Tap **Play**, then **Practice**. In Pick the bot takes a random team; it plays a
 greedy (occasionally sloppy) game. Practice games add debug shortcuts under
 the board: **+4 berries** (evolve right away) and **Charge up** (both your
 monsters fire on your next match). After any game, **Rematch** restarts with

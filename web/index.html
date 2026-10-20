@@ -4310,6 +4310,32 @@
         if (e.target.matches?.("input")) return;
         lbBack();
       }, true);
+
+      /*
+       * The phone's back button walks the same stack. While there's somewhere to
+       * go back to, one extra history entry sits on top; popping it does the
+       * in-app Back: close the open sheet, step back a lobby screen, open the
+       * menu in a match (never a silent exit), or offer to leave a draft.
+       */
+      let backIgnore = 0; // our own history.back() calls, whose popstate we skip
+      const isShown = (id) => !$(id).classList.contains("hidden");
+      const canGoBack = () => isShown("sheet") || isShown("game") || isShown("draft") || (isShown("lobby") && nav.stack.length > 1);
+      function syncBackGuard() {
+        if (backIgnore) return; // wait for the pending pop to land
+        const has = history.state?.mmBack === true;
+        if (canGoBack() && !has) history.pushState({ mmBack: true }, "");
+        else if (!canGoBack() && has) { backIgnore++; history.back(); }
+      }
+      window.addEventListener("popstate", () => {
+        if (backIgnore) { backIgnore--; return syncBackGuard(); }
+        if (isShown("sheet")) { if (panel) closePanel(); else $("sheet").classList.add("hidden"); }
+        else if (isShown("game")) $("gameMenuBtn").click();
+        else if (isShown("draft")) leaveDraft();
+        else if (nav.stack.length > 1) lbBack();
+        syncBackGuard();
+      });
+      const backWatch = new MutationObserver(syncBackGuard);
+      for (const id of ["sheet", "lobby", "game", "draft"]) backWatch.observe($(id), { attributes: true, attributeFilter: ["class", "hidden", "data-at"] });
       lbArt();
       setTeamMode(teamMode);
       lbShow(0);

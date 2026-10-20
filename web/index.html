@@ -130,17 +130,126 @@
       .dot.off { background: var(--c-bad); }
 
       /* ---------------------------------------------------------------- lobby */
-      #lobby { max-width: 720px; margin: 0 auto; padding: 18px 16px calc(var(--dock-h, 160px) + 16px); }
-      .brand { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 10px; row-gap: 6px; }
-      .brand .tag { grid-column: 1; }
-      .brand h1 { font-size: var(--fl-3); white-space: nowrap; line-height: 1; margin: 0; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
-      .brand .tag { font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-accent-hi); text-transform: uppercase; letter-spacing: 1px; }
-      @media (max-width: 379px) { .brand h1 { font-size: var(--fl-2); } }
-      @media (min-width: 760px) { .brand h1 { font-size: var(--fl-4); } }
-      .intro { color: var(--c-mute); margin: 8px 0 14px; }
-      .acct { max-width: 520px; margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-      .acct-guest, .acct-user, .row-input { display: flex; gap: 8px; align-items: center; }
-      .acct-guest button, .row-input button { flex: none; }
+      /*
+       * The lobby is a stack of small screens, each asking one thing:
+       * Home > Play (how?) > Teams > Your team (Pick only) > Finding a rival,
+       * or > Play a friend > Invite sent. Monsters and Friends hang off Home.
+       * A sticky bar holds Back, the title and the step; screens slide in
+       * from the side they come from (fade only with reduced motion).
+       */
+      #lobby { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+      .lb-gutter { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+      .lb-bar { position: sticky; top: 0; z-index: 20; padding-top: env(safe-area-inset-top); background: var(--c-panel); border-bottom: var(--px) solid var(--c-ink); box-shadow: inset 0 calc(var(--px) * -1) 0 rgba(74, 84, 134, 0.5); }
+      .lb-bar-in { max-width: 560px; margin: 0 auto; min-height: 60px; display: flex; align-items: center; gap: 12px; }
+      .lb-bar .icon-btn { min-width: 44px; height: 40px; padding: 0 12px 2px; }
+      .lb-title { flex: 1; min-width: 0; margin: 0; font: 700 var(--fl-2)/1.1 var(--f-label); text-transform: uppercase; letter-spacing: 1px; color: var(--c-cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; outline: none; }
+      .lb-step { flex: none; font: 600 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); white-space: nowrap; }
+      #lobby[data-at="home"] .lb-bar { background: transparent; border-color: transparent; box-shadow: none; }
+      #lobby[data-at="home"] .lb-title, #lobby[data-at="home"] .lb-step { visibility: hidden; }
+      .lb-view { flex: 1; width: 100%; max-width: calc(560px + 32px); margin: 0 auto; padding-top: 16px; padding-bottom: calc(28px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
+      #lobby[data-at="pick"] .lb-view { padding-bottom: calc(var(--dock-h, 140px) + 16px); }
+      .lb-screen { display: grid; align-content: start; gap: 12px; min-width: 0; }
+      .lb-screen[hidden], .lb-dock[hidden] { display: none !important; }
+      .lb-label { margin: 6px 0 -2px; font: 700 var(--fs-xs)/1.2 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-mute); }
+      .lb-label:first-child { margin-top: 0; }
+      .lb-hint { margin: -4px 0 0; color: var(--c-mute); font-size: var(--fs-s); }
+      .lb-px { display: block; fill: currentColor; shape-rendering: crispEdges; }
+      /* hover lifts a lobby button one notch brighter; pressing sinks it (the global :active) */
+      @media (hover: hover) {
+        #lobby button:not(:disabled):hover, .lb-dock button:not(:disabled):hover { filter: brightness(1.12); }
+        .lb-choice:not(:disabled):hover { --b: color-mix(in srgb, var(--c-accent) 16%, var(--c-panel)); --b-hi: var(--c-accent-hi); }
+        .lb-choice:not(:disabled):hover .lb-go { transform: translateX(var(--px)); }
+      }
+      #lobby button:focus-visible, .lb-dock button:focus-visible { outline: var(--px) solid var(--c-cream); outline-offset: calc(var(--px) * -3); }
+
+      /* home */
+      .lb-home { flex: 1; align-content: center; gap: 12px; padding-bottom: 8px; }
+      .lb-hero { display: grid; justify-items: center; gap: 14px; text-align: center; padding: 0 0 10px; }
+      .lb-logo { margin: 0; font: 700 var(--fl-4)/1 var(--f-label); text-transform: uppercase; letter-spacing: 2px; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
+      .lb-logo span { display: block; margin-top: 4px; color: var(--c-gold); text-shadow: var(--px) var(--px) 0 var(--c-gold-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
+      @media (min-width: 600px) { .lb-logo { font-size: var(--fl-6); } }
+      .lb-trio { display: flex; justify-content: center; align-items: flex-end; gap: 4px; min-height: 96px; }
+      .lb-tagline { margin: 0; color: var(--c-mute); max-width: 32ch; }
+      .lb-play { font-size: var(--fl-3); padding: 22px 12px 24px; letter-spacing: 2px; }
+      .lb-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .lb-row2 button { display: flex; align-items: center; justify-content: center; gap: 2px; padding-left: 8px; padding-right: 8px; }
+      .lb-chip { --b: var(--c-panel); --b-hi: var(--c-edge); --b-lo: var(--c-ink); width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px 14px; text-transform: none; text-shadow: none; color: var(--c-text); font: 400 var(--fs-m)/1.2 var(--f-text); }
+      .lb-chip .muted { flex: none; }
+      .lb-chip b { flex: 1; min-width: 0; font: 700 var(--fl-1)/1.2 var(--f-label); text-transform: uppercase; color: var(--c-cream); text-align: left; overflow: hidden; text-overflow: ellipsis; }
+      .lb-chip .lb-chip-act { flex: none; font: 700 var(--fs-s)/1 var(--f-text); color: var(--c-accent-hi); }
+      .lb-note { color: var(--c-mute); font-size: var(--fs-s); text-align: center; }
+      .lb-note:empty { display: none; }
+
+      /* choice cards: Play how? and Teams */
+      .lb-choice {
+        --b: var(--c-panel); --b-hi: var(--c-edge); --b-lo: var(--c-ink);
+        width: 100%; display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 14px; align-items: center;
+        padding: 12px 14px 14px 12px; text-align: left; text-transform: none; text-shadow: none; white-space: normal; color: var(--c-text);
+      }
+      .lb-choice .lb-ic { width: 64px; height: 64px; display: grid; place-items: center; overflow: hidden; background: var(--c-well); box-shadow: inset 0 var(--px) 0 var(--c-ink); color: var(--c-cream); font: 700 var(--fl-2)/1 var(--f-label); }
+      .lb-choice b { display: block; font: 700 var(--fl-2)/1.15 var(--f-label); text-transform: uppercase; letter-spacing: 1px; color: var(--c-cream); }
+      .lb-choice small { display: block; margin-top: 6px; font: 400 var(--fs-s)/1.35 var(--f-text); color: var(--c-mute); }
+      .lb-choice .lb-go { color: var(--c-accent-hi); transition: transform 0.12s ease-out; }
+      .lb-choice.on { box-shadow: inset 0 0 0 var(--px) var(--c-gold), inset 0 calc(var(--px) * -3) 0 var(--b-lo); border-color: var(--c-gold-lo); }
+      .lb-choice .lb-tag { display: inline-block; margin-top: 6px; font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-gold); }
+      .lb-choice .lb-tag[hidden] { display: none; }
+      .lb-code { margin-top: 12px; display: grid; gap: 8px; }
+      .lb-code .join-row input { font-size: var(--fl-2); }
+
+      /* your team: the roster, with your two and Ready in a dock */
+      .lb-banner { padding: 10px 12px; background: color-mix(in srgb, var(--c-accent) 22%, var(--c-panel)); border: var(--px) solid var(--c-accent-hi); color: var(--c-cream); font-weight: 600; }
+      #picker .el-group:first-child, #collection .el-group:first-child { margin-top: 4px; }
+      .lb-dock {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--c-panel);
+        border-top: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge);
+        padding-top: 10px; padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      }
+      .lb-dock-in { max-width: 560px; margin: 0 auto; display: grid; gap: 10px; }
+      .lb-dock .slot { width: 44px; height: 44px; padding: 0; box-shadow: none; text-shadow: none; color: var(--c-mute); cursor: pointer; }
+      .lb-dock .slot:disabled { cursor: default; }
+      .lb-dock #play { overflow: hidden; text-overflow: ellipsis; }
+      @media (min-width: 600px) { .lb-dock-in { grid-template-columns: minmax(0, 1fr) 220px; align-items: center; } }
+
+      /* play a friend */
+      #lobby .fpick { margin: 0; gap: 8px; }
+      #lobby .fpick .frow { padding: 10px 10px 10px 14px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
+      #lobby .fpick .frow .fname { font-size: var(--fs-m); }
+
+      /* waiting: finding a rival, invite sent */
+      .lb-wait { justify-items: center; text-align: center; gap: 14px; padding-top: clamp(24px, 7vh, 72px); }
+      .lb-wait p { margin: 0; }
+      .lb-wait .lb-status { font: 600 var(--fs-m)/1.35 var(--f-text); color: var(--c-text); }
+      .lb-wait .lb-actions { display: grid; gap: 10px; width: min(100%, 320px); margin-top: 6px; }
+      .lb-vs { display: flex; align-items: center; gap: 12px; }
+      .lb-vs .team-side { display: flex; gap: 6px; }
+      .lb-vs .lb-slot { width: 64px; height: 64px; display: grid; place-items: center; overflow: hidden; background: var(--c-well); box-shadow: inset 0 0 0 var(--px) var(--c-edge); color: var(--c-mute); font: 700 var(--fl-2)/1 var(--f-label); }
+      .lb-vs b { font: 700 var(--fl-2)/1 var(--f-label); color: var(--c-cream); }
+      @media (max-width: 374px) { .lb-vs { gap: 8px; } .lb-vs .team-side { gap: 4px; } .lb-vs .lb-slot { width: 56px; height: 56px; } }
+      .lb-who { font: 700 var(--fl-3)/1.1 var(--f-label); text-transform: uppercase; color: var(--c-cream); overflow-wrap: anywhere; }
+      .lb-link { max-width: 100%; font-size: var(--fs-s); color: var(--c-mute); overflow-wrap: anywhere; user-select: all; }
+      .lb-dots { display: flex; gap: 6px; height: 20px; align-items: flex-end; }
+      .lb-dots i { width: 10px; height: 10px; background: var(--c-accent-hi); animation: lbHop 0.9s steps(2) infinite; }
+      .lb-dots i:nth-child(2) { animation-delay: 0.15s; } .lb-dots i:nth-child(3) { animation-delay: 0.3s; }
+      @keyframes lbHop { 50% { transform: translateY(-8px); } }
+      .reduce-motion .lb-dots i { animation: none; }
+      @media (prefers-reduced-motion: reduce) { .lb-dots i { animation: none; } }
+
+      /* monsters: the collection, and one monster */
+      .lb-detail { display: grid; justify-items: center; gap: 10px; text-align: center; }
+      .lb-detail-name { margin: 0; font: 700 var(--fl-3)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); }
+      .lb-detail-sub { display: flex; align-items: center; gap: 6px; font: 700 var(--fs-xs)/1.2 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--el); }
+      .lb-detail .evo-line { margin: 2px 0 0; }
+      .lb-move { width: 100%; padding: 12px 14px 14px; text-align: left; display: grid; gap: 6px; }
+      .lb-move .s-move { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+      .lb-move .s-move b { color: var(--el); font: 700 var(--fl-2)/1.1 var(--f-label); }
+      .lb-move .s-move .muted { font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; display: inline-flex; align-items: center; gap: 4px; flex: none; }
+      .lb-move p { margin: 0; }
+      .lb-move .s-pass { color: var(--c-accent-hi); }
+      .lb-move .ic { margin: -2px 4px 0 0; }
+      .lb-detail > button { width: 100%; }
+
+      .row-input { display: flex; gap: 8px; align-items: center; }
+      .row-input button { flex: none; }
       .online-n { margin-left: 6px; font-size: var(--fs-xs); color: var(--c-good-hi); }
       .online-n::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 4px; background: var(--c-good-hi); vertical-align: middle; }
       .fpick { display: grid; gap: 6px; margin: 0 0 14px; }
@@ -191,17 +300,10 @@
       .pcard .ppass { color: var(--c-accent-hi); font-size: var(--fs-s); line-height: 1.3; }
       .pcard .pcost { position: absolute; top: 8px; left: 8px; font: 700 var(--fs-xs)/1 var(--f-text); padding: 3px 5px; background: var(--c-well); color: var(--el); }
 
-      .dock {
-        position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--c-panel);
-        border-top: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge);
-        padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-      }
-      .dock-inner { max-width: 688px; margin: 0 auto; display: grid; gap: 8px; }
       .team-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
       .slot { width: 36px; height: 36px; background: var(--c-well); border: var(--px) dashed var(--c-edge); display: grid; place-items: center; flex: none; color: var(--c-mute); font: 700 var(--fl-1)/1 var(--f-label); }
       .slot svg { display: block; }
       .team-label { flex: 1; min-width: 0; font: 700 var(--fl-1)/1.2 var(--f-label); color: var(--c-cream); }
-      .actions { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
       button.ghost.on { --b: var(--c-well); --b-hi: var(--c-ink); --b-lo: var(--c-well); color: var(--c-accent-hi); }
       .join-row { display: flex; gap: 8px; }
       .join-row input { font: 700 var(--fl-2)/1.2 var(--f-label); text-transform: uppercase; letter-spacing: 3px; }
@@ -209,11 +311,6 @@
       .code-big { font: 700 var(--fl-4)/1 var(--f-label); letter-spacing: 6px; color: var(--c-cream); margin: 6px 0 10px; }
       .status { color: var(--c-mute); font-size: var(--fs-s); }
       .status:empty { display: none; }
-      @media (min-width: 760px) {
-        .dock-inner { grid-template-columns: 1fr 1.4fr; align-items: center; }
-        .join-row, .invite, .dock .status { grid-column: 1 / -1; }
-        .join-row { max-width: 520px; justify-self: end; width: 100%; }
-      }
 
       /* ---------------------------------------------------------------- game */
       #game {
@@ -622,12 +719,6 @@
       }
       .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-      /* pick mode (lobby): blind pick or draft */
-      .mode-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
-      .mode-row button[aria-pressed="true"] { --b: var(--c-accent); --b-hi: var(--c-accent-hi); --b-lo: var(--c-accent-lo); color: #fff; }
-      .mode-hint { font-size: var(--fs-xs); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .dock.drafting .team-row, .dock.dealing .team-row { display: none; } /* draft and random: teams come in the match */
-
       /* draft screen */
       #draft { max-width: 560px; margin: 0 auto; padding: calc(8px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
       .dr-head { display: flex; align-items: center; gap: 8px; }
@@ -787,40 +878,96 @@
       </defs>
     </svg>
     <!-- ============================================================ LOBBY -->
-    <section id="lobby">
-      <div class="brand"><h1>Match Monsters</h1><button id="settingsBtn" class="ghost small icon-btn settings-btn" aria-label="Settings" title="Settings"><svg class="px-icon" viewBox="0 0 9 7" width="18" height="14" aria-hidden="true"><rect x="0" y="1" width="9" height="1"/><rect x="2" y="0" width="2" height="3"/><rect x="0" y="5" width="9" height="1"/><rect x="5" y="4" width="2" height="3"/></svg></button></div>
-      <p class="intro">Match gems to charge your monsters. Knock out your rival.</p>
-      <div id="acct" class="acct">
-        <div id="acctGuest" class="acct-guest">
-          <button id="nameBtn" class="ghost small" aria-haspopup="dialog">Playing as <b id="guestName">Player</b></button>
+    <section id="lobby" data-at="home">
+      <header class="lb-bar lb-gutter">
+        <div class="lb-bar-in">
+          <button id="lbBack" class="ghost small icon-btn" aria-label="Back" title="Back" hidden><svg class="px-icon" viewBox="0 0 4 7" width="8" height="14" aria-hidden="true"><rect x="3" y="0" width="1" height="7"/><rect x="2" y="1" width="1" height="5"/><rect x="1" y="2" width="1" height="3"/><rect x="0" y="3" width="1" height="1"/></svg></button>
+          <h2 id="lbTitle" class="lb-title" tabindex="-1">Match Monsters</h2>
+          <span id="lbStep" class="lb-step"></span>
+          <button id="settingsBtn" class="ghost small icon-btn" aria-label="Settings" title="Settings"><svg class="px-icon" viewBox="0 0 9 7" width="18" height="14" aria-hidden="true"><rect x="0" y="1" width="9" height="1"/><rect x="2" y="0" width="2" height="3"/><rect x="0" y="5" width="9" height="1"/><rect x="5" y="4" width="2" height="3"/></svg></button>
         </div>
-        <div id="acctUser" class="acct-user hidden">
-          <button id="profileBtn" class="ghost small">@<span id="acctName"></span></button>
+      </header>
+      <div class="lb-view lb-gutter">
+        <!-- Home: one big Play; Monsters and Friends are their own places -->
+        <div class="lb-screen lb-home" data-screen="home">
+          <div class="lb-hero">
+            <h1 class="lb-logo">Match <span>Monsters</span></h1>
+            <div class="lb-trio" id="lbTrio" aria-hidden="true"></div>
+            <p class="lb-tagline">Match gems to charge your monsters. Knock out your rival.</p>
+          </div>
+          <button id="lbPlay" class="lb-play">Play</button>
+          <div class="lb-row2">
+            <button id="monstersBtn" class="ghost">Monsters</button>
+            <button id="friendsBtn" class="ghost"><span data-icon="friends"></span> Friends<span id="friendsOnline" class="online-n hidden"></span><span id="friendsBadge" class="badge-n hidden"></span></button>
+          </div>
+          <div id="acctGuest">
+            <button id="nameBtn" class="lb-chip" aria-haspopup="dialog"><span class="muted">Playing as</span><b id="guestName">Player</b><span class="lb-chip-act">Change</span></button>
+          </div>
+          <div id="acctUser" class="hidden">
+            <button id="profileBtn" class="lb-chip"><span class="muted">Signed in as</span><b>@<span id="acctName"></span></b><span class="lb-chip-act">Profile</span></button>
+          </div>
+          <div id="lobbyStatus" class="lb-note" role="status"></div>
         </div>
-        <button id="friendsBtn" class="ghost small"><span data-icon="friends"></span> Friends<span id="friendsOnline" class="online-n hidden"></span><span id="friendsBadge" class="badge-n hidden"></span></button>
+
+        <!-- Play: how? -->
+        <div class="lb-screen" data-screen="how" hidden>
+          <div class="lb-label">How do you want to play?</div>
+          <button class="lb-choice" data-how="quick"><span class="lb-ic" data-mon="frost_imp"></span><span><b>Quick match</b><small>Play someone online right now.</small></span><span class="lb-go" data-chev></span></button>
+          <button class="lb-choice" data-how="friend"><span class="lb-ic" data-mon="petal_fawn"></span><span><b>A friend</b><small>Invite from your friends list, or share a link.</small></span><span class="lb-go" data-chev></span></button>
+          <button class="lb-choice" data-how="bot"><span class="lb-ic" data-mon="stone_golem"></span><span><b>Practice</b><small>Play the bot, with shortcuts to try things out.</small></span><span class="lb-go" data-chev></span></button>
+          <div class="lb-code">
+            <div class="lb-label">Got a code from a friend?</div>
+            <form class="row-input join-row" data-join><input type="text" placeholder="CODE" maxlength="8" autocapitalize="characters" autocomplete="off" spellcheck="false" enterkeyhint="go" aria-label="Room code" /><button class="ghost" type="submit">Join</button></form>
+          </div>
+        </div>
+
+        <!-- Teams: Pick, Draft or Random (remembered) -->
+        <div class="lb-screen" data-screen="teams" hidden>
+          <div class="lb-label">How are teams made?</div>
+          <button class="lb-choice" data-team="blind"><span class="lb-ic">1·2</span><span><b>Pick</b><small id="teamBlindNote">Choose your two monsters. Your rival picks theirs blind.</small><span class="lb-tag" hidden>Last used</span></span><span class="lb-go" data-chev></span></button>
+          <button class="lb-choice" data-team="draft"><span class="lb-ic"><span data-icon="ban"></span></span><span><b>Draft</b><small>Ban one each, then pick in turns in the match.</small><span class="lb-tag" hidden>Last used</span></span><span class="lb-go" data-chev></span></button>
+          <button class="lb-choice" data-team="random"><span class="lb-ic">?</span><span><b>Random</b><small>Both teams are dealt at random, revealed at the start.</small><span class="lb-tag" hidden>Last used</span></span><span class="lb-go" data-chev></span></button>
+        </div>
+
+        <!-- Your team (Pick only): the whole roster; your two and Ready in the dock -->
+        <div class="lb-screen" data-screen="pick" hidden>
+          <div id="pickNote" class="lb-banner" hidden></div>
+          <p class="lb-hint" id="pickHint" style="margin:0">Tap two monsters. Tap one in your tray to see its move.</p>
+          <div id="picker"></div>
+        </div>
+
+        <!-- Play a friend: friends first, then a link or a code -->
+        <div class="lb-screen" data-screen="friend" hidden></div>
+
+        <!-- Invite sent / your invite code -->
+        <div class="lb-screen lb-wait" data-screen="invited" hidden></div>
+
+        <!-- Finding a rival / starting practice / joining -->
+        <div class="lb-screen lb-wait" data-screen="searching" hidden>
+          <div class="lb-vs" id="searchVs"></div>
+          <div class="lb-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+          <p class="lb-status" id="searchStatus" role="status" aria-live="polite"></p>
+          <p class="muted" id="searchMode"></p>
+          <div class="lb-actions">
+            <button class="ghost" id="searchBot" hidden>Play the bot instead</button>
+            <button class="ghost" id="searchCancel">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Monsters: the collection, and one monster -->
+        <div class="lb-screen" data-screen="monsters" hidden><div id="collection"></div></div>
+        <div class="lb-screen" data-screen="detail" hidden></div>
       </div>
-      <div id="picker"></div>
     </section>
 
-    <div id="dock" class="dock">
-      <div class="dock-inner">
-        <div class="mode-row" role="group" aria-label="How teams are picked">
-          <button id="modeBlind" class="ghost small" aria-pressed="true">Blind pick</button>
-          <button id="modeDraft" class="ghost small" aria-pressed="false">Draft</button>
-          <button id="modeRandom" class="ghost small" aria-pressed="false">Random</button>
-          <span class="mode-hint muted" id="modeHint">Pick your team below</span>
-        </div>
+    <div id="dock" class="lb-dock lb-gutter" hidden>
+      <div class="lb-dock-in">
         <div class="team-row">
-          <div class="slot" id="slot0">1</div>
-          <div class="slot" id="slot1">2</div>
+          <button class="slot" id="slot0" disabled aria-label="First pick">1</button>
+          <button class="slot" id="slot1" disabled aria-label="Second pick">2</button>
           <div class="team-label ell" id="teamLabel">Pick two monsters</div>
         </div>
-        <div class="actions">
-          <button id="play" disabled>Quick Play</button>
-          <button id="practice" class="ghost" disabled>Bot</button>
-          <button id="friendBtn" class="ghost" aria-haspopup="dialog">Friend</button>
-        </div>
-        <div id="lobbyStatus" class="status"></div>
+        <button id="play" disabled>Ready</button>
       </div>
     </div>
 
@@ -1149,20 +1296,26 @@
             `<div class="pick-grid"></div>`;
           const grid = group.querySelector(".pick-grid");
           for (const mon of mons) {
-            // Cards show just the monster; its move, passive and evolutions live in the detail sheet.
+            // A tap picks (or drops) the monster; its move lives in the tray's detail sheet and on the Monsters screen.
             const card = document.createElement("button");
             card.type = "button";
             card.className = "pcard";
             card.dataset.id = mon.id;
             card.style.setProperty("--el", `var(--${el})`);
-            card.setAttribute("aria-label", `${mon.name}, details`);
+            card.setAttribute("aria-label", mon.name);
+            card.setAttribute("aria-pressed", "false");
             card.innerHTML = `<div class="art">${rigView(mon.id, 0, 2, CARD_CROP)}</div><div class="pname${mon.name.length >= 9 ? " long" : ""}">${esc(mon.name)}</div>`;
-            card.addEventListener("click", () => openPickSheet(mon));
+            card.addEventListener("click", () => {
+              const adding = !picks.includes(mon.id);
+              togglePick(mon.id);
+              if (adding && !reduceMotion) playPreset(card.querySelector(".art"), "bounce", { speed: "fast" });
+            });
             grid.appendChild(card);
           }
           picker.appendChild(group);
         }
         renderPicks();
+        lbArt();
       }
 
       /** A monster's details from the lobby, with Select / Remove / Swap and Close. */
@@ -1186,7 +1339,7 @@
           `<div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">${ic("charge")}${mon.chargeCost} charge</span></div>` +
           `<div class="s-desc">${esc(mon.ability.description)}</div>` +
           (mon.ability.passive ? `<div class="s-pass">${ic("passive")}${esc(mon.ability.passive)}</div>` : "") +
-          `<div class="s-actions">${draftMode || randomMode ? "" : `<button id="pickSelect" class="${i >= 0 ? "ghost" : ""}">${esc(label)}</button>`}` +
+          `<div class="s-actions"><button id="pickSelect" class="${i >= 0 ? "ghost" : ""}">${esc(label)}</button>` +
           `<button class="ghost" id="sheetClose">Close</button></div></div>`;
         sheet.classList.remove("hidden");
         const close = () => sheet.classList.add("hidden");
@@ -1212,30 +1365,37 @@
       }
 
       function renderPicks() {
-        for (const card of document.querySelectorAll(".pcard")) {
+        for (const card of document.querySelectorAll("#picker .pcard")) {
           const idx = picks.indexOf(card.dataset.id);
           card.classList.toggle("sel", idx >= 0);
           card.classList.toggle("dim", picks.length === 2 && idx < 0);
+          card.setAttribute("aria-pressed", String(idx >= 0));
           card.querySelector(".pick-no")?.remove();
           if (idx >= 0) card.insertAdjacentHTML("beforeend", `<span class="pick-no">${idx + 1}</span>`);
         }
         for (let i = 0; i < 2; i++) {
           const slot = $("slot" + i);
           const id = picks[i];
+          const mon = id && roster.find((m) => m.id === id);
           slot.innerHTML = id ? art(id, 40) : String(i + 1);
           slot.style.borderStyle = id ? "solid" : "dashed";
+          slot.disabled = !mon;
+          slot.setAttribute("aria-label", mon ? `${mon.name}: see its move` : i ? "Second pick" : "First pick");
+          slot.onclick = mon ? () => openPickSheet(mon) : null;
         }
         const names = picks.map((id) => roster.find((m) => m.id === id)?.name).filter(Boolean);
         $("teamLabel").textContent = names.length === 2 ? names.join(" + ") : names.length ? `${names[0]} + pick one more` : "Pick two monsters";
         refreshButtons();
       }
 
+      /** The dock's main button: what Ready means depends on where this team is going. */
       function refreshButtons() {
-        const ready = draftMode || randomMode || picks.length === 2; // draft and random teams come in the match
-        // An open blind-pick invite turns the main button into "Join": it needs your two picks.
-        $("play").textContent = pendingJoin ? `Join ${pendingJoin.host}` : "Quick Play";
-        $("play").disabled = pendingJoin ? picks.length < 2 : !ready;
-        $("practice").disabled = !ready;
+        const b = $("play");
+        b.textContent = pendingJoin ? `Join ${pendingJoin.host}` // a blind-pick invite link
+          : nav.accept ? "Accept"
+          : nav.how === "friend" ? (nav.friendId ? `Invite ${friendName(nav.friendId)}` : "Next")
+          : "Ready";
+        b.disabled = lbBusy || picks.length < 2;
       }
 
       /* ---- your name: a guest picks one in a modal the first time it's needed ---- */
@@ -1287,21 +1447,225 @@
         } catch { return "blind"; }
       })();
       let draftMode = teamMode === "draft", randomMode = teamMode === "random";
-      const MODE_HINT = { blind: "Pick your team below", draft: "Ban and pick in the match", random: "Both teams dealt at random" };
       function setTeamMode(mode) {
         teamMode = mode;
         draftMode = mode === "draft";
         randomMode = mode === "random";
         try { localStorage.setItem("mm.teamMode", JSON.stringify(mode)); } catch {}
-        $("modeBlind").setAttribute("aria-pressed", String(mode === "blind"));
-        $("modeDraft").setAttribute("aria-pressed", String(draftMode));
-        $("modeRandom").setAttribute("aria-pressed", String(randomMode));
-        $("modeHint").textContent = MODE_HINT[mode];
-        $("dock").classList.toggle("drafting", draftMode);
-        $("dock").classList.toggle("dealing", randomMode);
+        renderTeams();
         refreshButtons();
       }
       const setDraftMode = (on) => setTeamMode(on ? "draft" : "blind");
+
+      /* ---- the lobby's screens: a stack, with Back on every screen but Home ---- */
+      const nav = {
+        stack: ["home"],
+        how: null, // "quick" | "friend" | "bot" | "join": where this team is going
+        friendId: null, // inviting this friend (chosen from the friends list)
+        accept: null, // accepting this blind-pick invite once two are picked
+        joinInfo: null, // the room an invite link or code leads to
+        detail: null, // the monster on the detail screen
+        scroll: {}, // where each screen was scrolled to, for Back
+      };
+      let lbBusy = false;
+      let searchTimer = 0;
+      let searchLabel = "";
+      const curScreen = () => nav.stack[nav.stack.length - 1];
+      const friendName = (id) => friendsData.friends.find((f) => f.id === id)?.username || "friend";
+      const monById = (id) => roster.find((m) => m.id === id);
+      /** CSS px per sprite pixel near `k`, snapped to whole device pixels so the art stays crisp. */
+      const snapU = (k) => { const dpr = window.devicePixelRatio || 1; return Math.max(1, Math.round(k * dpr)) / dpr; };
+      const CHEV = `<svg class="lb-px" viewBox="0 0 5 7" width="10" height="14" aria-hidden="true"><rect x="0" y="0" width="2" height="1"/><rect x="1" y="1" width="2" height="1"/><rect x="2" y="2" width="2" height="1"/><rect x="3" y="3" width="2" height="1"/><rect x="2" y="4" width="2" height="1"/><rect x="1" y="5" width="2" height="1"/><rect x="0" y="6" width="2" height="1"/></svg>`;
+
+      function lbTitle(name) {
+        return {
+          home: "Match Monsters", how: "Play", teams: "Teams", pick: "Your team", friend: "Play a friend",
+          invited: myInvite ? "Invite sent" : "Your invite",
+          searching: nav.how === "bot" ? "Practice" : nav.how === "join" ? "Joining" : "Finding a rival",
+          monsters: "Monsters", detail: "Monster",
+        }[name] || "";
+      }
+      /** "Step 2 of 3": the questions this route asks (Pick adds Your team, a friend adds Play a friend). */
+      function lbStep(name) {
+        if (pendingJoin || nav.accept || nav.how === "join") return "";
+        const how = name === "how" ? null : nav.how;
+        const seq = [...(nav.friendId ? [] : ["how"]), "teams", ...(teamMode === "blind" ? ["pick"] : []), ...(how === "friend" && !nav.friendId ? ["friend"] : [])];
+        const i = seq.indexOf(name);
+        return i < 0 ? "" : `Step ${i + 1} of ${seq.length}`;
+      }
+
+      /** Draw the top screen; `dir` 1 slides it in from the right (forward), -1 from the left (back), 0 not at all. */
+      function lbShow(dir = 0) {
+        const name = curScreen();
+        const lobby = $("lobby");
+        lobby.dataset.at = name;
+        let shown = null;
+        for (const s of lobby.querySelectorAll(".lb-screen")) {
+          s.hidden = s.dataset.screen !== name;
+          if (!s.hidden) shown = s;
+        }
+        const dock = $("dock"), dockWas = !dock.hidden;
+        dock.hidden = name !== "pick";
+        $("lbBack").hidden = nav.stack.length < 2;
+        $("settingsBtn").hidden = name !== "home";
+        $("lbTitle").textContent = lbTitle(name);
+        $("lbStep").textContent = lbStep(name);
+        LB_RENDER[name]?.();
+        window.scrollTo(0, dir < 0 ? nav.scroll[name] || 0 : 0);
+        if (!dir || lobby.classList.contains("hidden")) return;
+        const ease = "cubic-bezier(0.2, 0.8, 0.2, 1)";
+        shown.animate(reduceMotion ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: `translateX(${dir * 20}px)` }, { opacity: 1, transform: "none" }],
+          { duration: reduceMotion ? 120 : 200, easing: ease });
+        if (!dock.hidden && !dockWas && !reduceMotion) dock.animate([{ transform: "translateY(100%)" }, { transform: "none" }], { duration: 220, easing: ease });
+        $("lbTitle").focus({ preventScroll: true }); // keyboard and screen-reader users start at the new screen's title
+      }
+      function lbGo(name) {
+        nav.scroll[curScreen()] = window.scrollY;
+        if (curScreen() === name) return lbShow(0);
+        nav.stack.push(name);
+        lbShow(1);
+      }
+      /** One screen back without side effects (a failed request, an invite that went away). */
+      function lbPop() {
+        if (nav.stack.length < 2) return;
+        nav.stack.pop();
+        lbShow(-1);
+      }
+      /** Back: leaving a wait cancels it (the queue, the invite); leaving Your team drops a pending join. */
+      function lbBack() {
+        if (nav.stack.length < 2) return;
+        const from = curScreen();
+        if (from === "searching") cancelSearch();
+        if (from === "invited") cancelInvites();
+        if (from === "pick" && (pendingJoin || nav.accept)) { pendingJoin = null; nav.accept = null; }
+        lbPop();
+      }
+      /** Start over at Home (a match began, or what we were doing went away). */
+      function lbReset() {
+        clearTimeout(searchTimer);
+        Object.assign(nav, { stack: ["home"], how: null, friendId: null, accept: null, joinInfo: null, scroll: {} });
+        pendingJoin = null;
+        lbShow(0);
+      }
+
+      /** After the team question (and Your team, for Pick): queue, practice, or on to the friend. */
+      function afterTeams() {
+        if (nav.how === "friend") return nav.friendId ? sendInvite(nav.friendId) : lbGo("friend");
+        if (nav.how === "bot") return practice();
+        return quickPlay();
+      }
+      function pickReady() {
+        if (picks.length < 2 || lbBusy) return;
+        if (pendingJoin) return joinRoom(pendingJoin.code);
+        if (nav.accept) return acceptInvite(nav.accept);
+        afterTeams();
+      }
+      /** Invite from the friends list: choose teams first, then the invite goes out. */
+      function inviteFromList(friendId) {
+        closePanel();
+        if (curScreen() === "friend") return sendInvite(friendId); // teams are already chosen
+        nav.stack = ["home"];
+        Object.assign(nav, { how: "friend", friendId, accept: null, joinInfo: null });
+        lbGo("teams");
+      }
+
+      /** Whether this player has chosen how teams are made before (then Teams marks it "Last used"). */
+      let teamModeChosen = (() => { try { return localStorage.getItem("mm.teamMode") != null || localStorage.getItem("mm.draftMode") != null; } catch { return false; } })();
+      function renderTeams() {
+        for (const b of document.querySelectorAll("[data-team]")) {
+          const on = b.dataset.team === teamMode;
+          b.classList.toggle("on", on && teamModeChosen);
+          b.querySelector(".lb-tag").hidden = !(on && teamModeChosen);
+        }
+        $("teamBlindNote").textContent = nav.how === "bot" ? "Choose your two monsters. The bot gets a random pair." : "Choose your two monsters. Your rival picks theirs blind.";
+      }
+      function renderPickScreen() {
+        const host = pendingJoin?.host || (nav.accept && incomingInvites.get(nav.accept)?.from.username);
+        const note = $("pickNote");
+        note.textContent = !host ? "" : pendingJoin ? `${host} invited you to a blind-pick match. Pick your two, then tap Join.` : `${host} challenged you. Pick your two, then tap Accept.`;
+        note.hidden = !host;
+        refreshButtons();
+      }
+      /** What the rival will do about teams, in a few words. */
+      function modeLine() {
+        const info = nav.how === "join" ? nav.joinInfo : null;
+        const m = info ? (info.draft ? "draft" : info.random ? "random" : "blind") : teamMode;
+        if (m === "draft") return nav.how === "bot" ? "You'll draft against the bot." : "You'll draft together.";
+        if (m === "random") return "Random teams.";
+        return nav.how === "bot" ? "The bot gets a random pair." : nav.how === "friend" ? "They pick their own two." : "Blind pick.";
+      }
+      function renderSearching() {
+        const info = nav.how === "join" ? nav.joinInfo : null;
+        const mine = picks.length === 2 && (info ? !info.draft && !info.random : teamMode === "blind");
+        const slot = (id) => `<span class="lb-slot">${id ? art(id, 56) : "?"}</span>`;
+        $("searchVs").innerHTML = `<div class="team-side">${slot(mine && picks[0])}${slot(mine && picks[1])}</div><b>VS</b><div class="team-side">${slot()}${slot()}</div>`;
+        $("searchStatus").textContent = searchLabel;
+        $("searchMode").textContent = modeLine();
+        $("searchBot").hidden = true;
+      }
+
+      /** The roster as a collection (final forms); a tap opens the monster. */
+      let collectionBuilt = false;
+      function renderCollection() {
+        if (collectionBuilt || !roster.length) return;
+        collectionBuilt = true;
+        const dpr = window.devicePixelRatio || 1;
+        const cardW = (Math.min(560, window.innerWidth - 32) - 18) / 4 - 8;
+        const u = Math.max(1, Math.floor((cardW / 48) * dpr)) / dpr;
+        $("collection").innerHTML = ORDER.map((el) => {
+          const mons = roster.filter((m) => m.element === el);
+          if (!mons.length) return "";
+          const arch = mons[0].archetype || { title: "" };
+          return `<div class="el-group" style="--el: var(--${el})"><div class="el-head"><span class="el-title">${gemIcon(el, 16)} ${EL_LABEL[el]}</span>` +
+            `<span class="el-arch">${esc(arch.title)}</span></div><div class="pick-grid">` +
+            mons.map((m) => `<button type="button" class="pcard" data-detail="${m.id}" style="--el: var(--${el})">` +
+              `<div class="art">${rigView(m.id, 2, u)}</div><div class="pname${m.name.length >= 9 ? " long" : ""}">${esc(m.name)}</div></button>`).join("") +
+            `</div></div>`;
+        }).join("");
+        $("collection").onclick = (e) => {
+          const card = e.target.closest("[data-detail]");
+          if (card) { nav.detail = card.dataset.detail; lbGo("detail"); }
+        };
+      }
+      /** One monster: its evolution line, its move, and a shortcut to play it. */
+      function renderDetail() {
+        const mon = monById(nav.detail);
+        const el = document.querySelector('[data-screen="detail"]');
+        if (!mon) { el.innerHTML = ""; return; }
+        const arch = mon.archetype?.title;
+        el.innerHTML =
+          `<div class="lb-detail" style="--el: var(--${mon.element})">` +
+          `<div>${rigView(mon.id, 2, snapU(3))}</div>` +
+          `<h3 class="lb-detail-name">${esc(mon.name)}</h3>` +
+          `<div class="lb-detail-sub">${gemIcon(mon.element, 16)} ${EL_LABEL[mon.element]}${arch ? ` · ${esc(arch)}` : ""}</div>` +
+          (pxMon(mon.id)
+            ? `<div class="evo-line" aria-label="Evolution line">` +
+              [0, 1, 2].map((st) => `<div class="evo-st">${rigView(mon.id, st, lineUnit())}<span>${stars(st + 1)}</span></div>`).join(`<span class="arrow">›</span>`) + `</div>`
+            : "") +
+          `<div class="lb-move frame"><div class="s-move"><b>${esc(mon.ability.name)}</b><span class="muted">${ic("charge")}${mon.chargeCost} charge</span></div>` +
+          `<p>${esc(mon.ability.description)}</p>` +
+          (mon.ability.passive ? `<p class="s-pass">${ic("passive")}${esc(mon.ability.passive)}</p>` : "") + `</div>` +
+          `<button id="playWith">Play with ${esc(mon.name)}</button></div>`;
+        el.querySelector("#playWith").onclick = () => {
+          picks = [mon.id];
+          Object.assign(nav, { how: "quick", friendId: null, accept: null, joinInfo: null });
+          setTeamMode("blind");
+          renderPicks();
+          lbGo("pick");
+          document.querySelector(`#picker .pcard[data-id="${mon.id}"]`)?.scrollIntoView({ block: "center" }); // your pick, in view
+        };
+      }
+      const LB_RENDER = {
+        teams: renderTeams, pick: renderPickScreen, friend: renderFriendScreen, invited: renderInvited,
+        searching: renderSearching, monsters: renderCollection, detail: renderDetail,
+      };
+      /** Lobby art: chevrons, the choice icons and the three monsters on Home (rigs, so they idle). */
+      function lbArt() {
+        for (const s of document.querySelectorAll("[data-chev]")) { s.innerHTML = CHEV; s.removeAttribute("data-chev"); }
+        for (const s of document.querySelectorAll(".lb-ic[data-mon]")) { s.innerHTML = rigView(s.dataset.mon, 1, snapU(1.4), [4, 6, 40, 42]); s.removeAttribute("data-mon"); }
+        const trio = $("lbTrio");
+        if (!trio.childElementCount) trio.innerHTML = ["ember_pup", "tide_serpent", "prism_owl"].map((id) => rigView(id, 2, snapU(window.innerWidth >= 600 ? 3 : 2))).join("");
+      }
 
       // The lobby socket stays open all session: matchmaking, plus friends'
       // messages, presence and invites once signed in.
@@ -1338,122 +1702,172 @@
       }
 
       function setBusy(b) {
-        for (const id of ["play", "practice"]) $(id).disabled = b;
-        if (!b) refreshButtons();
+        lbBusy = b;
+        refreshButtons();
       }
 
-      async function lobbyAction(label, fn) {
-        if (!(await ensureName())) return;
+      /**
+       * Run a lobby request under your name: asks for one first if there's none
+       * (the name modal), then shows `screen` (the wait) while it runs. A failure
+       * is a toast, and the wait steps back to where you were.
+       */
+      async function lobbyAction(label, fn, screen = null) {
+        if (lbBusy) return;
         setBusy(true);
-        $("lobbyStatus").textContent = label;
-        try { await fn(await ensureLobby()); }
-        catch (e) { $("lobbyStatus").textContent = errText(e); setBusy(false); }
+        try {
+          if (!(await ensureName())) return;
+          if (screen) { searchLabel = label; lbGo(screen); }
+          await fn(await ensureLobby());
+        } catch (e) {
+          toast(errText(e), 3000);
+          if (screen && curScreen() === screen) lbPop();
+        } finally {
+          setBusy(false);
+        }
       }
 
-      const quickPlay = () => pendingJoin ? joinRoom(pendingJoin.code) :
+      /** The wait screen's line (kept for when it's drawn). */
+      function setSearch(text) {
+        searchLabel = text;
+        if (curScreen() === "searching") $("searchStatus").textContent = text;
+      }
+
+      const quickPlay = () =>
         lobbyAction("Looking for a rival…", async (sock) => {
           const res = await sock.request("mm:enqueue", payload());
-          $("lobbyStatus").textContent = res.queued ? "Waiting for a rival… You can invite a friend meanwhile" : "Rival found. Starting…";
-        });
+          if (!res.queued) return setSearch("Rival found. Starting…");
+          // Nobody around after a while? Offer the bot, without leaving the queue until they take it.
+          clearTimeout(searchTimer);
+          searchTimer = setTimeout(() => {
+            if (curScreen() !== "searching" || nav.how !== "quick") return;
+            setSearch("Still looking… Nobody's around right now.");
+            $("searchBot").hidden = false;
+          }, 15000);
+        }, "searching");
 
       const practice = () =>
         lobbyAction("Starting a match against the bot…", async (sock) => {
           await sock.request("mm:practice", payload());
-          $("lobbyStatus").textContent = "Starting…";
-        });
+          setSearch("Starting…");
+        }, "searching");
 
-      /* ---- playing a friend: one sheet to send a link or type a code ---- */
+      /* ---- playing a friend: friends first, then a link or a code ---- */
       let hosting = null; // { code, link } while an invite of ours is open
       let pendingJoin = null; // { code, host } from a blind-pick invite link, until we join or drop it
 
-      function openFriendSheet() {
-        if (hosting) return showHosting();
-        const blindNotReady = !draftMode && !randomMode && picks.length < 2;
-        const how = draftMode ? "You'll ban and pick your teams together when they join."
-          : randomMode ? "You'll both be dealt a random team when they join."
-          : picks.length === 2 ? `You'll play ${picks.map((id) => roster.find((m) => m.id === id)?.name).join(" + ")}. They pick their own team.`
-          : "Pick your two monsters first, or switch to Draft to pick together.";
-        const el = showPanel("friend",
-          `<h2>Play a friend</h2>` +
-          `<p class="muted" style="text-align:center;margin:8px 0 14px">${esc(how)}</p>` +
-          friendPicker() +
-          `<div class="s-actions" style="margin:0"><button id="fCreate"${blindNotReady ? " disabled" : ""}>Send an invite link</button></div>` +
-          `<p class="muted" style="text-align:center;margin:18px 0 8px;font-size:var(--fs-s)">Got a code from a friend?</p>` +
-          `<form class="row-input join-row" id="fJoin"><input id="fCode" type="text" placeholder="CODE" maxlength="8" autocapitalize="characters" autocomplete="off" aria-label="Room code" />` +
-          `<button class="small ghost" type="submit">Join</button></form>`);
+      const JOIN_FORM = `<form class="row-input join-row" data-join><input type="text" placeholder="CODE" maxlength="8" autocapitalize="characters" autocomplete="off" spellcheck="false" enterkeyhint="go" aria-label="Room code" /><button class="ghost" type="submit">Join</button></form>`;
+      /** Code boxes ("Got a code?"): join that room, whatever its mode (the host's decides). */
+      function wireJoinForms(root) {
+        for (const f of root.querySelectorAll("form[data-join]")) {
+          f.onsubmit = (e) => {
+            e.preventDefault();
+            const input = f.querySelector("input");
+            const code = input.value.trim().toUpperCase();
+            if (code.length < 4) { input.focus(); return toast("Enter the room code"); }
+            joinFromCode(code);
+          };
+        }
+      }
+
+      /** The Play-a-friend screen: your friends (online first, one tap to invite), then a link or a code. */
+      function renderFriendScreen() {
+        const el = document.querySelector('[data-screen="friend"]');
+        el.innerHTML =
+          `<div class="lb-label">Your friends</div>` + friendPicker() +
+          `<div class="lb-label" style="margin-top:12px">Anyone else</div>` +
+          `<button id="fCreate">Share an invite link</button>` +
+          `<p class="lb-hint" style="margin-top:0">${draftMode || randomMode ? "They tap it and land straight in the match." : "They pick their two, then they're in."}</p>` +
+          `<div class="lb-label" style="margin-top:12px">Got a code from a friend?</div>` + JOIN_FORM;
         el.querySelector("#fCreate").onclick = () => createRoom();
         el.querySelector("#fGetName")?.addEventListener("click", openFriends);
         el.querySelector("#fAll")?.addEventListener("click", openFriends);
         for (const b of el.querySelectorAll("[data-invite]")) b.onclick = () => sendInvite(b.dataset.invite);
-        el.querySelector("#fJoin").onsubmit = (e) => {
-          e.preventDefault();
-          const code = el.querySelector("#fCode").value.trim().toUpperCase();
-          if (code.length < 4) return toast("Enter the room code");
-          closePanel();
-          joinFromCode(code);
-        };
+        wireJoinForms(el);
       }
 
-      function showHosting() {
-        const { code, link } = hosting;
-        const el = showPanel("hosting",
-          `<h2>Your invite</h2>` +
-          `<p class="muted" style="text-align:center;margin:8px 0 10px">Share the link. Your friend goes straight into the match.</p>` +
-          `<div class="code-big" style="text-align:center">${esc(code)}</div>` +
-          `<div class="s-actions"><button id="hShare">${navigator.share ? "Share link" : "Copy link"}</button><button class="ghost" id="hCancel">Cancel invite</button></div>` +
-          `<p class="muted" style="text-align:center;margin:10px 0 0">Waiting for them to join…</p>`);
-        el.querySelector("#hShare").onclick = async () => {
-          try {
-            if (navigator.share) await navigator.share({ title: "Match Monsters", text: "Battle me in Match Monsters", url: link });
-            else { await navigator.clipboard.writeText(link); toast("Invite link copied"); }
-          } catch { toast(link, 4000); }
-        };
-        el.querySelector("#hCancel").onclick = cancelHosting;
+      /** The invite we're waiting on: a friend's name, or our code and link to share. */
+      function renderInvited() {
+        const el = document.querySelector('[data-screen="invited"]');
+        const top = myInvite
+          ? `<div class="lb-label">Invite sent to</div><div class="lb-who">${esc(myInvite.name)}</div>`
+          : hosting
+            ? `<div class="lb-label">Your invite code</div><div class="code-big" aria-label="Code ${esc(hosting.code.split("").join(" "))}">${esc(hosting.code)}</div>` +
+              `<div class="lb-actions" style="margin-top:0"><button id="hShare">${navigator.share ? "Share link" : "Copy link"}</button></div>` +
+              `<div class="lb-link">${esc(hosting.link)}</div>`
+            : "";
+        const note = myInvite ? modeLine() : draftMode || randomMode ? "They land straight in the match." : "They pick their two, then they're in.";
+        el.innerHTML = top +
+          `<div class="lb-dots" aria-hidden="true"><i></i><i></i><i></i></div>` +
+          `<p class="lb-status" role="status">Waiting for them to join.</p><p class="muted">${esc(note)}</p>` +
+          `<div class="lb-actions"><button class="ghost" id="invCancel">Cancel invite</button></div>`;
+        el.querySelector("#hShare")?.addEventListener("click", shareLink);
+        el.querySelector("#invCancel").onclick = lbBack;
+      }
+      const showHosting = () => lbGo("invited");
+      async function shareLink() {
+        const link = hosting?.link;
+        if (!link) return;
+        try {
+          if (navigator.share) await navigator.share({ title: "Match Monsters", text: "Battle me in Match Monsters", url: link });
+          else { await navigator.clipboard.writeText(link); toast("Invite link copied"); }
+        } catch (e) {
+          if (e?.name !== "AbortError") toast(link, 4000);
+        }
       }
 
       async function cancelHosting() {
         hosting = null;
-        closePanel();
-        $("lobbyStatus").textContent = "";
         try { await lobbySock?.request("mm:cancelRoom", {}); } catch {}
+      }
+      /** Leaving the Invite screen withdraws what's open there. */
+      function cancelInvites() {
+        if (hosting) cancelHosting();
+        if (myInvite) {
+          lobbySock?.request("mm:cancelInvite", { inviteId: myInvite.inviteId }).catch(() => {});
+          myInvite = null;
+        }
+      }
+      /** Leaving the wait screen leaves the queue (practice and joins start on their own). */
+      function cancelSearch() {
+        clearTimeout(searchTimer);
+        if (nav.how === "quick") lobbySock?.request("mm:cancel", {}).catch(() => {});
       }
 
       const createRoom = () =>
         lobbyAction("Creating your invite…", async (sock) => {
           const res = await sock.request("mm:createRoom", payload());
           hosting = { code: res.code, link: `${location.origin}/play?room=${res.code}` };
-          $("lobbyStatus").innerHTML = `Invite ${esc(res.code)} is open. <a href="#" id="reopenInvite">Show it</a>`;
-          $("reopenInvite").onclick = (e) => { e.preventDefault(); showHosting(); };
-          setBusy(false);
+          myInvite = null;
           showHosting();
         });
 
       const joinRoom = (code) =>
-        lobbyAction(`Joining ${code}…`, async (sock) => {
+        lobbyAction(nav.joinInfo?.host ? `Joining ${nav.joinInfo.host}'s match…` : `Joining ${code}…`, async (sock) => {
           await sock.request("mm:joinRoom", payload({ code }));
           pendingJoin = null;
-          $("lobbyStatus").textContent = "Joined. Starting…";
-        });
+          setSearch("Joined. Starting…");
+        }, "searching");
 
       /**
-       * Joining by code or invite link: a draft room is joined straight away (teams
-       * are picked in the match); a blind-pick room waits for your two monsters.
+       * Joining by code or invite link: a draft or random room is joined straight
+       * away (teams come in the match); a blind-pick room first asks for your two.
        */
       async function joinFromCode(code) {
         if (!(await ensureName({ title: "You've been invited", body: "Pick a name. Your friend sees it during the match.", go: "Join" }))) {
-          $("lobbyStatus").textContent = "Invite saved. Open Friend and enter the code when you're ready.";
+          $("lobbyStatus").innerHTML = `Invite ${esc(code)} saved. <a href="#" id="resumeJoin">Join now</a>`;
+          $("resumeJoin").onclick = (e) => { e.preventDefault(); $("lobbyStatus").textContent = ""; joinFromCode(code); };
           return;
         }
         let info;
         try { info = await (await ensureLobby()).request("mm:roomInfo", { code }); }
         catch (e) { toast(errText(e), 3000); return; }
+        $("lobbyStatus").textContent = "";
+        nav.how = "join";
+        nav.friendId = null;
+        nav.joinInfo = info;
         if (info.draft || info.random) return joinRoom(info.code); // no picks needed: teams come in the match
         pendingJoin = { code: info.code, host: info.host };
-        setDraftMode(false);
-        $("lobbyStatus").innerHTML = `${esc(info.host)} invited you to a blind-pick match. Pick your two monsters, then tap Join. <a href="#" id="dropJoin">Not now</a>`;
-        $("dropJoin").onclick = (e) => { e.preventDefault(); pendingJoin = null; $("lobbyStatus").textContent = ""; refreshButtons(); };
-        if (picks.length === 2) $("play").focus();
-        refreshButtons();
+        lbGo("pick");
       }
 
       /* ------------------------------------------------------------ game lifecycle */
@@ -1462,8 +1876,8 @@
         room = { roomId: matched.roomId, seat: matched.seat };
         store.set("mm.room", room);
         hosting = null;
-        pendingJoin = null;
         myInvite = null;
+        lbReset(); // back in the lobby, you start at Home
         $("inviteCard").classList.add("hidden");
         if (panel) closePanel();
         await openGame();
@@ -3418,6 +3832,7 @@
         try { friendsData = await api("GET", "/api/friends"); } catch { return; }
         updateBadge();
         if (panel === "friends") renderFriends();
+        if (curScreen() === "friend") renderFriendScreen();
       }
 
       /* ---- panels (reuse the bottom sheet) ---- */
@@ -3523,7 +3938,7 @@
             if (btn.dataset.act === "accept") { await api("POST", `/api/friends/${id}/accept`); await loadFriends(); }
             if (btn.dataset.act === "remove") { await api("DELETE", `/api/friends/${id}`); await loadFriends(); }
             if (btn.dataset.act === "chat") return openChat(id);
-            if (btn.dataset.act === "invite") return sendInvite(id);
+            if (btn.dataset.act === "invite") return inviteFromList(id);
             if (btn.dataset.act === "acceptInv") return acceptInvite(id);
             if (btn.dataset.act === "declineInv") { declineInvite(id); renderFriends(); }
           } catch (err) { toast(errText(err)); }
@@ -3566,7 +3981,7 @@
           const btn = e.target.closest("[data-act]");
           if (!btn) return;
           if (btn.dataset.act === "back") return renderFriends();
-          if (btn.dataset.act === "invite") return sendInvite(id);
+          if (btn.dataset.act === "invite") return inviteFromList(id);
           if (btn.dataset.act === "unfriend") {
             if (!(await confirmPanel({ title: `Unfriend ${f.username}?`, body: "You can add each other again later.", yes: "Unfriend" }))) return openChat(id);
             await api("DELETE", `/api/friends/${id}`).catch((err) => toast(errText(err)));
@@ -3612,25 +4027,28 @@
         f.online = d.online;
         updateBadge();
         if (panel === "friends") renderFriends();
-        if (panel === "friend") openFriendSheet(); // their Invite button follows them online and off
+        if (curScreen() === "friend") renderFriendScreen(); // their Invite button follows them online and off
         if (chatWith === d.id) $("chatDot")?.classList.toggle("off", !d.online);
       }
 
       /* ---- invites ---- */
       async function sendInvite(friendId) {
         const f = friendsData.friends.find((x) => x.id === friendId);
-        if (!draftMode && !randomMode && picks.length < 2) { closePanel(); return toast("Pick your two monsters first, then invite", 2600); }
+        if (!draftMode && !randomMode && picks.length < 2) { // blind pick: your two first
+          closePanel();
+          Object.assign(nav, { how: "friend", friendId });
+          return lbGo("pick");
+        }
+        if (lbBusy) return;
+        setBusy(true);
         try {
           const sock = await ensureLobby();
           const res = await sock.request("mm:invite", payload({ friendId }));
           myInvite = { inviteId: res.inviteId, friendId, name: f ? f.username : "your friend" };
           closePanel();
-          $("lobbyStatus").innerHTML = `Invite sent to ${esc(myInvite.name)}. Waiting… <a href="#" id="cancelInvite">Cancel</a>`;
-          $("cancelInvite").onclick = (e) => {
-            e.preventDefault();
-            sock.request("mm:cancelInvite", { inviteId: res.inviteId }).catch(() => {});
-          };
+          lbGo("invited");
         } catch (e) { toast(errText(e)); }
+        finally { setBusy(false); }
       }
 
       function onInvite(inv) {
@@ -3662,7 +4080,14 @@
 
       async function acceptInvite(inviteId) {
         const inv = incomingInvites.get(inviteId);
-        if (!inv?.draft && !inv?.random && picks.length < 2) { closePanel(); return toast("It's a blind-pick match: pick your two monsters first, then tap Accept", 2800); }
+        if (!inv?.draft && !inv?.random && picks.length < 2) { // blind pick: choose your two, then Accept in the dock
+          closePanel();
+          $("inviteCard").classList.add("hidden");
+          if (curScreen() === "searching") cancelSearch();
+          lbReset();
+          nav.accept = inviteId;
+          return lbGo("pick");
+        }
         try {
           const sock = await ensureLobby();
           const res = await sock.request("mm:acceptInvite", payload({ inviteId }));
@@ -3689,9 +4114,13 @@
         if (myInvite && myInvite.inviteId === d.inviteId) {
           const name = myInvite.name;
           myInvite = null;
-          $("lobbyStatus").textContent = "";
+          if (curScreen() === "invited" && d.reason !== "accepted") lbPop();
           if (d.reason === "declined") toast(`${name} declined`);
           if (d.reason === "expired") toast(`${name} didn't answer in time`);
+        }
+        if (nav.accept === d.inviteId && d.reason !== "accepted") {
+          toast("That invite has expired");
+          lbReset();
         }
         if (incomingInvites.delete(d.inviteId)) {
           updateBadge();
@@ -3775,8 +4204,7 @@
       }
 
       /* ------------------------------------------------------------ boot */
-      $("play").addEventListener("click", quickPlay);
-      $("practice").addEventListener("click", practice);
+      $("play").addEventListener("click", pickReady);
       /** In-game menu: one button in the top bar instead of two, so the turn banner keeps its room. */
       function openGameMenu() {
         const sheet = $("sheet");
@@ -3851,12 +4279,34 @@
       $("profileBtn").addEventListener("click", openProfile);
       renderAccount();
 
-      $("friendBtn").addEventListener("click", openFriendSheet);
       $("settingsBtn").addEventListener("click", openSettings);
-      $("modeBlind").addEventListener("click", () => setDraftMode(false));
-      $("modeDraft").addEventListener("click", () => setTeamMode("draft"));
-      $("modeRandom").addEventListener("click", () => setTeamMode("random"));
+      // the lobby's screens
+      $("lbBack").addEventListener("click", lbBack);
+      $("lbPlay").addEventListener("click", () => { Object.assign(nav, { how: null, friendId: null, accept: null, joinInfo: null }); lbGo("how"); });
+      $("monstersBtn").addEventListener("click", () => lbGo("monsters"));
+      for (const b of document.querySelectorAll("[data-how]")) {
+        b.addEventListener("click", () => { Object.assign(nav, { how: b.dataset.how, friendId: null, joinInfo: null }); lbGo("teams"); });
+      }
+      for (const b of document.querySelectorAll("[data-team]")) {
+        b.addEventListener("click", () => {
+          teamModeChosen = true;
+          setTeamMode(b.dataset.team);
+          if (teamMode === "blind") lbGo("pick");
+          else afterTeams();
+        });
+      }
+      wireJoinForms(document.querySelector('[data-screen="how"]'));
+      $("searchCancel").addEventListener("click", lbBack);
+      $("searchBot").addEventListener("click", () => { cancelSearch(); nav.how = "bot"; practice(); });
+      // Escape steps back a screen (capture: an open sheet closes first, on its own Escape)
+      window.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape" || !$("sheet").classList.contains("hidden") || $("lobby").classList.contains("hidden") || nav.stack.length < 2) return;
+        if (e.target.matches?.("input")) return;
+        lbBack();
+      }, true);
+      lbArt();
       setTeamMode(teamMode);
+      lbShow(0);
       $("drLeave").addEventListener("click", leaveDraft);
       applySettings();
 

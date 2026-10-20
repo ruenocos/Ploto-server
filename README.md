@@ -101,8 +101,12 @@ they evolve. Tap one for its move, passive and evolution line.
 - You get **2 moves per turn** (the opening player gets 1 on their first turn).
   A line of **4+** (berries too) grants an extra move.
 - Matching tiles **charges** your monsters of that element. At its charge cost a
-  monster **fires its move** — damage plus a twist (see below). Each monster
+  monster **fires its move**: damage plus one twist (see below). Each monster
   acts at most once per move; any extra charge waits for your next move.
+- Every monster also has one **passive**, an always-on rule (Pyrup's Kindling
+  burns the rival whenever its partner hits, Gemox's Crystal hide shields the
+  team when a rival move lands…). A passive that goes off shows its name over
+  the monster; passives never fire moves, so they can't chain.
 - 🍓 **Berries** appear on the board; collect **4** to **evolve** a monster.
   Every monster has three stages (★, ★★, ★★★), each with its own sprite.
   Every evolution: numbers +25%, tile/charge counts +1, charge cost −1,
@@ -120,17 +124,40 @@ they evolve. Tap one for its move, passive and evolution line.
 | Element | Archetype | Plays like |
 | ------- | --------- | ---------- |
 | 🔥 Fire | Destroyer | big hits, burns (Emberwing makes them last longer, Pyrup detonates them), blasts that clear rows/columns/areas (the gems charge you) |
-| 💧 Water | Controller | freeze the rival's best tiles for their turn, drain rival charge, make the rival lose a move; Bublob steals berries and its bubble blocks the rival's control |
+| 💧 Water | Controller | freeze the rival's best tiles for their turn, drain rival charge, make the rival lose a move; Bublob steals berries and answers the rival's control with a bubble |
 | ⛰️ Earth | Guardian | stone the rival's element tiles, quakes that shatter stones, a shield bash, crystals that grow earth gems |
 | 🌿 Nature | Survivor | poison (halves the rival's healing), life-steal that feeds on burns and poison, sealing the rival's readiest monster, Petalope growing berries and charging on them |
 | ✨ Light | Striker | burst, piercing hits that ignore shields, extra moves, regeneration, charging its partner |
 
-20 monsters, each with its own move; some have passives (Scorchpaw goes
-**berserk** at low HP, Halomoth **follows up** whenever its partner hits,
-Emberwing's **afterburn** makes the team's burns last longer, Petalope's
-**sweet tooth** charges it on every berry the team collects). Kits are built
-to work alone and to combo: Tanglet feeds on Thornkin's poison, Craggol's
-bash grows with Bublob's shield, Tremole shatters Rubbug's stones, Petalope
+20 monsters, each with **one move** (damage plus one twist) and **one passive**
+(the monster sheet has the exact numbers, and what each evolution changes):
+
+| Monster | Move: twist | Passive |
+| ------- | ----------- | ------- |
+| 🔥 Pyrup | Ember Bite: detonates the rival's burns | **Kindling**: when its partner's move hits, the rival catches a burn |
+| 🔥 Scorchpaw | Scorch Line: clears a row | **Berserk**: at low HP its move becomes a flurry of strikes |
+| 🔥 Magmaul | Eruption: clears a 3×3 area | **Overheat**: charge banked past full is spent on the next Eruption for extra damage |
+| 🔥 Emberwing | Cinder Rain: burns | **Afterburn**: the team's burns last a turn longer |
+| 💧 Tidecoil | Undertow: drains rival charge | **Undercurrent**: the drained charge flows into its partner |
+| 💧 Frostnip | Frostbite: freezes tiles for the rival's turn | **Frost armor**: while ice is on the board, rival hits deal less |
+| 💧 Krakling | Riptide: the rival loses a move | **Lurk**: gains charge whenever a rival monster fires |
+| 💧 Bublob | Pearl Snatch: steals a berry | **Bubble shell**: when a harmful effect lands on the team, blows a bubble that blocks the next |
+| ⛰️ Craggol | Shield Bash: shields up, hits for half its shield | **Bedrock**: no single rival hit deals more than a cap |
+| ⛰️ Rubbug | Petrify: turns rival tiles to stone | **Rockslide**: its move hits harder for every stone on the board |
+| ⛰️ Tremole | Tremor: clears a column | **Fault line**: stones in the team's blasts shatter into the rival |
+| ⛰️ Gemox | Crystallize: grows earth gems | **Crystal hide**: gains shield when a rival move hits the team |
+| 🌿 Thornkin | Thorn Prick: poisons (halves healing) | **Thorns**: poisons a rival whose move hits the team |
+| 🌿 Tanglet | Feeding Vine: steals HP | **Feeds on pain**: steals more for every turn of burn or poison on the rival |
+| 🌿 Myconite | Spore Cloud: seals the rival monster closest to firing | **Mycelium**: gains charge whenever its partner fires |
+| 🌿 Petalope | Harvest Bloom: grows berries | **Sweet tooth**: every berry the team collects charges it (up to full) |
+| ✨ Lumowl | Smite: clears a 2×2 area | **Keen eye**: the team's hits ignore shields |
+| ✨ Glintling | Starstep: an extra move | **Daybreak**: starts fully charged, and charges fully whenever it evolves |
+| ✨ Dawnhare | Radiance: regeneration | **Glow**: each turn the team's regen ticks, it gains charge |
+| ✨ Halomoth | Kindred Glow: charges its partner | **Follow-up**: strikes too whenever its partner's move hits |
+
+Kits are built to work alone and to combo: Tanglet feeds on Thornkin's
+poison, Pyrup detonates the burns Kindling and Emberwing lay, Craggol's bash
+grows with Gemox's Crystal hide, Tremole shatters Rubbug's stones, Petalope
 grows berries for the whole team to evolve with.
 
 ## Run it
@@ -185,9 +212,14 @@ cleanest source is your own device's app cache while the service is up.
 battler built from the public rules. A monster's move is a list of **effects**
 (`damage` (optionally piercing), `heal`, `shield`, `drain`, `dot`, `ignite`,
 `regen`, `bubble`, `match`, `freeze`, `petrify`, `convert`, `grow`, `pluck`, `sap`, `slow`,
-`seal`, `haste`, `cleanse`, `empower`) applied in
-order, plus optional passives (`berserk`, `followUp`, `afterburn`, `sweetTooth`). Display text is generated
-from the effects, so `monsters.ts` is the single source of truth for numbers.
+`seal`, `haste`, `cleanse`, `empower`, `charge`) applied in
+order, plus one passive (`berserk`, `followUp`, `afterburn`, `sweetTooth`,
+`kindling`, `overheat`, `lurk`, `undercurrent`, `frostArmor`, `bubbleShell`,
+`bedrock`, `rockslide`, `faultLine`, `crystalHide`, `thorns`, `feedsOnPain`,
+`mycelium`, `keenEye`, `daybreak`, `glow`). A passive that goes off is reported
+as its own cast (`via: "passive"`) carrying ordinary effect events, so it
+animates like a move. Display text is generated from the effects and passives,
+so `monsters.ts` is the single source of truth for numbers.
 All randomness runs through a seeded PRNG, so a match is fully reproducible from
 `(seed, moves)` — which is how the engine is unit-tested and replayed.
 
@@ -205,9 +237,11 @@ serves per-monster, matchup and team win rates from it for tuning.
 Balance is checked with `npm run sim` (match length, first-player edge, win
 share per element) and `npm run tiers` (per-monster win rate, and what going
 ★ → ★★★ is worth for each). Both use the same greedy bot as practice mode.
-Last run (after the kit reworks): every monster wins 46–53% (the noise
-is about ±3), and evolving to ★★★ adds +25 to +40 points of win rate for
-every monster.
+Last run (after the one-move-one-passive rework, `N=40000`): every monster
+wins 48–53% (the noise is about ±1), and evolving to ★★★ adds +29 to +45
+points of win rate for every monster. Pairs of the same element win more
+(both monsters charge on every match of that element, about 63% on average);
+no mixed-element pair is above 56%.
 
 The roster and art are our own, so the game is playable now; the real
 roster/tuning can slot in from the game bundle later.

@@ -192,14 +192,15 @@ export interface KitTraits {
 export function kitTraits(def: Monster): KitTraits {
   const fx = def.ability.effects;
   const has = (k: string) => fx.some((e) => e.kind === k);
+  const passive = def.passive?.kind;
   return {
-    shields: has("shield"),
+    shields: has("shield") || passive === "crystalHide",
     heals: has("heal") || has("drain") || has("regen"),
     controls: fx.some((e) => e.kind === "dot" || e.kind === "freeze" || e.kind === "slow" || e.kind === "seal"),
-    burns: fx.some((e) => e.kind === "dot" && e.dot === "burn"),
-    pierce: fx.some((e) => e.kind === "damage" && e.pierce === true),
-    poison: fx.some((e) => e.kind === "dot" && e.dot === "poison"),
-    bubble: has("bubble"),
+    burns: fx.some((e) => e.kind === "dot" && e.dot === "burn") || passive === "kindling",
+    pierce: fx.some((e) => e.kind === "damage" && e.pierce === true) || passive === "keenEye",
+    poison: fx.some((e) => e.kind === "dot" && e.dot === "poison") || passive === "thorns",
+    bubble: has("bubble") || passive === "bubbleShell",
     ignite: has("ignite"),
   };
 }

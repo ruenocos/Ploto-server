@@ -107,7 +107,10 @@ function cell(b: Board, horizontal: boolean, outer: number, inner: number): Tile
   return horizontal ? b.grid[outer]![inner]! : b.grid[inner]![outer]!;
 }
 
-/** True if the board contains any single line-run of 4+ identical tiles. */
+/**
+ * True if the board contains a line-run of 4+ identical gems: what earns an extra move.
+ * Berry runs don't count: berries are a resource, and Harvest Bloom keeps growing them.
+ */
 export function hasBigMatch(b: Board, minRun = 4): boolean {
   const scan = (horizontal: boolean): boolean => {
     const outer = horizontal ? b.height : b.width;
@@ -117,7 +120,7 @@ export function hasBigMatch(b: Board, minRun = 4): boolean {
       for (let i = 1; i < inner; i++) {
         const cur = cell(b, horizontal, o, i);
         const prev = cell(b, horizontal, o, i - 1);
-        run = matchable(cur) && cur === prev ? run + 1 : 1;
+        run = matchable(cur) && cur !== "berry" && cur === prev ? run + 1 : 1;
         if (run >= minRun) return true;
       }
     }

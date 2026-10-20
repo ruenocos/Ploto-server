@@ -168,8 +168,7 @@ export class MatchMonstersGame {
     feedCharge(attacker, tally.charged);
     feedBerries(attacker, tally.berries);
 
-    // Fire every move that is fully charged. Loop so monsters charged by a move
-    // (blasts, empower) can still fire this turn; capped for safety.
+    // Fire the monsters that are fully charged (see below).
     const ctx: FireContext = {
       by,
       foeIdx: other(by),
@@ -181,15 +180,17 @@ export class MatchMonstersGame {
       haste: 0,
       berries: 0,
     };
-    for (let pass = 0; pass < 6 && defender.hp > 0; pass++) {
+    // Each monster acts at most once per move; charge beyond that waits for your next move.
+    // Loop so a monster charged by its partner's move (blasts, empower) still fires this move.
+    const acted = new Set<MonsterState>();
+    for (let pass = 0; pass < 2 && defender.hp > 0; pass++) {
       let fired = false;
       for (const mon of attacker.monsters) {
-        const cost = effectiveCost(mon.def, mon.evolution);
-        while (mon.charge >= cost && defender.hp > 0) {
-          mon.charge -= cost;
-          this.fire(mon, ctx);
-          fired = true;
-        }
+        if (acted.has(mon) || mon.charge < effectiveCost(mon.def, mon.evolution) || defender.hp <= 0) continue;
+        mon.charge -= effectiveCost(mon.def, mon.evolution);
+        acted.add(mon);
+        this.fire(mon, ctx);
+        fired = true;
       }
       if (!fired) break;
     }
@@ -765,7 +766,7 @@ export function scaledPassive(def: Monster, evolution: number): Passive | undefi
       : {}),
     ...(p.followUp ? { followUp: scaleAmount(p.followUp, evolution) } : {}),
     ...(p.afterburn ? { afterburn: p.afterburn + atLeast(evolution, 2) } : {}),
-    ...(p.sweetTooth ? { sweetTooth: p.sweetTooth + atLeast(evolution, 2) } : {}),
+    ...(p.sweetTooth ? { sweetTooth: p.sweetTooth } : {}), // never grows: berries already pile up as Harvest Bloom grows more
   };
 }
 
@@ -821,7 +822,7 @@ export function describePassive(def: Monster, evolution = 0): string | undefined
   if (p.berserk) return `Berserk at ${p.berserk.threshold} HP or less: strike ${p.berserk.hits}× for ${p.berserk.amount}`;
   if (p.followUp) return `When its partner's move hits, follow up for ${p.followUp}`;
   if (p.afterburn) return `Afterburn: your team's burns last ${p.afterburn} turn${p.afterburn === 1 ? "" : "s"} longer`;
-  if (p.sweetTooth) return `Sweet tooth: every berry your team collects gives it ${p.sweetTooth} charge`;
+  if (p.sweetTooth) return `Sweet tooth: every berry your team collects gives it ${p.sweetTooth} charge (up to full)`;
   return undefined;
 }
 
@@ -921,12 +922,17 @@ function feedCharge(player: PlayerState, counts: Partial<Record<Element, number>
   }
 }
 
-/** Berries a player collected from the board: Sweet tooth monsters charge on them (stolen ones don't count). */
+/**
+ * Berries a player collected from the board: Sweet tooth monsters charge on them (stolen ones
+ * don't count), but only up to full, so a berry-heavy board can't bank casts for move after move.
+ */
 function feedBerries(player: PlayerState, berries: number): void {
   if (berries <= 0) return;
   for (const mon of player.monsters) {
     const sweet = scaledPassive(mon.def, mon.evolution)?.sweetTooth ?? 0;
-    if (sweet > 0 && mon.sealed === 0) mon.charge += sweet * berries;
+    if (sweet <= 0 || mon.sealed > 0) continue;
+    const full = effectiveCost(mon.def, mon.evolution);
+    mon.charge = Math.max(mon.charge, Math.min(full, mon.charge + sweet * berries));
   }
 }
 

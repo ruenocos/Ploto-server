@@ -333,6 +333,41 @@ describe("berries", () => {
   });
 });
 
+describe("no runaway loops", () => {
+  const rival: Monster = { id: "r", name: "R", element: "water", chargeCost: 50, ability: { name: "n", effects: [] } };
+
+  it("a monster acts once per move; extra charge waits for the next move", () => {
+    const g = newGame(fireMon("a", [{ kind: "damage", amount: 1 }]), rival);
+    g.state.players[0].monsters[0]!.charge = 9; // three casts' worth, plus this move's match
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.casts.filter((c) => c.monsterId === "a")).toHaveLength(1);
+    expect(g.state.players[0].monsters[0]!.charge).toBeGreaterThanOrEqual(6); // the rest is kept
+  });
+
+  it("a run of four berries doesn't earn an extra move", () => {
+    const g = newGame(fireMon("a", [], 99), rival);
+    g.state.board.grid = grid(["BWENL", "BENLW", "WBENL", "BNLWE", "NLWFE"]); // the swap lines up four berries
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.berriesGained).toBeGreaterThanOrEqual(4);
+    expect(r.extraTurn).toBe(false);
+  });
+
+  it("sweet tooth charges only up to full, and doesn't grow with evolution", () => {
+    const sweet: Monster = { id: "s", name: "S", element: "light", chargeCost: 5, ability: { name: "n", effects: [] }, passive: { sweetTooth: 1 } };
+    expect(scaledPassive(sweet, 2)?.sweetTooth).toBe(1);
+    const g = newGame(fireMon("a", [], 99), rival, {}, sweet);
+    g.state.board.grid = grid(LAYOUT_BERRY);
+    g.state.players[0].monsters[1]!.charge = 4;
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    // 4 + 3 berries would be 7; berries stop at full (5), so it casts once and keeps nothing extra
+    expect(r.casts.filter((c) => c.monsterId === "s")).toHaveLength(1);
+    expect(g.state.players[0].monsters[1]!.charge).toBeLessThan(5);
+  });
+});
+
 describe("tempo & charge effects", () => {
   const rival: Monster = { id: "r", name: "R", element: "water", chargeCost: 50, ability: { name: "n", effects: [] } };
 

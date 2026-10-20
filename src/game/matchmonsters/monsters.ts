@@ -83,7 +83,7 @@ export const MONSTERS: Record<string, Monster> = {
   // Harvest Bloom: grows berries on the shared board (grab them before the rival does),
   // and Sweet tooth turns every berry you match into charge for it.
   petal_fawn: m("petal_fawn", "Petalope", "nature", 7, "Harvest Bloom",
-    [dmg(5), heal(6), { kind: "grow", count: 2 }],
+    [dmg(5), heal(10), { kind: "grow", count: 2 }],
     { sweetTooth: 1 }),
 
   // ✨ light — Striker

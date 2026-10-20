@@ -9,3 +9,6 @@ data/
 __pycache__/
 # PixelLab candidates are review material, not game art
 art/pixellab/candidates/
+
+# Temporary git worktrees made by Claude Code agents
+.claude/worktrees/

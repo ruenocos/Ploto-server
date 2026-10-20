@@ -159,7 +159,7 @@ they evolve. Tap one for its move, passive and evolution line.
 | ⛰️ Tremole | Tremor: clears a column | **Fault line**: stones in the team's blasts shatter into the rival |
 | ⛰️ Gemox | Crystallize: grows earth gems | **Crystal hide**: gains shield when a rival move hits the team |
 | 🌿 Thornkin | Thorn Prick: poisons (halves healing) | **Thorns**: poisons a rival whose move hits the team |
-| 🌿 Tanglet | Feeding Vine: steals HP | **Feeds on pain**: steals more for every turn of burn or poison on the rival |
+| 🌿 Tanglet | Feeding Vine: steals HP | **Feeds on pain**: steals more for every turn of burn or poison on the rival (up to 4 turns) |
 | 🌿 Myconite | Spore Cloud: seals the rival monster closest to firing | **Mycelium**: gains charge whenever its partner fires |
 | 🌿 Petalope | Harvest Bloom: grows berries | **Sweet tooth**: every berry the team collects charges it (up to full) |
 | ✨ Lumowl | Smite: clears a 2×2 area | **Keen eye**: the team's hits ignore shields |

@@ -428,7 +428,7 @@ export class MatchMonstersGame {
       case "rockslide":
         return p.amount * this.cells((x, y) => this.state.board.grid[y]![x] === "stone").length;
       case "feedsOnPain":
-        return p.amount * ctx.defender.dots.reduce((sum, d) => sum + d.turns, 0);
+        return p.amount * Math.min(p.cap ?? Infinity, ctx.defender.dots.reduce((sum, d) => sum + d.turns, 0));
       default:
         return 0;
     }
@@ -1036,7 +1036,7 @@ function passiveRule(p: Passive): string {
     case "faultLine": return `stones caught in your team's blasts shatter into the rival for ${p.amount} damage each`;
     case "crystalHide": return `when a rival move hits your team, gain ${p.amount} shield`;
     case "thorns": return `when a rival move hits your team, poison the rival (${p.amount} damage/turn for ${turnsText(p.turns)})`;
-    case "feedsOnPain": return `its move steals +${p.amount} HP for every turn of burn or poison left on the rival`;
+    case "feedsOnPain": return `its move steals +${p.amount} HP for every turn of burn or poison left on the rival` + (p.cap ? ` (up to ${p.cap} turns)` : "");
     case "mycelium": return `whenever its partner fires, it gains ${p.count} charge`;
     case "keenEye": return "your team's hits ignore shields";
     case "daybreak": return "starts the match fully charged, and charges up fully whenever it evolves";

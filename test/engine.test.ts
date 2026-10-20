@@ -1060,6 +1060,16 @@ describe("passive kits", () => {
     expect(fired(g).casts[0]!.effects[0]).toMatchObject({ kind: "drain", amount: 20 });
   });
 
+  it("Feeds on pain counts at most its cap of burn/poison turns", () => {
+    const g = newGame(fireMon("a", [{ kind: "drain", amount: 10 }], 3, { kind: "feedsOnPain", amount: 2, cap: 4 }));
+    g.state.players[0].hp = 40;
+    g.state.players[1].dots = [
+      { kind: "burn", amount: 3, turns: 3, element: "fire" },
+      { kind: "poison", amount: 2, turns: 3, element: "nature" },
+    ];
+    expect(fired(g).casts[0]!.effects[0]).toMatchObject({ kind: "drain", amount: 18 }); // 6 turns on, 4 count
+  });
+
   it("Mycelium: the partner firing charges it", () => {
     const g = newGame(fireMon("a", [dmg(5)]), filler, {}, ally({ kind: "mycelium", count: 2 }));
     const r = fired(g);

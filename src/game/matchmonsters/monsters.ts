@@ -82,7 +82,7 @@ export const MONSTERS: Record<string, Monster> = {
     { kind: "faultLine", amount: 4 }),
   // Crystallize grows earth gems, so it fuels itself (and any earth partner).
   crystal_ox: m("crystal_ox", "Gemox", "earth", 9, "Crystallize",
-    [dmg(16), { kind: "convert", count: 3 }],
+    [dmg(16), { kind: "convert", count: 2 }],
     { kind: "crystalHide", amount: 2 }),
 
   // 🌿 nature — Survivor
@@ -93,7 +93,7 @@ export const MONSTERS: Record<string, Monster> = {
   // Feeds on pain: steals more the longer the rival burns or is poisoned (Thornkin, Emberwing, Pyrup).
   vine_lurker: m("vine_lurker", "Tanglet", "nature", 9, "Feeding Vine",
     [{ kind: "drain", amount: 14 }],
-    { kind: "feedsOnPain", amount: 1 }),
+    { kind: "feedsOnPain", amount: 1, cap: 4 }),
   // Spore Cloud seals the rival monster closest to firing (an unsealed one first).
   shroom_knight: m("shroom_knight", "Myconite", "nature", 9, "Spore Cloud",
     [dmg(7), { kind: "seal", matches: 6 }],

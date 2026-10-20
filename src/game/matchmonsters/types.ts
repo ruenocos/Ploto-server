@@ -194,7 +194,7 @@ export type Passive =
   /** When a rival move hits this team, the rival is poisoned. */
   | { readonly kind: "thorns"; readonly amount: number; readonly turns: number }
   /** This monster's move deals (or steals) `amount` more for every turn of burn or poison left on the rival. */
-  | { readonly kind: "feedsOnPain"; readonly amount: number }
+  | { readonly kind: "feedsOnPain"; readonly amount: number; readonly cap?: number }
   /** Whenever the partner fires its move, this monster gains `count` charge. */
   | { readonly kind: "mycelium"; readonly count: number }
   /** This team's hits ignore shields. */

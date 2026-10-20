@@ -99,7 +99,7 @@ they evolve. Tap one for its move, passive and evolution line.
 - Stuck? After 8 seconds without a move, the best swap on the board nudges.
 - Every moment has a sound and, on phones that support it, a vibration. Settings (the sliders button in the lobby, ☰ in a match) turn sound, vibration and hints on or off, set the text size, and can force reduced motion.
 - You get **2 moves per turn** (the opening player gets 1 on their first turn).
-  A line of **4+** gems grants an extra move (berry lines don't).
+  A line of **4+** (berries too) grants an extra move.
 - Matching tiles **charges** your monsters of that element. At its charge cost a
   monster **fires its move** — damage plus a twist (see below). Each monster
   acts at most once per move; any extra charge waits for your next move.

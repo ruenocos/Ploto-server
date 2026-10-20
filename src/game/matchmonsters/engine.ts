@@ -488,9 +488,12 @@ export class MatchMonstersGame {
         return { kind: "convert", cells: converted, element: target };
       }
       case "grow": {
-        // Berries on random tiles, skipping any that would match at once (they wait for a move).
-        // The board is shared: whoever matches them first gets them.
-        const pool = this.cells((x, y) => isElement(b.grid[y]![x]!));
+        // Berries on random tiles, skipping any that would match at once (they wait for a move)
+        // and any next to a berry already there, so a bloom scatters berries instead of building
+        // lines out of them. The board is shared: whoever matches them first gets them.
+        const berryNear = (x: number, y: number) =>
+          [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => b.grid[y + dy!]?.[x + dx!] === "berry");
+        const pool = this.cells((x, y) => isElement(b.grid[y]![x]!) && !berryNear(x, y));
         const grown: Cell[] = [];
         for (const c of this.pick(pool, pool.length)) {
           if (grown.length >= e.count) break;

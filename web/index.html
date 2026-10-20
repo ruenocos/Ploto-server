@@ -234,6 +234,9 @@
       .hud-card.foe .hud-top { flex-direction: row-reverse; }
       .hud-card.foe .hud-name { text-align: right; }
       .hud-card.foe .chips { justify-content: flex-end; }
+      /* one line of chips, always: what doesn't fit folds into a "+N" chip, so the HUD never grows and pushes the board down */
+      .hud-card .chips { flex-wrap: nowrap; overflow: hidden; }
+      .chip.more { cursor: pointer; border: 0; color: var(--c-cream); }
       /* HP: sunken track, segmented every 10%, a hard highlight on the fill */
       .hp { margin: 5px 0 5px; display: flex; align-items: center; gap: 6px; }
       .hud-card.foe .hp { flex-direction: row-reverse; }
@@ -1825,7 +1828,7 @@
         }
         if (dots.some((d) => d.kind === "poison")) chips.push(`<span class="chip debuff dot-fx" title="Poisoned: healing is halved">${ic("halfHeal")}</span>`);
         if (p.slow > 0) chips.push(`<span class="chip debuff slow" title="${p.slow} fewer move${p.slow === 1 ? "" : "s"} next turn">${ic("slow")}-${p.slow}</span>`);
-        chips.push(`<span class="chip berry" data-berry>${gemIcon("berry", 16)}<span><b>${p.berries || 0}</b>/${BERRIES_TO_EVOLVE}</span></span>`);
+        chips.unshift(`<span class="chip berry" data-berry title="Berries: ${BERRIES_TO_EVOLVE} evolve a monster">${gemIcon("berry", 16)}<span><b>${p.berries || 0}</b>/${BERRIES_TO_EVOLVE}</span></span>`); // first: it's what you act on
         const card = hudOf(seat);
         card.classList.toggle("active", state.phase === "awaiting-move" && state.turn === seat);
         card.innerHTML =
@@ -1836,6 +1839,33 @@
           `<div class="shieldfill" style="width:${shieldPct}%"></div></div>` +
           `<span class="num">${p.hp}</span></div>` +
           `<div class="chips">${chips.join("")}</div>`;
+        fitChips(card.querySelector(".chips"));
+      }
+
+      /** Keep a HUD's chips on one line: fold the ones that don't fit into a "+N" chip that lists them on tap. */
+      function fitChips(row) {
+        // by the chips' own edges: on the right-aligned rival card, overflow runs off the left side
+        const overflows = () => {
+          const r = row.getBoundingClientRect();
+          return [...row.children].some((c) => { const b = c.getBoundingClientRect(); return b.left < r.left - 1 || b.right > r.right + 1; });
+        };
+        if (!overflows()) return;
+        const hidden = [];
+        const more = document.createElement("button");
+        more.type = "button";
+        more.className = "chip more";
+        row.appendChild(more);
+        const statuses = [...row.querySelectorAll(".chip:not(.more):not([data-berry])")];
+        while (statuses.length && overflows()) {
+          const c = statuses.pop();
+          hidden.unshift(c.title);
+          c.remove();
+          more.textContent = `+${hidden.length}`;
+        }
+        if (!hidden.length) return more.remove();
+        more.title = hidden.join(" · ");
+        more.setAttribute("aria-label", `${hidden.length} more: ${more.title}`);
+        more.onclick = () => toast(hidden.join(" · "), 3200);
       }
 
       /**

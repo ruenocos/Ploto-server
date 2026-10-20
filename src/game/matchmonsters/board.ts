@@ -34,9 +34,9 @@ function inBounds(b: Board, x: number, y: number): boolean {
   return x >= 0 && y >= 0 && x < b.width && y < b.height;
 }
 
-/** Stones (and empty cells) never form part of a match. */
+/** Stones, prisms (and empty cells) never form part of a colour match. */
 function matchable(t: Tile): boolean {
-  return t != null && t !== "stone";
+  return t != null && t !== "stone" && t !== "prism";
 }
 
 /**
@@ -103,6 +103,55 @@ export function findMatches(b: Board): { x: number; y: number; element: Gem }[] 
   return out;
 }
 
+/**
+ * Every straight run of `minRun`+ identical tiles (berries too), as its cells in
+ * order: lines of 5 leave a prism behind.
+ */
+export function findRuns(b: Board, minRun = 5): { x: number; y: number }[][] {
+  const runs: { x: number; y: number }[][] = [];
+  for (const horizontal of [true, false]) {
+    const outer = horizontal ? b.height : b.width;
+    const inner = horizontal ? b.width : b.height;
+    for (let o = 0; o < outer; o++) {
+      let start = 0;
+      for (let i = 1; i <= inner; i++) {
+        const prev = cell(b, horizontal, o, i - 1);
+        if (i < inner && matchable(prev) && cell(b, horizontal, o, i) === prev) continue;
+        if (matchable(prev) && i - start >= minRun) {
+          runs.push(Array.from({ length: i - start }, (_, k) => (horizontal ? { x: start + k, y: o } : { x: o, y: start + k })));
+        }
+        start = i;
+      }
+    }
+  }
+  return runs;
+}
+
+/** True if swapping these two cells fires a prism (one of them is a prism, the other isn't stone). */
+export function isPrismSwap(b: Board, x1: number, y1: number, x2: number, y2: number): boolean {
+  const a = b.grid[y1]![x1], c = b.grid[y2]![x2];
+  return (a === "prism" || c === "prism") && a !== "stone" && c !== "stone" && a != null && c != null;
+}
+
+/**
+ * The cells a prism swap clears, with the prism now at (px, py) and the tile it
+ * was swapped with at (qx, qy): every tile of that kind plus the prism, or the
+ * whole board for prism + prism.
+ */
+export function prismCells(b: Board, px: number, py: number, qx: number, qy: number): { target: Gem | "all"; cells: { x: number; y: number }[] } {
+  const other = b.grid[qy]![qx]!;
+  const target: Gem | "all" = other === "prism" ? "all" : other;
+  const cells: { x: number; y: number }[] = [];
+  for (let y = 0; y < b.height; y++) {
+    for (let x = 0; x < b.width; x++) {
+      const t = b.grid[y]![x];
+      if (t == null) continue;
+      if (target === "all" || t === target || (x === px && y === py)) cells.push({ x, y });
+    }
+  }
+  return { target, cells };
+}
+
 function cell(b: Board, horizontal: boolean, outer: number, inner: number): Tile {
   return horizontal ? b.grid[outer]![inner]! : b.grid[inner]![outer]!;
 }
@@ -163,10 +212,11 @@ export function isMovable(b: Board, x: number, y: number, ice?: number[][]): boo
   return !(ice && (ice[y]?.[x] ?? 0) > 0);
 }
 
-/** True if any single adjacent swap of movable tiles would create a match. */
+/** True if any single adjacent swap of movable tiles would create a match (or fire a prism). */
 export function hasAnyMove(b: Board, ice?: number[][]): boolean {
   const trySwap = (x1: number, y1: number, x2: number, y2: number): boolean => {
     if (!isMovable(b, x1, y1, ice) || !isMovable(b, x2, y2, ice)) return false;
+    if (isPrismSwap(b, x1, y1, x2, y2)) return true;
     swapCells(b, x1, y1, x2, y2);
     const ok = findMatches(b).length > 0;
     swapCells(b, x1, y1, x2, y2);
@@ -181,13 +231,13 @@ export function hasAnyMove(b: Board, ice?: number[][]): boolean {
   return false;
 }
 
-/** Cells (as `y * width + x`) that take part in at least one legal swap. */
+/** Cells (as `y * width + x`) that take part in at least one matching or prism swap. */
 export function moveCells(b: Board, ice?: number[][]): Set<number> {
   const out = new Set<number>();
   const trySwap = (x1: number, y1: number, x2: number, y2: number): void => {
     if (!isMovable(b, x1, y1, ice) || !isMovable(b, x2, y2, ice)) return;
     swapCells(b, x1, y1, x2, y2);
-    if (findMatches(b).length > 0) {
+    if (isPrismSwap(b, x1, y1, x2, y2) || findMatches(b).length > 0) {
       out.add(y1 * b.width + x1);
       out.add(y2 * b.width + x2);
     }

@@ -37,7 +37,7 @@
         --c-good: #36b65b;  --c-good-hi: #92e27c;
         --c-bad: #d8364b;   --c-bad-hi: #ff8080;
         --c-gold: #ffcc33;  --c-gold-lo: #a8740e;
-        --fire: #ff6b3d; --water: #3aa0ff; --earth: #c98a46; --nature: #4ccb6b; --light: #ffd23c; --berry: #e8304a; --stone: #9aa0ad;
+        --fire: #ff6b3d; --water: #3aa0ff; --earth: #c98a46; --nature: #4ccb6b; --light: #ffd23c; --berry: #e8304a; --stone: #9aa0ad; --prism: #f2eaff;
         /* the element hues above are the only ones: tiles, motes, bursts and tags all read them */
         /*
          * type: Silkscreen for labels, numbers and headings; Pixelify Sans for reading.
@@ -467,6 +467,19 @@
       .tile.swapin { animation: swapin 180ms ease; }
       .tile.pop .gem { animation: pop 300ms ease forwards; }
       @keyframes swapin { 0% { transform: scale(0.75); } 100% { transform: scale(1); } }
+      /* Prism: shimmers through the rainbow; born with a flash; flares and beams to what it clears */
+      .tile.prism .gem { animation: prismShift 2.4s steps(12) infinite; }
+      @keyframes prismShift { to { filter: hue-rotate(360deg); } }
+      .tile.prism.born .gem { animation: prismBorn 420ms steps(6) both, prismShift 2.4s steps(12) 420ms infinite; }
+      @keyframes prismBorn { 0% { transform: scale(0.2); filter: brightness(3); } 60% { transform: scale(1.3); filter: brightness(1.8); } 100% { transform: none; } }
+      .tile.prism.firing .gem { animation: prismFlare 260ms steps(4) forwards; }
+      @keyframes prismFlare { to { transform: scale(1.45) rotate(45deg); filter: brightness(2.6); } }
+      .tile.zapped .gem { filter: brightness(2.2) saturate(0.4); }
+      .beam { position: absolute; left: 0; top: 0; height: calc(var(--px) * 2); margin-top: calc(var(--px) * -1); transform-origin: 0 50%;
+        background: linear-gradient(90deg, #fff, var(--c)); box-shadow: 0 0 0 var(--px) color-mix(in srgb, var(--c) 45%, transparent); }
+      .board.prism-wash .tile .gem { animation: prismWash 420ms steps(6) forwards; }
+      @keyframes prismWash { 50% { filter: brightness(3) hue-rotate(180deg); transform: scale(1.15); } 100% { filter: brightness(2); } }
+      @media (prefers-reduced-motion: reduce) { .tile.prism .gem, .tile.prism.born .gem { animation: none; } }
       @keyframes pop { 0% { transform: scale(1); } 35% { transform: scale(1.35); filter: brightness(2.2); } 100% { transform: scale(0); opacity: 0; } }
       /* blast sweep: the region lights up in the caster's colour before it clears */
       .tile.zap { animation: zap 280ms steps(4) both; animation-delay: var(--zd, 0ms); }
@@ -869,7 +882,7 @@
     <script src="/play/pixelart.js"></script>
     <script>
       const $ = (id) => document.getElementById(id);
-      const EMOJI = { fire: "🔥", water: "💧", earth: "⛰️", nature: "🌿", light: "✨", berry: "🍓", stone: "🪨" };
+      const EMOJI = { fire: "🔥", water: "💧", earth: "⛰️", nature: "🌿", light: "✨", berry: "🍓", stone: "🪨", prism: "💎" };
       const EL_LABEL = { fire: "Fire", water: "Water", earth: "Earth", nature: "Nature", light: "Light" };
       const ORDER = ["fire", "water", "earth", "nature", "light"];
       const MAX_EVOLUTION = 2; // three stages, shown as 1, 2 and 3 stars (evolution 0, 1, 2)
@@ -2207,6 +2220,7 @@
         const mine = new Set(state.players[room.seat].monsters.filter((m) => !(m.sealed > 0)).map((m) => m.element));
         const run = (b, x, y) => {
           const v = b[y][x];
+          if (v === "prism") return 0; // prisms never match by colour
           let h = 1, w = 1, i;
           for (i = x - 1; i >= 0 && b[y][i] === v; i--) h++;
           for (i = x + 1; i < Wd && b[y][i] === v; i++) h++;
@@ -2217,7 +2231,17 @@
         let best = null, bestScore = 0;
         for (let y = 0; y < H; y++) for (let x = 0; x < Wd; x++) for (const [dx, dy] of [[1, 0], [0, 1]]) {
           const x2 = x + dx, y2 = y + dy;
-          if (x2 >= Wd || y2 >= H || !movable(x, y) || !movable(x2, y2) || g[y][x] === g[y2][x2]) continue;
+          if (x2 >= Wd || y2 >= H || !movable(x, y) || !movable(x2, y2)) continue;
+          const worth = (t) => (mine.has(t) ? 3 : t === "berry" ? 2 : t === "stone" || t === "prism" ? 0 : 1);
+          if (g[y][x] === "prism" || g[y2][x2] === "prism") {
+            // A prism clears every tile of the kind it's swapped with (prism + prism: the board).
+            const other = g[y][x] === "prism" ? g[y2][x2] : g[y][x];
+            let score = 0;
+            for (const row of g) for (const t of row) if (other === "prism" || t === other) score += worth(t);
+            if (score > bestScore) { bestScore = score; best = [{ x, y }, { x: x2, y: y2 }]; }
+            continue;
+          }
+          if (g[y][x] === g[y2][x2]) continue;
           const b = g.map((r) => r.slice());
           [b[y][x], b[y2][x2]] = [b[y2][x2], b[y][x]];
           let score = 0;
@@ -2432,7 +2456,7 @@
        * shakes (scaled to damage) and drains its HP bar in two stages.
        */
       /** Element hues for motes, bursts and orbs: read from the CSS tokens, so there's one set. */
-      const COLOR = Object.fromEntries([...ORDER, "berry", "stone"].map((k) => [k, getComputedStyle(document.documentElement).getPropertyValue(`--${k}`).trim()]));
+      const COLOR = Object.fromEntries([...ORDER, "berry", "stone", "prism"].map((k) => [k, getComputedStyle(document.documentElement).getPropertyValue(`--${k}`).trim()]));
       const tileAt = (x, y) => $("board").querySelector(`[data-x="${x}"][data-y="${y}"]`);
       const centerOf = (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
       /** A monster's fighter element on the battlefield, by id. */
@@ -2695,9 +2719,57 @@
       let inflight = [];
       const settle = async () => { const all = inflight; inflight = []; await Promise.all(all); };
 
+      const RAINBOW = ["#ff6b6b", "#ffb03b", "#ffe66b", "#6bea8a", "#5cc8ff", "#9b8cff", "#ff7ad9"];
+
+      /** A tile turns into a prism: a white flash, a pop-in and rainbow sparks. */
+      function prismBorn(tile) {
+        tile.className = "tile prism born";
+        tile.innerHTML = gemHtml("prism");
+        cue("ready");
+        const at = centerOf(tile);
+        RAINBOW.forEach((c) => burst(at, c, 1, 30));
+      }
+
+      /**
+       * A prism fires: it flares, then a beam of light snaps from it to every tile
+       * it clears (a white sweep over the board for prism + prism), before they pop.
+       */
+      async function prismFire(step) {
+        const src = tileAt(step.prism.x, step.prism.y);
+        if (!src) return;
+        cue("cast");
+        src.classList.add("firing");
+        if (reduceMotion) return sleep(160);
+        await sleep(220);
+        const from = centerOf(src);
+        if (step.prism.target === "all") {
+          $("board").classList.add("prism-wash");
+          await sleep(420);
+          $("board").classList.remove("prism-wash");
+          return;
+        }
+        const targets = step.cleared.filter((c) => !(c.x === step.prism.x && c.y === step.prism.y) && c.element !== "stone");
+        targets.forEach((c, i) => {
+          const tile = tileAt(c.x, c.y);
+          if (!tile) return;
+          const to = centerOf(tile);
+          const beam = document.createElement("div");
+          beam.className = "beam";
+          const len = Math.hypot(to.x - from.x, to.y - from.y);
+          beam.style.cssText = `--c:${RAINBOW[i % RAINBOW.length]};width:${len}px;transform:translate(${from.x}px, ${from.y}px) rotate(${Math.atan2(to.y - from.y, to.x - from.x)}rad)`;
+          $("fx").appendChild(beam);
+          const delay = i * 35;
+          beam.animate([{ clipPath: "inset(0 100% 0 0)", opacity: 1 }, { clipPath: "inset(0 0 0 0)", opacity: 1, offset: 0.45 }, { clipPath: "inset(0 0 0 0)", opacity: 0 }],
+            { duration: 420, delay, easing: "steps(6, end)", fill: "forwards" }).finished.catch(() => {}).then(() => beam.remove());
+          setTimeout(() => tile.classList.add("zapped"), delay + 160);
+        });
+        await sleep(260 + targets.length * 35);
+      }
+
       /** One cascade step: pop + shards, motes to the mover's monsters, then gravity. */
       async function playStep(step, { mover = null, combo = 0 } = {}) {
         if (step.board) { state.board = step.board; renderBoard(); }
+        if (step.prism) await prismFire(step);
         if (combo >= 2) showCombo(combo);
         if (step.cleared.length) cue("match", { pitch: 1 + 0.08 * (Math.min(5, Math.max(1, combo)) - 1) }); // each cascade step a little higher, up to x5
         if (combo >= 2 && mover === room?.seat) matchStats.bestCombo = Math.max(matchStats.bestCombo, combo);
@@ -2716,7 +2788,15 @@
             inflight.push(fly("mote", at, t.pos, color, { delay: 40 + k++ * 28 }).then(t.arrive));
           }
         }
-        await sleep(260);
+        // A line of 5 keeps one tile: it still charges, then turns into a prism.
+        for (const p of step.prisms || []) {
+          const gem = step.board[p.y][p.x], tile = tileAt(p.x, p.y);
+          if (!tile) continue;
+          const at = centerOf(tile);
+          if (targetsFor) for (const t of targetsFor(gem)) inflight.push(fly("mote", at, t.pos, COLOR[gem], { delay: 40 + k++ * 28 }).then(t.arrive));
+          setTimeout(() => prismBorn(tile), 140);
+        }
+        await sleep(step.prisms ? 560 : 260);
         if (step.after) {
           state.board = step.after;
           renderBoard();

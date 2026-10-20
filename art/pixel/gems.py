@@ -1,5 +1,5 @@
 """
-Board tiles: five element gems, berries and stone, all built one way.
+Board tiles: five element gems, berries, stone and the prism, all built one way.
 
 Every gem is the same size and square (about 88% of its tile), after Match
 Monsters' own board: a 1px outline, a bevel band lit from the top left (light,
@@ -18,6 +18,7 @@ tiles (`TILES`) and 16x16 icons for chips and badges (`SPRITES`).
 """
 from __future__ import annotations
 
+import colorsys
 import math
 
 from PIL import Image
@@ -187,6 +188,30 @@ def _stone(size: int) -> _Img:
     return _Img("stone", cut_gem(poly, crack, ramp, size, table=0.01, glint=False))
 
 
+def _prism(size: int) -> _Img:
+    """A brilliant-cut diamond (flat crown, pointed pavilion) lit in a rainbow: the gem that clears a colour.
+    Cut in greys with the usual bevel, then each pixel takes a hue along the diagonal at its own lightness."""
+    poly = [(9, 4), (23, 4), (30, 12), (16, 30), (2, 12)]
+    girdle = [(3.5, 11), (28.5, 11), (27.5, 13), (4.5, 13)]  # the bright band where crown meets pavilion
+    grey = {"outline": "#000000", "lo": "#5a5a5a", "dark": "#7c7c7c", "mid": "#a2a2a2", "light": "#cdcdcd", "hi": "#f2f2f2",
+            "table": "#b4b4b4", "gloss": "#d2d2d2", "line": "#e8e8e8", "fill": "#fafafa"}
+    img = cut_gem(poly, girdle, grey, size, table=0.5)
+    k = U / size
+    for y in range(size):
+        for x in range(size):
+            r, g, b, a = img.getpixel((x, y))
+            if not a or (r, g, b) == (255, 255, 255):
+                continue
+            if (r, g, b) == (0, 0, 0):  # outline: deep violet
+                img.putpixel((x, y), (30, 14, 54, 255))
+                continue
+            hue = ((x + 0.6 * y) * k / (U * 1.25) + 0.92) % 1.0
+            light = 0.28 + 0.62 * (r / 255)
+            rr, gg, bb = colorsys.hls_to_rgb(hue, light, 0.82 - 0.4 * max(0.0, light - 0.7) / 0.3)
+            img.putpixel((x, y), (round(rr * 255), round(gg * 255), round(bb * 255), 255))
+    return _Img("prism", img)
+
+
 ORDER = ["fire", "water", "earth", "nature", "light"]
-SPRITES = [lambda n=n: _gem(n, 16) for n in ORDER] + [lambda: _berry(16), lambda: _stone(16)]  # icons, chips, badges
-TILES = [lambda n=n: _gem(n, 32) for n in ORDER] + [lambda: _berry(32), lambda: _stone(32)]  # the board
+SPRITES = [lambda n=n: _gem(n, 16) for n in ORDER] + [lambda: _berry(16), lambda: _stone(16), lambda: _prism(16)]  # icons, chips, badges
+TILES = [lambda n=n: _gem(n, 32) for n in ORDER] + [lambda: _berry(32), lambda: _stone(32), lambda: _prism(32)]  # the board

@@ -31,6 +31,7 @@ import type {
   EffectEvent,
   EffectKind,
   Element,
+  Gem,
   GameState,
   MatchShape,
   Monster,
@@ -58,11 +59,14 @@ import {
   collapseAndRefill,
   DEFAULT_BOARD,
   findMatches,
+  findRuns,
   generateBoard,
   hasAnyMove,
   hasBigMatch,
   isMovable,
+  isPrismSwap,
   moveCells,
+  prismCells,
   reshuffle,
   type BoardOptions,
 } from "./board.js";
@@ -155,12 +159,14 @@ export class MatchMonstersGame {
 
     // Any swap is legal. One that makes no match just repositions the tiles
     // (setting up a later move) and still costs a move.
+    const prismSwap = isPrismSwap(s.board, from.x, from.y, to.x, to.y);
     swap(s.board, from, to);
 
     // Resolve the swap's cascades: these charge monsters and collect berries.
     const cascades: CascadeStep[] = [];
     const tally: Tally = { charged: {}, berries: 0, bigMatch: false };
-    this.resolveCascades(cascades, tally);
+    if (prismSwap) this.firePrism(from, to, cascades, tally);
+    this.resolveCascades(cascades, tally, prismSwap ? [] : [from, to]);
 
     const attacker = s.players[by];
     const defender = s.players[other(by)];
@@ -308,9 +314,10 @@ export class MatchMonstersGame {
   /**
    * Clear matches until the board is stable. Stones next to a match crumble and
    * matching through ice breaks it. With a tally, matched tiles count toward
-   * charge/berries; without one (move fallout) they're just cleared.
+   * charge/berries and every line of 5+ leaves a prism (on the swapped tile if
+   * it's in the line, else mid-line); without one (move fallout) they're just cleared.
    */
-  private resolveCascades(steps: CascadeStep[], tally: Tally | null): void {
+  private resolveCascades(steps: CascadeStep[], tally: Tally | null, swapped: readonly Cell[] = []): void {
     const s = this.state;
     for (let guard = 0; guard < 60; guard++) {
       const matches = findMatches(s.board);
@@ -318,21 +325,53 @@ export class MatchMonstersGame {
       const countsByElement: Partial<Record<Element, number>> = {};
       if (tally) {
         if (hasBigMatch(s.board)) tally.bigMatch = true;
-        for (const m of matches) {
-          if (m.element === "berry") tally.berries += 1;
-          else if (m.element !== "stone") {
-            countsByElement[m.element] = (countsByElement[m.element] ?? 0) + 1;
-            tally.charged[m.element] = (tally.charged[m.element] ?? 0) + 1;
-          }
+        this.count(matches.map((m) => m.element), tally, countsByElement);
+      }
+      const prisms: Cell[] = [];
+      if (tally) {
+        for (const run of findRuns(s.board)) {
+          const at = (guard === 0 && run.find((c) => swapped.some((w) => w.x === c.x && w.y === c.y))) || run[run.length >> 1]!;
+          if (!prisms.some((p) => p.x === at.x && p.y === at.y)) prisms.push(at);
         }
       }
-      const cleared = [...matches.map((m) => ({ x: m.x, y: m.y })), ...adjacentStones(s.board, matches)];
+      const kept = (c: Cell) => prisms.some((p) => p.x === c.x && p.y === c.y);
+      const cleared = [...matches.filter((m) => !kept(m)).map((m) => ({ x: m.x, y: m.y })), ...adjacentStones(s.board, matches)];
       const before = cloneGrid(s.board);
       const clearedInfo = cleared.map((c) => ({ x: c.x, y: c.y, element: s.board.grid[c.y]![c.x]! }));
-      this.breakIce(cleared);
+      this.breakIce([...cleared, ...prisms]);
+      for (const p of prisms) s.board.grid[p.y]![p.x] = "prism";
       collapseAndRefill(s.board, cleared, this.palette, this.rng);
-      steps.push({ cleared: clearedInfo, countsByElement, board: before, after: cloneGrid(s.board) });
+      steps.push({ cleared: clearedInfo, countsByElement, board: before, after: cloneGrid(s.board), ...(prisms.length ? { prisms } : {}) });
     }
+  }
+
+  /** Matched tiles feed the tally: elements charge, berries go to the stash. */
+  private count(tiles: readonly Gem[], tally: Tally, counts: Partial<Record<Element, number>>): void {
+    for (const t of tiles) {
+      if (t === "berry") tally.berries += 1;
+      else if (isElement(t)) {
+        counts[t] = (counts[t] ?? 0) + 1;
+        tally.charged[t] = (tally.charged[t] ?? 0) + 1;
+      }
+    }
+  }
+
+  /**
+   * A prism swap: the prism (now at `to` or `from`) clears every tile of the kind
+   * it was swapped with, counted as the mover's match; prism + prism clears the board.
+   */
+  private firePrism(from: Cell, to: Cell, steps: CascadeStep[], tally: Tally): void {
+    const b = this.state.board;
+    const [p, q] = b.grid[to.y]![to.x] === "prism" ? [to, from] : [from, to];
+    const { target, cells } = prismCells(b, p.x, p.y, q.x, q.y);
+    const countsByElement: Partial<Record<Element, number>> = {};
+    this.count(cells.map((c) => b.grid[c.y]![c.x]!), tally, countsByElement);
+    const cleared = [...cells, ...(target === "all" ? [] : adjacentStones(b, cells))];
+    const before = cloneGrid(b);
+    const clearedInfo = cleared.map((c) => ({ x: c.x, y: c.y, element: b.grid[c.y]![c.x]! }));
+    this.breakIce(cleared);
+    collapseAndRefill(b, cleared, this.palette, this.rng);
+    steps.push({ cleared: clearedInfo, countsByElement, board: before, after: cloneGrid(b), prism: { x: p.x, y: p.y, target } });
   }
 
   private fire(mon: MonsterState, ctx: FireContext): void {
@@ -1014,7 +1053,7 @@ function toPlayerState(p: PlayerSetup, hp: number): PlayerState {
 }
 
 function isElement(t: Tile): t is Element {
-  return t != null && t !== "berry" && t !== "stone";
+  return t != null && t !== "berry" && t !== "stone" && t !== "prism";
 }
 function emptyIce(b: Board): number[][] {
   return Array.from({ length: b.height }, () => new Array<number>(b.width).fill(0));

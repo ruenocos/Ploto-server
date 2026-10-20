@@ -3,7 +3,7 @@
  * matches: tiles that charge its own monsters count most, then berries, then
  * anything else. Shared by the practice bot and the balance simulators.
  */
-import { findMatches, isMovable } from "./board.js";
+import { findMatches, isMovable, isPrismSwap, prismCells } from "./board.js";
 import type { MatchMonstersGame } from "./engine.js";
 import type { Move } from "./types.js";
 import { BERRIES_TO_EVOLVE, MAX_EVOLUTION } from "./types.js";
@@ -21,6 +21,7 @@ export function chooseMove(game: MatchMonstersGame, seat: 0 | 1, opts: BotOption
   if (s.phase === "finished" || s.turn !== seat) return null;
   const b = s.board;
   const mine = new Set(s.players[seat].monsters.map((m) => m.def.element));
+  const worth = (g: string) => (mine.has(g as never) ? 3 : g === "berry" ? 2 : g === "stone" || g === "prism" ? 0 : 1);
   const legal: { move: Move; score: number }[] = [];
   for (let y = 0; y < b.height; y++) {
     for (let x = 0; x < b.width; x++) {
@@ -28,6 +29,15 @@ export function chooseMove(game: MatchMonstersGame, seat: 0 | 1, opts: BotOption
         const nx = x + dx, ny = y + dy;
         if (nx >= b.width || ny >= b.height) continue;
         if (!isMovable(b, x, y, s.ice) || !isMovable(b, nx, ny, s.ice)) continue;
+        const move: Move = { type: "swap", from: { x, y }, to: { x: nx, y: ny } };
+        if (isPrismSwap(b, x, y, nx, ny)) {
+          // A prism clears every tile of the kind it's swapped with: score those tiles.
+          // (Before the swap: the prism sits at `at`, the tile it fires on at `on`.)
+          const [at, on] = b.grid[y]![x] === "prism" ? [{ x, y }, { x: nx, y: ny }] : [{ x: nx, y: ny }, { x, y }];
+          const { cells } = prismCells(b, at.x, at.y, on.x, on.y);
+          legal.push({ move, score: cells.reduce((sum, c) => sum + worth(b.grid[c.y]![c.x]!), 0) });
+          continue;
+        }
         const t = b.grid[y]![x]!;
         b.grid[y]![x] = b.grid[ny]![nx]!;
         b.grid[ny]![nx] = t;
@@ -36,8 +46,8 @@ export function chooseMove(game: MatchMonstersGame, seat: 0 | 1, opts: BotOption
         b.grid[y]![x] = t;
         if (matches.length === 0) continue;
         let score = 0;
-        for (const c of matches) score += mine.has(c.element as never) ? 3 : c.element === "berry" ? 2 : 1;
-        legal.push({ move: { type: "swap", from: { x, y }, to: { x: nx, y: ny } }, score });
+        for (const c of matches) score += worth(c.element);
+        legal.push({ move, score });
       }
     }
   }

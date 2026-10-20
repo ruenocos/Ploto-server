@@ -100,6 +100,10 @@ they evolve. Tap one for its move, passive and evolution line.
 - Every moment has a sound and, on phones that support it, a vibration. Settings (the sliders button in the lobby, ☰ in a match) turn sound, vibration and hints on or off, set the text size, and can force reduced motion.
 - You get **2 moves per turn** (the opening player gets 1 on their first turn).
   A line of **4+** (berries too) grants an extra move.
+- 💎 A line of **5+** leaves a **Prism** (on the tile you moved, if it's in the line).
+  Swap it with any tile to clear every tile of that kind, as your match; swap two
+  prisms to clear the whole board. Prisms never match by colour, and stay on the
+  board until someone uses them, so your rival can take one you leave behind.
 - Matching tiles **charges** your monsters of that element. At its charge cost a
   monster **fires its move** — damage plus a twist (see below). Each monster
   acts at most once per move; any extra charge waits for your next move.

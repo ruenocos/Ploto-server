@@ -12,10 +12,12 @@ export const ELEMENTS = ["fire", "water", "earth", "nature", "light"] as const;
 export type Element = (typeof ELEMENTS)[number];
 
 /**
- * A board piece: an element, a berry pickup, or a stone blocker. Stones never
- * match, can't be swapped, and crumble when a neighbouring tile is matched.
+ * A board piece: an element, a berry pickup, a stone blocker or a prism. Stones
+ * never match, can't be swapped, and crumble when a neighbouring tile is matched.
+ * A prism is left behind by a line of 5+; swapping it with any tile clears every
+ * tile of that kind (prism + prism clears the board). It never matches by colour.
  */
-export type Gem = Element | "berry" | "stone";
+export type Gem = Element | "berry" | "stone" | "prism";
 
 /** A board cell. `null` is a transient empty cell during resolution. */
 export type Tile = Gem | null;
@@ -248,6 +250,10 @@ export interface CascadeStep {
   board: Tile[][];
   /** Board after the gaps collapse and refill, so clients can animate the fall. */
   after: Tile[][];
+  /** Prisms made by this step's lines of 5+ (cells in `board`; they stay, so they fall with the rest). */
+  prisms?: { x: number; y: number }[];
+  /** A prism fired by the swap: where it sat and the kind it cleared ("all" for prism + prism). */
+  prism?: { x: number; y: number; target: Gem | "all" };
 }
 
 export type NumericEventType =

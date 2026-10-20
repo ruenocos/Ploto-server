@@ -9,7 +9,7 @@ import {
   scaledPassive,
   type GameConfig,
 } from "../src/game/matchmonsters/engine.js";
-import { findMatches } from "../src/game/matchmonsters/board.js";
+import { findMatches, hasAnyMove, moveCells } from "../src/game/matchmonsters/board.js";
 import { MONSTERS } from "../src/game/matchmonsters/monsters.js";
 import { chooseEvolution, chooseMove } from "../src/game/matchmonsters/bot.js";
 import {
@@ -26,7 +26,7 @@ import {
 } from "../src/game/matchmonsters/types.js";
 
 const MAP: Record<string, Gem> = {
-  F: "fire", W: "water", E: "earth", N: "nature", L: "light", B: "berry", S: "stone",
+  F: "fire", W: "water", E: "earth", N: "nature", L: "light", B: "berry", S: "stone", P: "prism",
 };
 /** No pre-existing matches; swapping (1,2)<->(0,2) makes a vertical fire 3. */
 const LAYOUT = ["FWENL", "FENLW", "WFENL", "ENLWF", "NLWFE"];
@@ -365,6 +365,64 @@ describe("no runaway loops", () => {
     // 4 + 3 berries would be 7; berries stop at full (5), so it casts once and keeps nothing extra
     expect(r.casts.filter((c) => c.monsterId === "s")).toHaveLength(1);
     expect(g.state.players[0].monsters[1]!.charge).toBeLessThan(5);
+  });
+});
+
+describe("prism", () => {
+  const rival: Monster = { id: "r", name: "R", element: "water", chargeCost: 50, ability: { name: "n", effects: [] } };
+  const prismsOn = (g: MatchMonstersGame) => g.state.board.grid.flat().filter((t) => t === "prism").length;
+
+  it("a line of 5 leaves a prism on the swapped tile and still earns an extra move", () => {
+    const g = newGame(fireMon("a", [], 99), rival);
+    g.state.board.grid = grid(["FWENL", "FENLW", "WFENL", "FNLWE", "FLWEN"]); // the swap lines up five fire
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.cascades[0]!.prisms).toEqual([{ x: 0, y: 2 }]);
+    expect(r.cascades[0]!.cleared).toHaveLength(4); // the prism's own tile stays
+    expect(r.charged.fire).toBeGreaterThanOrEqual(5); // ...but still charges
+    expect(r.extraTurn).toBe(true);
+    expect(prismsOn(g)).toBe(1);
+  });
+
+  it("never matches by colour, and swapping it is always a legal move", () => {
+    const b = { width: 5, height: 5, grid: grid(["PPPNL", "FENLW", "WFENL", "ENLWF", "NLWFE"]) };
+    expect(findMatches(b)).toHaveLength(0);
+    expect(hasAnyMove(b)).toBe(true);
+    expect(moveCells(b).has(0)).toBe(true);
+  });
+
+  it("swapped with a tile, it clears every tile of that kind as the mover's match", () => {
+    const g = newGame(fireMon("a", [], 99), rival);
+    g.state.board.grid = grid(["FWENL", "FENLW", "PFENL", "ENLWF", "NLWFE"]); // five fire on the board
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.cascades[0]!.prism).toEqual({ x: 1, y: 2, target: "fire" });
+    expect(r.cascades[0]!.cleared.filter((c) => c.element === "fire")).toHaveLength(5);
+    expect(r.charged.fire).toBeGreaterThanOrEqual(5);
+    expect(g.state.players[0].monsters[0]!.charge).toBeGreaterThanOrEqual(5);
+  });
+
+  it("works on berries too, and prism + prism clears the whole board", () => {
+    const g = newGame(fireMon("a", [], 99), rival);
+    g.state.board.grid = grid(["BWENL", "FENLW", "PBENL", "ENLWF", "NLWFB"]);
+    const r = g.applyMove(0, FIRE_SWAP);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.berriesGained).toBeGreaterThanOrEqual(3);
+
+    const g2 = newGame(fireMon("a", [], 99), rival);
+    g2.state.board.grid = grid(["FWENL", "FENLW", "PPENL", "ENLWF", "NLWFE"]);
+    const r2 = g2.applyMove(0, FIRE_SWAP);
+    if (!r2.ok) throw new Error(r2.reason);
+    expect(r2.cascades[0]!.prism?.target).toBe("all");
+    expect(r2.cascades[0]!.cleared).toHaveLength(25);
+  });
+
+  it("the bot fires a prism when it's the best move on the board", () => {
+    const g = newGame(fireMon("a", [], 99), rival);
+    g.state.board.grid = grid(["FWENL", "FENLW", "PFENL", "ENLWF", "NLWFE"]);
+    const m = chooseMove(g, 0);
+    const cells = [m!.from, m!.to].map((c) => g.state.board.grid[c.y]![c.x]);
+    expect(cells).toContain("prism");
   });
 });
 

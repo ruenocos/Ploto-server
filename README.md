@@ -18,7 +18,10 @@ and libraries. It ships no Plato code or game assets.
 | Status/health | `src/status`        | ✅ serves the exact `{"downtime":0,"reason":""}` document      |
 | Matchmaking   | `src/matchmaking`   | ✅ waiting-pool pairing, keyed by game/mode/stake             |
 | Signaling     | `src/signaling`     | ✅ protoo-over-WebSocket (framing matches the client exactly) |
+| Platform      | `src/platform`      | ✅ the shared base games plug into: rooms, lobby modules, invites, game registry ([`docs/PLATFORM.md`](docs/PLATFORM.md)) |
+| Launcher      | `web/launcher.html` | ✅ `/play`: Games · Friends · Profile, chat, invites to any game |
 | Match Monsters| `src/game/matchmonsters` | ✅ server-authoritative match-3 battle engine, seeded + replayable |
+| Hold'em       | `src/game/holdem`   | ✅ No-Limit Texas Hold'em Sit & Go for 2–6, bots, play chips only |
 | Voice (mediasoup) | —               | ⏳ methods identified (stock mediasoup-demo); SFU to be wired |
 | In-game payloads  | `src/signaling/gameRoom.ts` | ⏳ provisional `mm:*` methods until the game `client.zip` is mapped |
 
@@ -49,6 +52,24 @@ npm run dev        # web, status and WebSocket all on :8080
 
 Then both of you open **`http://<the-host's-LAN-ip>:8080/play`** (the host can
 use `http://localhost:8080/play`), or deploy it (see [`docs/DEPLOY.md`](docs/DEPLOY.md)).
+
+`/play` is the **launcher**: three tabs at the bottom.
+
+- **Games**: a card per game (live player count, and which friends are
+  playing it). Tap one to open it. **Continue** rejoins a match you left.
+- **Friends** (claim a username first): invites to play (Join opens the game),
+  friend requests, and your friends, online first, with what they're doing.
+  Tap a friend to chat; **Invite** asks which game, then opens it to set up.
+  **Add friend** (top right) finds people by username. Nothing on this tab
+  opens the phone keyboard until you choose to type.
+- **Profile**: your name, totals across games, per-game stats and last games,
+  and your sign-in key.
+
+Each game has its own page: **Match Monsters** at `/play/match-monsters`,
+**Hold'em** at `/play/holdem`. Old `/play?room=CODE` links still work.
+
+### Match Monsters
+
 The lobby asks one thing per screen. Tap **Play**, then choose how:
 **Quick match** (matched with anyone queuing in the same mode), **A friend**,
 or **Practice** (the bot). Next, how teams are made: **Pick** (choose your two
@@ -73,8 +94,8 @@ kits beat or combo with which is for players to discover). Quick Play gives 20
 seconds per step (then no ban or a random pick); friend rooms and bot practice
 have no timer, and the bot drafts counters too.
 
-**Accounts & friends.** Optional, and never in the way: play first, then tap
-**Friends** (or your name) in the lobby and **Claim a username** (your name is
+**Accounts & friends.** Optional, and never in the way: play first, then open
+the launcher's **Friends** or **Profile** tab and **Claim a username** (your name is
 filled in) (no password: the server hands back a
 secret key that stays in the browser's localStorage; copy it from your profile to
 sign in on another device). Then add friends by username, chat with them, and
@@ -171,6 +192,32 @@ Kits are built to work alone and to combo: Tanglet feeds on Thornkin's
 poison, Pyrup detonates the burns Kindling and Emberwing lay, Craggol's bash
 grows with Gemox's Crystal hide, Tremole shatters Rubbug's stones, Petalope
 grows berries for the whole team to evolve with.
+
+### Hold'em
+
+No-Limit Texas Hold'em as a **Sit & Go** for 2–6 players, with **play chips
+only** (nothing to buy, nothing to cash out). Everyone starts with the same
+stack, the blinds go up on a schedule, and the last player with chips wins.
+
+- **Quick table**: join anyone online at a 6-seat table (1,000 chips, timer on,
+  blinds up every 10 hands). It deals when full, or 20 seconds after the first
+  player sits down, with bots in the empty seats.
+- **Host a table**: pick the seats (2–6), whether bots fill empty seats,
+  starting chips (500 / 1,000 / 2,000 / 5,000), the turn timer (on or off) and
+  how often the blinds go up (every 10 or 5 hands, or never). Share the code or
+  link, invite friends to seats, add or remove bots, then **Start**.
+- **Practice**: you and three bots, no timer.
+
+The server shuffles with crypto randomness and only ever sends you your own
+cards; everyone still in shows at showdown. Side pots, split pots (odd chips
+to the first winner left of the button) and heads-up blind order follow
+standard rules. With the timer on you get 25 seconds a move, then a 60-second
+time bank for the whole game; then the server checks for you if it can, else
+folds. Players who leave or drop are acted for after 5 seconds. After the
+game, **Rematch** opens a new table with the same settings for whoever wants in.
+
+Engine: `src/game/holdem/` (rules, evaluator, bot), tables: `room.ts` and
+`lobby.ts` next to it; bot-vs-bot numbers with `npm run holdem`.
 
 ## Run it
 

@@ -58,23 +58,8 @@
   .lc-card .lc-pals { padding: 0 4px; font: 600 var(--fs-s)/1.3 var(--f-text); color: var(--c-good-hi); }
   .lc-card .pl-badge { position: absolute; top: 12px; right: 12px; z-index: 2; letter-spacing: 1px; }
   .lc-search { margin-bottom: 4px; }
-  /* Match Monsters' card: the arena by day, two monsters facing off */
-  .lc-mm { inset: 0; background-color: #5aa6e0; /* the day sky's top row */ background-repeat: repeat-x; background-position: 50% 100%; image-rendering: pixelated; }
-  .lc-mm-f { position: absolute; bottom: calc(var(--u) * 1); width: calc(var(--u) * 48); height: calc(var(--u) * 54); }
-  .lc-mm-f.l { left: 10%; } .lc-mm-f.r { right: 10%; }
-  .lc-mm-f img { position: absolute; left: calc(var(--u) * 4); top: calc(var(--u) * 40); width: calc(var(--u) * 40); height: calc(var(--u) * 14); image-rendering: pixelated; }
-  .lc-mm-spr { position: absolute; left: 0; top: 0; width: calc(var(--u) * 48); height: calc(var(--u) * 48); image-rendering: pixelated;
-    background: 0 0 / calc(var(--u) * 48 * var(--n)) 100% no-repeat; }
-  .lc-mm-f.r .lc-mm-spr { scale: -1 1; }
-  .lc-mm-spr.idle { animation: lcIdle calc(var(--n) * 150ms) steps(var(--n)) infinite; }
-  @keyframes lcIdle { to { background-position-x: calc(var(--u) * -48 * var(--n)); } }
-  /* Hold'em's card: pixel felt, two cards and chips (SVG on a whole-pixel grid) */
-  .lc-art[data-art="holdem"] { background: var(--c-felt-lo); }
+  /* Each game's card art comes from the game (web/<game>.card.js, Ploto.gameCard) */
   .lc-art svg { left: 50%; bottom: 0; transform: translateX(-50%); shape-rendering: crispEdges; }
-  .lc-he .ft { fill: var(--c-felt-lo); } .lc-he .fm { fill: var(--c-felt); } .lc-he .fh { fill: var(--c-felt-hi); }
-  .lc-he .rl { fill: var(--c-rail); } .lc-he .rh { fill: var(--c-rail-hi); } .lc-he .ik { fill: var(--c-ink); } .lc-he .cr { fill: var(--c-cream); }
-  .lc-he .rd { fill: var(--c-bad); } .lc-he .gd { fill: var(--c-gold); } .lc-he .gl { fill: var(--c-gold-lo); } .lc-he .ac { fill: var(--c-accent); } .lc-he .al { fill: var(--c-accent-lo); }
-  .lc-he .sh { fill: var(--c-ink); opacity: 0.14; }
   .lc-art .lc-init { inset: 0; display: grid; place-items: center; font: 700 var(--fl-3)/1 var(--f-label); color: var(--c-cream); }
   .pl-ic svg, .pl-ic img { display: block; }
 
@@ -263,89 +248,37 @@
   const initial = (name) => esc((String(name || "?").trim()[0] || "?").toUpperCase());
 
   /* ------------------------------------------------------------ art */
-  // Pixel title cards drawn in code: whole device pixels per art pixel, never stretched.
-  const dpr = () => window.devicePixelRatio || 1;
-  const snapDown = (k) => Math.max(1, Math.floor(k * dpr())) / dpr();
-  function mmArt(W, H) {
-    const PX = window.PIXELART;
-    if (!PX) return "";
-    const theme = PX.themes?.day || { arena: PX.arena, platform: PX.platform };
-    // Whole CSS px per art pixel, the nearest that fits; any gap at the sides repeats, the sky fills the top.
-    const k = Math.max(1, Math.round(Math.max(W / 160, H / 100)));
-    const u = snapDown((H * 0.56) / 48);
-    const still = P.reduceMotion();
-    const fighter = (id, side) => {
-      const s = PX.monsters[id]?.stages[1];
-      if (!s) return "";
-      const idle = s.idle && !still;
-      return `<div class="lc-mm-f ${side}" style="--u:${u}px"><img src="${theme.platform}" alt="">` +
-        `<div class="lc-mm-spr${idle ? " idle" : ""}" style="background-image:url(${idle ? s.idle : s.flat});--n:${idle ? s.n : 1}"></div></div>`;
-    };
-    return `<div class="lc-mm" style="background-image:url(${theme.arena});background-size:${160 * k}px ${100 * k}px">${fighter("ember_pup", "l")}${fighter("tide_serpent", "r")}</div>`;
-  }
-  /** Pixel rects from ASCII rows ("X" = filled) at (x, y), `s` art pixels per cell. */
-  const grid = (rows, x, y, cls, s = 1) => rows.map((row, j) => [...row].map((c, i) => c === "X" ? `<rect class="${cls}" x="${x + i * s}" y="${y + j * s}" width="${s}" height="${s}"/>` : "").join("")).join("");
-  const GLYPH = {
-    A: [".X.", "X.X", "XXX", "X.X", "X.X"],
-    K: ["X.X", "X.X", "XX.", "X.X", "X.X"],
-    spade: ["..X..", ".XXX.", "XXXXX", "XXXXX", "..X.."],
-    heart: [".X.X.", "XXXXX", "XXXXX", ".XXX.", "..X.."],
-  };
-  const r = (x, y, w, h, cls) => `<rect class="${cls}" x="${x}" y="${y}" width="${w}" height="${h}"/>`;
-  function card(x, y, rank, suit) {
-    const ink = suit === "heart" ? "rd" : "ik";
-    return r(x + 1, y + 1, 16, 22, "sh") + // hard shadow
-      r(x + 1, y, 14, 22, "ik") + r(x, y + 1, 16, 20, "ik") + r(x + 1, y + 1, 14, 20, "cr") + r(x + 1, y + 19, 14, 2, "sh") +
-      grid(GLYPH[rank], x + 2, y + 2, ink) + grid(GLYPH[suit], x + 3, y + 8, ink, 2);
-  }
-  function chips(x, y, n, cls, hi) {
-    let out = "";
-    for (let i = 0; i < n; i++) {
-      const cy = y - i * 3;
-      out += r(x, cy, 10, 3, "ik") + r(x + 1, cy, 8, 2, cls) + r(x + 2, cy, 2, 2, "cr") + r(x + 6, cy, 2, 2, "cr");
-    }
-    return out + r(x + 1, y - (n - 1) * 3 - 1, 8, 1, hi);
-  }
-  function holdemSvg(k, view = "0 0 80 50") {
-    const [, , w, h] = view.split(" ").map(Number);
-    return `<svg class="lc-he" viewBox="${view}" width="${w * k}" height="${h * k}" aria-hidden="true">` +
-      r(0, 0, 80, 50, "ft") +
-      r(6, 6, 68, 44, "rl") + r(4, 8, 72, 42, "rl") + r(6, 6, 68, 1, "rh") + r(4, 8, 2, 1, "rh") + r(74, 8, 2, 1, "rh") +
-      r(8, 9, 64, 41, "fm") + r(7, 10, 66, 40, "fm") + r(9, 10, 62, 1, "fh") +
-      card(25, 15, "A", "spade") + card(37, 18, "K", "heart") +
-      chips(57, 38, 4, "gd", "cr") + chips(13, 40, 2, "ac", "cr") + chips(14, 37, 1, "rd", "cr") +
-      `</svg>`;
-  }
-  function holdemArt(W, H) { return holdemSvg(Math.max(1, Math.round(Math.max(W / 80, H / 50)))); }
+  // Each game draws its own card and icon (web/<game>.card.js registers them with Ploto.gameCard).
   /** The art box on a game card, sized to the box it fills. */
   function artFor(id, W, H) {
-    if (id === "match_monsters") return mmArt(W, H);
-    if (id === "holdem") return holdemArt(W, H);
-    const g = gameById(id);
-    return `<div class="lc-init">${esc((g?.title || "?").slice(0, 2))}</div>`;
+    const art = P.gameCards[id]?.art(W, H);
+    return art || `<div class="lc-init">${esc((gameById(id)?.title || "?").slice(0, 2))}</div>`;
   }
-  /** A 48 px icon for lists (the invite sheet). */
+  /** A 48 px icon for lists (the invite sheet, Continue). */
   function iconFor(id) {
-    if (id === "match_monsters" && window.PIXELART?.monsters.ember_pup) return `<img class="px" src="${PIXELART.monsters.ember_pup.icon}" width="48" height="48" alt="">`;
-    if (id === "holdem") return holdemSvg(2, "24 14 24 24");
-    return esc((gameById(id)?.title || "?").slice(0, 2));
+    return P.gameCards[id]?.icon?.() || esc((gameById(id)?.title || "?").slice(0, 2));
+  }
+  /** Load each game's card script once (the registry says where). */
+  function loadCards() {
+    for (const g of S.games) {
+      if (!g.card || document.querySelector(`script[data-card="${CSS.escape(g.id)}"]`)) continue;
+      const sc = document.createElement("script");
+      sc.src = g.card;
+      sc.dataset.card = g.id;
+      document.body.appendChild(sc);
+    }
   }
   function paintArt() {
     for (const box of document.querySelectorAll("[data-art]")) {
       const W = box.clientWidth, H = box.clientHeight;
       if (!W || !H) continue;
-      const key = `${W}x${H}:${!!window.PIXELART}:${P.reduceMotion()}`;
+      const key = `${W}x${H}:${P.gameCards.v}:${P.reduceMotion()}`;
       if (box.dataset.painted === key) continue;
       box.dataset.painted = key;
       box.innerHTML = artFor(box.dataset.art, W, H);
     }
   }
-  // The monster sprites are big: load them after the page is up, then paint.
-  const pixelScript = document.createElement("script");
-  pixelScript.src = "/play/pixelart.js";
-  pixelScript.async = true;
-  pixelScript.onload = () => renderGames();
-  document.body.appendChild(pixelScript);
+  P.onGameCard(() => renderGames()); // a game's card arrived (or its art finished loading)
   if (window.ResizeObserver) new ResizeObserver(() => paintArt()).observe($("gameGrid"));
   P.onSettings(() => paintArt());
 
@@ -368,6 +301,7 @@
       S.gamesFailed = !Array.isArray(S.games) || !S.games.length;
       if (S.gamesFailed) S.games = [];
     } catch { if (!S.games.length) S.gamesFailed = true; }
+    loadCards();
     renderGames();
   }
   /** "Kai is playing", "Kai and Sam are playing", "Kai and 2 more are playing". */

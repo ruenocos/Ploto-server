@@ -15,6 +15,7 @@ import type { ServerConfig } from "../config/env.js";
 import { ARCHETYPES, roster } from "../game/matchmonsters/monsters.js";
 import { abilityView } from "../game/matchmonsters/engine.js";
 import { gamesView } from "../platform/games.js";
+import { GAMES } from "../games.js";
 
 export interface StatusBody {
   downtime: 0 | 1;
@@ -47,11 +48,20 @@ export function buildStatusServer(config: ServerConfig): FastifyInstance {
       return loadWebFile(file);
     });
   page("/play", "launcher.html");
-  page("/play/match-monsters", "index.html");
-  page("/play/holdem", "holdem.html");
+  for (const g of GAMES) {
+    page(g.path, g.page);
+    // The game's launcher card and list icon (web/<game>.card.js).
+    if (g.card) {
+      const file = g.card;
+      app.get(`/play/card/${g.id}.js`, async (_req, reply) => {
+        reply.header("content-type", "application/javascript; charset=utf-8");
+        return loadWebFile(file);
+      });
+    }
+  }
 
   // The game registry the launcher, invite sheet and profile read.
-  app.get("/play/games", async () => gamesView());
+  app.get("/play/games", async () => gamesView(GAMES));
 
   // The shared toolkit and style every page loads.
   app.get("/play/platform.js", async (_req, reply) => {

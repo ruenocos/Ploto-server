@@ -26,12 +26,11 @@ import { WebSocketServer, type WebSocket } from "ws";
 import type { Account } from "../accounts/accounts.js";
 import type { Services } from "../services.js";
 import { makeCode, normalizeCode } from "../platform/codes.js";
-import { GAMES, setOnlineCounter } from "../platform/games.js";
+import { setOnlineCounter } from "../platform/games.js";
+import { GAMES } from "../games.js";
 import { InviteBook } from "../platform/invites.js";
 import { LobbyRoom } from "../platform/lobbyRoom.js";
 import type { GameLobby, LobbyContext, Room } from "../platform/lobby.js";
-import { MatchMonstersLobby } from "../game/matchmonsters/lobby.js";
-import { HoldemLobby } from "../game/holdem/lobby.js";
 import type { PeerLike } from "../platform/peer.js";
 import { Peer } from "./peer.js";
 
@@ -42,7 +41,7 @@ const ROOM_IDLE_MS = 10 * 60 * 1000;
 
 /** Game lobbies to plug in, given the shared context (Hold'em adds itself here). */
 export type LobbyFactory = (ctx: LobbyContext) => GameLobby;
-export const LOBBY_FACTORIES: LobbyFactory[] = [(ctx) => new MatchMonstersLobby(ctx), (ctx) => new HoldemLobby(ctx)];
+export const LOBBY_FACTORIES: LobbyFactory[] = GAMES.map((g) => g.lobby);
 
 export class SignalingServer {
   private readonly wss: WebSocketServer;

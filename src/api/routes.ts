@@ -18,6 +18,7 @@ import { AccountError, type Account } from "../accounts/accounts.js";
 import { BALANCE_VERSION, MONSTERS } from "../game/matchmonsters/monsters.js";
 import type { Services } from "../services.js";
 import type { StatsFilter } from "../stats/history.js";
+import { GAMES } from "../games.js";
 
 export function registerApi(app: FastifyInstance, s: Services): void {
   // Turn our domain errors into clean JSON responses.
@@ -59,7 +60,7 @@ export function registerApi(app: FastifyInstance, s: Services): void {
   // Per-game stats for the launcher's Profile tab.
   app.get("/api/me/stats", async (req) => {
     const me = await auth(req);
-    const [mm, results] = await Promise.all([s.history.statsFor(me.id), s.results.statsFor(me.id)]);
+    const [mm, results] = await Promise.all([s.history.statsFor(me.id), s.results.statsFor(me.id, Object.fromEntries(GAMES.map((g) => [g.id, g.profile])))]);
     const games: Record<string, { tiles: { label: string; value: string }[]; recent: { what: string; when: string }[]; played: number; wins: number }> = {
       match_monsters: mm,
       ...results,

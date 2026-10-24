@@ -6,6 +6,7 @@
  */
 import { randomUUID } from "node:crypto";
 import type { Db } from "../db/db.js";
+import type { ProfileSpec } from "../platform/games.js";
 
 export interface ResultPlayer {
   readonly seat: number;
@@ -55,7 +56,7 @@ export class GameResults {
   }
 
   /** Profile tiles and recent games, per game the account has played. */
-  async statsFor(accountId: string): Promise<Record<string, ProfileGameStats>> {
+  async statsFor(accountId: string, profiles: Readonly<Record<string, ProfileSpec | undefined>> = {}): Promise<Record<string, ProfileGameStats>> {
     const rows = await this.db.query<{ gameId: string; place: number; stats: string; endedAt: string; seats: string; mode: string }>(
       `SELECT r.game_id AS "gameId", p.place, p.stats, r.ended_at AS "endedAt", r.mode,
               (SELECT count(*) FROM game_result_players q WHERE q.result_id = r.id) AS seats
@@ -75,12 +76,13 @@ export class GameResults {
       const wins = list.filter((r) => Number(r.place) === 1).length;
       const avg = played ? list.reduce((s, r) => s + Number(r.place), 0) / played : 0;
       const stat = (key: string) => Math.max(0, ...list.map((r) => Number((JSON.parse(r.stats || "{}") as Record<string, number>)[key] ?? 0)));
+      const spec = profiles[gameId];
       const tiles = [
-        { label: gameId === "holdem" ? "Tables" : "Games", value: String(played) },
+        { label: spec?.played ?? "Games", value: String(played) },
         { label: "Wins", value: String(wins) },
         { label: "Avg finish", value: played ? avg.toFixed(1) : "—" },
+        ...(spec?.stats ?? []).map((s) => ({ label: s.label, value: num(stat(s.key)) })),
       ];
-      if (gameId === "holdem") tiles.push({ label: "Biggest pot", value: num(stat("biggestPot")) });
       out[gameId] = {
         played,
         wins,

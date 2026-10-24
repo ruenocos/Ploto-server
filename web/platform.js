@@ -498,6 +498,16 @@
   });
   onLobby("social:inviteGone", (d) => { if (cardInv?.inviteId === d.inviteId) hideInviteCard(); });
 
+  /* ------------------------------------------------------------ game cards */
+  // A game's own launcher art and list icon (web/<game>.card.js): {art(W, H), icon()}.
+  const gameCards = { v: 0 };
+  const cardHooks = [];
+  function gameCard(id, card) {
+    gameCards[id] = card;
+    gameCards.v++;
+    for (const fn of cardHooks) fn(id);
+  }
+
   /* ------------------------------------------------------------ games registry */
   let gamesCache = null;
   const games = () => (gamesCache ??= fetch("/play/games").then((r) => r.json()).catch(() => { gamesCache = null; return []; }));
@@ -517,6 +527,6 @@
     connect, waitOpen, lobby, onLobby, onLobbyOpen, setActivity,
     get account() { return account; }, onAccount: (fn) => accountHooks.push(fn), setAccount, api, restoreAccount, claim, signInWithKey, openClaim,
     guestName, displayName, askName, ensureName,
-    games,
+    games, gameCards, gameCard, onGameCard: (fn) => cardHooks.push(fn),
   };
 })();

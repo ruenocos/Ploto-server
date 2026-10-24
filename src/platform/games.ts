@@ -1,7 +1,6 @@
 /**
- * The game registry: every game the launcher shows. A new game is one entry
- * here, its lobby module (src/game/<game>/lobby.ts) and its page (web/).
- * The launcher, the invite sheet and the profile all read this one list.
+ * What the platform knows about a game. The list itself is src/games.ts (one
+ * entry per game); the launcher, the invite sheet and the profile read it.
  */
 export interface GameInfo {
   readonly id: string;
@@ -14,14 +13,14 @@ export interface GameInfo {
   readonly maxSeats: number;
   /** Optional corner tag on the card ("NEW"). */
   readonly badge?: string;
+  /** Profile tiles from recorded results: what a game is called ("Tables") and the best-of stats to show. */
+  readonly profile?: ProfileSpec;
 }
 
-export const GAMES: readonly GameInfo[] = [
-  { id: "match_monsters", title: "Match Monsters", path: "/play/match-monsters", players: "1v1", minSeats: 2, maxSeats: 2 },
-  { id: "holdem", title: "Hold'em", path: "/play/holdem", players: "2–6 players", minSeats: 2, maxSeats: 6, badge: "NEW" },
-];
-
-export const gameById = (id: string): GameInfo | undefined => GAMES.find((g) => g.id === id);
+export interface ProfileSpec {
+  readonly played?: string;
+  readonly stats?: readonly { readonly key: string; readonly label: string }[];
+}
 
 /** Players currently in a room or queue, per game. Set by the signaling server once it's up. */
 let onlineCounter: () => Record<string, number> = () => ({});
@@ -30,7 +29,12 @@ export function setOnlineCounter(fn: () => Record<string, number>): void {
 }
 
 /** The registry as the launcher gets it: each game with its live player count. */
-export function gamesView(): (GameInfo & { online: number })[] {
+export function gamesView(games: readonly (GameInfo & { card?: string })[]): (GameInfo & { online: number; card?: string })[] {
   const counts = onlineCounter();
-  return GAMES.map((g) => ({ ...g, online: counts[g.id] ?? 0 }));
+  return games.map((g) => ({
+    id: g.id, title: g.title, path: g.path, players: g.players, minSeats: g.minSeats, maxSeats: g.maxSeats,
+    ...(g.badge ? { badge: g.badge } : {}),
+    ...(g.card ? { card: `/play/card/${g.id}.js` } : {}), // the game's launcher art (served below)
+    online: counts[g.id] ?? 0,
+  }));
 }

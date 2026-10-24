@@ -67,7 +67,8 @@ use `http://localhost:8080/play`), or deploy it (see [`docs/DEPLOY.md`](docs/DEP
 
 Each game has its own page: **Match Monsters** at `/play/match-monsters`,
 **Hold'em** at `/play/holdem`. Both lobbies are the platform's (docs/PLATFORM.md,
-"The game kit"); old `/play?room=CODE` links still work.
+"The game kit"); old `/play?room=CODE` links still work. Adding a game:
+docs/NEW_GAME.md (questionnaire, brief, `node scripts/new-game.mjs`, checklists).
 
 ### Match Monsters
 

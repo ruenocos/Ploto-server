@@ -116,8 +116,9 @@ schema and summary line, share text and pixel art.
    "players": "2–6 players", "minSeats": 2, "maxSeats": 6, "badge": "NEW", "online": 3 }]
 ```
 
-`online` = players currently in a room or queue of that game. A new game is one
-entry in `src/platform/games.ts` plus its lobby module and page.
+`online` = players currently in a room of that game; `card` is the game's own
+launcher art (`web/<game>.card.js`). A new game is one entry in `src/games.ts`
+plus its folder and page: docs/NEW_GAME.md, and `node scripts/new-game.mjs`.
 
 ## Shared client toolkit: `window.Ploto` (web/platform.js)
 

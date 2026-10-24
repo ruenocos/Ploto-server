@@ -1858,7 +1858,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     const now = S.view?.settings?.botStyle ?? kit.settings.botStyle;
     const next = now === "relaxed" ? "sharp" : "relaxed";
     return {
-      label: next === "relaxed" ? "Make bots relaxed" : "Make bots sharp",
+      label: next === "relaxed" ? "Easier bots" : "Tougher bots",
       run: async () => {
         try {
           await req("holdem:botStyle", { style: next });

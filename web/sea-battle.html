@@ -643,8 +643,10 @@
       return;
     }
     const other = side === "target" ? "mine" : "target";
-    const k = window.innerWidth >= 480 ? 2 : 1;
     const n = g.size;
+    // The overview doubles when the screen has the room for it (tall phones, desktops).
+    const spare = window.innerHeight - $("board").getBoundingClientRect().bottom - 32;
+    const k = spare >= (n * 10 + 1) * 2 ? 2 : 1;
     dock.innerHTML = `<div class="mini" style="width:${(n * 10 + 1) * k}px;height:${(n * 10 + 1) * k}px;background-image:url(${drawMini(other)})" role="img" aria-label="${other === "mine" ? "Your sea" : `${esc(rivalName())}'s sea`}"></div>` +
       `<div class="side"><div class="sea-label"><span>${other === "mine" ? "Your sea" : `${esc(rivalName())}'s sea`}</span></div>` +
       `<div class="who"><div class="nm">You<span class="pl-you">You</span></div><div class="fleet" aria-label="Your fleet">${fleetIcons(g.fleetKinds, g.yourSunk)}</div></div>` +
@@ -659,7 +661,7 @@
     const mine = g.phase === "firing" && g.turn === you();
     let title = "", text = "";
     if (g.phase === "placing") {
-      if (!g.ready[you()]) { title = "Place your fleet"; text = g.ready[1 - you()] ? `${rivalName()} is ready` : "Ships can't touch, not even at the corners"; }
+      if (!g.ready[you()]) { title = "Place your fleet"; text = g.ready[1 - you()] ? `${rivalName()} is ready` : "Ships can't touch"; }
       else { title = "Ready"; text = `Waiting for ${rivalName()}`; }
     } else if (g.phase === "firing") {
       if (mine) { title = "Your turn"; text = `Fire at ${rivalName()}'s sea`; }

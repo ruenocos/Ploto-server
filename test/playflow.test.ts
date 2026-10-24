@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { GAMES } from "../src/games.js";
 import { WebSocket } from "ws";
 import { startServer, type RunningServer } from "../src/app.js";
 import type { ServerConfig } from "../src/config/env.js";
@@ -67,7 +68,7 @@ describe("web client routes", () => {
 
   it("serves the game registry with live player counts", async () => {
     const games = (await (await fetch(`http://127.0.0.1:${port}/play/games`)).json()) as { id: string; path: string; online: number }[];
-    expect(games.map((g) => g.id)).toEqual(["match_monsters", "holdem"]);
+    expect(games.map((g) => g.id)).toEqual(GAMES.map((g) => g.id)); // every registered game, in launcher order
     expect(games.every((g) => typeof g.online === "number" && g.path.startsWith("/play/"))).toBe(true);
   });
 

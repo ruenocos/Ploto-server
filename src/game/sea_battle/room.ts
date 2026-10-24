@@ -66,7 +66,7 @@ export const DEFAULT_TIMING: SeaTiming = {
   turnMs: 20_000,
   awayMs: 30_000,
   botMs: [650, 1400],
-  botPlaceMs: [2500, 6000],
+  botPlaceMs: [1200, 3200],
   quickStartMs: 20_000,
   animScale: 1,
 };

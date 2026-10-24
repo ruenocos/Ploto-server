@@ -298,10 +298,14 @@ export abstract class LobbyRoom<S, T extends Seat = Seat> implements Room {
   start(): void {
     if (this.phase !== "lobby") throw new Error("the game has already started");
     const fill = this.rules.bots && this.fillsWithBots(this.settings);
-    const seats = this.seats.map((s) => (s.kind === "empty" || s.kind === "invited" ? (fill ? { ...this.emptySeat(), kind: "bot" as const, name: this.botName() } : this.emptySeat()) : s));
+    // Names are picked one at a time so each new bot sees the ones before it.
+    const seats = [...this.seats];
+    for (const [i, s] of seats.entries()) {
+      if (s.kind !== "empty" && s.kind !== "invited") continue;
+      seats[i] = fill ? { ...this.emptySeat(), kind: "bot" as const, name: this.botName(seats) } : this.emptySeat();
+    }
     const playing = seats.filter((s) => s.kind === "player" || s.kind === "bot").length;
     if (playing < this.rules.minPlayers) throw new Error(this.rules.bots ? "you need at least 2 players: invite someone or add a bot" : "waiting for another player");
-    // Bot names are only final once every seat is decided.
     this.seats = seats;
     this.clearForming();
     this.startsAt = null;
@@ -443,8 +447,8 @@ export abstract class LobbyRoom<S, T extends Seat = Seat> implements Room {
     this.formingTimer = null;
   }
 
-  protected botName(): string {
-    const taken = new Set(this.seats.map((s) => s.name));
+  protected botName(seats: readonly T[] = this.seats): string {
+    const taken = new Set(seats.map((s) => s.name));
     const name = BOT_NAMES.find((n) => !taken.has(`Bot ${n}`)) ?? randomUUID().slice(0, 4);
     return `Bot ${name}`;
   }

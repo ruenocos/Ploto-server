@@ -1221,16 +1221,17 @@
       function lbTitle(name) {
         return {
           home: "Match Monsters", teams: "Teams", pick: "Your team", room: "Your room",
-          searching: nav.how === "bot" ? "Practice" : nav.how === "join" ? "Joining" : "Finding a rival",
+          searching: nav.how === "bot" ? "Practice" : nav.how === "join" ? "Joining" : "Quick match", // the status line says what's happening
           monsters: "Monsters", detail: "Monster",
         }[name] || "";
       }
       /** "Step 2 of 3": the screens this route goes through (Pick adds Your team, a friend ends in Your room). */
       function lbStep(name) {
         if (pendingJoin || nav.accept || nav.how === "join") return "";
-        const seq = ["teams", ...(teamMode === "blind" ? ["pick"] : []), ...(nav.how === "friend" ? ["room"] : [])];
+        // Only the choices before playing count as steps (the room is where they lead), and one step isn't a sequence.
+        const seq = ["teams", ...(teamMode === "blind" ? ["pick"] : [])];
         const i = seq.indexOf(name);
-        return i < 0 ? "" : `Step ${i + 1} of ${seq.length}`;
+        return i < 0 || seq.length < 2 ? "" : `Step ${i + 1} of ${seq.length}`;
       }
 
       /** Draw the top screen; `dir` 1 slides it in from the right (forward), -1 from the left (back), 0 not at all. */
@@ -3387,10 +3388,11 @@
           `<div class="end-card"><div class="end-team${won ? " won" : " lost"}">${endTeam()}</div>` +
           `<div class="big">${won ? "Victory" : "Defeat"}</div>` +
           `<p>${forfeit === "them" ? "Your rival forfeited." : forfeit === "me" ? "You forfeited." : won ? "You knocked out their team." : "Your team was knocked out."}</p>` +
-          `<div class="end-stats">` +
+          // Your numbers, unless there are none to show (an early forfeit): three zeros say nothing.
+          (matchStats.dealt || matchStats.bestHit || matchStats.bestCombo ? `<div class="end-stats">` +
           [["dealt", "Damage"], ["bestHit", "Best hit"], ["bestCombo", "Best combo"]].map(([k, label]) =>
             `<div><b data-count="${matchStats[k]}">${endInfo.counted ? matchStats[k] : 0}</b><span>${label}</span></div>`).join("") +
-          `</div>` +
+          `</div>` : "") +
           `<div class="end-actions">` +
           `<button id="rematch" class="${invited ? "pulse" : ""}"${disabled ? " disabled" : ""}>${label}</button>` +
           `<div class="end-hint${invited ? " hot" : ""}">${hint}</div>` +

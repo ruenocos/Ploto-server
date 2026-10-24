@@ -318,6 +318,7 @@
     const g = cont && gameById(cont.gameId);
     const box = $("continueBox");
     box.hidden = !g;
+    $("gamesLabel").hidden = !g; // a "Games" label on the Games tab only helps when Continue sits above it
     box.innerHTML = g
       ? `<div class="pl-label">Continue</div><a class="pl-row pl-frame" href="${esc(g.path)}" style="text-decoration:none"><span class="pl-ic">${iconFor(g.id)}</span>` +
         `<span><b>${esc(g.title)}</b><small>${cont.phase === "lobby" ? `Your room · ${esc(cont.code)}` : "Game in progress"}</small></span><span class="pl-go">${CHEV}</span></a>`
@@ -671,7 +672,7 @@
       if (!st) {
         html += S.statsFailed ? `<p class="lc-note">Couldn't load your stats. <button class="flat lc-link" id="statsRetry">Try again</button></p>` : `<div class="pl-empty">Loading…</div>`;
       } else {
-        html += `<div class="lc-tiles">${tile("Played", st.totals.played)}${tile("Wins", st.totals.wins)}${S.friendsLoaded ? tile("Friends", S.friends.length) : ""}</div>`;
+        html += `<div class="lc-tiles wide">${tile("Played", st.totals.played)}${tile("Wins", st.totals.wins)}</div>`;
         if (S.games.length) {
           const pick = gameById(S.statsGame) ? S.statsGame : (S.games.find((g) => st.games[g.id]?.played) || S.games[0]).id;
           const g = st.games[pick];

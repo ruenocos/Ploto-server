@@ -81,7 +81,7 @@ export class MatchRoom extends LobbyRoom<MmSettings> {
     return parseSettings(raw, base);
   }
 
-  protected override botName(): string {
+  protected override botName(_seats?: readonly Seat[]): string {
     return "Bot";
   }
 

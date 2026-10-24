@@ -279,8 +279,12 @@
         top = `<div class="pl-codecard pl-frame"><div class="code"><small>${esc(def.nouns.code)}</small><b aria-label="${esc(def.nouns.code)} ${esc(v.code.split("").join(" "))}">${esc(v.code)}</b></div><button data-do="share">Share invite</button></div>` +
           (!sum ? "" : host && def.schema?.length ? `<button class="pl-sumline" data-do="settings"><span style="flex:1">${esc(sum)}</span><span class="edit">Edit</span></button>` : `<p class="pl-sumline">${esc(sum)}</p>`);
       }
+      // Who's in, then one open seat with its actions; the rest of the open seats are one line, not a stack of identical rows.
       const firstEmpty = seats.find((s) => s.kind === "empty")?.seat;
-      main.innerHTML = top + `<p class="pl-label">Seats · ${filled}/${seats.length}</p><div class="pl-seats">${seats.map((s) => seatRow(s, v, host, s.seat === firstEmpty)).join("")}</div>`;
+      const moreOpen = seats.filter((s) => s.kind === "empty").length - 1;
+      const rows = seats.filter((s) => s.kind !== "empty" || s.seat === firstEmpty).map((s) => seatRow(s, v, host, s.seat === firstEmpty)).join("") +
+        (moreOpen > 0 ? `<div class="pl-seat open"><div class="pl-seat-t"><span class="nm">${moreOpen} more open seat${moreOpen > 1 ? "s" : ""}</span></div></div>` : "");
+      main.innerHTML = top + `<p class="pl-label">Seats · ${filled}/${seats.length}</p><div class="pl-seats">${rows}</div>`;
       let f = "";
       if (quick) f = "";
       else if (v.startRule === "full") {

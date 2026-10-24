@@ -56,6 +56,14 @@ describe("hold'em table lobby", () => {
     const v = t.handleRequest("a", "holdem:getState", {}) as any;
     expect(v.phase).toBe("playing");
     expect(v.seats.map((s: any) => s.kind)).toEqual(["player", "player", "bot"]);
+    const full = table({ settings: { ...DEFAULT_SETTINGS, seats: 6 } });
+    full.reserve({ peerId: "a", name: "Ann", accountId: null });
+    full.reserve({ peerId: "b", name: "Ben", accountId: null });
+    full.start();
+    const bots = full.seated().filter((s) => s.kind === "bot").map((s) => s.name);
+    expect(bots).toHaveLength(4);
+    expect(new Set(bots).size).toBe(4); // every bot has its own name
+    full.dispose();
     expect(() => t.reserve({ peerId: "c", name: "Cat", accountId: null })).toThrow(/already started/);
     t.dispose();
   });

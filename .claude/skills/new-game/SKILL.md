@@ -47,20 +47,25 @@ for v1) and get a yes before code.
 
 ## 3. Build
 
-1. `node scripts/new-game.mjs <id> "<Title>"`, then `npm test` and open
-   `/play/<slug>`: the placeholder must already work end to end.
+1. `node scripts/new-game.mjs <id> "<Title>"`, then `npm test`,
+   `npm run build && npm run e2e -- --game <id>`, and open `/play/<slug>`: the
+   placeholder must already work end to end.
 2. Engine (pure, seeded) with unit tests and a simulation test of thousands of
    random games checking invariants. Then the bot.
 3. Room: settings, `LobbyRules`, `startGame`, `gameRequest`, per-seat views
    with redaction, `{view, events}` updates, `finish()`. Lobby: settings per
    room kind, `record`, the registry's `profile` tiles and `players` line.
-4. Screen: replace the template's game screen; animate events in order from
-   what's on screen, settle on each event's view, catch up when behind.
-5. Feel pass: the signature moment first, then motion (steps() easing, whole
-   pixels, reduced motion), sound and haptics via `Ploto.cue`.
+4. Screen: replace the template's game screen; updates through
+   `Ploto.playQueue` (animate from what's on screen, settle on each view, catch
+   up when behind). Keep the kit's menu, How to play (`def.rules`) and result
+   (`kit.renderResult`); fill them with the game's rows, steps, art and stats.
+5. Feel pass: the signature moment first, then motion (a `Ploto.poses` map of
+   Animate.css presets, steps() for UI, whole pixels, reduced motion), sound
+   (`src/game/<id>/sounds.json` in the game's own words, `npm run sounds`) and
+   haptics via `Ploto.cue`. Update `e2e/games/<id>.mjs` as the screens change.
 6. Art: launcher card (`web/<slug>.card.js`, to docs/STYLE.md "Launcher cards":
-   still, 80×50 grid, a collage: the star, what you play with, one piece of interface only this game has; icon = a crop of the star), home banner using the game's own
-   poses and timings, in-game art. PixelLab: the key is in the scratchpad
+   still, 80×50 grid, a collage: the star, what you play with, one piece of interface only this game has; icon = a crop of the star), home banner to "Home banners" (`Ploto.banner`,
+   the card's pieces moving with the game's own poses), in-game art. PixelLab: the key is in the scratchpad
    (`.pixellab_key`), never in the repo; review candidates with the user.
 
 Ship in milestones (playable rules, then the screen, then feel, then art),
@@ -70,8 +75,9 @@ user screenshots at each milestone and ask before big direction changes.
 ## 4. Checks before every push
 
 - `npm test`, `npm run typecheck`.
-- A Playwright run through every lobby path and a full game with zero console
-  errors (see docs/NEW_GAME.md, Ship), plus Match Monsters' and Hold'em's flows.
-- Screenshots at 360 / 390 / 430 px of every screen, compared with the last set.
+- `npm run build && npm run e2e`: every game's lobby paths, a full game and a
+  rematch, zero console errors.
+- `npm run e2e -- --screens <new> --compare <last>`: 360 / 390 / 430 px, look
+  at every diff it lists.
 - The consistency and own-feel checklists in docs/NEW_GAME.md, item by item.
 - Copy: STYLE.md Voice (no exclamation marks, no em dashes, plain words).

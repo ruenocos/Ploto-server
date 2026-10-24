@@ -14,6 +14,7 @@
  *                        seats with invite / add bot / remove, start or "waiting for"
  *   invitePicker, share, editSettings, settings fields from the game's schema
  *   backGuard(…)         the phone's back button walks the game's screens
+ *   menu, rules, renderResult  the in-game menu, How to play and the result screen, the same in every game
  *
  * What happens once the game starts is the game's own business.
  */
@@ -22,6 +23,7 @@
   const P = window.Ploto;
   const { esc, local, toast, cue } = P;
 
+  const ordinal = (n) => { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
   const AV_COLORS = ["#6a4fe0", "#36b65b", "#d8364b", "#a8740e", "#4a5486", "#33267d"];
 
   /**
@@ -40,6 +42,7 @@
    * @param {string} [def.fullText]        rooms that start when full: the waiting line ("Starts as soon as your friend joins")
    * @param {(seat: object, view: object) => string|null} [def.seatNote]  a seat's note instead of "Ready"
    * @param {{bot?: () => string, remove?: () => string, chev?: () => string}} [def.art]
+   * @param {() => {steps: string[], extra?: string}} [def.rules]  how to play: short steps (trusted markup) and anything after them
    */
   function lobbyKit(def) {
     const settingsKey = `${def.gameId}.settings`;
@@ -60,6 +63,7 @@
     const m = (name) => def.prefix + name;
     kit.saveSettings = () => local.set(settingsKey, kit.settings);
     kit.link = (code) => `${location.origin}${def.path}?code=${encodeURIComponent(code)}`;
+    kit.ordinal = ordinal; // 1st, 2nd, 3rd: places in the game's own screens
     kit.isHost = (v) => !!v && v.host >= 0 && v.host === v.you;
     const Room = def.nouns.room[0].toUpperCase() + def.nouns.room.slice(1);
     kit.title = (v) => (!v ? Room : v.mode === "quick" ? def.nouns.quick : kit.isHost(v) ? def.nouns.yours : Room);
@@ -173,6 +177,12 @@
       catch { toast(url, 4000); }
     };
     /** Pick an online friend for a seat in this room (or share the link instead). */
+    let picker = null; // the open picker, so a friend who takes their seat reads "Here", not "Sent"
+    const markSeated = (v) => {
+      if (!picker || !picker.list.isConnected || picker.roomId !== v.roomId) return;
+      const seated = new Set((v.seats || []).map((s) => s.name));
+      for (const b of picker.list.querySelectorAll("[data-fn]")) if (seated.has(b.dataset.fn)) { b.disabled = true; b.textContent = "Here"; }
+    };
     kit.invitePicker = async (view) => {
       if (!P.account) {
         const el = P.sheet(`<h2>Invite a friend</h2><p class="muted" style="text-align:center;margin:0">Claim a username to add friends and invite them. Or share the ${esc(def.nouns.room)} link.</p>` +
@@ -198,6 +208,7 @@
         return `<div class="pl-seat pl-frame">${kit.avatar({ seat: f.username.length, name: f.username, kind: "player" })}<div class="pl-seat-t"><span class="nm ell">${esc(f.username)}</span><span class="note">${esc(f.activity?.label || "Online")}</span></div>` +
           `<button class="small" data-fid="${esc(f.id)}" data-fn="${esc(f.username)}"${here ? " disabled" : ""}>${here ? "Here" : "Invite"}</button></div>`;
       }).join("");
+      picker = { list, roomId: view.roomId };
       list.onclick = async (e) => {
         const b = e.target.closest("[data-fid]");
         if (!b) return;
@@ -257,6 +268,7 @@
      * `foot`), wired to the room through `req(method, data)`.
      */
     kit.renderRoom = (v, opts) => {
+      markSeated(v);
       const { main, foot, req } = opts;
       last = { view: v, opts };
       const host = kit.isHost(v);
@@ -320,6 +332,104 @@
       if (el && v) el.textContent = kit.quickText(v);
     };
 
+    /* ------------------------------------------------------------ the game's own screens, drawn the same way */
+    /** How to play, from the game's `rules` (steps, then anything extra like a hand ranking). */
+    kit.rules = () => {
+      const r = def.rules?.();
+      if (!r) return;
+      const el = P.sheet(`<h2>How to play</h2><div class="pl-rules"><div class="steps">${r.steps.map((x) => `<p>${x}</p>`).join("")}</div>${r.extra || ""}</div>` +
+        `<div class="pl-actions"><button class="ghost" data-close>Close</button></div>`, { label: "How to play" });
+      el.querySelector("[data-close]").onclick = () => P.closeSheet();
+    };
+    /**
+     * The in-game menu, the same in every game: Share invite (in a room's lobby),
+     * How to play, Settings, then the game's own rows (the last one is the way
+     * out, e.g. Leave table or Forfeit match), and Close.
+     *   items: [{ label, run, danger? }]
+     */
+    kit.menu = ({ view = null, items = [] } = {}) => {
+      const rows = [
+        ...(view?.phase === "lobby" && view.mode !== "quick" ? [{ label: "Share invite", run: () => kit.share(view.code) }] : []),
+        ...(def.rules ? [{ label: "How to play", run: kit.rules }] : []),
+        { label: "Settings", run: () => P.openSettings() },
+        ...items,
+      ];
+      const el = P.sheet(`<h2>Menu</h2><div class="pl-actions">` +
+        rows.map((r, i) => `<button class="${r.danger ? "danger" : "ghost"}" data-row="${i}">${esc(r.label)}</button>`).join("") +
+        `<button class="ghost" data-row="close">Close</button></div>`, { label: "Menu" });
+      el.onclick = (e) => {
+        const b = e.target.closest("[data-row]");
+        if (!b) return;
+        if (b.dataset.row === "close") return P.closeSheet();
+        P.closeSheet(true);
+        rows[Number(b.dataset.row)].run();
+      };
+    };
+    /** Who has asked for a rematch, as a line, from the room's lobby view. */
+    const rematchState = (view) => {
+      const me = view?.seats?.[view.you]?.name;
+      const others = (view?.rematch?.players || []).filter((n) => n !== me);
+      if (!others.length) return null;
+      const names = others.length === 1 ? others[0] : `${others.slice(0, -1).join(", ")} and ${others.at(-1)}`;
+      return others.length === 1 ? `${names} wants a rematch` : `${names} are in`;
+    };
+    /**
+     * The result, the same in every game: the game's art (`hero`), a title and a
+     * line, the standings, its stat tiles (numbers count up with countResult),
+     * then Rematch and the way back. The rematch button follows the room: it
+     * offers to join when someone has asked. `actions` puts the buttons in their
+     * own element (a sticky footer); `key` (the room) marks a new game's result.
+     */
+    kit.renderResult = (root, { hero = "", title, sub = "", win = false, standings = null, tiles = null, view = null, rematchHint = "",
+      blocked = "", extra = "", onRematch, onLeave, leaveLabel = "Back to lobby", actions = null, counted = false, key = "" }) => {
+      const asked = rematchState(view);
+      const head = `<div class="pl-res-head${win ? " win" : ""}">${hero ? `<div class="pl-res-hero">${hero}</div>` : ""}<h2>${esc(title)}</h2>${sub ? `<p>${esc(sub)}</p>` : ""}</div>`;
+      const list = standings?.length ? `<ol class="pl-standings">${standings.map((r) =>
+        `<li class="pl-frame${r.place === 1 ? " first" : ""}${r.you ? " me" : ""}"><span class="pl">${esc(ordinal(r.place).toUpperCase())}</span>` +
+        `<span class="nm"><span class="ell">${esc(r.name)}</span>${r.you ? `<span class="pl-you">You</span>` : ""}${r.bot ? `<span class="pl-bot">Bot</span>` : ""}</span>` +
+        `<span class="note">${esc(r.note || "")}</span></li>`).join("")}</ol>` : "";
+      const tileHTML = tiles?.length ? `<div class="pl-tiles">${tiles.map((t) => {
+        const n = typeof t.value === "number" ? t.value : null;
+        return `<div class="pl-frame"><small>${esc(t.label)}</small><b${n !== null ? ` data-count="${n}"` : ""}>${esc(n !== null && !counted ? 0 : t.format ? t.format(t.value) : t.value)}</b></div>`;
+      }).join("")}</div>` : "";
+      const label = blocked ? "Rematch" : asked ? "Join rematch" : "Rematch";
+      const note = blocked || asked || rematchHint;
+      const acts = `<button class="big" data-res="rematch"${blocked ? " disabled" : ""}>${label}</button>` +
+        `<p class="pl-res-note${asked && !blocked ? " hot" : ""}">${esc(note)}</p><button class="ghost" data-res="leave">${esc(leaveLabel)}</button>`;
+      const html = `<div class="pl-result">${head}${list}${tileHTML}${actions ? "" : `<div class="pl-res-acts">${acts}</div>`}${extra}</div>`;
+      // Redrawn on every room update: only touch the page when something changed (no replayed animations).
+      if (root._resSig === html + acts) return;
+      const fresh = root._resKey !== key || !root.querySelector(".pl-result"); // a new game's result (key: its room)
+      root._resKey = key;
+      root._resSig = html + acts;
+      root.innerHTML = html;
+      if (actions) actions.innerHTML = acts;
+      // Numbers count up once (countResult); a later redraw shows them at their value.
+      root._needsCount = fresh && !counted;
+      if (!root._needsCount) for (const b of root.querySelectorAll("[data-count]")) b.textContent = Number(b.dataset.count).toLocaleString("en-US");
+      const wire = (scope) => {
+        scope.querySelector('[data-res="rematch"]').onclick = async (e) => {
+          const b = e.currentTarget;
+          b.disabled = true;
+          try { await onRematch(); } finally { if (b.isConnected) b.disabled = !!blocked; }
+        };
+        scope.querySelector('[data-res="leave"]').onclick = () => onLeave();
+      };
+      wire(actions || root);
+      if (asked && !blocked) P.playPreset((actions || root).querySelector('[data-res="rematch"]'), "pulse");
+    };
+    /** Count the result's numbers up, one tile after another. */
+    kit.countResult = async (root) => {
+      if (!root._needsCount) return;
+      root._needsCount = false;
+      for (const el of root.querySelectorAll("[data-count]")) {
+        const to = Number(el.dataset.count);
+        await P.countUp(el, to, { format: (v) => v.toLocaleString("en-US") });
+        if (to > 0) P.playPreset(el, "pulse", { speed: "faster" });
+        await P.sleep(P.reduceMotion() ? 0 : 120);
+      }
+    };
+
     /* ------------------------------------------------------------ joining by code */
     /** What a code leads to, a name, then the seat. Returns the seat, or null if they backed out. */
     kit.join = async (code, { wait } = {}) => {
@@ -330,6 +440,8 @@
       return kit.seat("join", { code });
     };
 
+    // Sounds: this page's game set first, Ploto's own after (web/sounds.js).
+    window.MM_FEEDBACK?.setGame?.(def.gameId);
     return kit;
   }
 

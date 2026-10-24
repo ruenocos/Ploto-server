@@ -1,0 +1,8 @@
+{
+  "about": "__TITLE__'s sounds, named in its own words (docs/STYLE.md, Sound and haptics). Ploto's set (src/platform/sounds.json: select, ready, turn) covers the shared screens. jsfxr stock presets with a seed; vol is relative (0..1), buzz a vibration pattern in ms. TEMPLATE: tune these by ear, add one per game moment. Run npm run sounds after editing.",
+  "set": "__ID__",
+  "cues": {
+    "tap": { "preset": "blipSelect", "seed": 7, "vol": 0.3, "buzz": 15 },
+    "win": { "preset": "powerUp", "seed": 2, "vol": 0.8, "buzz": [60, 40, 60, 40, 120] }
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "about": "Hold'em's sounds: cards, chips, checks and folds, blinds, busting out, winning. They start from the sounds the table used before it had its own set; tune the presets and seeds by ear. Run npm run sounds after editing.",
+  "set": "holdem",
+  "cues": {
+    "card": {
+      "preset": "click",
+      "seed": 5,
+      "vol": 0.4,
+      "buzz": 25
+    },
+    "chips": {
+      "preset": "pickupCoin",
+      "seed": 7,
+      "vol": 0.45,
+      "buzz": 30
+    },
+    "check": {
+      "preset": "blipSelect",
+      "seed": 3,
+      "vol": 0.35,
+      "buzz": 20
+    },
+    "fold": {
+      "preset": "blipSelect",
+      "seed": 3,
+      "vol": 0.35,
+      "buzz": 20
+    },
+    "blinds": {
+      "preset": "powerUp",
+      "seed": 11,
+      "vol": 0.5,
+      "buzz": [
+        40,
+        50,
+        40
+      ]
+    },
+    "bust": {
+      "preset": "hitHurt",
+      "seed": 4,
+      "vol": 0.6,
+      "buzz": 60
+    },
+    "out": {
+      "preset": "explosion",
+      "seed": 13,
+      "vol": 0.7,
+      "buzz": 200
+    },
+    "win": {
+      "preset": "powerUp",
+      "seed": 21,
+      "vol": 0.7,
+      "buzz": [
+        60,
+        70,
+        60,
+        70,
+        160
+      ]
+    },
+    "allIn": {
+      "preset": "laserShoot",
+      "seed": 2,
+      "vol": 0.6,
+      "buzz": 50
+    },
+    "allInBig": {
+      "preset": "explosion",
+      "seed": 9,
+      "vol": 0.7,
+      "buzz": [
+        80,
+        40,
+        120
+      ]
+    }
+  }
+}

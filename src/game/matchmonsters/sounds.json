@@ -1,0 +1,16 @@
+{
+  "about": "Match Monsters' sounds: gems, moves, hits, evolution. Run npm run sounds after editing.",
+  "set": "match_monsters",
+  "cues": {
+    "swap": { "preset": "click", "seed": 5, "vol": 0.4, "buzz": 25 },
+    "match": { "preset": "pickupCoin", "seed": 7, "vol": 0.45, "buzz": 30 },
+    "ready": { "preset": "powerUp", "seed": 11, "vol": 0.5, "buzz": [40, 50, 40] },
+    "cast": { "preset": "laserShoot", "seed": 2, "vol": 0.6, "buzz": 50 },
+    "hit": { "preset": "hitHurt", "seed": 4, "vol": 0.6, "buzz": 60 },
+    "bigHit": { "preset": "explosion", "seed": 9, "vol": 0.7, "buzz": [80, 40, 120] },
+    "heal": { "preset": "synth", "seed": 6, "vol": 0.45, "buzz": 35 },
+    "evolve": { "preset": "powerUp", "seed": 21, "vol": 0.7, "buzz": [50, 60, 50, 60, 140] },
+    "ko": { "preset": "explosion", "seed": 13, "vol": 0.7, "buzz": 200 },
+    "win": { "preset": "powerUp", "seed": 21, "vol": 0.7, "buzz": [60, 70, 60, 70, 160] }
+  }
+}

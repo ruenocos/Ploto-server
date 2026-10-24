@@ -129,7 +129,8 @@
   }
   const sheetOpen = () => !!$("plScrim") && !$("plScrim").classList.contains("hidden");
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && sheetOpen()) { e.preventDefault(); closeSheet(); }
+    // Escape closes the sheet, and only that: the page's own "Escape = back" never sees it.
+    if (e.key === "Escape" && sheetOpen()) { e.preventDefault(); e.stopPropagation(); closeSheet(); return; }
     // Keep Tab inside an open sheet.
     if (e.key === "Tab" && sheetOpen()) {
       const box = $("plScrim").firstElementChild;

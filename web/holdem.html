@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#121626">
 <title>Hold'em · Ploto</title>
 <link rel="stylesheet" href="/play/platform.css">
+<link rel="stylesheet" href="/play/animate.min.css">
 <style>
 /* =====================================================================
  * Hold'em. Shared tokens and components come from platform.css (pixel
@@ -99,8 +100,6 @@ body { overscroll-behavior: none; }
 .t-head .icon-btn { min-width: 44px; height: 44px; padding: 0 12px 2px; display: inline-grid; place-items: center; }
 #felt { position: relative; min-height: 0; overflow: visible; }
 #felt canvas.oval { position: absolute; image-rendering: pixelated; pointer-events: none; }
-#felt.nudge { animation: nudge 0.24s steps(4); }
-@keyframes nudge { 25% { transform: translate(-4px, 2px); } 50% { transform: translate(4px, -2px); } 75% { transform: translate(-2px, 0); } }
 .seat { position: absolute; width: 84px; translate: -50% -38px; display: grid; justify-items: center; z-index: 2; transition: opacity 0.2s steps(3); }
 .seat .ring { padding: 2px; position: relative; z-index: 1; --n: 4px;
   clip-path: polygon(0 var(--n), var(--n) var(--n), var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n), 100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%, var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n))); }
@@ -198,10 +197,6 @@ body { overscroll-behavior: none; }
 #felt.flash::before { content: ""; position: absolute; inset: 0; z-index: 5; pointer-events: none; background: rgba(216, 54, 75, 0.22); animation: flashOut 0.3s steps(3) forwards; }
 @keyframes flashOut { to { opacity: 0; } }
 .seat.urgent .ring { background: var(--c-bad-hi) !important; }
-.me.jolt, .seat.jolt { animation: jolt 0.24s steps(3); }
-@keyframes jolt { 33% { transform: translateX(-2px); } 66% { transform: translateX(2px); } }
-.seat.bust { animation: bust 0.5s steps(5); }
-@keyframes bust { 20% { transform: translateX(-3px); } 40% { transform: translateX(3px); } 60% { transform: translateY(4px); } }
 .card.shine::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 38%, rgba(255, 236, 150, 0.9) 46%, rgba(255, 255, 255, 0.95) 50%, rgba(255, 236, 150, 0.9) 54%, transparent 62%) no-repeat;
   background-size: 300% 100%; background-position: 130% 0; animation: shine 0.56s steps(7) var(--sd, 0s) both; }
 @keyframes shine { to { background-position: -30% 0; } }
@@ -234,34 +229,14 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
 .rs-go { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
 
 /* ---- rules, menu ---- */
-.rules p { margin: 0; font: 400 var(--fs-m)/1.4 var(--f-text); }
-.rules ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
-.rules li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px 8px; background: var(--c-well); box-shadow: inset 0 var(--px) 0 var(--c-ink); }
-.rules li span { font: 600 var(--fs-s)/1.2 var(--f-text); }
-.rules li .cs { display: flex; gap: 2px; }
-.rules .steps { display: grid; gap: 8px; }
-.menu-list { display: grid; gap: 8px; }
+.hands { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.hands li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px 8px; background: var(--c-well); box-shadow: inset 0 var(--px) 0 var(--c-ink); }
+.hands li span { font: 600 var(--fs-s)/1.2 var(--f-text); }
+.hands li .cs { display: flex; gap: 2px; }
 
 /* ---- result ---- */
-.res-head { display: grid; justify-items: center; gap: 8px; text-align: center; padding-top: 8px; }
-.res-head h1 { margin: 0; font-size: var(--fl-3); line-height: 1.1; color: var(--c-gold); text-shadow: var(--px) var(--px) 0 var(--c-gold-lo); }
-.res-head p { margin: 0; color: var(--c-mute); font: 400 var(--fs-m)/1.2 var(--f-text); }
-.res-head .trophy { animation: pop 0.36s steps(4); }
+.pl-res-hero .trophy { animation: pop 0.36s steps(4); }
 @keyframes pop { from { transform: translateY(-16px) scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
-.standings { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
-.standings li { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 6px 10px 8px; }
-.standings .pl { min-width: 40px; flex: none; font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-mute); }
-.standings li.first .pl { color: var(--c-gold); }
-.standings li.first { border-color: var(--c-gold); }
-.standings li.me { background: color-mix(in srgb, var(--c-panel) 80%, var(--c-accent)); border-color: var(--c-accent-hi); }
-.standings .nm { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; font: 600 var(--fs-m)/1.2 var(--f-text); }
-.standings .note { flex: none; font: 400 var(--fs-s)/1 var(--f-text); color: var(--c-mute); }
-.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.tiles > div { display: grid; justify-items: center; align-content: center; gap: 6px; padding: 10px 6px 12px; text-align: center; min-height: 72px; }
-.tiles small { font: 700 var(--fs-xs)/1.1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-mute); }
-.tiles b { font: 700 var(--fl-1)/1.2 var(--f-label); color: var(--c-cream); }
-.rm-note { margin: 0; text-align: center; font: 400 var(--fs-s)/1.2 var(--f-text); color: var(--c-mute); }
-.rm-note:empty { display: none; }
 
 /* ---- wait ---- */
 .wait { min-height: 60dvh; display: grid; place-content: center; justify-items: center; gap: 16px; text-align: center; color: var(--c-mute); }
@@ -349,11 +324,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
 <!-- 6. Result -->
 <section class="scr pl-flow" id="scrResult" hidden>
   <main class="pl-view" id="resMain"></main>
-  <div class="pl-foot"><div class="pl-foot-in">
-    <button class="big" id="rematchBtn">Rematch</button>
-    <p class="rm-note" id="rmNote"></p>
-    <button class="ghost" id="resLeave">Leave table</button>
-  </div></div>
+  <div class="pl-foot"><div class="pl-foot-in" id="resFoot"></div></div>
 </section>
 
 <div id="fx" aria-hidden="true"></div>
@@ -365,6 +336,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
 <script src="/play/icons.js"></script>
 <script src="/play/cards.js"></script>
 <script src="/play/platform.js"></script>
+<script src="/play/motion.js"></script>
 <script src="/play/lobbykit.js"></script>
 <script>
 (() => {
@@ -642,7 +614,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     sock: null,
     view: null,          // the last TableView applied
     M: null,             // what the table currently shows (a TableView being animated toward the next one)
-    queue: [], pumping: false, anim: false, speed: 1, gen: 0,
+    anim: false, speed: 1, gen: 0,
     ready: false,        // initial getState done
     leaving: false, retry: 0, retryTimer: null,
     tags: {},            // seat -> last action label this street
@@ -713,7 +685,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     const b = $("barBack");
     b.innerHTML = px("back", 2);
     $("barAct").innerHTML = name === "home" ? `<button class="ghost small" id="rulesBtn">Rules</button>` : "";
-    if (name === "home") $("rulesBtn").onclick = openRules;
+    if (name === "home") $("rulesBtn").onclick = kit.rules;
   }
   /** Back to the launcher: a step back when we came from it (no extra history entry), else open it. */
   function toLauncher() {
@@ -730,7 +702,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   });
   P.setInviteBusy(() => !!S.room && S.view?.phase === "playing");
   window.addEventListener("keydown", (e) => {
-    if (e.key !== "Escape" || P.sheetOpen() || e.target.matches?.("input")) return;
+    if (e.key !== "Escape" || e.defaultPrevented || P.sheetOpen() || e.target.matches?.("input")) return;
     if (screenNow() === "table") return openMenu();
     if (cur() !== "home") back();
   });
@@ -758,46 +730,50 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     schema: SCHEMA, defaults: DEFAULTS, summary,
     shareText: (code) => `Join my Hold'em table on Ploto. Code ${code}`,
     quickNote: "Bots fill the empty seats",
+    rules: () => holdemRules(),
     art: { bot: () => px("bot", 2), remove: () => px("x", 2), chev: () => px("chev", 2) },
   });
 
   /* ================================================================ 1. home */
-  let heroDone = false;
   function renderHome() {
     for (const s of document.querySelectorAll("[data-chev]")) s.innerHTML = px("chev", 2);
     for (const s of document.querySelectorAll("[data-ic]")) if (!s.firstChild) s.innerHTML = ICON_ART[s.dataset.ic]();
-    drawHero();
+    heroBanner.paint();
   }
-  function drawHero() {
-    const hero = $("hero");
-    const r = hero.getBoundingClientRect();
-    if (!r.width) return;
-    if (!hero._built) {
-      hero._built = true;
-      hero.innerHTML = `<canvas></canvas><div class="hero-stack l">${stack(5, "red")}</div><div class="hero-stack r" style="display:flex;gap:2px;align-items:flex-end">${stack(3, "gold")}${stack(6, "blue")}</div><div class="dbtn">D</div><div class="hero-board"></div>`;
-    }
-    const cv = hero.querySelector("canvas");
-    paintTable(cv, r.width + 24, r.height * 1.5 + 8);
-    cv.style.left = "-12px"; cv.style.top = Math.round(r.height * 0.16) + "px";
-    const cards = [{ rank: 14, suit: "s" }, { rank: 13, suit: "s" }, { rank: 12, suit: "s" }, { rank: 11, suit: "s" }, { rank: 10, suit: "s" }];
-    const boardEl = hero.querySelector(".hero-board");
-    const bw = snap(clamp(r.width * 0.11, 38, 48));
-    hero.style.setProperty("--bw", bw + "px"); hero.style.setProperty("--bh", snap(bw * 1.4) + "px");
-    if (heroDone) return;
-    heroDone = true;
-    if (RM()) { boardEl.innerHTML = cards.map((c) => cardHTML(c, "md")).join(""); return; }
-    boardEl.innerHTML = cards.map(() => cardHTML(null, "md")).join("");
-    [...boardEl.children].forEach((el, i) => {
-      el.style.opacity = "0";
-      setTimeout(async () => {
-        el.style.opacity = "";
-        await el.animate([{ transform: "translateY(-24px)" }, { transform: "none" }], { duration: 160, easing: "steps(4, end)" }).finished;
-        await sleep(240 - i * 20);
-        await flipEl(el, cardHTML(cards[i], "md"), 1);
-        if (i === 4) cue("swap", { vol: 0.25 });
-      }, 200 + i * 90);
-    });
-  }
+  /**
+   * Home's banner (docs/STYLE.md, Home banners; Ploto.banner): the table close up with a royal
+   * flush. The cards drop in (stock bounceInDown, like Match Monsters' gems) and flip; then
+   * now and then a chip stack hops. Reduced motion shows the flush face up.
+   */
+  const ROYAL = [{ rank: 14, suit: "s" }, { rank: 13, suit: "s" }, { rank: 12, suit: "s" }, { rank: 11, suit: "s" }, { rank: 10, suit: "s" }];
+  const heroBanner = P.banner($("hero"), {
+    draw(hero, W, H) {
+      if (!hero._built) {
+        hero._built = true;
+        hero.innerHTML = `<canvas></canvas><div class="hero-stack l">${stack(5, "red")}</div><div class="hero-stack r" style="display:flex;gap:2px;align-items:flex-end">${stack(3, "gold")}${stack(6, "blue")}</div><div class="dbtn">D</div><div class="hero-board"></div>`;
+        hero.querySelector(".hero-board").innerHTML = ROYAL.map((c) => cardHTML(RM() ? c : null, "md")).join("");
+      }
+      const cv = hero.querySelector("canvas");
+      paintTable(cv, W + 24, H * 1.5 + 8);
+      cv.style.left = "-12px"; cv.style.top = Math.round(H * 0.16) + "px";
+      const bw = snap(clamp(W * 0.11, 38, 48));
+      hero.style.setProperty("--bw", bw + "px"); hero.style.setProperty("--bh", snap(bw * 1.4) + "px");
+    },
+    intro(hero) {
+      [...hero.querySelector(".hero-board").children].forEach((el, i) => {
+        el.style.visibility = "hidden";
+        setTimeout(async () => {
+          el.style.visibility = "";
+          await P.playPreset(el, "bounceInDown", { speed: "faster" });
+          await sleep(240 - i * 20);
+          await flipEl(el, cardHTML(ROYAL[i], "md"), 1);
+          if (i === 4) cue("card", { vol: 0.25 });
+        }, 200 + i * 90);
+      });
+    },
+    beat: (hero, n) => P.playPreset(hero.querySelectorAll(".hero-stack")[n % 2], "bounce", { speed: "fast" }),
+    every: 4200,
+  });
   kit.home($("scrHome"), {
     onMode: (m) => {
       if (m === "host") return go("host");
@@ -915,7 +891,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       S.gen++;
       S.retry = 0;
       S.ready = true;
-      S.queue = [];
+      Q.clear();
       S.resultReady = view.phase === "over";
       // A table that dealt the moment we sat down (practice): play that first deal from an empty table.
       const fresh = early.findIndex((u) => u.events?.[0]?.type === "handStart");
@@ -949,23 +925,20 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     S.view = null;
     S.lobby = null;
     S.M = null;
-    S.queue = [];
+    Q.clear();
     P.forgetRoom("holdem");
     if (S.raiseOpen) P.closeSheet();
   }
   const req = (method, data) => (S.sock && S.sock.readyState === OPEN ? S.sock.request(method, data) : Promise.reject(new Error("not connected")));
 
-  function enqueue(u) { S.queue.push(u); pump(); }
-  async function pump() {
-    if (S.pumping) return;
-    S.pumping = true;
-    try {
-      while (S.queue.length) {
-        const u = S.queue.shift();
-        try { await play(u); } catch (e) { console.error(e); S.anim = false; applyView(u.view); }
-      }
-    } finally { S.pumping = false; }
-  }
+  // Updates play one after another (Ploto's play queue, web/motion.js): each animates its events from
+  // what's on the table, then settles on its view; coming back to the tab skips to the latest state.
+  const Q = P.playQueue({
+    run: (u) => play(u),
+    onError: (e, u) => { console.error(e); S.anim = false; applyView(u.view); },
+    onReturn: (items) => [{ view: items[items.length - 1].view, events: [] }],
+  });
+  const enqueue = (u) => Q.add(u);
 
   /** Settle on a view: it becomes what the table shows. */
   function applyView(view) {
@@ -1007,14 +980,14 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     M.pot = (M.pots || []).reduce((a, p) => a + p.amount, 0);
     S.M = M;
     S.anim = true;
-    S.speed = S.queue.length > 1 ? 0.45 : 1;
+    S.speed = Q.backlog ? 0.45 : 1;
     if (S.raiseOpen) P.closeSheet();
     show(0);
     renderTable(M);
     for (const e of events) {
       const fn = EV[e.type];
       if (fn) await fn(e, M, view);
-      if (S.queue.length > 2) S.speed = 0.3; // falling behind: catch up
+      if (Q.backlog > 1) S.speed = 0.3; // falling behind: catch up
     }
     S.anim = false;
     if (gen !== S.gen) return; // reconnected meanwhile: a fresher state is already on screen
@@ -1422,7 +1395,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       if (on) bar.firstChild.style.width = snap(frac * 80) / 80 * 100 + "%";
     }
     const mine = M.toAct === M.you && !!M.legal && !S.anim;
-    if (tickNow && mine) { cue("select", { vol: 0.35, pitch: 1.5 }); pulse($("me"), "jolt"); }
+    if (tickNow && mine) { cue("select", { vol: 0.35, pitch: 1.5 }); pose($("me"), "tick"); }
     const mb = $("meBar");
     mb.classList.toggle("on", mine && !!S.clock);
     mb.classList.toggle("low", !!(mine && low));
@@ -1504,7 +1477,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     const sum = bets.reduce((a, s) => a + s.bet, 0);
     for (const s of bets) s.bet = 0;
     renderSeats(M, M._A);
-    cue("match", { vol: 0.4 });
+    cue("chips", { vol: 0.4 });
     await Promise.all(from.map(({ s, p, amt }, i) => chips(M, p, to, amt, { color: s.allIn ? "red" : "gold", dur: 220, delay: i * 35, max: 4 })));
     M.pot = (M.pot || 0) + sum;
     renderCenter(M);
@@ -1519,11 +1492,17 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     if (RM()) return;
     await sleep(T(130));
   }
-  function nudge() {
-    if (RM()) return;
-    const f = $("felt");
-    f.classList.remove("nudge"); void f.offsetWidth; f.classList.add("nudge");
-  }
+  /**
+   * The table's body language: which stock Animate.css preset each moment plays
+   * (Ploto's animation library, web/motion.js), like Match Monsters' POSES.
+   */
+  const pose = P.poses({
+    tick: { preset: "headShake", speed: "faster" }, // your clock ticking down
+    bust: { preset: "shakeX", speed: "faster" },    // a seat busting out
+    nudge: { preset: "shakeX", speed: "faster" },   // a big all-in shaking the table
+    win: { preset: "tada", speed: "fast" },          // a seat taking a pot
+  });
+  const nudge = () => pose($("felt"), "nudge");
   /** Re-run a one-shot CSS animation class on an element. */
   function pulse(el, cls) {
     if (!el || RM()) return;
@@ -1537,7 +1516,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     const n = Math.min(max, chipCount(amount, M.blinds?.bb));
     return Promise.all(Array.from({ length: n }, (_, i) => {
       const jx = i ? (Math.random() - 0.5) * 12 : 0, jy = i ? (Math.random() - 0.5) * 8 : 0;
-      if (i && i % 2 === 0) setTimeout(() => cue("match", { vol: 0.18, pitch: 1.2 + i * 0.05 }), T(delay + i * 45 + dur * 0.8));
+      if (i && i % 2 === 0) setTimeout(() => cue("chips", { vol: 0.18, pitch: 1.2 + i * 0.05 }), T(delay + i * 45 + dur * 0.8));
       return fly(chip(i % 3 === 2 ? "red" : color, 2), { x: from.x + jx, y: from.y + jy }, { x: to.x + jx / 2, y: to.y + jy / 2 }, { dur, delay: delay + i * 45 });
     }));
   }
@@ -1618,7 +1597,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
         S.dealt[h.seat] += 1;
         M.seats[h.seat].inHand = true;
         if (mine) renderMine(M, M._A); else setHTML(seatEl(h.seat).querySelector(".hole"), holeHTML(M, M.seats[h.seat]));
-        if (i % 2 === 0 || mine) cue("swap", { vol: 0.28, pitch: 0.9 + Math.random() * 0.25 });
+        if (i % 2 === 0 || mine) cue("card", { vol: 0.28, pitch: 0.9 + Math.random() * 0.25 });
       })()));
       for (const h of e.hands) Object.assign(M.seats[h.seat], { cards: h.cards, hasCards: !h.cards, inHand: true });
       // Your two cards turn face up.
@@ -1650,14 +1629,14 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
         s.folded = true;
         s.hasCards = false;
         S.tags[e.seat] = "Folded";
-        cue("select", { vol: 0.4, pitch: 0.75 });
+        cue("fold", { vol: 0.4, pitch: 0.75 });
         renderTable(M);
         await pause(120);
         return;
       }
       if (e.action === "check") {
         S.tags[e.seat] = "Check";
-        cue("select", { vol: 0.5 });
+        cue("check", { vol: 0.5 });
         renderSeats(M, M._A);
         const el = seatEl(e.seat);
         if (el && !RM()) { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
@@ -1675,7 +1654,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       }
       s.chips -= e.amount;
       renderSeats(M, M._A); renderMe(M);
-      cue(big ? "bigHit" : e.allIn ? "cast" : "match", { vol: big ? 1 : 0.5 });
+      cue(big ? "allInBig" : e.allIn ? "allIn" : "chips", { vol: big ? 1 : 0.5 });
       if (big) nudge();
       await chips(M, seatPt(M, e.seat), betPt(M, e.seat), e.amount, { color: e.allIn ? "red" : "gold" });
       s.bet = e.toTotal;
@@ -1716,7 +1695,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
           const dx = snap(x0 - centerOf(slot).x);
           return dx ? slot.firstElementChild.animate([{ transform: `translateX(${dx}px)` }, { transform: "none" }], { duration: T(200), easing: "steps(4, end)" }).finished.catch(() => {}) : null;
         }));
-        cue("swap", { vol: 0.3, pitch: 0.8 });
+        cue("card", { vol: 0.3, pitch: 0.8 });
       } else {
         // Backs slide to their slots, then turn over one by one.
         await Promise.all(fresh.map((c, j) => (async () => {
@@ -1731,7 +1710,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
         if (runout && j >= 3) { // the turn and river of a runout: a heartbeat, then a slow turn
           cue("select", { vol: 0.5, pitch: 0.5 }); await pause(170); cue("select", { vol: 0.4, pitch: 0.45 }); await pause(380);
         }
-        cue("swap", { vol: 0.4, pitch: 1 + (j - prevLen) * 0.06 });
+        cue("card", { vol: 0.4, pitch: 1 + (j - prevLen) * 0.06 });
         const card = await flipEl(slot.firstElementChild || slot.appendChild(document.createElement("div")), cardHTML(board[j], "md"), runout && j >= 3 ? 2.2 * S.speed : S.speed);
         if (!RM() && card?.isConnected) card.animate([{ transform: "translateY(-4px)" }, { transform: "none" }], { duration: T(120), easing: "steps(2, end)" });
         M.board = board.slice(0, j + 1);
@@ -1753,7 +1732,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
           seatEl(r.seat).classList.add("shown");
           hole._sig = null;
           hole.innerHTML = r.cards.map(() => cardHTML(null, "sm")).join("");
-          cue("swap", { vol: 0.4 });
+          cue("card", { vol: 0.4 });
           const els = [...hole.children];
           await Promise.all(els.map((el, i) => sleep(T(i * 70)).then(() => flipEl(el, cardHTML(r.cards[i], "sm")))));
           hole._sig = null;
@@ -1778,14 +1757,17 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       const you = ws.some((w) => w.seat === M.you);
       const title = ws.length === 1 ? `${names[0] === "you" ? "You win" : `${names[0]} wins`} ${fmt(e.amount)}` : `${joinNames(names)} split ${fmt(e.amount)}`;
       S.banner = { title: title[0].toUpperCase() + title.slice(1), sub: w0.handName || "", pre: e.index > 0 ? "Side pot" : "" };
-      cue(you ? "win" : "match", { vol: you ? 0.8 : 0.5 });
+      cue(you ? "win" : "chips", { vol: you ? 0.8 : 0.5 });
       renderTable(M);
       const from = potPt();
       M.pot = Math.max(0, (M.pot || 0) - e.amount);
       await Promise.all(ws.map((w, i) => Promise.all([
         fly(potStacks(w.amount, M.blinds?.bb) || chip(), from, seatPt(M, w.seat), { dur: 320, delay: i * 90 }),
         chips(M, from, seatPt(M, w.seat), w.amount, { dur: 300, delay: i * 90 + 60 }),
-      ]).then(() => floatAt(seatPt(M, w.seat), `+${fmt(w.amount)}`, w.seat === M.you))));
+      ]).then(() => {
+        floatAt(seatPt(M, w.seat), `+${fmt(w.amount)}`, w.seat === M.you);
+        pose(w.seat === M.you ? $("me") : seatEl(w.seat), "win");
+      })));
       for (const w of ws) M.seats[w.seat].chips += w.amount;
       renderTable(M);
       await pause(showdown ? 1300 : 650);
@@ -1793,10 +1775,10 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     async eliminated(e, M) {
       const s = M.seats[e.seat];
       Object.assign(s, { busted: true, place: e.place, inHand: false, hasCards: false });
-      if (e.seat === M.you) cue("ko"); else cue("hit", { vol: 0.5 });
+      if (e.seat === M.you) cue("out"); else cue("bust", { vol: 0.5 });
       renderTable(M);
       stampAt(seatPt(M, e.seat), `Out · ${ordinal(e.place)}`, "mute");
-      pulse(seatEl(e.seat), "bust");
+      pose(seatEl(e.seat), "bust");
       await pause(260);
     },
     async blindsUp(e, M) {
@@ -1805,11 +1787,11 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       const el = $("tBlinds");
       el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
       toast(`Blinds up · ${fmt(e.sb)}/${fmt(e.bb)}`);
-      cue("ready");
+      cue("blinds");
     },
     async gameOver(e, M) {
       const me = e.standings.find((s) => s.seat === M.you);
-      if (me) cue(me.place === 1 ? "win" : "ko");
+      if (me) cue(me.place === 1 ? "win" : "out");
       await pause(400);
     },
   };
@@ -1866,40 +1848,26 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   }
 
   /* ================================================================ menu, rules, leaving */
-  function openMenu() {
-    const lobbyish = S.view?.phase === "lobby";
-    const el = P.sheet(`<h2>Menu</h2><div class="menu-list">` +
-      (lobbyish && S.view.mode !== "quick" ? `<button class="ghost" data-m="share">Share invite</button>` : "") +
-      `<button class="ghost" data-m="rules">Rules</button><button class="ghost" data-m="settings">Settings</button>` +
-      `<button class="danger" data-m="leave">Leave table</button></div><div class="pl-actions"><button class="ghost" data-m="close">Close</button></div>`, { label: "Menu" });
-    el.onclick = (e) => {
-      const b = e.target.closest("[data-m]");
-      if (!b) return;
-      const m = b.dataset.m;
-      if (m === "close") return P.closeSheet();
-      P.closeSheet(true);
-      if (m === "share") kit.share(S.view.code);
-      if (m === "rules") openRules();
-      if (m === "settings") P.openSettings();
-      if (m === "leave") leaveFlow();
-    };
-  }
+  /** The in-game menu is Ploto's (share, how to play, settings); Hold'em adds the way out. */
+  const openMenu = () => kit.menu({ view: S.lobby, items: [{ label: "Leave table", danger: true, run: leaveFlow }] });
   const RULE_HANDS = [
     ["Royal flush", "As Ks Qs Js 10s"], ["Straight flush", "9h 8h 7h 6h 5h"], ["Four of a kind", "Qs Qh Qd Qc 3s"],
     ["Full house", "Kd Kc Ks 7h 7d"], ["Flush", "Ac Jc 8c 6c 2c"], ["Straight", "10d 9s 8h 7c 6d"],
     ["Three of a kind", "8s 8h 8d Kc 4s"], ["Two pair", "Js Jd 5c 5h Ad"], ["Pair", "10h 10c Ks 6d 3c"], ["High card", "As Qd 9c 6h 2s"],
   ];
   const parseCard = (t) => ({ rank: { A: 14, K: 13, Q: 12, J: 11 }[t[0]] || parseInt(t, 10), suit: t.slice(-1) });
-  function openRules() {
-    const el = P.sheet(`<h2>How to play</h2><div class="rules"><div class="steps">` +
-      `<p>Everyone gets two cards only they can see. Five shared cards land in the middle: three, then one, then one.</p>` +
-      `<p>Make your best five-card hand from your two cards and the five shared ones.</p>` +
-      `<p>Before each new card you can check, bet, call, raise or fold. The best hand at the end wins the pot, or the last player still in.</p>` +
-      `<p>Lose all your chips and you're out. The last player with chips wins the table. Blinds are small forced bets that go up over time, so every game ends.</p>` +
-      `</div><p class="pl-label" style="margin-top:12px">Hands, best first</p><ol>` +
-      RULE_HANDS.map(([n, cs]) => `<li><span>${n}</span><span class="cs">${cs.split(" ").map((t) => cardHTML(parseCard(t), "mini")).join("")}</span></li>`).join("") +
-      `</ol></div><div class="pl-actions"><button class="ghost" data-close>Close</button></div>`, { label: "How to play" });
-    el.querySelector("[data-close]").onclick = () => P.closeSheet();
+  /** How to play, for Ploto's sheet (kit.rules): the steps, then the hands, best first. */
+  function holdemRules() {
+    return {
+      steps: [
+        "Everyone gets two cards only they can see. Five shared cards land in the middle: three, then one, then one.",
+        "Make your best five-card hand from your two cards and the five shared ones.",
+        "Before each new card you can check, bet, call, raise or fold. The best hand at the end wins the pot, or the last player still in.",
+        "Lose all your chips and you're out. The last player with chips wins the table. Blinds are small forced bets that go up over time, so every game ends.",
+      ],
+      extra: `<p class="pl-label">Hands, best first</p><ol class="hands">` +
+        RULE_HANDS.map(([n, cs]) => `<li><span>${n}</span><span class="cs">${cs.split(" ").map((t) => cardHTML(parseCard(t), "mini")).join("")}</span></li>`).join("") + `</ol>`,
+    };
   }
   async function leaveFlow() {
     const v = S.view;
@@ -1933,6 +1901,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   }
 
   /* ================================================================ 6. result */
+  /** The result is Ploto's screen (kit.renderResult): Hold'em gives the trophy, standings and its numbers. */
   function renderResult() {
     const v = S.view;
     if (!v) return;
@@ -1940,35 +1909,30 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     const mine = results.find((r) => r.seat === v.you);
     const n = results.length || v.seats.filter((s) => s.kind === "player" || s.kind === "bot").length;
     const place = mine?.place ?? 0;
-    const title = place === 1 ? "You won the table" : place ? `You finished ${ordinal(place)}` : "Game over";
     const tc = TROPHY_COLORS[clamp(place - 1, 0, 3)] || TROPHY_COLORS[3];
-    const rows = results.map((r) => {
-      const s = v.seats[r.seat];
-      const note = r.place === 1 ? `${fmt(s?.chips || 0)} chips` : S.out[r.seat] ? `out hand ${S.out[r.seat]}` : "";
-      const cls = (r.place === 1 ? " first" : "") + (r.seat === v.you ? " me" : "");
-      return `<li class="pl-frame${cls}"><span class="pl">${ordinal(r.place).toUpperCase()}</span><span class="nm"><span class="ell">${esc(r.name)}</span>${r.seat === v.you ? `<span class="pl-you">You</span>` : ""}${r.isBot ? `<span class="pl-bot">Bot</span>` : ""}</span><span class="note">${note}</span></li>`;
-    }).join("");
-    const tiles = mine ? [["Hands won", fmt(mine.handsWon ?? 0)], ["Biggest pot", fmt(mine.biggestPot ?? 0)], ["Best hand", mine.bestHand ? shortHand(mine.bestHand) : "None"]] : [];
-    setHTML($("resMain"),
-      `<div class="res-head"><div class="trophy">${spr(TROPHY, { k: INK, ...tc }, 4)}</div><h1>${esc(title.toUpperCase())}</h1><p>of ${n} · ${fmt(v.handNo)} hand${v.handNo === 1 ? "" : "s"}</p></div>` +
-      `<ol class="standings">${rows}</ol>` +
-      (tiles.length ? `<div class="tiles">${tiles.map(([l, x]) => `<div class="pl-frame"><small>${l}</small><b>${esc(x)}</b></div>`).join("")}</div>` : ""));
+    kit.renderResult($("resMain"), {
+      hero: `<div class="trophy">${spr(TROPHY, { k: INK, ...tc }, 4)}</div>`,
+      title: place === 1 ? "You won the table" : place ? `You finished ${ordinal(place)}` : "Game over",
+      sub: `of ${n} · ${fmt(v.handNo)} hand${v.handNo === 1 ? "" : "s"}`,
+      win: place === 1,
+      standings: results.map((r) => ({
+        place: r.place, name: r.name, you: r.seat === v.you, bot: r.isBot,
+        note: r.place === 1 ? `${fmt(v.seats[r.seat]?.chips || 0)} chips` : S.out[r.seat] ? `out hand ${S.out[r.seat]}` : "",
+      })),
+      tiles: mine ? [{ label: "Hands won", value: mine.handsWon ?? 0 }, { label: "Biggest pot", value: mine.biggestPot ?? 0 }, { label: "Best hand", value: mine.bestHand ? shortHand(mine.bestHand) : "None" }] : null,
+      view: S.lobby,
+      rematchHint: "Same table, same settings",
+      actions: $("resFoot"),
+      key: v.roomId,
+      onRematch: async () => {
+        try { const r = await req("lobby:rematch"); cue("ready"); await enterRoom(r); }
+        catch (e) { toast(P.errText(e), 2600); }
+      },
+      onLeave: () => { S.leaving = true; dropRoom(); goHome(); },
+    });
+    kit.countResult($("resMain"));
     if (place === 1 && S.confettiFor !== v.roomId) { S.confettiFor = v.roomId; setTimeout(confetti, 250); }
-    const rm = v.rematch;
-    $("rmNote").textContent = rm ? (Array.isArray(rm.players) && rm.players.length ? `${joinNames(rm.players)} ${rm.players.length > 1 ? "are" : "is"} in` : "A rematch table is open") : "";
-    $("rematchBtn").textContent = rm ? "Join rematch" : "Rematch";
   }
-  $("rematchBtn").addEventListener("click", async () => {
-    const b = $("rematchBtn");
-    b.disabled = true;
-    try {
-      const r = await req("lobby:rematch");
-      cue("ready");
-      await enterRoom(r);
-    } catch (e) { toast(P.errText(e), 2600); }
-    finally { b.disabled = false; }
-  });
-  $("resLeave").addEventListener("click", () => { S.leaving = true; dropRoom(); goHome(); });
   $("tMenu").addEventListener("click", openMenu);
 
   /* ================================================================ boot */
@@ -1977,14 +1941,10 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     clearTimeout(resizeT);
     resizeT = setTimeout(() => {
       if (screenNow() === "table" && S.M) renderTable(S.M);
-      if (screenNow() === "home") { $("hero")._built = false; drawHero(); }
+      // the home banner repaints itself when its size changes (Ploto.banner)
     }, 60);
   });
   P.onSettings(() => { if (screenNow() === "table" && S.M) renderTable(S.M); });
-  document.addEventListener("visibilitychange", () => {
-    // Coming back to the tab: skip whatever was queued and land on the latest state.
-    if (!document.hidden && S.queue.length > 1) { const last = S.queue[S.queue.length - 1]; S.queue = [{ view: last.view, events: [] }]; }
-  });
 
   P.restoreAccount();
   const q = new URLSearchParams(location.search);

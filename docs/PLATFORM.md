@@ -22,11 +22,14 @@ Shared base       accounts · friends · chat · invites · presence · rooms
 | `/play/holdem` | `web/holdem.html` | Hold'em. `?table=CODE` joins a table. |
 | `/play/platform.js` | `web/platform.js` | Shared toolkit (`window.Ploto`), loaded by every page. |
 | `/play/platform.css` | `web/platform.css` | Shared tokens and components (pixel style, see docs/STYLE.md). |
+| `/play/lobbykit.js` | `web/lobbykit.js` | The lobby kit (`Ploto.lobbyKit`): lobby screens, menu, how to play, result. |
+| `/play/motion.js` | `web/motion.js` | The motion kit: Animate.css presets, poses, play queue, banners, count-ups. |
+| `/play/animate.min.css` | Animate.css | Ploto's animation library (stock presets). |
 | `/play/games` | — | The game registry (JSON), see below. |
 
-Every page loads, in order: `platform.css`, `feedback.js` deps (`riffwave.js`,
-`sfxr.js`, `sounds.js`, `feedback.js`), `icons.js`, `platform.js`, `lobbykit.js`
-(the lobby screens), then its own code.
+Every game page loads, in order: `platform.css` and `animate.min.css`,
+`feedback.js` deps (`riffwave.js`, `sfxr.js`, `sounds.js`, `feedback.js`),
+`icons.js`, `platform.js`, `motion.js`, `lobbykit.js`, then its own code.
 
 ### Query parameters every game page understands
 
@@ -107,6 +110,19 @@ the settings sheet from the game's settings schema, and `Ploto.backGuard` for
 the phone's back button. The game passes its nouns ("Table code"), settings
 schema and summary line, share text and pixel art.
 
+**Standard screens around the game.** The kit also draws the three screens every
+game has around its own, so they look and work the same everywhere:
+
+| Screen | Call | The game gives |
+|---|---|---|
+| In-game menu (the ☰ button, Escape, the phone's back) | `kit.menu({view, items})` | its own rows (`{label, danger, run}`: Forfeit match, Leave table). Ploto adds Share invite (in a room lobby), How to play, Settings and Close |
+| How to play | `kit.rules()` | `def.rules() → {steps, extra}`: numbered steps in its own words, plus any extra HTML (Hold'em's hand ranking) |
+| Result and rematch | `kit.renderResult(root, {...})`, then `kit.countResult(root)` | `hero` (its art), `title`, `sub`, `win`, `standings` (places) and/or `tiles` (stats that count up), `rematchHint`, `extra`, and its own `onRematch` / `onLeave` when it handles them itself. Ploto draws the rematch state from the room ("Ben wants a rematch", Join rematch, "Ann and Ben are in"), or `blocked` when it can't happen |
+
+The game keeps everything inside those screens' frames that's its own: its
+art in the result's hero, its intro and cheer around it (Match Monsters' wipe),
+its stats.
+
 ## Game registry: `GET /play/games`
 
 ```json
@@ -143,8 +159,13 @@ settings carry across pages: `mm.key`, `mm.account`, `mm.guestName`,
 | `Ploto.sheet(html, {onClose})` → el / `Ploto.closeSheet()` | Bottom sheet (modal). Never auto-focuses a text box on touch screens, so the keyboard waits for a tap. |
 | `Ploto.confirm({title, body, yes, no, danger})` → Promise<bool> | In-app yes/no |
 | `Ploto.settings`, `Ploto.saveSettings()`, `Ploto.openSettings()` | Sound, vibration, text size, motion (same key as Match Monsters) |
-| `Ploto.cue(name, opts)` | Sound + haptic (web/feedback.js) |
+| `Ploto.cue(name, opts)` | Sound + haptic (web/feedback.js): the page's game set first (`src/game/<id>/sounds.json`), then Ploto's (`src/platform/sounds.json`). The lobby kit sets the game (`MM_FEEDBACK.setGame(id)`) |
 | `Ploto.reduceMotion()` | Motion setting / prefers-reduced-motion |
+| `Ploto.playPreset(el, preset, {speed, keep})` → Promise | A stock Animate.css preset on an element (web/motion.js) |
+| `Ploto.poses(map)` → `pose(el, name)` | A game's body language: moment → preset, played the same everywhere (nothing with reduced motion) |
+| `Ploto.playQueue({run, onError, onReturn})` → `q` | Play updates strictly one after another: `q.add(item)`, `q.speed()` (1, 0.45, 0.3 as the backlog grows), `q.clear()`, `q.collapse(fn)`; `onReturn(items)` cuts the backlog when the tab comes back |
+| `Ploto.banner(el, {draw, intro, beat, every})` → `{paint, stop}` | A home banner (docs/STYLE.md, Home banners): drawn for its size, an intro once on screen, a beat while visible |
+| `Ploto.countUp(el, to, {steps, ms, format})` | A number counting up in stepped frames |
 | `Ploto.games()` → Promise<registry> | `/play/games` (cached) |
 | `Ploto.setActivity(gameId, label)` | Tell friends what you're doing ("At a Hold'em table") |
 | `Ploto.errText(e)` | A failure as players should read it |

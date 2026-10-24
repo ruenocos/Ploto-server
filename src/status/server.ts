@@ -68,6 +68,10 @@ export function buildStatusServer(config: ServerConfig): FastifyInstance {
     reply.header("content-type", "application/javascript; charset=utf-8");
     return loadWebFile("platform.js");
   });
+  app.get("/play/motion.js", async (_req, reply) => {
+    reply.header("content-type", "application/javascript; charset=utf-8");
+    return loadWebFile("motion.js");
+  });
   app.get("/play/lobbykit.js", async (_req, reply) => {
     reply.header("content-type", "application/javascript; charset=utf-8");
     return loadWebFile("lobbykit.js");
@@ -124,7 +128,7 @@ export function buildStatusServer(config: ServerConfig): FastifyInstance {
     });
   }
 
-  // Animate.css (pinned npm dependency): the stock presets monsters react with.
+  // Animate.css (pinned npm dependency): our animation library, the stock presets every game reacts with (web/motion.js).
   app.get("/play/animate.min.css", async (_req, reply) => {
     reply.header("content-type", "text/css; charset=utf-8");
     reply.header("cache-control", "public, max-age=86400");

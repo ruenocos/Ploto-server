@@ -111,10 +111,29 @@ No rounded corners, no blur, no soft drop shadows. Depth is bevels only.
 
 ## Motion
 
-- Monster reactions are stock Animate.css presets (see `POSES` in
-  `web/index.html`). Each body part has its own idle loop.
-- UI transitions use stepped easing (`steps(n)`), so they move in frames like
-  the art does.
+**Ploto's animation library is Animate.css**, served at `/play/animate.min.css`
+and played through `web/motion.js` (`Ploto.*`). Every game uses it the same way:
+
+- **Body language is a map.** Characters and objects react with stock presets,
+  named once per game: `const pose = Ploto.poses({ win: { preset: "tada" }, … })`,
+  then `pose(el, "win")` (Match Monsters: `POSES`; Hold'em: tick, nudge, bust,
+  win). The same moment always plays the same preset, in the game, on its home
+  banner and on its end screen. No hand-written keyframes for something a stock
+  preset does; a game's own keyframes are for its art (idle loops, impacts).
+- **UI moves in frames:** transitions use stepped easing (`steps(n)`), like
+  the art.
+- **One thing at a time:** updates play in order through `Ploto.playQueue`
+  (each event animated from what's on screen, then the state settles), faster
+  when behind (`q.speed()`), cut to the latest state when the tab comes back.
+- **Numbers count up** in a few stepped frames (`Ploto.countUp`, the result
+  screen's tiles).
+- **Reduced motion** (the Motion setting or the system's) is handled by the
+  helpers: `pose` does nothing, banners show their end state, counts jump to
+  the value. A game checks `Ploto.reduceMotion()` only for its own effects.
+
+### Match Monsters
+
+- Monster reactions are its `POSES`. Each body part has its own idle loop.
 - **Effects are pixel art too.** Hits land as 6-frame impact sprites per
   element (`art/pixel/fx.py`: fire, water, earth, nature, light, plus heal,
   shield, ice, poison), at the arena's sprite pixel size. Motes and orbs are
@@ -196,6 +215,35 @@ to one rule, so the grid reads as one set while every card looks like its game.
 - **Check it** as a 2-up tile (about 170 px wide) and as a full-width card, at
   1× and 3×, next to the other cards.
 
+## Home banners
+
+The `pl-hero` at the top of a game's home is the game's trailer: the first thing
+that moves when you open it, and the promise of what playing feels like.
+
+- **The game's world and its signature moment,** with the game's own sprites,
+  poses and timings (Match Monsters: two monsters on the arena trade hits;
+  Hold'em: the board flips onto the felt, chips settle). Never a different
+  animation made for the banner.
+- **The same pieces as its launcher card**, staged rather than still: the card
+  is the poster, the banner the trailer.
+- **Size:** full width, the `pl-hero` height clamp; drawn to whole device pixels
+  per art pixel and redrawn when the size changes, anchored bottom centre like
+  the card.
+- **Timing:** an intro once when it first shows (the entrance: run in, deal,
+  land), then one beat every 3.6 to 4.2 s, and only while it's on screen and the
+  tab is visible. A beat is short (under a second) and calm enough to read the
+  rows under it.
+- **Library:** characters move with the game's poses (Animate.css presets),
+  UI pieces with `steps()`. No glow, no blur.
+- **No sound** in the loop and **no words** in the art (the bar above has the title).
+- **Reduced motion** shows a still end state: the moment after the beat (cards
+  face up, both monsters in place).
+- **Built with** `Ploto.banner(el, {draw, intro, beat, every})`: `draw` paints it
+  for its size (return `false` while art is still loading), the helper handles
+  sizing, visibility and reduced motion.
+- **Check it** at 360 / 390 / 430 px, with reduced motion, and leave Home open a
+  minute: nothing drifts, nothing stacks up.
+
 ## Sound and haptics
 
 - One `cue(event)` per game moment (`web/feedback.js`), called where the
@@ -203,8 +251,15 @@ to one rule, so the grid reads as one set while every card looks like its game.
 - Light touches for frequent events (select, swap, match), stronger patterned
   ones for big moments (cast, heavy hit, your turn, evolve, KO, win).
   Consecutive cascade steps pitch the match sound up.
-- Sounds are jsfxr's stock presets (one seeded variant each,
-  `scripts/gen-sounds.mjs` → `web/sounds.js`), normalised to the same peak.
+- **Each game has its own sound set**, named in its own words: Match Monsters
+  has swap, match, cast, ko; Hold'em has card, chips, fold, allIn. Ploto's set
+  (`src/platform/sounds.json`: select, ready, turn) covers the shared screens. A
+  page's `cue(name)` looks in its game's set first, then Ploto's (the lobby kit
+  sets the game).
+- Sounds are jsfxr's stock presets, one seeded variant each, listed per set in
+  `src/game/<id>/sounds.json` with a volume and a haptic pattern;
+  `npm run sounds` (`scripts/gen-sounds.mjs`) writes them all to
+  `web/sounds.js`, normalised to the same peak.
 - Every cue has a visual too, so nothing depends on hearing or feeling it.
   iOS has no Vibration API.
 

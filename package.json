@@ -21,7 +21,8 @@
     "lab": "node scripts/lab-report.mjs",
     "sounds": "node scripts/gen-sounds.mjs",
     "blasts": "npm run build && node scripts/blast-randomness.mjs",
-    "holdem": "npm run build && node scripts/holdem-sim.mjs"
+    "holdem": "npm run build && node scripts/holdem-sim.mjs",
+    "e2e": "node e2e/run.mjs"
   },
   "dependencies": {
     "@fontsource/pixelify-sans": "5.3.0",

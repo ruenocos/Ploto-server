@@ -5,38 +5,26 @@
  * Small, frequent events get a light touch; big moments get stronger,
  * patterned ones.
  *
- * Sounds are jsfxr stock presets (generated once by scripts/gen-sounds.mjs
- * into web/sounds.js) synthesised here into Web Audio buffers on first use.
+ * Sounds are jsfxr stock presets, one set per game plus Ploto's own (generated
+ * by scripts/gen-sounds.mjs from src/game/<game>/sounds.json and
+ * src/platform/sounds.json into web/sounds.js), synthesised here into Web Audio
+ * buffers on first use. A page plays its game's set first, then Ploto's.
  * Haptics use the Vibration API where the device has it (Android; iOS Safari
  * has none, so there the sound and visuals carry the cue on their own).
  */
 
 (() => {
-/** @typedef {"select" | "swap" | "match" | "ready" | "cast" | "hit" | "bigHit" | "heal" | "turn" | "evolve" | "ko" | "win"} Cue */
-
-/**
- * What each moment sounds and feels like. `vol` is relative (0..1);
- * `buzz` is a vibration pattern in ms (on, off, on, ...). Phone motors need
- * ~20-30 ms just to spin up, so nothing is shorter than that: anything less
- * is never felt.
- * @type {Record<Cue, { sound: string, vol: number, buzz: number | number[] }>}
- */
-const CUES = {
-  select: { sound: "select", vol: 0.35, buzz: 20 },
-  swap: { sound: "swap", vol: 0.4, buzz: 25 },
-  match: { sound: "match", vol: 0.45, buzz: 30 },
-  ready: { sound: "ready", vol: 0.5, buzz: [40, 50, 40] },
-  cast: { sound: "cast", vol: 0.6, buzz: 50 },
-  hit: { sound: "hit", vol: 0.6, buzz: 60 },
-  bigHit: { sound: "bigHit", vol: 0.7, buzz: [80, 40, 120] },
-  heal: { sound: "heal", vol: 0.45, buzz: 35 },
-  turn: { sound: "turn", vol: 0.5, buzz: [60, 80, 60] },
-  evolve: { sound: "evolve", vol: 0.7, buzz: [50, 60, 50, 60, 140] },
-  ko: { sound: "ko", vol: 0.7, buzz: 200 },
-  win: { sound: "evolve", vol: 0.7, buzz: [60, 70, 60, 70, 160] },
-};
+/** @typedef {string} Cue  a name in the page's game set or Ploto's (web/sounds.js) */
+/** @typedef {{ code: string, vol: number, buzz: number | number[] }} Sound */
 
 const W = /** @type {any} */ (window);
+/** The game whose set this page plays first (set by the lobby kit). */
+let game = "";
+/** A cue's sound: the game's own, else Ploto's. @returns {Sound | null} */
+function soundFor(/** @type {Cue} */ name) {
+  const sets = W.PLOTO_SOUNDS || {};
+  return sets[game]?.[name] ?? sets.ui?.[name] ?? null;
+}
 const settings = { sound: true, haptics: true };
 /** The vibration still playing: a new call cancels it, so a weaker buzz mustn't cut a stronger one short. */
 let buzzUntil = 0, buzzStrength = 0;
@@ -78,21 +66,20 @@ function unlock() {
 for (const ev of ["pointerdown", "keydown"]) window.addEventListener(ev, unlock, { capture: true, passive: true });
 
 /** Synthesise a sound once (jsfxr), then reuse its buffer. */
-function bufferFor(/** @type {string} */ name) {
-  let buf = buffers.get(name);
+function bufferFor(/** @type {string} */ code) {
+  let buf = buffers.get(code);
   if (buf || !ctx) return buf ?? null;
-  const code = W.MM_SOUNDS?.[name];
   const sfxr = W.jsfxr?.sfxr;
   if (!code || !sfxr) return null;
   try {
     buf = /** @type {AudioBuffer} */ (sfxr.toWebAudio(code, ctx).buffer);
     // jsfxr's output peaks anywhere from ~0.7 to ~3 (clipping). Normalise every
-    // sound to the same peak so only CUES[].vol decides how loud a moment is.
+    // sound to the same peak so only the cue's vol decides how loud a moment is.
     const data = buf.getChannelData(0);
     let peak = 0;
     for (let i = 0; i < data.length; i++) peak = Math.max(peak, Math.abs(data[i]));
     if (peak > 0) for (let i = 0; i < data.length; i++) data[i] *= 0.9 / peak;
-    buffers.set(name, buf);
+    buffers.set(code, buf);
     return buf;
   } catch {
     return null;
@@ -105,11 +92,11 @@ function bufferFor(/** @type {string} */ name) {
  * @param {{ pitch?: number, vol?: number }} [opts] pitch: playback rate (combo steps rise); vol: extra scale
  */
 function cue(name, opts = {}) {
-  const c = CUES[name];
+  const c = soundFor(name);
   if (!c) return;
   buzz(c.buzz);
   if (!settings.sound || !ctx || !master || ctx.state !== "running") return;
-  const buf = bufferFor(c.sound);
+  const buf = bufferFor(c.code);
   if (!buf) return;
   const src = ctx.createBufferSource();
   src.buffer = buf;
@@ -134,5 +121,8 @@ function testBuzz() {
   return buzz([200, 100, 200]);
 }
 
-W.MM_FEEDBACK = { cue, configure, testBuzz, canVibrate: "vibrate" in navigator };
+/** Play this game's set first (Ploto's own after). */
+function setGame(/** @type {string} */ id) { game = id; }
+
+W.MM_FEEDBACK = { cue, configure, testBuzz, setGame, canVibrate: "vibrate" in navigator };
 })();

@@ -4,11 +4,15 @@
  *
  *   node scripts/new-game.mjs <id> "<Title>"     e.g.  node scripts/new-game.mjs tap_race "Tap Race"
  *
- * Writes src/game/<id>/{room,lobby}.ts, web/<slug>.html, web/<slug>.card.js and
- * test/<id>.test.ts, and adds the game to src/games.ts. The result is a working
- * (placeholder) game with the platform's lobby: run `npm test`, `npm run dev`
- * and open /play/<slug>. Then replace the template game with the real one.
+ * Writes src/game/<id>/{room,lobby}.ts, its sound set src/game/<id>/sounds.json,
+ * web/<slug>.html, web/<slug>.card.js, test/<id>.test.ts and its browser-test
+ * adapter e2e/games/<id>.mjs, adds the game to src/games.ts and regenerates
+ * web/sounds.js. The result is a working (placeholder) game with the platform's
+ * lobby, menu, How to play and result: run `npm test`, `npm run dev` and open
+ * /play/<slug> (and `npm run build && npm run e2e -- --game <id>`). Then replace
+ * the template game with the real one.
  */
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -34,6 +38,8 @@ const out = [
   ["page.html", `web/${slug}.html`],
   ["card.js", `web/${slug}.card.js`],
   ["test.ts", `test/${id}.test.ts`],
+  ["sounds.json", `src/game/${id}/sounds.json`],
+  ["e2e.mjs", `e2e/games/${id}.mjs`],
 ];
 for (const [, to] of out) if (fs.existsSync(path.join(root, to))) { console.error(`${to} already exists`); process.exit(1); }
 for (const [from, to] of out) {
@@ -54,4 +60,5 @@ const next = reg
   .replace(`lobby.js";\nimport { ${cls}Lobby }`, `lobby.js";\nimport { ${cls}Lobby }`);
 fs.writeFileSync(registry, next.replace(/\n\nimport \{ (\w+)Lobby \} from "\.\/game\/(\w+)\/lobby\.js";\n\n/, '\nimport { $1Lobby } from "./game/$2/lobby.js";\n\n'));
 console.log("added", id, "to src/games.ts");
-console.log(`\nNext: npm test, npm run dev, open /play/${slug}. Then follow docs/NEW_GAME.md from "Build the game".`);
+execFileSync(process.execPath, [path.join(root, "scripts/gen-sounds.mjs")], { cwd: root, stdio: "inherit" });
+console.log(`\nNext: npm test, npm run dev, open /play/${slug}; npm run build && npm run e2e -- --game ${id}. Then follow docs/NEW_GAME.md from "Build the game".`);

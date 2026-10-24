@@ -1,0 +1,9 @@
+{
+  "about": "Ploto's own sounds, used on every page (lobby taps, confirmations, your turn). A game's set (src/game/<game>/sounds.json) can override any of them. jsfxr stock presets with a seed; vol is relative (0..1), buzz a vibration pattern in ms. Run npm run sounds after editing.",
+  "set": "ui",
+  "cues": {
+    "select": { "preset": "blipSelect", "seed": 3, "vol": 0.35, "buzz": 20 },
+    "ready": { "preset": "powerUp", "seed": 11, "vol": 0.5, "buzz": [40, 50, 40] },
+    "turn": { "preset": "pickupCoin", "seed": 8, "params": "chime", "vol": 0.5, "buzz": [60, 80, 60] }
+  }
+}

@@ -570,18 +570,9 @@
       .end-team { display: flex; justify-content: center; gap: 8px; margin: -8px 0 0; }
       .end-team.lost img { filter: grayscale(1) brightness(0.7); }
       .end-team.lost .rig .part { animation: none; } /* a defeated team doesn't idle */
-      .end-card .big { font: 700 var(--fl-4)/1 var(--f-label); margin: 8px 0 8px; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
-      .end-card p { color: var(--c-mute); margin: 0 0 16px; }
-      .end-actions { display: grid; gap: 8px; }
-      .end-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 0 16px; }
-      .end-stats div { background: var(--c-well); padding: 8px 4px; box-shadow: inset 0 var(--px) 0 var(--c-ink); }
-      .end-stats b { display: block; font: 700 var(--fl-2)/1 var(--f-label); color: var(--c-cream); font-variant-numeric: tabular-nums; }
-      .end-stats span { display: block; margin-top: 4px; font: 700 var(--fs-xs)/1.2 var(--f-text); color: var(--c-mute); text-transform: uppercase; letter-spacing: 1px; }
-      .end-hint { color: var(--c-mute); font-size: var(--fs-s); margin-bottom: 6px; min-height: 1.3em; }
-      .end-hint.hot { color: var(--c-accent-hi); font-weight: 700; }
-      button.pulse { animation: pulse 1.4s steps(2) infinite; }
+      .end-card .pl-res-head h2 { font-size: var(--fl-4); } /* the arena's own scale: Victory reads across the room */
+      /* Our own "pulse" (a one-UI-pixel bob, stepped) stands in for Animate.css's stock one on this page: a full charge bobs, it doesn't swell. */
       @keyframes pulse { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(var(--px) * -1)); } }
-      @media (prefers-reduced-motion: reduce) { button.pulse { animation: none; } }
 
       .toast {
         position: fixed; left: 50%; top: calc(12px + env(safe-area-inset-top)); transform: translate(-50%, -10px);
@@ -637,7 +628,7 @@
       /* the Motion setting forces reduced motion even when the device doesn't ask for it */
       .reduce-motion .animate__animated { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
       .reduce-motion .bob svg, .reduce-motion .bob img, .reduce-motion .tile.sel .gem, .reduce-motion .board.shuffling .gem,
-      .reduce-motion .rig .part, .reduce-motion .rig .hd-art, .reduce-motion button.pulse, .reduce-motion .st, .reduce-motion .clouds { animation: none; }
+      .reduce-motion .rig .part, .reduce-motion .rig .hd-art, .reduce-motion .st, .reduce-motion .clouds { animation: none; }
       .reduce-motion .float { animation: fadeOnly 1s ease forwards !important; } /* numbers fade rather than vanish (beats the platform-wide 0.01 ms rule) */
       /*
        * Battle intro: while .entering, the monsters wait off stage (each runs in
@@ -868,6 +859,7 @@
     <script src="/play/feedback.js"></script>
     <script src="/play/icons.js"></script>
     <script src="/play/platform.js"></script>
+    <script src="/play/motion.js"></script>
     <script src="/play/lobbykit.js"></script>
     <script src="/play/plotomon.js"></script>
     <script src="/play/animators.js"></script>
@@ -912,9 +904,10 @@
       let leaving = false;
       let reconnectTries = 0;
       let rivalOnline = true;
-      let endInfo = null; // { won, mine, theirs } while the end screen is up
+      let endInfo = null; // { won, forfeit } while the end screen is up
       let popPip = false; // animate a bonus move pip on the next render
-      let animQueue = Promise.resolve(); // move animations, played in order
+      /** Move animations, played strictly in order (Ploto's play queue, web/motion.js). */
+      const animQ = Ploto.playQueue({ onError: (err) => console.error(err) });
       let disp = null; // HP/charge as shown mid-animation (catches up to state as events land)
       /** Your numbers this match, for the end card (kept per room, so a reload keeps them). */
       let matchStats = { roomId: null, dealt: 0, bestHit: 0, bestCombo: 0, evolved: 0 };
@@ -1215,6 +1208,15 @@
         // Your own seat shows your two for blind picks.
         seatNote: (s, v) => (s.seat === v.you && v.settings.team === "pick" && picks.length === 2 ? picks.map((id) => monById(id)?.name).filter(Boolean).join(" + ") : null),
         art: { chev: () => CHEV, bot: () => rigView("stone_golem", 0, snapU(0.6), [4, 6, 40, 42]), remove: () => "×" },
+        rules: () => ({
+          steps: [
+            "Swap two gems next to each other. Lines of 3 or more clear and charge your monsters of that element.",
+            "At full charge a monster fires its move: damage plus one twist. Tap a monster to see its move.",
+            "You get 2 moves a turn. A line of 4 gives an extra move; a line of 5 leaves a prism that clears a whole colour.",
+            "Collect 4 berries to evolve a monster: stronger, cheaper, with a new look.",
+            "Each team has one HP pool. Knock theirs to zero to win. From round 20, sudden death hurts both sides every turn.",
+          ],
+        }),
       });
 
       function lbTitle(name) {
@@ -1409,14 +1411,19 @@
         for (const s of document.querySelectorAll("[data-chev]")) { s.innerHTML = CHEV; s.removeAttribute("data-chev"); }
         for (const s of document.querySelectorAll(".pl-ic[data-mon]")) { s.innerHTML = rigView(s.dataset.mon, 1, snapU(1.2), [4, 6, 40, 42]); s.removeAttribute("data-mon"); }
         if (!$("monstersBtn").firstChild) $("monstersBtn").innerHTML = rigView("ember_pup", 0, snapU(1), [13, 12, 32, 32]);
-        drawHero();
+        heroBanner ??= Ploto.banner($("mmHero"), { draw: drawHero, intro: heroIntro, beat: heroClash, every: 3600 });
+        heroBanner.paint();
       }
-      /** Home's banner: the arena by day with two monsters facing off, whole device pixels per art pixel. */
-      function drawHero() {
-        const hero = $("mmHero"), PX = window.PIXELART;
-        const W = hero.clientWidth, H = hero.clientHeight;
-        if (!PX || !W || hero.dataset.size === `${W}x${H}`) return;
-        hero.dataset.size = `${W}x${H}`;
+      /**
+       * Home's banner (docs/STYLE.md, Home banners; Ploto.banner): the arena by day with two
+       * monsters facing off, whole device pixels per art pixel. It comes alive with the arena's
+       * own body language (POSES): the two run in like the battle intro, then trade a hit every
+       * few seconds while Home is open: the attacker's lunge, the element's impact on the
+       * target, and its hurt shake.
+       */
+      function drawHero(hero, W, H) {
+        const PX = window.PIXELART;
+        if (!PX) return false; // the sprites are still loading
         const theme = PX.themes?.day || { arena: PX.arena, platform: PX.platform };
         const k = Math.max(1, Math.round(Math.max(W / 160, H / 100)));
         const u = Math.max(1, Math.floor(((H * 0.6) / 48) * (window.devicePixelRatio || 1))) / (window.devicePixelRatio || 1);
@@ -1429,18 +1436,9 @@
         };
         hero.style.backgroundImage = `url(${theme.arena})`;
         hero.style.backgroundSize = `${160 * k}px ${100 * k}px`;
-        const first = !hero.firstChild;
         hero.innerHTML = fighter("ember_pup", "l") + fighter("tide_serpent", "r");
-        if (first) heroIntro(hero);
       }
-      /**
-       * The banner comes alive with the arena's own body language (POSES): the two run in
-       * like the battle intro, then trade a hit every few seconds while Home is open:
-       * the attacker's lunge, the element's impact on the target, and its hurt shake.
-       */
-      let heroLoop = 0, heroTurn = 0;
       function heroIntro(hero) {
-        if (reduceMotion) return;
         hero.classList.add("entering");
         const bs = [...hero.querySelectorAll(".mm-hero-b")];
         const runs = bs.map((b, i) => sleep(120 + i * 140).then(() => playPreset(b, i ? "backInRight" : "backInLeft", { speed: "fast", keep: true })));
@@ -1448,14 +1446,11 @@
           for (const b of bs) b.classList.remove("animate__animated", "animate__backInLeft", "animate__backInRight", "animate__fast");
           hero.classList.remove("entering");
         });
-        clearInterval(heroLoop);
-        heroLoop = setInterval(() => heroClash($("mmHero")), 3600);
       }
-      function heroClash(hero) {
-        if (reduceMotion || document.hidden || curScreen() !== "home" || $("lobby").classList.contains("hidden")) return;
+      function heroClash(hero, n) {
         const bs = hero.querySelectorAll(".mm-hero-b");
         if (bs.length < 2) return;
-        const a = heroTurn++ % 2, att = bs[a], tgt = bs[1 - a];
+        const a = n % 2, att = bs[a], tgt = bs[1 - a];
         playPreset(att, POSES.attack.preset);
         setTimeout(() => { // contact: the lunge's forward peak
           const r = tgt.getBoundingClientRect(), u = parseFloat(att.closest(".mm-hero-f").style.getPropertyValue("--u")) || 2;
@@ -1463,9 +1458,10 @@
           playPreset(tgt, POSES.hurt.preset, { speed: POSES.hurt.speed });
         }, 260);
       }
+      let heroBanner = null; // made once the page's helpers are all defined (lbArt)
       /** Home: the banner (your name lives in the launcher's Profile). */
       function renderHome() {
-        drawHero();
+        heroBanner?.paint();
       }
 
       // The lobby socket stays open all session: matchmaking, plus friends'
@@ -1657,11 +1653,7 @@
           } else if (wait === "room") renderRoom();
           return;
         }
-        if (endInfo && v.rematch) {
-          const me = v.seats[v.you]?.name;
-          endInfo.theirs = v.rematch.players.some((n) => n !== me);
-          renderEnd();
-        }
+        if (endInfo && v.rematch) renderEnd(); // the result's Rematch follows the room
         if (v.phase === "playing" && !state && !draftState) startMatch();
       }
       /** The room started: off the lobby's screens, into the draft or the match. */
@@ -1688,19 +1680,21 @@
         const live = (fn) => (d) => { if (sock === gameSock) fn(d); };
         // Moves animate strictly one after another, even if results arrive faster.
         const stillHere = () => sock === gameSock;
-        sock.on("mm:moveResult", live((d) => { animQueue = animQueue.then(() => stillHere() && animate(d)); }));
+        sock.on("mm:moveResult", live((d) => { animQ.add(() => stillHere() && animate(d)); }));
         sock.on("mm:gameOver", live((d) => {
-          animQueue = animQueue.then(() => sleep(350)).then(async () => {
+          animQ.add(async () => {
+            await sleep(350);
             if (!stillHere()) return;
             await faintFx(d.winner === 0 ? 1 : 0);
             if (stillHere()) showEnd(d.winner === room.seat, d.forfeitedBy);
           });
         }));
-        sock.on("mm:evolved", live((d) => { animQueue = animQueue.then(() => stillHere() && evolveFx(d.by, d.monsterId, d.evolution, d.state)); }));
+        sock.on("mm:evolved", live((d) => { animQ.add(() => stillHere() && evolveFx(d.by, d.monsterId, d.evolution, d.state)); }));
         sock.on("mm:peerStatus", live((d) => {
           if (d.seat === room.seat) return;
           rivalOnline = d.connected;
-          $("peerWarn").classList.toggle("hidden", d.connected);
+          // Mid-match only: once it's over, the end card says if they left
+          $("peerWarn").classList.toggle("hidden", d.connected || !!endInfo);
           renderEnd();
         }));
         sock.on("lobby:update", live((d) => onLobbyView(d.view)));
@@ -1837,7 +1831,7 @@
         introFor = room.roomId;
         if (state.moveNumber > 0 || state.phase !== "awaiting-move") return; // a reload mid-match: no intro
         introDone = battleIntro().catch((e) => console.error(e));
-        animQueue = animQueue.then(() => introDone);
+        animQ.add(() => introDone);
       }
       /**
        * Random teams, dealt like a slot machine: four slots (yours on the left,
@@ -2644,32 +2638,8 @@
         return { x: cores.reduce((s, c) => s + c.x, 0) / cores.length, y: cores.reduce((s, c) => s + c.y, 0) / cores.length };
       };
 
-      /**
-       * Play a stock Animate.css preset on an element. Resolves when it ends,
-       * when another preset replaces it, or after a timeout if the element left
-       * the page. `keep` leaves the end state in place (exits like fadeOutDown).
-       */
-      function playPreset(el, preset, { speed = "", keep = false } = {}) {
-        if (!el) return Promise.resolve();
-        el._presetDone?.();
-        el.classList.remove(...[...el.classList].filter((c) => c.startsWith("animate__")));
-        void el.offsetWidth; // restart even when it's the same preset again
-        const cls = ["animate__animated", `animate__${preset}`, ...(speed ? [`animate__${speed}`] : [])];
-        el.classList.add(...cls);
-        return new Promise((resolve) => {
-          const done = () => {
-            clearTimeout(timer);
-            el.removeEventListener("animationend", onEnd);
-            el._presetDone = null;
-            if (!keep) el.classList.remove(...cls);
-            resolve();
-          };
-          const onEnd = (e) => { if (e.target === el) done(); };
-          const timer = setTimeout(done, 3200);
-          el._presetDone = done;
-          el.addEventListener("animationend", onEnd);
-        });
-      }
+      /** Stock Animate.css presets: Ploto's animation library (web/motion.js). */
+      const playPreset = Ploto.playPreset;
 
       /**
        * Monster body language: which Animate.css preset each game moment plays,
@@ -3332,7 +3302,8 @@
         Ploto.forgetRoom("match_monsters");
         if (panel) closePanel();
         const forfeit = forfeitedBy == null ? null : forfeitedBy === room.seat ? "me" : "them";
-        endInfo = { won, forfeit, mine: false, theirs: false };
+        endInfo = { won, forfeit };
+        $("peerWarn").classList.add("hidden");
         rivalAdded = null;
         if (won) cue("win");
         renderEnd();
@@ -3347,58 +3318,46 @@
        */
       async function openEndCard(won) {
         const scrim = $("end");
-        if (reduceMotion) { endInfo.counted = true; renderEnd(); return; }
-        scrim.animate([{ clipPath: "circle(0% at 50% 50%)" }, { clipPath: "circle(75% at 50% 50%)" }], { duration: 420, easing: "steps(8, end)" });
-        await sleep(420);
-        if (won) scrim.querySelectorAll(".end-team .rig-view").forEach((v, i) => setTimeout(() => playPreset(v, "bounce", { speed: "fast" }), i * 140));
-        const nums = [...scrim.querySelectorAll("[data-count]")];
-        for (const [i, el] of nums.entries()) {
-          const to = +el.dataset.count;
-          await sleep(i ? 120 : 0);
-          const steps = Math.min(12, to);
-          for (let s = 1; s <= steps; s++) {
-            if (!el.isConnected) { if (endInfo) { endInfo.counted = true; renderEnd(); } return; } // the card re-rendered (rematch vote, presence)
-            el.textContent = Math.round((to * s) / steps);
-            await sleep(40);
-          }
-          el.textContent = to;
-          if (to > 0) playPreset(el, "pulse", { speed: "faster" });
+        if (!reduceMotion) {
+          scrim.animate([{ clipPath: "circle(0% at 50% 50%)" }, { clipPath: "circle(75% at 50% 50%)" }], { duration: 420, easing: "steps(8, end)" });
+          await sleep(420);
+          if (won) scrim.querySelectorAll(".end-team .rig-view").forEach((v, i) => setTimeout(() => playPreset(v, "bounce", { speed: "fast" }), i * 140));
         }
-        if (endInfo) endInfo.counted = true;
+        const card = scrim.querySelector(".end-card");
+        if (card) kit.countResult(card);
       }
 
       /** Your monsters at their final stage, for the end card. */
       const endTeam = () => (state ? state.players[room.seat].monsters.map((m) => rigView(m.id, m.evolution || 0, 2)).join("") : "");
 
-      /** Re-draw the end card from endInfo + rivalOnline (votes and presence change it live). */
+      /**
+       * The end card is Ploto's result screen (kit.renderResult) inside the arena's wipe: your
+       * team, Victory or Defeat, your numbers, and Rematch, which follows the room (your rival
+       * asking shows up live).
+       */
       function renderEnd() {
-        if (!endInfo) return;
-        const { won, forfeit, mine, theirs } = endInfo;
+        if (!endInfo || !room) return;
+        const { won, forfeit } = endInfo;
         const teams = state?.drafted ? "A new draft" : state?.randomTeams ? "New random teams" : "Same teams"; // drafts and random teams start over
-        let label = "Rematch", hint = `${teams}.`;
-        let disabled = false, invited = false;
-        // A rival who asked for a rematch has moved on to its room: they're waiting there, not gone.
-        if (theirs) { label = "Accept rematch"; hint = "Your rival wants a rematch"; invited = true; }
-        else if (!rivalOnline) { disabled = true; hint = "Your rival left the arena."; }
-        else if (mine) { label = "Waiting for rival…"; disabled = true; hint = "Rematch requested. Waiting for your rival to accept."; }
-        $("end").innerHTML =
-          `<div class="end-card"><div class="end-team${won ? " won" : " lost"}">${endTeam()}</div>` +
-          `<div class="big">${won ? "Victory" : "Defeat"}</div>` +
-          `<p>${forfeit === "them" ? "Your rival forfeited." : forfeit === "me" ? "You forfeited." : won ? "You knocked out their team." : "Your team was knocked out."}</p>` +
-          // Your numbers, unless there are none to show (an early forfeit): three zeros say nothing.
-          (matchStats.dealt || matchStats.bestHit || matchStats.bestCombo ? `<div class="end-stats">` +
-          [["dealt", "Damage"], ["bestHit", "Best hit"], ["bestCombo", "Best combo"]].map(([k, label]) =>
-            `<div><b data-count="${matchStats[k]}">${endInfo.counted ? matchStats[k] : 0}</b><span>${label}</span></div>`).join("") +
-          `</div>` : "") +
-          `<div class="end-actions">` +
-          `<button id="rematch" class="${invited ? "pulse" : ""}"${disabled ? " disabled" : ""}>${label}</button>` +
-          `<div class="end-hint${invited ? " hot" : ""}">${hint}</div>` +
-          `<button id="again" class="ghost">Back to lobby</button></div>` +
-          addRivalHtml() +
-          (account ? "" : `<p class="end-hint" style="margin:12px 0 0">Claim a username in your Ploto profile to keep a record of your matches.</p>`) + `</div>`;
-        $("rematch").onclick = requestRematch;
-        $("again").onclick = leaveGame;
-        $("addRival")?.addEventListener("click", addRival);
+        let card = $("end").querySelector(".end-card");
+        if (!card) { $("end").innerHTML = `<div class="end-card"></div>`; card = $("end").firstElementChild; }
+        const anyStats = matchStats.dealt || matchStats.bestHit || matchStats.bestCombo; // three zeros say nothing
+        kit.renderResult(card, {
+          hero: `<div class="end-team${won ? " won" : " lost"}">${endTeam()}</div>`,
+          title: won ? "Victory" : "Defeat",
+          sub: forfeit === "them" ? "Your rival forfeited." : forfeit === "me" ? "You forfeited." : won ? "You knocked out their team." : "Your team was knocked out.",
+          win: won,
+          tiles: anyStats ? [{ label: "Damage", value: matchStats.dealt }, { label: "Best hit", value: matchStats.bestHit }, { label: "Best combo", value: matchStats.bestCombo }] : null,
+          view: roomView,
+          rematchHint: `${teams}.`,
+          // A rival who asked for a rematch has moved on to its room: they're waiting there, not gone.
+          blocked: !rivalOnline && !roomView?.rematch?.players?.length ? "Your rival left the arena." : "",
+          extra: addRivalHtml() + (account ? "" : `<p class="pl-res-note">Claim a username in your Ploto profile to keep a record of your matches.</p>`),
+          onRematch: requestRematch,
+          onLeave: leaveGame,
+          key: room.roomId,
+        });
+        card.querySelector("#addRival")?.addEventListener("click", addRival);
       }
 
       /**
@@ -3414,10 +3373,10 @@
         return known || (account && account.username === name) ? null : name;
       }
       function addRivalHtml() {
-        if (rivalAdded) return `<p class="end-hint" style="margin:12px 0 0">${ic("friends")} Friend request sent to ${esc(rivalAdded)}</p>`;
+        if (rivalAdded) return `<p class="pl-res-note">${ic("friends")} Friend request sent to ${esc(rivalAdded)}</p>`;
         const name = rivalName();
         if (!name) return "";
-        return `<div class="end-actions" style="margin-top:10px"><button id="addRival" class="ghost">${ic("friends")} Add ${esc(name)} as a friend</button></div>`;
+        return `<button id="addRival" class="ghost">${ic("friends")} Add ${esc(name)} as a friend</button>`;
       }
       async function addRival() {
         const name = rivalName();
@@ -3436,16 +3395,10 @@
       }
 
       async function requestRematch() {
-        if (!endInfo || endInfo.mine) return;
-        endInfo.mine = true;
-        renderEnd();
         try {
           const res = await gameSock.request("lobby:rematch", {});
           if (res && res.roomId) await enterRematch(res);
         } catch (e) {
-          if (!endInfo) return;
-          endInfo.mine = false;
-          renderEnd();
           toast(`Couldn't start a rematch. ${errText(e)}`, 3000);
         }
       }
@@ -3625,18 +3578,8 @@
       /* ------------------------------------------------------------ boot */
       $("play").addEventListener("click", pickReady);
       /** In-game menu: one button in the top bar instead of two, so the turn banner keeps its room. */
-      function openGameMenu() {
-        const el = Ploto.sheet(`<h2>Menu</h2><div class="pl-actions"><button class="ghost" data-m="settings">Settings</button>` +
-          `<button class="danger" data-m="forfeit">Forfeit match</button><button class="ghost" data-m="close">Close</button></div>`, { label: "Menu" });
-        el.onclick = (e) => {
-          const b = e.target.closest("[data-m]");
-          if (!b) return;
-          if (b.dataset.m === "close") return Ploto.closeSheet();
-          Ploto.closeSheet(true);
-          if (b.dataset.m === "settings") openSettings();
-          if (b.dataset.m === "forfeit") confirmForfeit();
-        };
-      }
+      /** The in-game menu is Ploto's (how to play, settings); Match Monsters adds the way out. */
+      const openGameMenu = () => kit.menu({ items: [{ label: "Forfeit match", danger: true, run: confirmForfeit }] });
       $("gameMenuBtn").addEventListener("click", openGameMenu);
       for (const el of document.querySelectorAll("[data-icon]")) el.outerHTML = ic(el.dataset.icon);
       if (window.PIXELART?.status) {
@@ -3709,7 +3652,6 @@
           else afterTeams();
         });
       }
-      window.addEventListener("resize", () => { if (curScreen() === "home") drawHero(); });
       $("searchCancel").addEventListener("click", lbBack);
       $("searchBot").addEventListener("click", () => { cancelSearch(); nav.how = "bot"; practice(); });
       // Escape steps back a screen (capture: an open sheet closes first, on its own Escape)

@@ -311,7 +311,7 @@ describe("hold'em rematch and results", () => {
     await expect(Promise.resolve().then(() => lobby.roomRequest(t.roomId, room, peer("stranger"), "holdem:rematch"))).rejects.toThrow(/seat/);
     const next = lobby.roomRequest(t.roomId, room, me, "holdem:rematch") as any;
     expect(next.roomId).not.toBe(t.roomId);
-    expect(room.rematch).toEqual({ roomId: next.roomId, code: next.code });
+    expect(room.rematch).toEqual({ roomId: next.roomId, code: next.code, players: ["Mia"] });
     const fresh = rooms.get(next.roomId);
     expect(fresh.phase).toBe("lobby");
     expect(fresh.seated()[0]).toMatchObject({ kind: "player", name: "Mia" });

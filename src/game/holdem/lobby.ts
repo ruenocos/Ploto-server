@@ -53,11 +53,14 @@ export class HoldemLobby implements GameLobby {
     // The first player to ask hosts the new table; everyone after joins it.
     let next = room.rematch ? this.tables.get(room.rematch.code) : undefined;
     if (!next || next.phase !== "lobby") {
-      next = this.open("rematch", room.settings, room.hosted || room.mode !== "quick");
-      room.rematch = { roomId: next.roomId, code: next.code };
-      room.broadcast([]);
+      // Practice deals again straight away; other tables gather in a lobby first.
+      const practice = room.mode === "practice";
+      next = this.open(practice ? "practice" : "rematch", room.settings, room.hosted || room.mode !== "quick", practice);
+      room.rematch = { roomId: next.roomId, code: next.code, players: [] };
     }
     next.reserve(peer.id, me.name, me.accountId);
+    if (room.rematch && !room.rematch.players.includes(me.name)) room.rematch.players.push(me.name);
+    room.broadcast([]);
     return { roomId: next.roomId, code: next.code };
   }
 

@@ -111,7 +111,7 @@ its lobby module (`src/game/<game>/lobby.ts`).
 |---|---|---|
 | `holdem:quick` | `{displayName}` | `{roomId, code}` — a quick table (6 seats, 1,000 chips, timer on, blinds every 10). Starts when full, or 20 s after you sit down with bots in the empty seats. |
 | `holdem:host` | `{displayName, settings}` | `{roomId, code}` — a table you host (lobby state) |
-| `holdem:practice` | `{displayName, settings?}` | `{roomId, code}` — you + bots, timer off, starts right away |
+| `holdem:practice` | `{displayName, settings?}` | `{roomId, code}` — you + 3 bots, timer off, dealt the moment you connect (the first `holdem:update` can arrive before your `holdem:getState` answer) |
 | `holdem:tableInfo` | `{code}` | `{roomId, code, host, settings, seatsFree, started}` |
 | `holdem:join` | `{code, displayName}` | `{roomId, code}` — reserves a seat |
 | `holdem:invite` | `{friendId, roomId}` | `{inviteId}` — invite a friend to your table |
@@ -148,11 +148,12 @@ toAct: seat|null, legal: {canFold, canCheck, call, canRaise, minRaiseTo, maxRais
 deadline: epochMs|null (whoever is to act; null = no clock), inBank: bool (the time bank is running),
 bank: seconds left in your time bank, standings: [{seat, name, place}] (busted so far, and the winner at the end),
 results: [{seat, name, place, isBot, handsWon, biggestPot, bestHand}]|null (when over),
-rematch: {roomId, code}|null}`.
+rematch: {roomId, code, players: [name]}|null (who has joined the rematch so far)}`.
 
 `Card` = `{rank: 2..14, suit: 's'|'h'|'d'|'c'}`. A `raise.to` is the total bet for the street.
 
-`Event` (in order; the client animates them, then settles on the view):
+`Event` (in order; the client animates them, then settles on the view). Every event
+has a `type` field naming it; an `action` event carries the move in its `action` field:
 `handStart {handNo, button, sb, bb, stacks: [{seat, chips}]}`,
 `blinds {seat, kind: 'sb'|'bb', amount, allIn}`, `deal {hands: [{seat, cards|null}]}` (deal order),
 `timeout {seat, action}` (the clock acted; followed by the action), 

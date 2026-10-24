@@ -143,8 +143,8 @@ export class TableRoom implements Room {
   hostSeat = -1;
   /** When a quick table will start with bots (epoch ms), once someone sits. */
   startsAt: number | null = null;
-  /** The rematch table, once someone asked for one. */
-  rematch: { roomId: string; code: string } | null = null;
+  /** The rematch table, once someone asked for one, and who has joined it so far. */
+  rematch: { roomId: string; code: string; players: string[] } | null = null;
   startedAt: Date | null = null;
   game: HoldemGame | null = null;
 
@@ -394,13 +394,21 @@ export class TableRoom implements Room {
       this.broadcast(events);
       if (game.phase === "gameOver") return this.finish();
       const showdown = events.some((e) => e.type === "showdown");
-      this.nextTimer = setTimeout(() => this.dealNext(), this.timing.nextHandMs + (showdown ? this.timing.showdownMs : 0) + this.animMs(events));
+      const pause = this.botsOnly() ? 300 : this.timing.nextHandMs + (showdown ? this.timing.showdownMs : 0) + this.animMs(events);
+      this.nextTimer = setTimeout(() => this.dealNext(), pause);
       this.nextTimer.unref?.();
       return;
     }
     this.turnStart = Date.now() + this.lastAnim; // a new turn: its clock starts after the animations
     this.armTurn();
     this.broadcast(events);
+  }
+
+  /** Once every person has busted, the bots finish the game quickly (nobody's waiting on them). */
+  private botsOnly(): boolean {
+    const game = this.game;
+    if (!game) return false;
+    return game.state.seats.every((s) => s.place !== null || this.seats[seatOf(s.id)]?.kind === "bot");
   }
 
   /** Start the clock (and the bots) for whoever is to act. */
@@ -415,7 +423,8 @@ export class TableRoom implements Room {
     const pause = Math.max(0, this.turnStart - now);
     if (s.kind === "bot") {
       const [lo, hi] = this.timing.botMs;
-      this.turnTimer = setTimeout(() => this.botAct(seat), pause + lo + Math.floor(this.random() * (hi - lo)));
+      const think = this.botsOnly() ? 120 : pause + lo + Math.floor(this.random() * (hi - lo));
+      this.turnTimer = setTimeout(() => this.botAct(seat), think);
     } else if (s.away || !this.peers.has(s.peerId ?? "")) {
       this.deadline = now + pause + this.timing.awayMs;
       this.turnTimer = setTimeout(() => this.timeout(seat), pause + this.timing.awayMs);
@@ -534,14 +543,11 @@ export class TableRoom implements Room {
   private track(events: readonly HoldemEvent[]): void {
     this.lastAnim = this.animMs(events);
     const game = this.requireGame();
+    // What each seat won this hand, over every pot (a side pot is still the same hand).
+    const won = new Map<number, number>();
     for (const e of events) {
       if (e.type === "potAwarded") {
-        for (const w of e.winners) {
-          const st = this.stats.get(seatOf(w.id));
-          if (!st) continue;
-          st.handsWon += 1;
-          st.biggestPot = Math.max(st.biggestPot, w.amount);
-        }
+        for (const w of e.winners) won.set(seatOf(w.id), (won.get(seatOf(w.id)) ?? 0) + w.amount);
       } else if (e.type === "showdown") {
         for (const r of e.reveals) {
           const st = this.stats.get(seatOf(r.id));
@@ -553,6 +559,12 @@ export class TableRoom implements Room {
           }
         }
       }
+    }
+    for (const [seat, amount] of won) {
+      const st = this.stats.get(seat);
+      if (!st) continue;
+      st.handsWon += 1;
+      st.biggestPot = Math.max(st.biggestPot, amount);
     }
   }
 

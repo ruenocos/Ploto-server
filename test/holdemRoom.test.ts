@@ -109,6 +109,26 @@ describe("hold'em table play", () => {
     t.dispose();
   }, 30000);
 
+  it("keeps a turn's clock running across a reconnect instead of restarting it", async () => {
+    const t = table({ settings: { ...DEFAULT_SETTINGS, seats: 2 }, timing: { ...FAST, turnMs: 5_000, awayMs: 3_000, botMs: [60_000, 60_001] } });
+    const a = peer("a"), b = peer("b");
+    t.reserve("a", "Ann", null);
+    t.reserve("b", "Ben", null);
+    t.join(a);
+    t.join(b);
+    t.start();
+    const v = t.viewFor(0) as any;
+    const mover = v.toAct === 0 ? a : b;
+    const end = v.deadline as number;
+    expect(end).toBeGreaterThan(Date.now());
+    await new Promise((r) => setTimeout(r, 30));
+    t.leave(mover);
+    expect((t.viewFor(0) as any).deadline).toBeLessThanOrEqual(Date.now() + 3_000); // disconnected: the short clock
+    t.join(mover);
+    expect((t.viewFor(0) as any).deadline).toBe(end); // back: the same turn deadline as before
+    t.dispose();
+  });
+
   it("rejects out-of-turn and illegal actions with readable reasons", async () => {
     const t = table({ settings: { ...DEFAULT_SETTINGS, seats: 2 }, timing: { ...FAST, turnMs: 60_000, botMs: [60_000, 60_001] } });
     const a = peer("a"), b = peer("b");

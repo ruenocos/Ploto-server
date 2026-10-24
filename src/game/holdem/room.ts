@@ -156,6 +156,8 @@ export class TableRoom implements Room {
   /** Time bank left per seat (ms). */
   private readonly bank = new Map<number, number>();
   private deadline: number | null = null;
+  /** When the current turn's clock started (after the animation allowance). */
+  private turnStart = 0;
   /** When the current turn's time bank started (null: not in the bank). */
   private bankStartedAt: number | null = null;
   private turnTimer: ReturnType<typeof setTimeout> | null = null;
@@ -396,6 +398,7 @@ export class TableRoom implements Room {
       this.nextTimer.unref?.();
       return;
     }
+    this.turnStart = Date.now() + this.lastAnim; // a new turn: its clock starts after the animations
     this.armTurn();
     this.broadcast(events);
   }
@@ -408,16 +411,24 @@ export class TableRoom implements Room {
     if (!id) return;
     const seat = seatOf(id);
     const s = this.seats[seat]!;
-    const pause = this.lastAnim;
+    const now = Date.now();
+    const pause = Math.max(0, this.turnStart - now);
     if (s.kind === "bot") {
       const [lo, hi] = this.timing.botMs;
       this.turnTimer = setTimeout(() => this.botAct(seat), pause + lo + Math.floor(this.random() * (hi - lo)));
     } else if (s.away || !this.peers.has(s.peerId ?? "")) {
-      this.deadline = Date.now() + pause + this.timing.awayMs;
+      this.deadline = now + pause + this.timing.awayMs;
       this.turnTimer = setTimeout(() => this.timeout(seat), pause + this.timing.awayMs);
     } else if (this.settings.timer) {
-      this.deadline = Date.now() + pause + this.timing.turnMs;
-      this.turnTimer = setTimeout(() => this.enterBank(seat), pause + this.timing.turnMs);
+      // The turn's clock keeps running across reconnects: resume it rather than restart it.
+      const end = this.turnStart + this.timing.turnMs;
+      if (end > now) {
+        this.deadline = end;
+        this.turnTimer = setTimeout(() => this.enterBank(seat), end - now);
+      } else {
+        this.enterBank(seat);
+        return;
+      }
     }
     this.turnTimer?.unref?.();
   }
@@ -427,7 +438,7 @@ export class TableRoom implements Room {
     if (this.phase !== "playing" || !this.game?.toActId || this.nextTimer) return;
     const seat = seatOf(this.game.toActId);
     if (this.seats[seat]?.kind === "bot") return;
-    this.lastAnim = 0;
+    this.spendBank(seat); // time already used from the bank stays used
     this.clearTurn();
     this.armTurn();
     this.broadcast([]);

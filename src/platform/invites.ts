@@ -27,6 +27,8 @@ export interface Invite<T = unknown> {
   readonly data: T;
   /** Extra public fields the game adds to the invite card. */
   readonly extra: Record<string, unknown>;
+  /** Called once when the invite ends, however it ends (e.g. free the seat it held). */
+  readonly onEnd?: ((reason: InviteEnd) => void) | undefined;
   timer: ReturnType<typeof setTimeout>;
 }
 
@@ -38,6 +40,9 @@ export interface NewInvite<T> {
   readonly hostPeerId: string;
   readonly data: T;
   readonly extra?: Record<string, unknown>;
+  readonly onEnd?: (reason: InviteEnd) => void;
+  /** One open invite per host (a 1v1 game): the host's earlier invites end. */
+  readonly exclusive?: boolean;
 }
 
 export class InviteBook {
@@ -48,9 +53,9 @@ export class InviteBook {
     private readonly lobbyPeer: (peerId: string) => PeerLike | undefined,
   ) {}
 
-  /** Open an invite (the host's earlier ones end) and tell the friend. */
+  /** Open an invite and tell the friend (with `exclusive`, the host's earlier ones end). */
   create<T>(n: NewInvite<T>): Invite<T> {
-    for (const inv of [...this.invites.values()]) if (inv.hostPeerId === n.hostPeerId) this.drop(inv, "cancelled");
+    if (n.exclusive) for (const inv of [...this.invites.values()]) if (inv.hostPeerId === n.hostPeerId) this.drop(inv, "cancelled");
     const inv: Invite<T> = {
       id: randomUUID(),
       gameId: n.gameId,
@@ -61,6 +66,7 @@ export class InviteBook {
       createdAt: Date.now(),
       data: n.data,
       extra: n.extra ?? {},
+      onEnd: n.onEnd,
       timer: setTimeout(() => this.drop(inv, "expired"), INVITE_MS),
     };
     inv.timer.unref?.();
@@ -85,6 +91,7 @@ export class InviteBook {
     const note = { inviteId: inv.id, reason };
     this.presence.notify(inv.to, "social:inviteGone", note);
     this.lobbyPeer(inv.hostPeerId)?.notify("social:inviteGone", note);
+    inv.onEnd?.(reason);
   }
 
   /** The host left: their open invites end. */

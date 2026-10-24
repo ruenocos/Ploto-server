@@ -29,6 +29,7 @@ import { setOnlineCounter } from "../platform/games.js";
 import { InviteBook } from "../platform/invites.js";
 import type { GameLobby, LobbyContext, Room } from "../platform/lobby.js";
 import { MatchMonstersLobby } from "../game/matchmonsters/lobby.js";
+import { HoldemLobby } from "../game/holdem/lobby.js";
 import type { PeerLike } from "./gameRoom.js";
 import { Peer } from "./peer.js";
 
@@ -39,7 +40,7 @@ const ROOM_IDLE_MS = 10 * 60 * 1000;
 
 /** Game lobbies to plug in, given the shared context (Hold'em adds itself here). */
 export type LobbyFactory = (ctx: LobbyContext) => GameLobby;
-export const LOBBY_FACTORIES: LobbyFactory[] = [(ctx) => new MatchMonstersLobby(ctx)];
+export const LOBBY_FACTORIES: LobbyFactory[] = [(ctx) => new MatchMonstersLobby(ctx), (ctx) => new HoldemLobby(ctx)];
 
 export class SignalingServer {
   private readonly wss: WebSocketServer;

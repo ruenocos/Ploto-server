@@ -106,6 +106,7 @@ export class MatchMonstersLobby implements GameLobby {
           from: { id: me.id, username: me.username },
           to: friendId,
           hostPeerId: peer.id,
+          exclusive: true, // one rival at a time
           data: { draft: req.draft, random: req.random, host },
           // The invite card shows the host's team for blind picks.
           extra: { monsters: req.draft || req.random ? [] : req.monsters.map((m) => m.id), draft: req.draft, random: req.random },

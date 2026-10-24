@@ -132,23 +132,35 @@ its lobby module (`src/game/<game>/lobby.ts`).
 
 Notification `holdem:update` = `{view: TableView, events: Event[]}` after every
 change; events are filtered per viewer (you only ever see your own hole cards
-until showdown).
+until showdown). `holdem:back` (no data) ends sitting out.
 
-`TableView` = `{roomId, code, phase: 'lobby'|'playing'|'over', you: seat|null, host: seat,
-settings, seats: [{seat, kind: 'player'|'bot'|'empty'|'invited', name, connected, away, chips, bet,
-folded, allIn, cards: Card[]|null (own, or revealed), dealer, sb, bb, toAct, place}],
-board: Card[], pots: [{amount}], blinds: {sb, bb, level, nextIn}, handNo,
-toAct: seat|null, legal: {canFold, canCheck, call, minRaiseTo, maxRaiseTo, canRaise}|null,
-deadline: epochMs|null, bank: seconds left in your time bank, standings: [{seat, name, place}],
+`TableView` = `{roomId, code, mode: 'quick'|'private'|'practice'|'invite'|'rematch',
+phase: 'lobby'|'playing'|'over', you: seat, host: seat (-1 for quick tables),
+settings, startsAt: epochMs|null (quick tables: when bots fill in and the deal starts),
+seats: [{seat, kind: 'player'|'bot'|'empty'|'invited', name, connected, away, chips, bet,
+inHand, folded, allIn, busted, place, cards: Card[]|null (yours, or shown at showdown),
+hasCards (face-down cards to draw), dealer, sb, bb}],
+board: Card[], pots: [{amount}] (collected on earlier streets), totalPot (incl. this street's bets),
+handNo, street: 'preflop'|'flop'|'turn'|'river'|'showdown'|'handOver'|'gameOver'|null,
+blinds: {sb, bb, level, nextIn: hands until they go up, or null}|null,
+toAct: seat|null, legal: {canFold, canCheck, call, canRaise, minRaiseTo, maxRaiseTo}|null (yours, on your turn),
+deadline: epochMs|null (whoever is to act; null = no clock), inBank: bool (the time bank is running),
+bank: seconds left in your time bank, standings: [{seat, name, place}] (busted so far, and the winner at the end),
+results: [{seat, name, place, isBot, handsWon, biggestPot, bestHand}]|null (when over),
 rematch: {roomId, code}|null}`.
 
-`Card` = `{rank: 2..14, suit: 's'|'h'|'d'|'c'}`.
+`Card` = `{rank: 2..14, suit: 's'|'h'|'d'|'c'}`. A `raise.to` is the total bet for the street.
 
-`Event` (in order; the client animates them): `handStart {handNo, button, sb, bb}`,
-`blinds {seat, amount}`, `deal {}`, `action {seat, type, amount, toTotal, allIn}`,
-`street {name, cards}`, `showdown {reveals: [{seat, cards, handName}]}`,
-`pot {index, amount, winners: [{seat, amount, handName}]}`, `eliminated {seat, place}`,
-`blindsUp {sb, bb}`, `gameOver {standings}`, `timeout {seat, type}`.
+`Event` (in order; the client animates them, then settles on the view):
+`handStart {handNo, button, sb, bb, stacks: [{seat, chips}]}`,
+`blinds {seat, kind: 'sb'|'bb', amount, allIn}`, `deal {hands: [{seat, cards|null}]}` (deal order),
+`timeout {seat, action}` (the clock acted; followed by the action), 
+`action {seat, action: 'fold'|'check'|'call'|'bet'|'raise', amount (chips put in), toTotal, allIn}`,
+`returned {seat, amount}` (an uncalled bet comes back),
+`street {name: 'flop'|'turn'|'river', cards (new), board (all)}`,
+`showdown {reveals: [{seat, cards, handName}]}`,
+`pot {index, amount, winners: [{seat, amount, handName|null}]}`, `eliminated {seat, place}`,
+`blindsUp {level, sb, bb}`, `gameOver {standings: [{seat, name, place, chips}]}`.
 
 Timers: with the timer on, each action has 25 s; then the player's time bank (60 s
 for the whole game) runs; then the server acts for them (check if free, else fold).

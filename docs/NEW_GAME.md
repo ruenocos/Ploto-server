@@ -68,7 +68,8 @@ In this order, each step tested before the next:
    catch up when behind or when the tab comes back.
 6. **Feel pass**: the signature moment first, then motion, sound, haptics.
 7. **Art**: the launcher card (to the rule in docs/STYLE.md, "Launcher cards":
-   a still close-up on the 80×50 grid, the icon a crop of it), the home banner,
+   a still collage of what's inside on the 80×50 grid: the star, what you play
+   with, one piece of interface top left; the icon a crop of the star), the home banner,
    then in-game art.
 
 ## 4. Consistency: what every game does the same
@@ -98,7 +99,7 @@ In this order, each step tested before the next:
 - [ ] **Its own sound set** through `Ploto.cue` (feedback.js), with haptics on
       the same beats.
 - [ ] **A launcher card to the rule** (docs/STYLE.md, "Launcher cards"): still,
-      80×50, the game's surface and its signature moment, its own backdrop colour.
+      80×50, a collage of the star, its pieces and one piece of interface, its own backdrop colour.
 - [ ] **Art on Ploto's grid**: whole device pixels, `image-rendering: pixelated`,
       sizes snapped per screen; check against the reference images, at 1× and 3×.
 - [ ] **Words in its world**: what a room, a code, a win are called.

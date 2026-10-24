@@ -165,14 +165,20 @@ to one rule, so the grid reads as one set while every card looks like its game.
   overflow cropped, `shape-rendering: crispEdges` / `image-rendering: pixelated`.
   A game's sprites go on 1:1 (a 16 px gem is 16 art pixels), so detail is equally
   chunky on every card: Hold'em's cards are 16×22, Match Monsters' gems 16×16.
-- **A close-up, not a scene.** The game's signature surface in its frame, edge
-  to edge, with 2–3 hero objects on it, ideally the game's signature moment:
-  Hold'em is the felt in its rail with A♠ K♥; Match Monsters is the board in its
-  frame with three fire gems lined up in a match. No characters, no landscapes.
-- **Composition.** Heroes centred and at least a third of the card's height;
-  1–2 supporting objects smaller, lower and to the sides (Hold'em's chips,
-  Match Monsters' water and nature gems); five objects at most. Keep the top
-  right (about 20×10) free of detail for the NEW badge.
+- **A collage of what's inside.** A few of the game's own elements together, so
+  the card says what the game is at a glance:
+  1. **the star**: the game's main piece (Match Monsters: a monster on its arena
+     platform; Hold'em: the hand, A♠ K♥);
+  2. **what you play with**: its pieces on their surface (a corner of the gem
+     board with gems and a berry; the felt in its rail with chips);
+  3. **one piece of its interface**, always top left (Match Monsters' HP bar,
+     Hold'em's turn timer), plus at most one small extra (the dealer button).
+  Elements overlap (the star in front, cropping the edge of the surface behind),
+  and the biggest may crop at the card's edge. Four to six elements, never a
+  full screen or a landscape.
+- **Composition.** The star takes the left or the middle at about two thirds of
+  the card's height; the pieces fill the rest. Keep the top right (about 20×10)
+  free of detail for the NEW badge.
 - **Depth.** The frame is 2 art px with its top row lit; objects get a 1 px ink
   outline and a hard 1 px shadow down-right at 14% ink. No gradients, glows,
   blur or dithering.
@@ -182,7 +188,8 @@ to one rule, so the grid reads as one set while every card looks like its game.
   sprite colours; about ten colours in all.
 - **No words,** except glyphs that belong to an object (a card's rank).
 - **The icon is a crop.** The list icon is a 24×24 crop of the card at k = 2,
-  centred on a hero object, so the icon and the card are the same picture.
+  centred on the star (the monster's face, the two cards), so the icon and the
+  card are the same picture.
 - **Check it** as a 2-up tile (about 170 px wide) and as a full-width card, at
   1× and 3×, next to the other cards.
 

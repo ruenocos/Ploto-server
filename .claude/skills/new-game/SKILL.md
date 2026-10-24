@@ -59,7 +59,7 @@ for v1) and get a yes before code.
 5. Feel pass: the signature moment first, then motion (steps() easing, whole
    pixels, reduced motion), sound and haptics via `Ploto.cue`.
 6. Art: launcher card (`web/<slug>.card.js`, to docs/STYLE.md "Launcher cards":
-   still, 80×50 grid, the surface and signature moment, icon = a crop), home banner using the game's own
+   still, 80×50 grid, a collage: the star, what you play with, one piece of interface top left; icon = a crop of the star), home banner using the game's own
    poses and timings, in-game art. PixelLab: the key is in the scratchpad
    (`.pixellab_key`), never in the repo; review candidates with the user.
 

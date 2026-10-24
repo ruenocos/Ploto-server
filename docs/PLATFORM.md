@@ -303,3 +303,41 @@ same connection carries the draft (if any) and then the match:
 
 Notifications: `mm:draftUpdate`, `mm:draftDone`, `mm:moveResult`, `mm:evolved`,
 `mm:gameOver`, `mm:peerStatus`, and the platform's `lobby:update`.
+
+## Sea Battle
+
+1v1 Battleship (docs/games/sea_battle.md). Rules in `src/game/sea_battle/engine.ts`
+(pure, seeded), bots in `bot.ts`, the room in `room.ts`, the lobby in `lobby.ts`.
+
+### Lobby
+
+Prefix `seabattle:`; the platform's methods (`seabattle:quick/host/practice/info/join/invite/acceptInvite`).
+Quick: classic board, timer on; a bot takes the seat if nobody comes in 20 s.
+Host: a game for a friend (starts as soon as they join; whoever comes first, code
+or invite). Practice: you and a bot, no timer, board and difficulty from the
+practice setup. `settings` = `{board: 'classic'|'quick', timer: bool,
+botStyle: 'relaxed'|'sharp', bots: bool}` (players see the bot style as "Bot
+difficulty": Medium / Hard; `bots` is set by the kind of room, never by a client).
+
+### Game room (`roomId=<roomId>` socket, same peerId)
+
+| Method | Data | Returns |
+|---|---|---|
+| `seabattle:getState` | — | `SeaRoomView` |
+| `seabattle:draft` | `{fleet}` | `{ok}`: your fleet while placing (the placing clock locks it in) |
+| `seabattle:ready` | `{fleet?}` | `{ok}`: lock in your fleet (or the one you were dealt) |
+| `seabattle:fire` | `{x, y}` | `{ok}` on your turn |
+| `seabattle:forfeit` | — | `{ok}`: the rival wins (so does `lobby:leave` mid-game) |
+
+`fleet` = `[{kind, x, y, dir: 'h'|'v'}]` (top-left cell; ships can't touch, even
+diagonally). Notification `seabattle:update` = `{view, events}`.
+`SeaRoomView` = the lobby view plus `game` (`{phase: 'placing'|'firing'|'over',
+size, fleetKinds, you, turn, first, winner, forfeit, ready, fleet, incoming,
+outgoing, rivalShips, rivalSunk, yourSunk, stats}`: `incoming` / `outgoing` are
+cell marks 0 unknown, 1 miss, 2 hit, 3 water next to a sunk ship; `rivalShips`
+holds only the rival's sunk ships until the game is over), `draft` (your dealt
+fleet while placing), `clock` (`{seat|null, deadline}`; null seat: the placing
+clock) and `results`.
+Events: `ready {seat}`, `start {first}`, `shot {by, x, y, result: 'miss'|'hit'|'sunk',
+auto?, ship?, water?}`, `turn {seat}`, `over {winner, forfeit?}`. A miss passes the
+turn; a hit or a sink fires again.

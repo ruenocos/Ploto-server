@@ -22,6 +22,7 @@ and libraries. It ships no Plato code or game assets.
 | Launcher      | `web/launcher.html` | ✅ `/play`: Games · Friends · Profile, chat, invites to any game |
 | Match Monsters| `src/game/matchmonsters` | ✅ server-authoritative match-3 battle engine, seeded + replayable |
 | Hold'em       | `src/game/holdem`   | ✅ No-Limit Texas Hold'em Sit & Go for 2–6, bots, play chips only |
+| Sea Battle    | `src/game/sea_battle` | ✅ 1v1 Battleship: placing, a hit fires again, the sink, Medium / Hard bots |
 | Voice (mediasoup) | —               | ⏳ methods identified (stock mediasoup-demo); SFU to be wired |
 | In-game payloads  | `src/signaling/gameRoom.ts` | ⏳ provisional `mm:*` methods until the game `client.zip` is mapped |
 
@@ -66,7 +67,7 @@ use `http://localhost:8080/play`), or deploy it (see [`docs/DEPLOY.md`](docs/DEP
   and your sign-in key.
 
 Each game has its own page: **Match Monsters** at `/play/match-monsters`,
-**Hold'em** at `/play/holdem`. Both lobbies are the platform's (docs/PLATFORM.md,
+**Hold'em** at `/play/holdem`, **Sea Battle** at `/play/sea-battle`. Every lobby is the platform's (docs/PLATFORM.md,
 "The game kit"); old `/play?room=CODE` links still work. Adding a game:
 docs/NEW_GAME.md (questionnaire, brief, `node scripts/new-game.mjs`, checklists).
 

@@ -46,8 +46,10 @@ body {
   font: 400 var(--fs-m)/1.35 var(--f-text);
   overflow-x: hidden; min-height: 100vh; min-height: 100dvh;
   -webkit-font-smoothing: none; font-smooth: never;
-  font-variant-ligatures: none; /* Pixelify Sans draws "fi" as a glyph that reads as "A" */
 }
+/* Pixelify Sans draws "fi" as a glyph that reads as "A" ("Pair of fives" became "Pair of Aves").
+   On every element: the `font` shorthand resets ligatures, so inheriting from body isn't enough. */
+*, *::before, *::after { font-variant-ligatures: none !important; }
 .hidden { display: none !important; }
 [hidden] { display: none !important; }
 .muted { color: var(--c-mute); }

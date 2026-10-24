@@ -59,14 +59,15 @@
         --panel2: var(--c-raise); --muted: var(--c-mute); --accent: var(--c-accent); --accent2: var(--c-accent-hi); --good: var(--c-good); --bad: var(--c-bad); --line: var(--c-edge); --ink: var(--c-text);
       }
       @property --p { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
-      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      /* Pixelify Sans draws "fi" as a glyph that reads as "A". On every element: the `font`
+         shorthand resets ligatures, so inheriting from body isn't enough. */
+      *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-variant-ligatures: none !important; }
       html, body { margin: 0; }
       body {
         background: var(--c-night); color: var(--c-text);
         font: 400 var(--fs-m)/1.35 var(--f-text);
         overflow-x: hidden; min-height: 100vh;
         -webkit-font-smoothing: none; font-smooth: never;
-        font-variant-ligatures: none; /* Pixelify Sans draws "fi" as a glyph that reads as "A" */
       }
       /*
        * In a match the page is pinned to the visible screen: a fixed body can't

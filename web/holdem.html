@@ -17,7 +17,7 @@
   --felt-mid: #226449; --felt-text: #c9ead8;
 }
 html, body { height: 100%; }
-body { overscroll-behavior: none; font-variant-ligatures: none; }
+body { overscroll-behavior: none; }
 .px-s { display: block; fill: currentColor; shape-rendering: crispEdges; flex: none; }
 .you-tag { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; letter-spacing: 1px; padding: 2px 4px; background: var(--c-accent); color: #fff; }
 .bot-tag { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; letter-spacing: 1px; padding: 2px 4px; background: var(--c-raise); color: var(--c-mute); }
@@ -102,7 +102,7 @@ p.sumline { margin: 0; min-height: 0; }
 .card.lg { --w: var(--hw, 56px); --h: var(--hh, 78px); } .card.lg .r { font-size: var(--fl-3); left: 4px; top: 4px; } .card.lg .s { left: 5px; top: calc(8px + var(--fl-3)); } .card.lg .g { right: 4px; bottom: 6px; }
 .card.lift { translate: 0 -6px; border-color: var(--c-gold); box-shadow: inset 0 0 0 var(--px) var(--c-gold), inset 0 calc(var(--px) * -3) 0 var(--card-lo); }
 .card.dim { opacity: 0.42; }
-.slot { flex: none; width: var(--bw, 40px); height: var(--bh, 56px); background: rgba(10, 12, 20, 0.22); box-shadow: inset 0 0 0 var(--px) rgba(44, 122, 91, 0.7); }
+.slot { flex: none; width: var(--bw, 40px); height: var(--bh, 56px); box-shadow: inset 0 0 0 var(--px) rgba(44, 122, 91, 0.3); }
 .slot > .card { margin: 0; }
 
 /* ---- chips ---- */
@@ -127,13 +127,13 @@ p.sumline { margin: 0; min-height: 0; }
 #felt canvas.oval { position: absolute; image-rendering: pixelated; pointer-events: none; }
 #felt.nudge { animation: nudge 0.24s steps(4); }
 @keyframes nudge { 25% { transform: translate(-4px, 2px); } 50% { transform: translate(4px, -2px); } 75% { transform: translate(-2px, 0); } }
-.seat { position: absolute; width: 92px; translate: -50% -38px; display: grid; justify-items: center; z-index: 2; transition: opacity 0.2s steps(3); }
+.seat { position: absolute; width: 84px; translate: -50% -38px; display: grid; justify-items: center; z-index: 2; transition: opacity 0.2s steps(3); }
 .seat .ring { padding: 2px; position: relative; z-index: 1; --n: 4px;
   clip-path: polygon(0 var(--n), var(--n) var(--n), var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n), 100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%, var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n))); }
 .seat.act .ring { background: var(--c-gold); animation: ring 0.8s steps(1) infinite; }
 @keyframes ring { 50% { background: var(--c-gold-lo); } }
 .seat.win .ring { background: var(--c-gold); }
-.seat .plate { position: relative; z-index: 2; margin-top: -4px; width: 92px; padding: 4px 6px 6px; display: grid; justify-items: center; gap: 3px; }
+.seat .plate { position: relative; z-index: 2; margin-top: -4px; width: 84px; padding: 3px 6px 5px; display: grid; justify-items: center; gap: 3px; }
 .seat .nm { max-width: 100%; font: 600 var(--fs-xs)/1.1 var(--f-text); color: var(--c-text); }
 .seat .st { display: flex; align-items: center; gap: 3px; font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-cream); }
 .seat.act .plate { border-color: var(--c-gold); }
@@ -143,7 +143,7 @@ p.sumline { margin: 0; min-height: 0; }
 .tbar i { display: block; height: 100%; width: 100%; background: var(--c-gold); }
 .tbar.low i { background: var(--c-bad-hi); }
 .seat.act .tbar.on { display: block; }
-.tag { position: relative; z-index: 3; margin-top: -2px; max-width: 108px; font: 700 var(--fs-xs)/1 var(--f-text); padding: 3px 6px 4px; background: var(--c-well); color: var(--c-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; --n: var(--px); border: var(--px) solid var(--c-ink);
+.tag { position: relative; z-index: 3; margin-top: -2px; max-width: 108px; font: 700 var(--fs-xs)/1 var(--f-text); padding: 3px 6px 4px; background: rgba(10, 12, 20, 0.6); color: var(--c-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; --n: var(--px);
   clip-path: polygon(0 var(--n), var(--n) var(--n), var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n), 100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%, var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n))); }
 .tag:empty { display: none; }
 .tag.mute { color: var(--c-mute); }
@@ -175,14 +175,19 @@ p.sumline { margin: 0; min-height: 0; }
 .mine { position: absolute; translate: -50% 0; z-index: 3; display: flex; gap: 6px; }
 .mine.fold .card { opacity: 0.45; }
 .dock { position: relative; padding: 0 12px calc(12px + env(safe-area-inset-bottom)); display: grid; gap: 8px; }
-.me { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 10px; min-height: 52px; padding: 7px 10px 9px; position: relative; }
+.me { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px 10px; min-height: 44px; padding: 6px 10px 8px; position: relative; }
 .me .l { display: grid; gap: 4px; min-width: 0; }
 .me .l .chips { display: flex; align-items: baseline; gap: 6px; }
 .me .l .chips b { font: 700 var(--fl-2)/1 var(--f-label); color: var(--c-cream); }
 .me .l .chips span { font: 400 var(--fs-s)/1 var(--f-text); color: var(--c-mute); }
-.me .l .hn { font: 600 var(--fs-s)/1.1 var(--f-text); color: var(--c-text); }
-.me .r { display: grid; justify-items: end; gap: 4px; font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-gold); }
-.me .r small { font: 600 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); }
+.hand-lbl { position: absolute; translate: -50% -100%; z-index: 4; max-width: 90%; padding: 3px 8px 5px; background: rgba(10, 12, 20, 0.55); color: var(--c-cream);
+  font: 600 var(--fs-s)/1 var(--f-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; --n: var(--px);
+  clip-path: polygon(0 var(--n), var(--n) var(--n), var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n), 100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%, var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n))); }
+.hand-lbl:empty { display: none; }
+.hand-lbl.gold { background: var(--c-gold); color: #241a00; }
+.hand-lbl.mute { color: var(--c-mute); }
+.me .r { display: flex; flex-direction: row-reverse; align-items: baseline; gap: 8px; font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-gold); } /* "Your turn  25 S" on one line */
+.me .r small { font: 600 var(--fs-s)/1 var(--f-text); color: var(--c-mute); }
 .me .r .bank { color: var(--c-bad-hi); }
 .me .mbar { grid-column: 1 / -1; height: 4px; background: var(--c-ink); display: none; }
 .me .mbar i { display: block; height: 100%; width: 100%; background: var(--c-gold); }
@@ -331,11 +336,12 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       <div class="pot" id="pot"><span class="stacks" id="potStacks"></span><b id="potAmt"></b><small id="potSide"></small></div>
       <div class="board" id="board"></div>
       <div class="mine" id="mine" aria-label="Your cards"></div>
+      <div class="hand-lbl" id="handLbl" aria-live="polite"></div>
       <div class="dbtn" id="dbtn" hidden>D</div>
     </div>
     <div class="dock">
       <div class="me pl-frame" id="me">
-        <div class="l"><div class="chips"><b id="meChips">0</b><span>chips</span></div><span class="hn" id="meHand"></span></div>
+        <div class="l"><div class="chips"><b id="meChips">0</b><span>chips</span></div></div>
         <div class="r" id="meClock"></div>
         <div class="mbar" id="meBar"><i></i></div>
       </div>
@@ -492,22 +498,24 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     { g: "#4a5486", G: "#2f375c", c: "#9aa3cb" },
   ];
 
-  /** Paint the table: an ink-outlined wooden rail around green felt, lit in the middle with dithered edges. */
-  function paintTable(cv, w, h, p = 2) {
+  /** Inside a stadium (a pill: straight long sides, round ends) of half-size a × b around (cx, cy)? */
+  function inStadium(x, y, cx, cy, a, b) {
+    if (a <= 0 || b <= 0) return false;
+    const r = Math.min(a, b), dx = Math.max(0, Math.abs(x - cx) - (a - r)), dy = Math.max(0, Math.abs(y - cy) - (b - r));
+    return dx * dx + dy * dy <= r * r;
+  }
+  /** Paint the table: a stadium of green felt in an ink-outlined wooden rail, lit in the middle with dithered edges. */
+  function paintTable(cv, w, h) {
     const u = 2, W = Math.max(8, Math.floor(w / u)), H = Math.max(8, Math.floor(h / u));
     if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
     cv.style.width = W * u + "px"; cv.style.height = H * u + "px";
     const g = cv.getContext("2d"), img = g.createImageData(W, H), d = img.data;
     const cx = (W - 1) / 2, cy = (H - 1) / 2;
-    const inside = (x, y, inset) => {
-      const a = W / 2 - inset, b = H / 2 - inset;
-      if (a <= 0 || b <= 0) return false;
-      return Math.pow(Math.abs(x - cx) / a, p) + Math.pow(Math.abs(y - cy) / b, p) <= 1;
-    };
+    const inside = (x, y, inset) => inStadium(x, y, cx, cy, W / 2 - inset, H / 2 - inset);
     const hex = (s) => [parseInt(s.slice(1, 3), 16), parseInt(s.slice(3, 5), 16), parseInt(s.slice(5, 7), 16)];
     const C = { ink: hex("#0a0c14"), rail: hex("#4a2f1c"), railHi: hex("#6e4528"), railLo: hex("#2e1c10"), felt: hex("#1d5a43"), mid: hex("#226449"), lo: hex("#12392b"), hi: hex("#2c7a5b") };
-    const R = Math.max(4, Math.round(Math.min(W, H) * 0.04));
-    const line = R + 3 + Math.max(4, Math.round(Math.min(W, H) * 0.06));
+    const R = Math.max(4, Math.round(Math.min(W, H) * 0.035));
+    const line = R + 3 + Math.max(4, Math.round(Math.min(W, H) * 0.05));
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
         if (!inside(x, y, 0)) continue;
@@ -732,7 +740,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       hero.innerHTML = `<canvas></canvas><div class="hero-stack l">${stack(5, "red")}</div><div class="hero-stack r" style="display:flex;gap:2px;align-items:flex-end">${stack(3, "gold")}${stack(6, "blue")}</div><div class="dbtn">D</div><div class="hero-board"></div>`;
     }
     const cv = hero.querySelector("canvas");
-    paintTable(cv, r.width + 24, r.height * 1.5 + 8, 2);
+    paintTable(cv, r.width + 24, r.height * 1.5 + 8);
     cv.style.left = "-12px"; cv.style.top = Math.round(r.height * 0.16) + "px";
     const cards = [{ rank: 14, suit: "s" }, { rank: 13, suit: "s" }, { rank: 12, suit: "s" }, { rank: 11, suit: "s" }, { rank: 10, suit: "s" }];
     const boardEl = hero.querySelector(".hero-board");
@@ -1234,14 +1242,36 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     const cx = W / 2, cy = oy + oh / 2;
     return { W, H, hw, hh, bw, bh, ox, oy, ow, oh, cx, cy, rx: ow / 2 - 4, ry: oh / 2 - 4 };
   }
+  /** The point a fraction f of the way round the rail, starting at the bottom middle and going clockwise (left first). */
+  function railPoint(f) {
+    const g = geo, a = g.rx, b = g.ry, r = Math.min(a, b), sx = a - r, sy = b - r;
+    // The stadium's outline as segments: [length, point at distance t along it]
+    const segs = [
+      [sx, (t) => [-t, b]],                                                     // bottom edge, middle to left
+      [Math.PI * r / 2, (t) => { const q = t / r; return [-sx - r * Math.sin(q), sy + r * Math.cos(q)]; }],
+      [2 * sy, (t) => [-a, sy - t]],                                            // left edge, going up
+      [Math.PI * r / 2, (t) => { const q = t / r; return [-sx - r * Math.cos(q), -sy - r * Math.sin(q)]; }],
+      [2 * sx, (t) => [-sx + t, -b]],                                           // top edge
+      [Math.PI * r / 2, (t) => { const q = t / r; return [sx + r * Math.sin(q), -sy - r * Math.cos(q)]; }],
+      [2 * sy, (t) => [a, -sy + t]],                                            // right edge, going down
+      [Math.PI * r / 2, (t) => { const q = t / r; return [sx + r * Math.cos(q), sy + r * Math.sin(q)]; }],
+      [sx, (t) => [sx - t, b]],                                                 // bottom edge, back to the middle
+    ];
+    let d = (f % 1) * segs.reduce((s, [len]) => s + len, 0);
+    for (let k = 0; k < segs.length; k++) {
+      const [len, at] = segs[k];
+      if (d <= len || k === segs.length - 1) { const [x, y] = at(Math.min(d, len)); return { x: g.cx + x, y: g.cy + y }; }
+      d -= len;
+    }
+  }
   /** Seat i places from you (0 = you, at the bottom; the others share the rail evenly, clockwise). */
   function seatPoint(i, n) {
-    const g = geo, t = Math.PI + (2 * Math.PI * i) / n;
-    let x = clamp(g.cx + g.rx * Math.sin(t), 48, g.W - 48), y = g.cy - g.ry * Math.cos(t);
+    const g = geo, rp = railPoint(i / n);
+    let x = clamp(rp.x, 48, g.W - 48), y = rp.y;
     // Keep seats out of the board's row when they'd overlap it (narrow screens): slide them up or down.
     const band = g.bh / 2 + 52, boardHalf = (g.bw * 5 + 24) / 2;
     if (Math.abs(y - g.cy) < band && Math.abs(x - g.cx) - 46 < boardHalf + 6) y = g.cy + (y > g.cy + 1 ? band : -band);
-    return { x, y: clamp(y, 44, g.H - 40), t };
+    return { x, y: clamp(y, 44, g.H - 40) };
   }
   function anchors(M) {
     const g = geo, n = M.seats.length, base = M.you ?? 0;
@@ -1250,7 +1280,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       const i = (s.seat - base + n) % n;
       if (i === 0 && M.you != null) {
         A.seat[s.seat] = { x: g.cx, y: g.H - g.hh / 2 - 4 };
-        A.bet[s.seat] = { x: g.cx, y: g.H - g.hh - 24 };
+        A.bet[s.seat] = { x: g.cx, y: g.H - g.hh - 52 }; // above the hand name over your cards
         A.dealer[s.seat] = { x: g.cx + g.hw + 22, y: g.H - g.hh + 10 };
         continue;
       }
@@ -1281,7 +1311,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     if (os !== ovalSize) {
       ovalSize = os;
       const cv = $("oval");
-      paintTable(cv, g.ow, g.oh, 2);
+      paintTable(cv, g.ow, g.oh);
       cv.style.left = g.ox + "px"; cv.style.top = g.oy + "px";
     }
     const A = anchors(M);
@@ -1306,9 +1336,9 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     if (!$("tMenu").firstChild) $("tMenu").innerHTML = px("menu", 2);
   }
   function seatTag(M, s) {
-    if (s.busted) return [`Out · ${ordinal(s.place)}`, "mute"];
+    if (s.busted) return ["Out", "mute"];
     if (S.handNames[s.seat]) return [shortHand(S.handNames[s.seat]), S.lift?.seats.has(s.seat) ? "gold" : ""];
-    if (s.folded) return ["Folded", "mute"];
+    if (s.folded) return ["", ""]; // folded seats just dim: no tag, the table stays quiet
     if (s.allIn) return ["All-in", "gold"];
     if (S.tags[s.seat]) return [S.tags[s.seat], ""];
     if (s.kind === "player" && (!s.connected || s.away)) return ["Away", "mute"];
@@ -1414,6 +1444,12 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     } else if (me && S.anim && S.dealt && S.dealt[me.seat]) html = Array.from({ length: S.dealt[me.seat] }, () => cardHTML(null, "lg")).join("");
     setHTML(el, html);
     el.classList.toggle("fold", !!me?.folded);
+    // Your hand, named just above your cards (gold when it's the hand that won)
+    const lbl = $("handLbl");
+    lbl.textContent = myHandName(M);
+    lbl.style.left = g.cx + "px"; lbl.style.top = g.H - g.hh - 12 + "px";
+    lbl.classList.toggle("gold", !!(me && S.lift?.seats.has(me.seat)));
+    lbl.classList.toggle("mute", !!(me && (me.folded || me.busted)));
     el.setAttribute("aria-label", me?.cards ? "Your cards: " + me.cards.map(cardLabel).join(", ") : "Your cards");
   }
   function myHandName(M) {
@@ -1430,7 +1466,6 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     if (!me) { box.hidden = true; return; }
     box.hidden = false;
     countTo($("meChips"), me.chips);
-    $("meHand").textContent = myHandName(M);
     box.classList.toggle("turn", M.toAct === M.you && !!M.legal && !S.anim);
   }
   const BETTING = new Set(["preflop", "flop", "turn", "river"]);

@@ -66,20 +66,23 @@ use `http://localhost:8080/play`), or deploy it (see [`docs/DEPLOY.md`](docs/DEP
   and your sign-in key.
 
 Each game has its own page: **Match Monsters** at `/play/match-monsters`,
-**Hold'em** at `/play/holdem`. Old `/play?room=CODE` links still work.
+**Hold'em** at `/play/holdem`. Both lobbies are the platform's (docs/PLATFORM.md,
+"The game kit"); old `/play?room=CODE` links still work.
 
 ### Match Monsters
 
-The lobby asks one thing per screen. Tap **Play**, then choose how:
-**Quick match** (matched with anyone queuing in the same mode), **A friend**,
+The lobby asks one thing per screen. Choose how: **Quick match** (a room
+that fills with the next player choosing the same team mode), **Play a friend**,
 or **Practice** (the bot). Next, how teams are made: **Pick** (choose your two
 on the next screen, the rival picks theirs blind), **Draft** or **Random**; it
-remembers your last choice. A friend game ends on **Play a friend**: your
-friends with a one-tap Invite, or **Share an invite link** (a 4-character code
-+ a link, `/play?room=CODE`; the host's mode decides). Got a code? Type it under
-Play or Play a friend. A link asks a new player for a name, then joins straight
-away: draft and random rooms at once, a blind-pick room as soon as they've
-picked two. Every screen has Back (and Escape); leaving a wait cancels it. No
+remembers your last choice. Playing a friend opens your room, the platform's
+room lobby: its code and **Share invite** (a link, `/play/match-monsters?code=CODE`;
+the host's mode decides), and an open seat to **Invite** an online friend to or
+seat the bot. Whoever comes first takes the seat and the match starts. Got a
+code? Type it on the home screen. A link asks a new player for a name, then
+joins straight away: draft and random rooms at once, a blind-pick room as soon
+as they've picked two. Every screen has Back (and Escape); leaving a wait gives
+your seat back. **Rematch** opens a new room your rival joins with one tap. No
 accounts needed. **Monsters** on the home screen is the roster: tap one for its
 evolution line and move, and **Play with** it.
 

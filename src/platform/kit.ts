@@ -44,6 +44,8 @@ export interface GameDef<S, R extends LobbyRoom<S>> {
   info?(room: R): Record<string, unknown>;
   /** The invite card's line ("Hold'em table", "Match Monsters · Draft"). */
   inviteLabel(room: R): string;
+  /** More for the invite card (e.g. the host's team), besides the code. */
+  inviteExtra?(room: R): Record<string, unknown>;
   /** The rematch seat's data from the old room (e.g. the same two picks). */
   rematchData?(room: R, seat: number): unknown;
   /** A game ended: record it (results, the game's own history). */
@@ -133,7 +135,7 @@ export class GameKit<S, R extends LobbyRoom<S>> implements GameLobby {
           to: friend.id,
           hostPeerId: peer.id,
           data: { roomId: room.roomId, code: room.code },
-          extra: { code: room.code },
+          extra: { code: room.code, ...(def.inviteExtra?.(room) ?? {}) },
           onEnd: (reason) => {
             if (seatHeld && reason !== "accepted") room.release(inv.id);
           },
@@ -197,6 +199,16 @@ export class GameKit<S, R extends LobbyRoom<S>> implements GameLobby {
         for (const [key, q] of this.quick) if (q === (r as unknown)) this.quick.delete(key);
       },
       onFinished: (r) => this.def.record?.(r as R),
+      onLeft: (r, peerId) => {
+        for (const id of r.openInvites()) {
+          const inv = this.ctx.invites.get(id);
+          if (inv && inv.hostPeerId === peerId) this.ctx.invites.drop(inv, "cancelled");
+        }
+      },
+      onInviteBumped: (id) => {
+        const inv = this.ctx.invites.get(id);
+        if (inv) this.ctx.invites.drop(inv, "cancelled");
+      },
       onDisposed: (r) => {
         if (this.rooms.get(r.code) === (r as unknown)) this.rooms.delete(r.code);
         this.ctx.releaseCode(r.code);

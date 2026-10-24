@@ -77,43 +77,29 @@ describe("status service", () => {
   });
 });
 
-describe("matchmaking + room over protoo", () => {
-  it("pairs two players and hands them a playable room", async () => {
+describe("quick play + room over protoo", () => {
+  it("seats two players in one quick room and hands them a playable match", async () => {
     const a = new TestClient(port, "lobby", "alice");
     const b = new TestClient(port, "lobby", "bob");
     await a.open();
     await b.open();
 
-    const r1 = await a.request("mm:enqueue", {
-      gameId: "match_monsters",
-      mode: "casual",
-      displayName: "Alice",
-      monsters: ["ember_pup", "prism_owl"],
-    });
-    expect(r1).toMatchObject({ ok: true, data: { queued: true } });
-
-    const r2 = (await b.request("mm:enqueue", {
-      gameId: "match_monsters",
-      mode: "casual",
-      displayName: "Bob",
-      monsters: ["stone_golem", "tide_serpent"],
-    })) as { ok: boolean; data: { queued: boolean; roomId: string } };
-    expect(r2.ok).toBe(true);
-    expect(r2.data.queued).toBe(false);
-    const roomId = r2.data.roomId;
-    expect(roomId).toBeTruthy();
-
-    // Alice is told about the match via notification.
-    await delay(20);
-    const matched = a.notifications.find((n) => n.method === "mm:matched");
-    expect(matched).toBeDefined();
-    const matchData = matched!.data as { roomId: string; firstTurn: 0 | 1 };
-    expect(matchData.roomId).toBe(roomId);
-
-    // Both reconnect to the game room and fetch state.
-    const ga = new TestClient(port, roomId, "alice");
-    const gb = new TestClient(port, roomId, "bob");
+    const r1 = (await a.request("mm:quick", { displayName: "Alice", data: ["ember_pup", "prism_owl"] })) as { ok: boolean; data: { roomId: string; seat: number } };
+    expect(r1).toMatchObject({ ok: true, data: { seat: 0 } });
+    // Alice waits in the room for a rival.
+    const ga = new TestClient(port, r1.data.roomId, "alice");
     await ga.open();
+
+    const r2 = (await b.request("mm:quick", { displayName: "Bob", data: ["stone_golem", "tide_serpent"] })) as { ok: boolean; data: { roomId: string; seat: number } };
+    expect(r2.ok).toBe(true);
+    expect(r2.data).toMatchObject({ roomId: r1.data.roomId, seat: 1 });
+    const roomId = r2.data.roomId;
+
+    // Alice hears the start on the room connection.
+    await delay(20);
+    expect(ga.notifications.some((n) => n.method === "lobby:update" && (n.data as { view: { phase: string } }).view.phase === "playing")).toBe(true);
+
+    const gb = new TestClient(port, roomId, "bob");
     await gb.open();
 
     const state = (await ga.request("mm:getState", {})) as {
@@ -121,9 +107,7 @@ describe("matchmaking + room over protoo", () => {
       data: { turn: number; players: { displayName: string }[] };
     };
     expect(state.ok).toBe(true);
-    // firstTurn is chosen by the matchmaker; state must agree with what the
-    // players were told in mm:matched.
-    expect(state.data.turn).toBe(matchData.firstTurn);
+    expect([0, 1]).toContain(state.data.turn);
     expect(state.data.players.map((p) => p.displayName)).toEqual(["Alice", "Bob"]);
 
     a.close();

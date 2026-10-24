@@ -55,11 +55,6 @@ export interface GameLobby {
   /** Method prefix it owns, e.g. "mm:" or "holdem:". */
   readonly prefix: string;
   handle(peer: PeerLike, method: string, data: unknown): Promise<unknown> | unknown;
-  /**
-   * A request on a room connection the room itself doesn't handle (e.g. a
-   * rematch that spawns a new room). Return undefined to let the room handle it.
-   */
-  roomRequest?(roomId: string, room: Room, peer: PeerLike, method: string, data: unknown): unknown;
   /** The peer's lobby connection closed for good (not replaced by a reload). */
   peerGone(peerId: string): void;
   /** Players waiting in this game's queues (counted as online). */

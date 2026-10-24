@@ -160,8 +160,7 @@ export class SignalingServer {
       socket.close(4004, "no such room");
       return;
     }
-    // Look the room up per request: a draft room is replaced by its game room
-    // when the draft ends, on the same connections.
+    // Look the room up per request (a room that ended is gone).
     const peer = new Peer(
       peerId,
       roomId,
@@ -169,11 +168,6 @@ export class SignalingServer {
       (p, method, data) => {
         const live = this.rooms.get(roomId);
         if (!live) throw new Error("that game has ended");
-        for (const lobby of this.lobbies) {
-          if (!method.startsWith(lobby.prefix) || !lobby.roomRequest) continue;
-          const handled = lobby.roomRequest(roomId, live, p, method, data);
-          if (handled !== undefined) return handled;
-        }
         return live.handleRequest(p.id, method, data);
       },
       (p) => {

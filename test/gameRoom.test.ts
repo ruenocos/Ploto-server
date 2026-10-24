@@ -3,6 +3,7 @@ import { GameRoom, type PeerLike } from "../src/game/matchmonsters/gameRoom.js";
 import type { GameConfig } from "../src/game/matchmonsters/engine.js";
 import { MONSTERS } from "../src/game/matchmonsters/monsters.js";
 import { ELEMENTS } from "../src/game/matchmonsters/types.js";
+import { MatchRoom, parsePicks, type MmSettings } from "../src/game/matchmonsters/matchRoom.js";
 
 class FakePeer implements PeerLike {
   readonly notifications: { method: string; data: unknown }[] = [];
@@ -96,22 +97,8 @@ describe("GameRoom", () => {
   });
 });
 
-describe("GameRoom rematch", () => {
-  function finishedRoom(winner: 0 | 1) {
-    const room = new GameRoom(roomConfig());
-    const a = new FakePeer("p0");
-    const b = new FakePeer("p1");
-    room.join(a);
-    room.join(b);
-    a.notifications.length = 0;
-    b.notifications.length = 0;
-    const s = room.game.state as { phase: string; winner: 0 | 1 | null };
-    s.phase = "finished";
-    s.winner = winner;
-    return { room, a, b };
-  }
-
-  it("tells clients whether the teams were drafted (a drafted match re-drafts on rematch)", () => {
+describe("GameRoom drafted flag", () => {
+  it("tells clients whether the teams were drafted", () => {
     const blind = new GameRoom(roomConfig());
     const drafted = new GameRoom(roomConfig(), { draftStepMs: null });
     const a = new FakePeer("p0");
@@ -120,44 +107,77 @@ describe("GameRoom rematch", () => {
     expect((blind.handleRequest("p0", "mm:getState", {}) as { drafted: boolean }).drafted).toBe(false);
     expect((drafted.handleRequest("p0", "mm:getState", {}) as { drafted: boolean }).drafted).toBe(true);
   });
+});
 
-  it("refuses a rematch vote while the game is still running", () => {
-    const room = new GameRoom(roomConfig());
-    expect(() => room.voteRematch(0)).toThrow(/isn't over/);
+describe("MatchRoom (the platform's lobby room)", () => {
+  const room = (settings: Partial<MmSettings> = {}, over: object = {}) =>
+    new MatchRoom({ roomId: "r1", code: "ABCD", mode: "private", settings: { team: "pick", vsBot: false, ...settings }, hosted: true, ...over });
+  const pick = (peerId: string, name: string, ids = ["ember_pup", "prism_owl"]) => ({ peerId, name, accountId: null, data: ids });
+
+  it("checks blind picks, and starts the match as soon as both seats are taken", () => {
+    expect(() => parsePicks(["ember_pup"], { team: "pick", vsBot: false })).toThrow(/pick your two/);
+    expect(parsePicks(undefined, { team: "draft", vsBot: false })).toBeNull();
+    const r = room();
+    const a = new FakePeer("a"), b = new FakePeer("b");
+    r.reserve(pick("a", "Ann"));
+    r.join(a);
+    expect(r.phase).toBe("lobby");
+    r.reserve(pick("b", "Ben", ["stone_golem", "tide_serpent"]));
+    r.join(b);
+    expect(r.phase).toBe("playing");
+    const snap = r.handleRequest("b", "mm:getState", {}) as { players: { displayName: string; monsters: { id: string }[] }[]; connected: boolean[] };
+    expect(snap.players.map((p) => [p.displayName, p.monsters.map((m) => m.id)])).toEqual([["Ann", ["ember_pup", "prism_owl"]], ["Ben", ["stone_golem", "tide_serpent"]]]);
+    expect(snap.connected).toEqual([true, true]);
+    r.dispose();
   });
 
-  it("asks the opponent on the first vote and agrees on the second", () => {
-    const { room, a, b } = finishedRoom(0);
-    expect(room.voteRematch(0)).toBe(false);
-    expect(b.notifications).toEqual([{ method: "mm:rematchRequested", data: { seat: 0 } }]);
-    expect(a.notifications).toHaveLength(0);
-    expect(room.voteRematch(0)).toBe(false); // voting twice doesn't count double
-    expect(room.voteRematch(1)).toBe(true);
-    room.announceRematch("r2");
-    expect(room.rematchRoomId).toBe("r2");
-    expect(a.notifications.at(-1)).toEqual({ method: "mm:rematchReady", data: { roomId: "r2" } });
-    expect(b.notifications.at(-1)).toEqual({ method: "mm:rematchReady", data: { roomId: "r2" } });
+  it("deals random teams, and drafts first in a draft room", () => {
+    const rnd = room({ team: "random" });
+    rnd.reserve({ peerId: "a", name: "Ann", accountId: null });
+    rnd.reserve({ peerId: "b", name: "Ben", accountId: null });
+    expect((rnd.handleRequest("a", "mm:getState", {}) as { randomTeams: boolean }).randomTeams).toBe(true);
+    rnd.dispose();
+    const dr = room({ team: "draft" });
+    dr.reserve({ peerId: "a", name: "Ann", accountId: null });
+    dr.reserve({ peerId: "b", name: "Ben", accountId: null });
+    expect(dr.handleRequest("a", "mm:getState", {})).toHaveProperty("draft");
+    expect(() => dr.handleRequest("a", "mm:move", { from: { x: 0, y: 0 }, to: { x: 1, y: 0 } })).toThrow(/draft isn't over/);
+    dr.dispose();
   });
 
-  it("deals new teams for a random-teams rematch", () => {
-    const room = new GameRoom(roomConfig(), { randomTeams: true });
-    (room.game.state as { winner: 0 | 1 | null }).winner = 0;
-    const teams = Array.from({ length: 12 }, (_, i) => room.rematchConfig(`m${i}`, i).players.map((p) => p.monsters.map((m) => m.id).join("+")).join(" vs "));
-    expect(new Set(teams).size).toBeGreaterThan(1);
-    for (const t of teams) for (const team of t.split(" vs ")) expect(new Set(team.split("+")).size).toBe(2);
+  it("practice seats the bot and starts when you connect", () => {
+    const r = room({ vsBot: true }, { mode: "practice", autoStart: true });
+    r.reserve(pick("a", "Ann"));
+    expect(r.phase).toBe("lobby");
+    r.join(new FakePeer("a"));
+    expect(r.phase).toBe("playing");
+    const snap = r.handleRequest("a", "mm:getState", {}) as { botSeat: number; players: { displayName: string }[] };
+    expect(snap.botSeat).toBe(1);
+    expect(snap.players[1]!.displayName).toBe("Bot");
+    r.dispose();
   });
 
-  it("keeps the teams and lets the loser open", () => {
-    const { room } = finishedRoom(0);
-    const cfg = room.rematchConfig("m2", 999);
-    expect(cfg.firstTurn).toBe(1);
-    expect(cfg.matchId).toBe("m2");
-    expect(cfg.seed).toBe(999);
-    expect(cfg.players.map((p) => p.monsters.map((m) => m.id))).toEqual([
-      ["ember_pup", "prism_owl"],
-      ["stone_golem", "tide_serpent"],
-    ]);
-    expect(finishedRoom(1).room.rematchConfig("m3", 1).firstTurn).toBe(0);
+  it("a code joiner takes the seat an invite was holding, and the invite is withdrawn", () => {
+    const bumped: string[] = [];
+    const r = room({}, { onInviteBumped: (id: string) => bumped.push(id) });
+    r.reserve({ ...pick("a", "Ann"), accountId: "acct-a" });
+    r.holdFor("acct-f", "Fay", "inv1");
+    r.reserve(pick("b", "Ben"));
+    expect(bumped).toEqual(["inv1"]);
+    expect(r.phase).toBe("playing");
+    r.dispose();
+  });
+
+  it("reports the finished match once, through the platform", () => {
+    let finished = 0;
+    const r = room({}, { onFinished: () => finished++ });
+    r.reserve(pick("a", "Ann"));
+    r.reserve(pick("b", "Ben", ["stone_golem", "tide_serpent"]));
+    r.handleRequest("b", "mm:forfeit", {});
+    expect(finished).toBe(1);
+    expect(r.phase).toBe("over");
+    expect(r.game!.toRecord()).toMatchObject({ winner: 0, forfeitedBy: 1, mode: "private" });
+    r.dispose();
   });
 });
 
@@ -195,13 +215,11 @@ describe("GameRoom practice bot", () => {
     room.dispose();
   });
 
-  it("shows the bot as connected and agrees to rematches", () => {
+  it("shows the bot as connected", () => {
     const room = new GameRoom(roomConfig(), { botSeat: 1 });
     const snap = room.handleRequest("p0", "mm:getState", {}) as { connected: boolean[]; botSeat: number };
     expect(snap.connected).toEqual([false, true]);
     expect(snap.botSeat).toBe(1);
-    (room.game.state as { phase: string }).phase = "finished";
-    expect(room.voteRematch(0)).toBe(true);
   });
 
   it("allows debug shortcuts only in practice games", () => {
@@ -232,6 +250,5 @@ describe("GameRoom forfeit", () => {
     expect(reports).toHaveLength(1);
     const snap = room.handleRequest("p0", "mm:getState", {}) as { forfeitedBy: number };
     expect(snap.forfeitedBy).toBe(1);
-    expect(room.voteRematch(0)).toBe(false); // rematch still possible afterwards
   });
 });

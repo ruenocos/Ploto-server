@@ -50,6 +50,11 @@ export interface LobbyRules {
   readonly minPlayers: number;
   /** Seats can be bots (the host adds them; practice and quick rooms fill with them when the settings allow). */
   readonly bots: boolean;
+  /**
+   * An invite holds its seat until it ends (default). False: anyone joining by code
+   * may take an invited seat, and that invite is withdrawn (1v1 games: whoever comes first).
+   */
+  readonly invitesHoldSeats?: boolean;
 }
 
 export interface LobbyRoomOptions<S> {
@@ -66,6 +71,10 @@ export interface LobbyRoomOptions<S> {
   readonly onStarted?: (room: LobbyRoom<S>) => void;
   readonly onFinished?: (room: LobbyRoom<S>) => void;
   readonly onDisposed?: (room: LobbyRoom<S>) => void;
+  /** A player gave up their seat before the start: the invites they sent for this room end. */
+  readonly onLeft?: (room: LobbyRoom<S>, peerId: string) => void;
+  /** Someone took a seat an invite was holding (rules.invitesHoldSeats false): withdraw that invite. */
+  readonly onInviteBumped?: (inviteId: string) => void;
   /** The platform opens (or finds) the rematch room and seats this peer there. */
   readonly onRematch?: (room: LobbyRoom<S>, peerId: string) => { roomId: string; code: string };
 }
@@ -136,8 +145,11 @@ export abstract class LobbyRoom<S, T extends Seat = Seat> implements Room {
     let seat = p.accountId ? this.seats.findIndex((s) => s.kind === "invited" && s.accountId === p.accountId) : -1;
     if (seat < 0) seat = this.seats.findIndex((s) => s.kind === "empty");
     if (seat < 0) seat = this.seats.map((s) => s.kind).lastIndexOf("bot");
+    if (seat < 0 && this.rules.invitesHoldSeats === false) seat = this.seats.findIndex((s) => s.kind === "invited");
     if (seat < 0) throw new Error("this room is full");
+    const bumped = this.seats[seat]!.kind === "invited" && this.seats[seat]!.accountId !== p.accountId ? this.seats[seat]!.inviteId : null;
     this.seats[seat] = { ...this.emptySeat(), kind: "player", peerId: p.peerId, accountId: p.accountId, name: cleanName(p.name), data: p.data ?? null };
+    if (bumped) this.opts.onInviteBumped?.(bumped);
     if (this.hosted && this.hostSeat < 0) this.hostSeat = seat;
     if (this.opts.formingMs !== undefined && !this.formingTimer && this.startsAt === null) this.armForming();
     this.changed();
@@ -242,6 +254,7 @@ export abstract class LobbyRoom<S, T extends Seat = Seat> implements Room {
         if (this.seats[target]?.kind !== "empty") throw new Error("that seat isn't free");
         this.seats[target] = { ...this.emptySeat(), kind: "bot", name: this.botName() };
         this.changed();
+        if (this.rules.start === "full" && this.openSeats() === 0) this.tryStart();
         return { ok: true };
       }
 
@@ -404,6 +417,7 @@ export abstract class LobbyRoom<S, T extends Seat = Seat> implements Room {
         this.startsAt = null;
       }
       this.changed();
+      if (s.peerId) this.opts.onLeft?.(this as unknown as LobbyRoom<S>, s.peerId);
       return;
     }
     if (this.phase === "playing") this.leaveDuringGame(seat);

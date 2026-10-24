@@ -233,3 +233,40 @@ Timers: with the timer on, each action has 25 s; then the player's time bank (60
 for the whole game) runs; then the server acts for them (check if free, else fold).
 A disconnected or away player is acted for after 5 s even with the timer off.
 Bots act after a short human-like pause.
+
+## Match Monsters
+
+### Lobby
+
+The game kit's methods with the `mm:` prefix. `settings` = `{team: 'pick'|'draft'|'random'}`;
+`data` on a seat-taking call is your two monster ids, needed for blind picks
+(`pick`) and ignored otherwise. Rooms have two seats and start as soon as both
+are taken (`startRule: 'full'`):
+
+- quick: rooms with the same `team` fill up together (draft rooms give 20 s per draft step);
+- host: a room behind a code; whoever comes first, a code joiner or an invited friend,
+  takes the second seat (an invite is withdrawn if someone else takes its seat);
+  the host can also seat the bot (`lobby:addBot`);
+- practice: you and the bot, started the moment you connect.
+
+`mm:info` adds `team`. The invite (`social:invite`) adds `team` and, for blind
+picks, the host's `monsters`. Rematches keep the same picks; drafts draft
+again and random teams are dealt again.
+
+### Match room (`roomId=<roomId>` socket, same peerId)
+
+Before the start it's the platform's room lobby (`lobby:*`). Once started, the
+same connection carries the draft (if any) and then the match:
+
+| Method | Data | Returns |
+|---|---|---|
+| `mm:getState` | — | the draft view while drafting (`{draft, remainingMs, names, botSeat, connected}`), then the match snapshot |
+| `mm:ban` / `mm:pick` | `{monsterId}` | `{ok}` (draft) |
+| `mm:leaveDraft` | — | `{ok}`: the match is off (`mm:draftCancelled` to both) |
+| `mm:move` | `{from: {x, y}, to: {x, y}}` | `{accepted}` |
+| `mm:evolve` | `{monsterId}` | `{ok, evolution, berries}` |
+| `mm:forfeit` | — | `{ok}` |
+| `mm:debug` | `{action: 'berries'|'charge'}` | `{ok}` (games against the bot only) |
+
+Notifications: `mm:draftUpdate`, `mm:draftDone`, `mm:moveResult`, `mm:evolved`,
+`mm:gameOver`, `mm:peerStatus`, and the platform's `lobby:update`.

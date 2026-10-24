@@ -128,13 +128,19 @@ describe("friends, DMs and invites", () => {
     const annLobby = new Client(server.port, "lobby", "ann-peer");
     await annLobby.open();
     await annLobby.req("mm:auth", { key: ann.key });
-    const inv = await annLobby.req("mm:invite", { friendId: ben.id, monsters: ["ember_pup", "prism_owl"] });
+    const room = await annLobby.req("mm:host", { settings: { team: "pick" }, data: ["ember_pup", "prism_owl"] });
+    const annRoom = new Client(server.port, room.roomId, "ann-peer");
+    await annRoom.open();
+    const inv = await annLobby.req("mm:invite", { friendId: ben.id, roomId: room.roomId });
     await delay(20);
     const invite = benLobby.note("social:invite")!.data;
-    expect(invite).toMatchObject({ inviteId: inv.inviteId, from: { username: "Ann" }, monsters: ["ember_pup", "prism_owl"] });
-    const accepted = await benLobby.req("mm:acceptInvite", { inviteId: inv.inviteId, monsters: ["stone_golem", "tide_serpent"] });
+    expect(invite).toMatchObject({ inviteId: inv.inviteId, from: { username: "Ann" }, code: room.code, team: "pick", monsters: ["ember_pup", "prism_owl"] });
+    expect((await annRoom.req("lobby:getView", {})).seats[1]).toMatchObject({ kind: "invited", name: "Ben", inviteId: inv.inviteId });
+    const accepted = await benLobby.req("mm:acceptInvite", { inviteId: inv.inviteId, data: ["stone_golem", "tide_serpent"] });
+    expect(accepted).toMatchObject({ roomId: room.roomId, seat: 1 });
     await delay(20);
-    expect(annLobby.note("mm:matched")?.data.roomId).toBe(accepted.roomId);
+    expect(annRoom.notes.some((n) => n.method === "lobby:update" && n.data.view.phase === "playing")).toBe(true);
+    annRoom.close();
 
     // In the game, players appear under their usernames and never see each other's peer ids.
     const g = new Client(server.port, accepted.roomId, "ben-peer");
@@ -161,15 +167,15 @@ describe("friends, DMs and invites", () => {
     await Promise.all([halLobby.open(), ivyLobby.open(), guest.open()]);
     await halLobby.req("platform:auth", { key: hal.key });
     await ivyLobby.req("platform:auth", { key: ivy.key });
-    const team = { monsters: ["ember_pup", "prism_owl"] };
-    const { code } = await halLobby.req("mm:createRoom", team);
-    const inv = await halLobby.req("mm:invite", { friendId: ivy.id, ...team });
-    // A guest joins by code first: Ivy's invite goes away, and so does the code.
-    await guest.req("mm:joinRoom", { code, monsters: ["stone_golem", "tide_serpent"] });
+    const team = { data: ["ember_pup", "prism_owl"] };
+    const { code, roomId } = await halLobby.req("mm:host", { settings: { team: "pick" }, ...team });
+    const inv = await halLobby.req("mm:invite", { friendId: ivy.id, roomId });
+    // A guest joins by code first: they take the seat, Ivy's invite goes away, and the match starts.
+    await guest.req("mm:join", { code, data: ["stone_golem", "tide_serpent"] });
     await delay(20);
     expect(ivyLobby.note("social:inviteGone")?.data).toMatchObject({ inviteId: inv.inviteId, reason: "cancelled" });
     await expect(ivyLobby.req("mm:acceptInvite", { inviteId: inv.inviteId, ...team })).rejects.toThrow(/expired/);
-    await expect(guest.req("mm:roomInfo", { code })).rejects.toThrow(/expired/);
+    expect(await guest.req("mm:info", { code })).toMatchObject({ started: true, seatsFree: 0 });
     for (const c of [halLobby, ivyLobby, guest]) c.close();
   });
 
@@ -179,10 +185,11 @@ describe("friends, DMs and invites", () => {
     const lobby = new Client(server.port, "lobby", "cat-peer");
     await lobby.open();
     await lobby.req("mm:auth", { key: cat.key });
-    await expect(lobby.req("mm:invite", { friendId: dan.id, monsters: ["ember_pup", "prism_owl"] })).rejects.toThrow(/friends/);
+    const { roomId } = await lobby.req("mm:host", { settings: { team: "draft" } });
+    await expect(lobby.req("mm:invite", { friendId: dan.id, roomId })).rejects.toThrow(/friends/);
     await api("POST", "/api/friends", { key: cat.key, body: { username: "Dan" } });
     await api("POST", "/api/friends", { key: dan.key, body: { username: "Cat" } }); // mutual request = accepted
-    await expect(lobby.req("mm:invite", { friendId: dan.id, monsters: ["ember_pup", "prism_owl"] })).rejects.toThrow(/offline/);
+    await expect(lobby.req("mm:invite", { friendId: dan.id, roomId })).rejects.toThrow(/offline/);
     lobby.close();
   });
 });
@@ -206,7 +213,8 @@ describe("platform: activity, pending invites, profile stats", () => {
     expect((await api("GET", "/api/friends", { key: fay.key })).body.friends[0].activity).toEqual({ gameId: "holdem", label: "At a Hold'em table" });
 
     // An invite shows up in the list (with its game and label) until it's declined.
-    const inv = await eveLobby.req("mm:invite", { friendId: fay.id, draft: true });
+    const { roomId } = await eveLobby.req("mm:host", { settings: { team: "draft" } });
+    const inv = await eveLobby.req("mm:invite", { friendId: fay.id, roomId });
     const pending = (await fayLobby.req("platform:invites", {})).invites;
     expect(pending).toHaveLength(1);
     expect(pending[0]).toMatchObject({ inviteId: inv.inviteId, gameId: "match_monsters", label: "Match Monsters · Draft", from: { username: "Eve" } });

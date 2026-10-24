@@ -770,12 +770,12 @@
         <!-- Home: the game's lobby, laid out like every Ploto game's (docs/PLATFORM.md); friends and your profile live in the launcher (/play) -->
         <div class="lb-screen" data-screen="home">
           <div class="pl-hero pl-frame mm-hero" id="mmHero" aria-hidden="true"></div>
-          <button class="pl-row" data-how="quick"><span class="pl-ic" data-mon="frost_imp"></span><span><b>Quick match</b><small>Play anyone online</small></span><span class="pl-go" data-chev></span></button>
-          <button class="pl-row" data-how="friend"><span class="pl-ic" data-mon="petal_fawn"></span><span><b>Play a friend</b><small>Invite them or share a code</small></span><span class="pl-go" data-chev></span></button>
-          <button class="pl-row" data-how="bot"><span class="pl-ic" data-mon="stone_golem"></span><span><b>Practice</b><small>You vs the bot</small></span><span class="pl-go" data-chev></span></button>
+          <button class="pl-row" data-mode="quick"><span class="pl-ic" data-mon="frost_imp"></span><span><b>Quick match</b><small>Play anyone online</small></span><span class="pl-go" data-chev></span></button>
+          <button class="pl-row" data-mode="friend"><span class="pl-ic" data-mon="petal_fawn"></span><span><b>Play a friend</b><small>Invite them or share a code</small></span><span class="pl-go" data-chev></span></button>
+          <button class="pl-row" data-mode="bot"><span class="pl-ic" data-mon="stone_golem"></span><span><b>Practice</b><small>You vs the bot</small></span><span class="pl-go" data-chev></span></button>
           <p class="pl-label">Have a code?</p>
-          <form class="pl-form" data-join autocomplete="off"><input type="text" class="pl-code" placeholder="Room code" maxlength="8" autocapitalize="characters" autocomplete="off" spellcheck="false" enterkeyhint="go" aria-label="Room code" /><button class="ghost small" type="submit">Join</button></form>
-          <div class="pl-who pl-frame"><span class="muted">Playing as</span><b class="ell" id="whoName">Player</b><span class="grow"></span><button class="pl-link" id="whoChange" type="button">Change</button></div>
+          <form class="pl-form" data-join data-code-form autocomplete="off"><input type="text" class="pl-code" placeholder="Room code" maxlength="8" autocapitalize="characters" autocomplete="off" spellcheck="false" enterkeyhint="go" aria-label="Room code" /><button class="ghost small" type="submit">Join</button></form>
+          <div class="pl-who pl-frame"><span class="muted">Playing as</span><b class="ell" id="whoName" data-who>Player</b><span class="grow"></span><button class="pl-link" id="whoChange" data-who-change type="button">Change</button></div>
           <div id="lobbyStatus" class="lb-note" role="status"></div>
         </div>
 
@@ -880,6 +880,7 @@
     <script src="/play/feedback.js"></script>
     <script src="/play/icons.js"></script>
     <script src="/play/platform.js"></script>
+    <script src="/play/lobbykit.js"></script>
     <script src="/play/plotomon.js"></script>
     <script src="/play/animators.js"></script>
     <script src="/play/pixelart.js"></script>
@@ -1224,7 +1225,9 @@
         if (account || guestName()) return true;
         return (await askName(opts)) != null;
       }
-      const payload = (extra = {}) => ({ gameId: "match_monsters", mode: "casual", displayName: displayName(), monsters: picks, draft: draftMode, random: randomMode, ...extra });
+      /** How this player's rooms make teams, and their two monsters (blind picks need them). */
+      const teamKey = () => (draftMode ? "draft" : randomMode ? "random" : "pick");
+      const seatReq = (extra = {}) => ({ settings: { team: teamKey() }, data: picks, ...extra });
 
       /** Blind pick (choose your team here) or Draft (ban and pick against your rival in the match). */
       // How teams are made: "blind" (pick yours here), "draft" (ban and pick against
@@ -1266,6 +1269,19 @@
       /** CSS px per sprite pixel near `k`, snapped to whole device pixels so the art stays crisp. */
       const snapU = (k) => { const dpr = window.devicePixelRatio || 1; return Math.max(1, Math.round(k * dpr)) / dpr; };
       const CHEV = `<svg class="lb-px" viewBox="0 0 5 7" width="10" height="14" aria-hidden="true"><rect x="0" y="0" width="2" height="1"/><rect x="1" y="1" width="2" height="1"/><rect x="2" y="2" width="2" height="1"/><rect x="3" y="3" width="2" height="1"/><rect x="2" y="4" width="2" height="1"/><rect x="1" y="5" width="2" height="1"/><rect x="0" y="6" width="2" height="1"/></svg>`;
+
+      // The platform's lobby screens (web/lobbykit.js), told about Match Monsters once.
+      const TEAM_LINE = { pick: "Pick · they choose their own two", draft: "Draft · you'll ban and pick together", random: "Random · both teams dealt at the start" };
+      const kit = Ploto.lobbyKit({
+        gameId: "match_monsters", prefix: "mm:", path: "/play/match-monsters", title: "Match Monsters",
+        nouns: { code: "Room code", room: "room", quick: "Quick match", yours: "Your room" },
+        summary: (s) => TEAM_LINE[s.team] || "",
+        shareText: () => "Battle me in Match Monsters",
+        fullText: "Starts as soon as your friend joins",
+        // Your own seat shows your two for blind picks.
+        seatNote: (s, v) => (s.seat === v.you && v.settings.team === "pick" && picks.length === 2 ? picks.map((id) => monById(id)?.name).filter(Boolean).join(" + ") : null),
+        art: { chev: () => CHEV, bot: () => rigView("stone_golem", 0, snapU(0.6), [4, 6, 40, 42]), remove: () => "×" },
+      });
 
       function lbTitle(name) {
         return {
@@ -1353,7 +1369,11 @@
       /** Invite from the friends list: choose teams first, then the invite goes out. */
       function inviteFromList(friendId) {
         closePanel();
-        if (curScreen() === "room") return sendInvite(friendId); // teams are already chosen
+        if (curScreen() === "room") { // teams are already chosen
+          if (room) return sendInvite(friendId);
+          nav.friendId = friendId; // the room is on its way: the invite goes out once it's there
+          return;
+        }
         nav.stack = ["home"];
         Object.assign(nav, { how: "friend", friendId, accept: null, joinInfo: null });
         lbGo("teams");
@@ -1379,14 +1399,14 @@
       /** What the rival will do about teams, in a few words. */
       function modeLine() {
         const info = nav.how === "join" ? nav.joinInfo : null;
-        const m = info ? (info.draft ? "draft" : info.random ? "random" : "blind") : teamMode;
+        const m = info ? (info.team === "pick" ? "blind" : info.team) : teamMode;
         if (m === "draft") return nav.how === "bot" ? "You'll draft against the bot." : "You'll draft together.";
         if (m === "random") return "Random teams.";
         return nav.how === "bot" ? "The bot gets a random pair." : nav.how === "friend" ? "They pick their own two." : "Blind pick.";
       }
       function renderSearching() {
         const info = nav.how === "join" ? nav.joinInfo : null;
-        const mine = picks.length === 2 && (info ? !info.draft && !info.random : teamMode === "blind");
+        const mine = picks.length === 2 && (info ? info.team === "pick" : teamMode === "blind");
         const slot = (id) => `<span class="lb-slot">${id ? art(id, 56) : "?"}</span>`;
         $("searchVs").innerHTML = `<div class="team-side">${slot(mine && picks[0])}${slot(mine && picks[1])}</div><b>VS</b><div class="team-side">${slot()}${slot()}</div>`;
         $("searchStatus").textContent = searchLabel;
@@ -1519,7 +1539,6 @@
       // messages, presence and invites once signed in. It's the shared one
       // (Ploto.lobby(): one per tab, signed in, reconnecting), so what the
       // toolkit sends on it (your activity) and what this page sends share it.
-      Ploto.onLobby("mm:matched", (d) => startGame(d));
       Ploto.onLobby("social:changed", (d) => onSocialChanged(d));
       Ploto.onLobby("social:message", (d) => onMessage(d));
       Ploto.onLobby("social:presence", (d) => onPresence(d));
@@ -1535,7 +1554,7 @@
       /** What friends see you doing: in a match or a draft, or just here. */
       let activityLabel = null;
       function reportActivity() {
-        const label = room ? "Playing Match Monsters" : "In Match Monsters";
+        const label = state || draftState ? "Playing Match Monsters" : "In Match Monsters";
         if (label === activityLabel) return;
         activityLabel = label;
         Ploto.setActivity("match_monsters", label);
@@ -1580,11 +1599,19 @@
         if (curScreen() === "searching") $("searchStatus").textContent = text;
       }
 
+      /** Took a seat while the wait screen showed: into the room, or give the seat back if they backed out. */
+      async function seated(r, screen) {
+        if (!r) return false;
+        if (curScreen() !== screen) { kit.abandon(r); return false; }
+        await enterRoom(r);
+        if (curScreen() !== screen && !state && !draftState) { leaveLobbyRoom(); return false; } // backed out while connecting
+        return true;
+      }
       const quickPlay = () =>
-        lobbyAction("Looking for a rival…", async (sock) => {
-          const res = await sock.request("mm:enqueue", payload());
-          if (!res.queued) return setSearch("Rival found. Starting…");
-          // Nobody around after a while? Offer the bot, without leaving the queue until they take it.
+        lobbyAction("Looking for a rival…", async () => {
+          if (!(await seated(await kit.seat("quick", seatReq()), "searching"))) return;
+          if (state || draftState) return;
+          // Nobody around after a while? Offer the bot, keeping the seat until they take it.
           clearTimeout(searchTimer);
           searchTimer = setTimeout(() => {
             if (curScreen() !== "searching" || nav.how !== "quick") return;
@@ -1594,133 +1621,60 @@
         }, "searching");
 
       const practice = () =>
-        lobbyAction("Starting a match against the bot…", async (sock) => {
-          await sock.request("mm:practice", payload());
+        lobbyAction("Starting a match against the bot…", async () => {
           setSearch("Starting…");
+          await seated(await kit.seat("practice", seatReq()), "searching");
         }, "searching");
 
-      /* ---- playing a friend: friends first, then a link or a code ---- */
-      let hosting = null; // { code, link } while an invite of ours is open
-      let pendingJoin = null; // { code, host } from a blind-pick invite link, until we join or drop it
-
-      const JOIN_FORM = `<form class="row-input join-row" data-join><input type="text" placeholder="CODE" maxlength="8" autocapitalize="characters" autocomplete="off" spellcheck="false" enterkeyhint="go" aria-label="Room code" /><button class="ghost" type="submit">Join</button></form>`;
-      /** Code boxes ("Got a code?"): join that room, whatever its mode (the host's decides). */
-      function wireJoinForms(root) {
-        for (const f of root.querySelectorAll("form[data-join]")) {
-          f.onsubmit = (e) => {
-            e.preventDefault();
-            const input = f.querySelector("input");
-            const code = input.value.trim().toUpperCase();
-            if (code.length < 4) { input.focus(); return toast("Enter the room code"); }
-            joinFromCode(code);
-          };
-        }
-      }
+      /* ---- playing a friend: a room behind a code, with an open seat to invite a friend to ---- */
+      let roomView = null; // the room's LobbyView (the platform's room lobby)
+      let pendingJoin = null; // { code, host } from a blind-pick code, until we join or drop it
 
       /**
-       * Your room, for playing a friend: laid out like every Ploto game's room lobby
-       * (docs/PLATFORM.md). The code to share up top, the mode in a line, you and an
-       * open seat to invite a friend to. Whoever comes first (code or invite) starts it.
+       * Your room, for playing a friend: the platform's room lobby (docs/PLATFORM.md).
+       * The code to share up top, the mode in a line, you and an open seat to invite
+       * a friend to. Whoever comes first (code or invite) takes it and the match starts.
        */
       async function openRoom() {
         lbGo("room");
-        if (!hosting) await createRoom();
-        if (!hosting) { if (curScreen() === "room") lbPop(); return; } // it couldn't be made (a toast said why)
-        if (nav.friendId && !myInvite) sendInvite(nav.friendId);
-      }
-      /** What the friend will do about teams, in a few words (the room's settings line). */
-      function roomLine() {
-        if (draftMode) return "Draft · you'll ban and pick together";
-        if (randomMode) return "Random · both teams dealt at the start";
-        return "Pick · they choose their own two";
+        if (!room) await createRoom();
+        if (!room) { if (curScreen() === "room") lbPop(); return; } // it couldn't be made (a toast said why)
+        if (nav.friendId) { const id = nav.friendId; nav.friendId = null; sendInvite(id); }
       }
       function renderRoom() {
         const el = document.querySelector('[data-screen="room"]');
-        const code = hosting?.code;
-        const team = teamMode === "blind" && picks.length === 2 ? picks.map((id) => monById(id)?.name).filter(Boolean).join(" + ") : "Host";
-        const init = (displayName().trim()[0] || "?").toUpperCase();
-        const rival = myInvite
-          ? `<div class="pl-seat open"><div class="pl-seat-t"><span class="nm ell">${esc(myInvite.name)}</span><span class="note">Invite sent</span></div><button class="ghost small" data-do="cancel">Cancel</button></div>`
-          : `<div class="pl-seat open"><div class="pl-seat-t"><span class="nm">Open seat</span><span class="note">Share the code, or invite a friend</span></div><button class="ghost small" data-do="invite">Invite</button></div>`;
-        el.innerHTML =
-          `<div class="pl-codecard pl-frame"><div class="code"><small>Room code</small><b${code ? ` aria-label="Room code ${esc(code.split("").join(" "))}"` : ""}>${code ? esc(code) : "····"}</b></div>` +
-          `<button id="hShare"${code ? "" : " disabled"}>Share invite</button></div>` +
-          `<p class="pl-sumline">${esc(roomLine())}</p>` +
-          `<p class="pl-label">Players · 1/2</p><div class="pl-seats">` +
-          `<div class="pl-seat pl-frame"><span class="pl-av">${esc(init)}</span><div class="pl-seat-t"><span class="nm"><span class="ell">${esc(displayName())}</span><span class="pl-you">You</span></span><span class="note">${esc(team)}</span></div></div>` +
-          rival + `</div>` +
-          `<div class="pl-waitline"><span class="pl-dots"><i></i><i></i><i></i></span>Starts as soon as your friend joins</div>`;
-        el.querySelector("#hShare").onclick = shareLink;
-        el.querySelector('[data-do="invite"]')?.addEventListener("click", openInvitePicker);
-        el.querySelector('[data-do="cancel"]')?.addEventListener("click", () => {
-          lobbySock?.request("platform:cancelInvite", { inviteId: myInvite.inviteId }).catch(() => {});
-          myInvite = null;
-          renderRoom();
-        });
-      }
-      /** Invite a friend to the open seat: your friends who are online, or share the code instead. */
-      function openInvitePicker() {
-        if (!account) {
-          const el = showPanel("invite", `<h2>Invite a friend</h2><p class="muted" style="text-align:center;margin:8px 0 14px">Claim a username to add friends and invite them. Or share the room code.</p>` +
-            `<div class="s-actions"><button id="ipClaim">Claim a username</button><button class="ghost" id="ipShare">Share invite</button></div>`);
-          el.querySelector("#ipClaim").onclick = () => { closePanel(); openClaim(); };
-          el.querySelector("#ipShare").onclick = () => { closePanel(); shareLink(); };
+        if (!roomView || roomView.phase !== "lobby") {
+          el.innerHTML = `<div class="pl-codecard pl-frame"><div class="code"><small>Room code</small><b>····</b></div><button disabled>Share invite</button></div>`;
           return;
         }
-        renderInvitePicker();
-        loadFriends();
+        kit.renderRoom(roomView, { main: el, req: roomReq });
       }
-      function renderInvitePicker() {
-        const online = friendsData.friends.filter((f) => f.online);
-        const rows = online.length
-          ? online.map((f) => `<div class="pl-seat pl-frame"><span class="pl-av">${esc((f.username[0] || "?").toUpperCase())}</span><div class="pl-seat-t"><span class="nm ell">${esc(f.username)}</span>` +
-              `<span class="note">${esc(f.activity?.label || "Online")}</span></div><button class="small" data-invite="${f.id}">Invite</button></div>`).join("")
-          : `<div class="empty">${friendsData.friends.length ? "None of your friends are online right now" : "No friends yet. Add them in Ploto's Friends tab"}</div>`;
-        const el = showPanel("invite", `<h2>Invite a friend</h2><div class="pl-seats">${rows}</div><div class="s-actions"><button class="ghost" id="ipShare">Share invite instead</button></div>`);
-        el.querySelector("#ipShare").onclick = () => { closePanel(); shareLink(); };
-        for (const b of el.querySelectorAll("[data-invite]")) b.onclick = () => sendInvite(b.dataset.invite);
-      }
-      async function shareLink() {
-        const link = hosting?.link;
-        if (!link) return;
-        try {
-          if (navigator.share) await navigator.share({ title: "Match Monsters", text: "Battle me in Match Monsters", url: link });
-          else { await navigator.clipboard.writeText(link); toast("Invite link copied"); }
-        } catch (e) {
-          if (e?.name !== "AbortError") toast(link, 4000);
-        }
-      }
-
-      async function cancelHosting() {
-        hosting = null;
-        try { await lobbySock?.request("mm:cancelRoom", {}); } catch {}
-      }
-      /** Leaving the Invite screen withdraws what's open there. */
-      function cancelInvites() {
-        if (hosting) cancelHosting();
-        if (myInvite) {
-          lobbySock?.request("platform:cancelInvite", { inviteId: myInvite.inviteId }).catch(() => {});
-          myInvite = null;
-        }
-      }
-      /** Leaving the wait screen leaves the queue (practice and joins start on their own). */
-      function cancelSearch() {
+      const roomReq = (method, data) => (gameSock && gameSock.readyState === 1 ? gameSock.request(method, data) : Promise.reject(new Error("not connected")));
+      /** Leaving the room lobby, or the wait for a rival, gives the seat back. */
+      function leaveLobbyRoom() {
         clearTimeout(searchTimer);
-        if (nav.how === "quick") lobbySock?.request("mm:cancel", {}).catch(() => {});
+        if (!room || state || draftState) return;
+        const sock = gameSock;
+        leaving = true;
+        gameSock = null;
+        room = null;
+        roomView = null;
+        store.del("mm.room");
+        if (sock) sock.request("lobby:leave", {}).catch(() => {}).finally(() => { try { sock.close(); } catch {} });
       }
+      const cancelInvites = leaveLobbyRoom;
+      const cancelSearch = leaveLobbyRoom;
 
       const createRoom = () =>
-        lobbyAction("Creating your invite…", async (sock) => {
-          const res = await sock.request("mm:createRoom", payload());
-          hosting = { code: res.code, link: `${location.origin}/play/match-monsters?room=${res.code}` };
-          if (curScreen() === "room") renderRoom();
+        lobbyAction("Creating your room…", async () => {
+          await seated(await kit.seat("host", seatReq()), "room");
         });
 
       const joinRoom = (code) =>
-        lobbyAction(nav.joinInfo?.host ? `Joining ${nav.joinInfo.host}'s match…` : `Joining ${code}…`, async (sock) => {
-          await sock.request("mm:joinRoom", payload({ code }));
-          pendingJoin = null;
-          setSearch("Joined. Starting…");
+        lobbyAction(nav.joinInfo?.host ? `Joining ${nav.joinInfo.host}'s match…` : `Joining ${code}…`, async () => {
+          const r = await kit.seat("join", seatReq({ code }));
+          if (r) { pendingJoin = null; setSearch("Joined. Starting…"); }
+          await seated(r, "searching");
         }, "searching");
 
       /**
@@ -1734,28 +1688,62 @@
           return;
         }
         let info;
-        try { info = await (await ensureLobby()).request("mm:roomInfo", { code }); }
+        try { info = await kit.info(code); }
         catch (e) { toast(errText(e), 3000); return; }
+        if (info.started) return toast("That match has already started", 3000);
         $("lobbyStatus").textContent = "";
+        if (room && !state && !draftState) leaveLobbyRoom();
         nav.how = "join";
         nav.friendId = null;
         nav.joinInfo = info;
-        if (info.draft || info.random) return joinRoom(info.code); // no picks needed: teams come in the match
+        if (info.team !== "pick") return joinRoom(info.code); // no picks needed: teams come in the match
         pendingJoin = { code: info.code, host: info.host };
         lbGo("pick");
       }
 
       /* ------------------------------------------------------------ game lifecycle */
-      async function startGame(matched) {
-        if (room) return;
-        room = { roomId: matched.roomId, seat: matched.seat };
+      /** Into a room we have a seat in: its lobby until it starts, then the draft or the match. */
+      async function enterRoom(r) {
+        const old = gameSock;
+        gameSock = null;
+        try { old?.close(); } catch {}
+        room = { roomId: r.roomId, seat: r.seat };
+        roomView = null;
         store.set("mm.room", room);
-        hosting = null;
-        myInvite = null;
-        lbReset(); // back in the lobby, you start at Home
-        $("inviteCard").classList.add("hidden");
-        if (panel) closePanel();
         await openGame();
+      }
+      /** The room's lobby changed: who's in, the start, a rematch on offer. */
+      function onLobbyView(v) {
+        roomView = v;
+        if (room && v.you != null && room.seat !== v.you) { room.seat = v.you; store.set("mm.room", room); }
+        if (v.phase === "lobby") {
+          if ($("lobby").classList.contains("hidden")) showScreen("lobby");
+          const wait = v.mode === "quick" || v.mode === "practice" ? "searching" : "room";
+          if (curScreen() !== wait) {
+            if (wait === "searching") nav.how = v.mode === "practice" ? "bot" : "quick";
+            lbGo(wait);
+          } else if (wait === "room") renderRoom();
+          return;
+        }
+        if (endInfo && v.rematch) {
+          const me = v.seats[v.you]?.name;
+          endInfo.theirs = v.rematch.players.some((n) => n !== me);
+          renderEnd();
+        }
+        if (v.phase === "playing" && !state && !draftState) startMatch();
+      }
+      /** The room started: off the lobby's screens, into the draft or the match. */
+      let starting = null;
+      function startMatch() {
+        starting ??= (async () => {
+          clearTimeout(searchTimer);
+          lbReset(); // back in the lobby later, you start at Home
+          $("inviteCard").classList.add("hidden");
+          if (panel) closePanel();
+          if (Ploto.sheetOpen()) Ploto.closeSheet(true);
+          await refresh();
+        })().finally(() => { starting = null; });
+        return starting;
       }
 
       async function openGame() {
@@ -1783,12 +1771,7 @@
           $("peerWarn").classList.toggle("hidden", d.connected);
           renderEnd();
         }));
-        sock.on("mm:rematchRequested", live(() => {
-          if (!endInfo) return;
-          endInfo.theirs = true;
-          renderEnd();
-        }));
-        sock.on("mm:rematchReady", live((d) => enterRematch(d.roomId)));
+        sock.on("lobby:update", live((d) => onLobbyView(d.view)));
         sock.on("mm:draftUpdate", live((d) => { draftState = d; renderDraft(); }));
         sock.on("mm:draftDone", live(async () => {
           cue("evolve");
@@ -1802,7 +1785,11 @@
         // Only the live socket's drop counts: the one closed on purpose when hopping to a rematch must not trigger a reconnect.
         sock.addEventListener("close", (ev) => { if (sock === gameSock) onGameClose(ev); });
         statsFor(room.roomId);
-        await refresh(); // shows the draft or the game
+        const lv = await sock.request("lobby:getView", {});
+        if (sock !== gameSock) return;
+        onLobbyView(lv);
+        if (lv.phase === "lobby") return; // the room's lobby until it starts
+        await startMatch(); // shows the draft or the game
         if (state && state.phase === "finished") showEnd(state.winner === room.seat, state.forfeitedBy);
         if (state && !store.get("mm.tipChips")) {
           store.set("mm.tipChips", true);
@@ -1811,7 +1798,7 @@
       }
 
       function onGameClose(ev) {
-        if (leaving || !room || (!state && !draftState)) return;
+        if (leaving || !room) return;
         if (state?.phase === "finished") return;
         if (ev && ev.code === 4004) { // a CloseEvent, or a failed reconnect's error
           // The server restarted (e.g. woke from sleep) and the room is gone.
@@ -1851,9 +1838,11 @@
         try { gameSock?.close(); } catch {}
         gameSock = null;
         room = null;
+        roomView = null;
         state = null;
         selected = null;
         endInfo = null;
+        clearTimeout(searchTimer);
         store.del("mm.room");
         $("end").classList.add("hidden");
         $("lobbyStatus").textContent = "";
@@ -3494,11 +3483,12 @@
         if (!endInfo) return;
         const { won, forfeit, mine, theirs } = endInfo;
         const teams = state?.drafted ? "A new draft" : state?.randomTeams ? "New random teams" : "Same teams"; // drafts and random teams start over
-        let label = "Rematch", hint = won ? `${teams}. They'll open the next game.` : `${teams}. You'll open the next game.`;
+        let label = "Rematch", hint = `${teams}.`;
         let disabled = false, invited = false;
-        if (!rivalOnline) { disabled = true; hint = "Your rival left the arena."; }
+        // A rival who asked for a rematch has moved on to its room: they're waiting there, not gone.
+        if (theirs) { label = "Accept rematch"; hint = "Your rival wants a rematch"; invited = true; }
+        else if (!rivalOnline) { disabled = true; hint = "Your rival left the arena."; }
         else if (mine) { label = "Waiting for rival…"; disabled = true; hint = "Rematch requested. Waiting for your rival to accept."; }
-        else if (theirs) { label = "Accept rematch"; hint = "Your rival wants a rematch"; invited = true; }
         $("end").innerHTML =
           `<div class="end-card"><div class="end-team${won ? " won" : " lost"}">${endTeam()}</div>` +
           `<div class="big">${won ? "Victory" : "Defeat"}</div>` +
@@ -3557,8 +3547,8 @@
         endInfo.mine = true;
         renderEnd();
         try {
-          const res = await gameSock.request("mm:rematch", {});
-          if (res && res.roomId) await enterRematch(res.roomId);
+          const res = await gameSock.request("lobby:rematch", {});
+          if (res && res.roomId) await enterRematch(res);
         } catch (e) {
           if (!endInfo) return;
           endInfo.mine = false;
@@ -3567,21 +3557,25 @@
         }
       }
 
-      /** Both players agreed: hop to the fresh room (same seat, same monsters). */
-      async function enterRematch(roomId) {
-        if (!room || room.roomId === roomId) return;
+      /** Hop to the rematch room: its lobby until your rival joins (the bot deals straight away), then the match. */
+      async function enterRematch(r) {
+        if (!room || room.roomId === r.roomId) return;
         const seat = room.seat;
         leaving = true;
-        try { gameSock?.close(); } catch {}
+        const old = gameSock;
+        gameSock = null;
+        try { old?.close(); } catch {}
         endInfo = null;
         $("end").classList.add("hidden");
-        room = { roomId, seat };
+        room = { roomId: r.roomId, seat };
+        roomView = null;
         store.set("mm.room", room);
         state = null;
+        draftState = null;
         selected = null;
         try {
           await openGame();
-          toast(draftState ? "Rematch: draft new teams" : state && state.turn === room.seat ? "Rematch: you go first" : "Rematch: your rival goes first", 2500);
+          if (state || draftState) toast(draftState ? "Rematch: draft new teams" : state.turn === room.seat ? "Rematch: you go first" : "Rematch: your rival goes first", 2500);
         } catch {
           toast("Couldn't join the rematch", 3000);
           leaveGame();
@@ -3595,7 +3589,6 @@
       let account = local.get("mm.account"); // { id, username }
       let friendsData = { friends: [], incoming: [], outgoing: [] };
       let panel = null; // "claim" | "key" | "name" | "confirm" | "invite" (the sheet's lobby panels)
-      let myInvite = null; // { inviteId, friendId, name }
       const incomingInvites = new Map();
 
       function setAccount(a) {
@@ -3678,7 +3671,6 @@
       async function loadFriends() {
         if (!account) return;
         try { friendsData = await api("GET", "/api/friends"); } catch { return; }
-        if (panel === "invite") renderInvitePicker();
       }
 
       /* ---- panels (reuse the bottom sheet) ---- */
@@ -3737,28 +3729,15 @@
         const f = friendsData.friends.find((x) => x.id === d.id);
         if (!f) return;
         f.online = d.online;
-        if (panel === "invite") renderInvitePicker(); // friends come and go from the list as they go online and off
       }
 
       /* ---- invites ---- */
+      /** Invite a friend to your room's open seat (no room yet: choose teams, then the room, then the invite). */
       async function sendInvite(friendId) {
+        if (!room || curScreen() !== "room") return inviteFromList(friendId);
         const f = friendsData.friends.find((x) => x.id === friendId);
-        if (!draftMode && !randomMode && picks.length < 2) { // blind pick: your two first
-          closePanel();
-          Object.assign(nav, { how: "friend", friendId });
-          return lbGo("pick");
-        }
-        if (lbBusy) return;
-        setBusy(true);
-        try {
-          const sock = await ensureLobby();
-          const res = await sock.request("mm:invite", payload({ friendId }));
-          myInvite = { inviteId: res.inviteId, friendId, name: f ? f.username : "your friend" };
-          closePanel();
-          if (curScreen() === "room") renderRoom();
-          else lbGo("room");
-        } catch (e) { toast(errText(e)); }
-        finally { setBusy(false); }
+        try { await kit.invite(friendId, room.roomId, f?.username); closePanel(); }
+        catch (e) { toast(errText(e)); }
       }
 
       function onInvite(inv) {
@@ -3792,9 +3771,9 @@
       function showInviteCard(inv) {
         const card = $("inviteCard");
         const [m0, m1] = inv.monsters || [];
-        const note = inv.draft ? "A draft match: you'll ban and pick together" : inv.random ? "Random teams: you'll both be dealt two monsters" : picks.length === 2 ? "Accept to battle with your current team" : "Pick two monsters, then accept";
+        const note = inv.team === "draft" ? "A draft match: you'll ban and pick together" : inv.team === "random" ? "Random teams: you'll both be dealt two monsters" : picks.length === 2 ? "Accept to battle with your current team" : "Pick two monsters, then accept";
         card.innerHTML =
-          `<div class="ic-top">${inv.draft || inv.random ? "" : `<div class="ic-team">${art(m0, 40)}${art(m1, 40)}</div>`}` +
+          `<div class="ic-top">${inv.team !== "pick" || !m0 ? "" : `<div class="ic-team">${art(m0, 40)}${art(m1, 40)}</div>`}` +
           `<div class="ell"><b>${esc(inv.from.username)}</b> challenges you<div class="muted" style="font-size:12px">${note}</div></div></div>` +
           `<div class="ic-actions"><button class="ghost" data-ic="decline">Decline</button><button data-ic="accept">${ic("battle")} Accept</button></div><div class="ic-timer"></div>`;
         card.dataset.invite = inv.inviteId;
@@ -3810,7 +3789,7 @@
 
       async function acceptInvite(inviteId) {
         const inv = incomingInvites.get(inviteId);
-        if (!inv?.draft && !inv?.random && picks.length < 2) { // blind pick: choose your two, then Accept in the dock
+        if (inv?.team === "pick" && picks.length < 2) { // blind pick: choose your two, then Accept in the dock
           closePanel();
           $("inviteCard").classList.add("hidden");
           if (curScreen() === "searching") cancelSearch();
@@ -3819,12 +3798,14 @@
           return lbGo("pick");
         }
         try {
-          const sock = await ensureLobby();
-          const res = await sock.request("mm:acceptInvite", payload({ inviteId }));
+          if (room && !state && !draftState) leaveLobbyRoom(); // your own room's seat goes back
+          const res = await kit.seat("acceptInvite", seatReq({ inviteId }));
           incomingInvites.delete(inviteId);
           closePanel();
           $("inviteCard").classList.add("hidden");
-          await startGame(res);
+          if (!res) return;
+          lbReset();
+          await enterRoom(res);
         } catch (e) {
           toast(errText(e));
           incomingInvites.delete(inviteId);
@@ -3839,10 +3820,9 @@
       }
 
       function onInviteGone(d) {
-        if (myInvite && myInvite.inviteId === d.inviteId) {
-          const name = myInvite.name;
-          myInvite = null;
-          if (curScreen() === "room" && d.reason !== "accepted") renderRoom(); // the seat opens up again
+        if (kit.sent.has(d.inviteId)) { // the room's seat opens up again (the room tells us)
+          kit.sent.delete(d.inviteId);
+          const name = roomView?.seats.find((s) => s.inviteId === d.inviteId)?.name || "Your friend";
           if (d.reason === "declined") toast(`${name} declined`);
           if (d.reason === "expired") toast(`${name} didn't answer in time`);
         }
@@ -3957,9 +3937,10 @@
       // the lobby's screens
       $("lbBack").addEventListener("click", lbBack);
       $("monstersBtn").addEventListener("click", () => lbGo("monsters"));
-      for (const b of document.querySelectorAll("[data-how]")) {
-        b.addEventListener("click", () => { Object.assign(nav, { how: b.dataset.how, friendId: null, joinInfo: null }); lbGo("teams"); });
-      }
+      kit.home(document.querySelector('[data-screen="home"]'), {
+        onMode: (how) => { Object.assign(nav, { how, friendId: null, joinInfo: null }); lbGo("teams"); },
+        onCode: (code) => (code.length < 4 ? toast("Enter the room code") : joinFromCode(code)),
+      });
       for (const b of document.querySelectorAll("[data-team]")) {
         b.addEventListener("click", () => {
           teamModeChosen = true;
@@ -3968,17 +3949,12 @@
           else afterTeams();
         });
       }
-      wireJoinForms(document.querySelector('[data-screen="home"]'));
-      $("whoChange").addEventListener("click", async () => {
-        await askName({ title: "Change your name", body: "Your rival sees this name during the match.", go: "Save" });
-        renderHome();
-      });
       window.addEventListener("resize", () => { if (curScreen() === "home") drawHero(); });
       $("searchCancel").addEventListener("click", lbBack);
       $("searchBot").addEventListener("click", () => { cancelSearch(); nav.how = "bot"; practice(); });
       // Escape steps back a screen (capture: an open sheet closes first, on its own Escape)
       window.addEventListener("keydown", (e) => {
-        if (e.key !== "Escape" || !$("sheet").classList.contains("hidden") || $("lobby").classList.contains("hidden") || nav.stack.length < 2) return;
+        if (e.key !== "Escape" || !$("sheet").classList.contains("hidden") || Ploto.sheetOpen() || $("lobby").classList.contains("hidden") || nav.stack.length < 2) return;
         if (e.target.matches?.("input")) return;
         lbBack();
       }, true);
@@ -3989,22 +3965,15 @@
        * in-app Back: close the open sheet, step back a lobby screen, open the
        * menu in a match (never a silent exit), or offer to leave a draft.
        */
-      let backIgnore = 0; // our own history.back() calls, whose popstate we skip
       const isShown = (id) => !$(id).classList.contains("hidden");
-      const canGoBack = () => isShown("sheet") || isShown("game") || isShown("draft") || (isShown("lobby") && nav.stack.length > 1);
-      function syncBackGuard() {
-        if (backIgnore) return; // wait for the pending pop to land
-        const has = history.state?.mmBack === true;
-        if (canGoBack() && !has) history.pushState({ mmBack: true }, "");
-        else if (!canGoBack() && has) { backIgnore++; history.back(); }
-      }
-      window.addEventListener("popstate", () => {
-        if (backIgnore) { backIgnore--; return syncBackGuard(); }
-        if (isShown("sheet")) { if (panel) closePanel(); else $("sheet").classList.add("hidden"); }
-        else if (isShown("game")) $("gameMenuBtn").click();
-        else if (isShown("draft")) leaveDraft();
-        else if (nav.stack.length > 1) lbBack();
-        syncBackGuard();
+      const syncBackGuard = Ploto.backGuard({
+        canGoBack: () => isShown("sheet") || isShown("game") || isShown("draft") || (isShown("lobby") && nav.stack.length > 1),
+        onBack: () => {
+          if (isShown("sheet")) { if (panel) closePanel(); else $("sheet").classList.add("hidden"); }
+          else if (isShown("game")) $("gameMenuBtn").click();
+          else if (isShown("draft")) leaveDraft();
+          else if (nav.stack.length > 1) lbBack();
+        },
       });
       const backWatch = new MutationObserver(syncBackGuard);
       for (const id of ["sheet", "lobby", "game", "draft"]) backWatch.observe($(id), { attributes: true, attributeFilter: ["class", "hidden", "data-at"] });
@@ -4017,7 +3986,7 @@
       // An invite link (?room=CODE) goes straight to the match once the roster is in (see below).
       // From the launcher: ?invite=ID (Join on an invite) and ?inviteFriend=ID (Invite on a friend).
       const params = new URLSearchParams(location.search);
-      const invited = params.get("room");
+      const invited = params.get("code") || params.get("room");
       const launcherInvite = params.get("invite");
       const launcherFriend = params.get("inviteFriend");
       if (invited || launcherInvite || launcherFriend) history.replaceState(null, "", location.pathname);

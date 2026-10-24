@@ -37,6 +37,7 @@
    * @param {(settings: object) => string} [def.summary]  one line about a room's settings
    * @param {(code: string) => string} def.shareText
    * @param {string} [def.quickNote]       under the quick countdown ("Bots fill the empty seats")
+   * @param {string} [def.fullText]        rooms that start when full: the waiting line ("Starts as soon as your friend joins")
    * @param {(seat: object, view: object) => string|null} [def.seatNote]  a seat's note instead of "Ready"
    * @param {{bot?: () => string, remove?: () => string, chev?: () => string}} [def.art]
    */
@@ -155,6 +156,7 @@
       const lob = await lobby();
       const r = await lob.request(m("invite"), { friendId, roomId });
       kit.sent.add(r.inviteId);
+      redraw(); // the held seat arrived before the answer: now it can offer Cancel
       toast(name ? `Invite sent to ${name}` : "Invite sent");
       cue("ready");
       return r;
@@ -164,6 +166,11 @@
       await lob.request("platform:cancelInvite", { inviteId });
       kit.sent.delete(inviteId);
     };
+    /** Draw the last room lobby again (what this tab sent changed, not the room). */
+    let last = null;
+    function redraw() {
+      if (last && last.opts.main.isConnected && !last.opts.main.closest("[hidden]")) kit.renderRoom(last.view, last.opts);
+    }
     kit.share = async (code) => {
       const url = kit.link(code);
       const text = def.shareText(code);
@@ -257,7 +264,9 @@
      * Draw a LobbyView into `main` (and its start button or waiting line into
      * `foot`), wired to the room through `req(method, data)`.
      */
-    kit.renderRoom = (v, { main, foot, req }) => {
+    kit.renderRoom = (v, opts) => {
+      const { main, foot, req } = opts;
+      last = { view: v, opts };
       const host = kit.isHost(v);
       const quick = v.mode === "quick";
       const seats = v.seats;
@@ -275,7 +284,7 @@
       let f = "";
       if (quick) f = "";
       else if (v.startRule === "full") {
-        f = `<div class="pl-waitline"><span class="pl-dots"><i></i><i></i><i></i></span>Starts as soon as every seat is taken</div>`;
+        f = `<div class="pl-waitline"><span class="pl-dots"><i></i><i></i><i></i></span>${esc(def.fullText || "Starts as soon as every seat is taken")}</div>`;
       } else if (host) {
         const open = seats.filter((s) => s.kind === "empty" || s.kind === "invited").length;
         const bots = v.fillsWithBots ? open : 0;
@@ -289,7 +298,7 @@
       if (foot) {
         foot.innerHTML = f;
         foot.parentElement.hidden = !f;
-      }
+      } else main.insertAdjacentHTML("beforeend", f); // no footer: the line goes under the seats
       const onClick = async (e) => {
         const b = e.target.closest("[data-do]");
         if (!b || b.disabled) return;

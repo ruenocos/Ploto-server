@@ -86,10 +86,10 @@ describe("a real move over the wire", () => {
     await a.open();
     await b.open();
 
-    await a.req("mm:enqueue", { displayName: "A", monsters: ["ember_pup", "prism_owl"] });
-    const r = (await b.req("mm:enqueue", {
+    await a.req("mm:quick", { displayName: "A", data: ["ember_pup", "prism_owl"] });
+    const r = (await b.req("mm:quick", {
       displayName: "B",
-      monsters: ["stone_golem", "tide_serpent"],
+      data: ["stone_golem", "tide_serpent"],
     })) as { data: { roomId: string } };
     const roomId = r.data.roomId;
 

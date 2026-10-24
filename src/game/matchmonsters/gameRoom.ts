@@ -17,7 +17,6 @@ import {
   type GameConfig,
 } from "./engine.js";
 import { chooseEvolution, chooseMove } from "./bot.js";
-import { dealTeam } from "./monsters.js";
 import type { Move, MoveResult, MonsterState, PlayerState } from "./types.js";
 import { BERRIES_TO_EVOLVE, FATIGUE_AFTER } from "./types.js";
 import type { PeerLike } from "../../platform/peer.js";
@@ -34,9 +33,9 @@ export interface RoomOptions {
   readonly accounts?: readonly [string | null, string | null];
   /** Called once when the match ends. */
   readonly onFinished?: (room: GameRoom) => void;
-  /** Set when the teams were drafted: the draft's time per step (null = no timer). A rematch drafts again. */
+  /** Set when the teams were drafted: the draft's time per step (null = no timer). */
   readonly draftStepMs?: number | null;
-  /** Random teams: both players were dealt two monsters, and a rematch deals new ones. */
+  /** Random teams: both players were dealt two monsters. */
   readonly randomTeams?: boolean;
 }
 
@@ -59,9 +58,6 @@ export class GameRoom {
   /** peerId -> player index (0 | 1). */
   private readonly seats = new Map<string, 0 | 1>();
   private readonly peers: (PeerLike | undefined)[] = [undefined, undefined];
-  private readonly rematchVotes = new Set<0 | 1>();
-  /** Room id of the rematch, once both players agreed. */
-  rematchRoomId: string | null = null;
 
   constructor(config: GameConfig, options: RoomOptions = {}) {
     this.config = config;
@@ -73,37 +69,6 @@ export class GameRoom {
 
   seatOf(peerId: string): 0 | 1 | undefined {
     return this.seats.get(peerId);
-  }
-
-  /**
-   * Record a rematch vote after the game ends. The first vote notifies the
-   * opponent; returns true once both players want a rematch.
-   */
-  voteRematch(seat: 0 | 1): boolean {
-    if (!this.finished) throw new Error("the game isn't over yet");
-    this.rematchVotes.add(seat);
-    if (this.options.botSeat !== undefined) this.rematchVotes.add(this.options.botSeat); // always up for more
-    if (this.rematchVotes.size < 2) {
-      this.peers[seat === 0 ? 1 : 0]?.notify("mm:rematchRequested", { seat });
-      return false;
-    }
-    return true;
-  }
-
-  /** Same players and monsters; the loser of this game opens the next one. */
-  rematchConfig(matchId: string, seed: number): GameConfig {
-    const loser: 0 | 1 = this.game.state.winner === 0 ? 1 : 0;
-    const [p0, p1] = this.config.players;
-    const players: GameConfig["players"] = this.options.randomTeams
-      ? [{ ...p0, monsters: dealTeam() }, { ...p1, monsters: dealTeam() }]
-      : this.config.players;
-    return { ...this.config, players, matchId, seed, firstTurn: loser };
-  }
-
-  /** Point both players at the new room. */
-  announceRematch(roomId: string): void {
-    this.rematchRoomId = roomId;
-    this.broadcast("mm:rematchReady", { roomId });
   }
 
   /**

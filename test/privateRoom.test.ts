@@ -46,66 +46,58 @@ afterAll(async () => {
 });
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+type Res<T = any> = { ok: boolean; data: T; errorReason?: string };
+
 describe("private rooms (shareable code)", () => {
-  it("creates a code, a friend joins it, and both are matched into one room", async () => {
+  it("hosts a room behind a code; a friend joins and the match starts in the same room", async () => {
     const host = new Client(port, "lobby", "host");
     const friend = new Client(port, "lobby", "friend");
     await host.open();
     await friend.open();
 
-    const created = (await host.req("mm:createRoom", {
-      displayName: "Host",
-      monsters: ["ember_pup", "prism_owl"],
-    })) as { ok: boolean; data: { code: string } };
+    const created = (await host.req("mm:host", { displayName: "Host", settings: { team: "pick" }, data: ["ember_pup", "prism_owl"] })) as Res<{ roomId: string; code: string; seat: number }>;
     expect(created.ok).toBe(true);
     expect(created.data.code).toMatch(/^[A-Z0-9]{4}$/);
-    const code = created.data.code;
-
-    const joined = (await friend.req("mm:joinRoom", {
-      code,
-      displayName: "Friend",
-      monsters: ["stone_golem", "tide_serpent"],
-    })) as { ok: boolean; data: { roomId: string; seat: number } };
-    expect(joined.ok).toBe(true);
-    expect(joined.data.seat).toBe(1);
-    const roomId = joined.data.roomId;
-
-    // Host is told to connect to the same room, as seat 0.
-    await delay(20);
-    const matched = host.notes.find((n) => n.method === "mm:matched");
-    expect(matched).toBeDefined();
-    const md = matched!.data as { roomId: string; seat: number };
-    expect(md.roomId).toBe(roomId);
-    expect(md.seat).toBe(0);
-
-    // Both connect to the game room; player order is [host, friend].
+    expect(created.data.seat).toBe(0);
+    const { code, roomId } = created.data;
     const gh = new Client(port, roomId, "host");
-    const gf = new Client(port, roomId, "friend");
     await gh.open();
+    const lobby = (await gh.req("lobby:getView", {})) as Res;
+    expect(lobby.data).toMatchObject({ code, phase: "lobby", you: 0, host: 0, startRule: "full", settings: { team: "pick" } });
+
+    const joined = (await friend.req("mm:join", { code, displayName: "Friend", data: ["stone_golem", "tide_serpent"] })) as Res<{ roomId: string; seat: number }>;
+    expect(joined.ok).toBe(true);
+    expect(joined.data).toMatchObject({ roomId, seat: 1 });
+
+    // The host's room connection hears the start.
+    await delay(20);
+    expect(gh.notes.some((n) => n.method === "lobby:update" && (n.data as any).view.phase === "playing")).toBe(true);
+    const gf = new Client(port, roomId, "friend");
     await gf.open();
-    const snap = (await gh.req("mm:getState", {})) as {
-      data: { players: { displayName: string }[] };
-    };
+    const snap = (await gh.req("mm:getState", {})) as Res<{ players: { displayName: string }[] }>;
     expect(snap.data.players.map((p) => p.displayName)).toEqual(["Host", "Friend"]);
 
     host.close(); friend.close(); gh.close(); gf.close();
   });
 
-  it("tells an invite link what it leads to before joining", async () => {
+  it("tells a code what it leads to before joining; blind picks need the guest's two", async () => {
     const host = new Client(port, "lobby", "info-host");
     const guest = new Client(port, "lobby", "info-guest");
     await host.open();
     await guest.open();
-    const created = (await host.req("mm:createRoom", { displayName: "Host", monsters: [], draft: true })) as { data: { code: string } };
-    const info = (await guest.req("mm:roomInfo", { code: created.data.code.toLowerCase() })) as { ok: boolean; data: { draft: boolean; host: string } };
+    const created = (await host.req("mm:host", { displayName: "Host", settings: { team: "pick" }, data: ["ember_pup", "prism_owl"] })) as Res<{ code: string }>;
+    const info = (await guest.req("mm:info", { code: created.data.code.toLowerCase() })) as Res;
     expect(info.ok).toBe(true);
-    expect(info.data).toMatchObject({ draft: true, host: "Host" });
-    // a draft room needs no picks from the guest
-    const joined = (await guest.req("mm:joinRoom", { code: created.data.code, displayName: "Guest", monsters: [] })) as { ok: boolean };
+    expect(info.data).toMatchObject({ team: "pick", host: "Host", seatsFree: 1, started: false });
+    const noPicks = (await guest.req("mm:join", { code: created.data.code, displayName: "Guest" })) as Res;
+    expect(noPicks.ok).toBe(false);
+    expect(noPicks.errorReason).toMatch(/pick your two/);
+    // a draft room needs no picks
+    const draft = (await host.req("mm:host", { displayName: "Host", settings: { team: "draft" } })) as Res<{ code: string }>;
+    const joined = (await guest.req("mm:join", { code: draft.data.code, displayName: "Guest" })) as Res;
     expect(joined.ok).toBe(true);
-    const gone = (await guest.req("mm:roomInfo", { code: created.data.code })) as { ok: boolean; errorReason?: string };
-    expect(gone.ok).toBe(false);
-    expect(gone.errorReason).toMatch(/expired/);
+    const started = (await guest.req("mm:info", { code: draft.data.code })) as Res;
+    expect(started.data.started).toBe(true);
     host.close(); guest.close();
   });
 
@@ -114,15 +106,12 @@ describe("private rooms (shareable code)", () => {
     const guest = new Client(port, "lobby", "rnd-guest");
     await host.open();
     await guest.open();
-    const created = (await host.req("mm:createRoom", { displayName: "Host", monsters: [], random: true })) as { data: { code: string; random: boolean } };
-    expect(created.data.random).toBe(true);
-    const info = (await guest.req("mm:roomInfo", { code: created.data.code })) as { data: { draft: boolean; random: boolean } };
-    expect(info.data).toMatchObject({ draft: false, random: true });
-    const joined = (await guest.req("mm:joinRoom", { code: created.data.code, displayName: "Guest", monsters: [] })) as { ok: boolean; data: { roomId: string } };
+    const created = (await host.req("mm:host", { displayName: "Host", settings: { team: "random" } })) as Res<{ code: string }>;
+    const joined = (await guest.req("mm:join", { code: created.data.code, displayName: "Guest" })) as Res<{ roomId: string }>;
     expect(joined.ok).toBe(true);
     const g = new Client(port, joined.data.roomId, "rnd-guest");
     await g.open();
-    const snap = (await g.req("mm:getState", {})) as { data: { randomTeams: boolean; players: { monsters: { id: string }[] }[] } };
+    const snap = (await g.req("mm:getState", {})) as Res<{ randomTeams: boolean; players: { monsters: { id: string }[] }[] }>;
     expect(snap.data.randomTeams).toBe(true);
     for (const p of snap.data.players) {
       expect(p.monsters).toHaveLength(2);
@@ -134,30 +123,51 @@ describe("private rooms (shareable code)", () => {
   it("rejects an unknown code", async () => {
     const c = new Client(port, "lobby", "x");
     await c.open();
-    const res = (await c.req("mm:joinRoom", {
-      code: "ZZZZ",
-      displayName: "X",
-      monsters: ["ember_pup", "prism_owl"],
-    })) as { ok: boolean; errorReason?: string };
+    const res = (await c.req("mm:join", { code: "ZZZZ", displayName: "X", data: ["ember_pup", "prism_owl"] })) as Res;
     expect(res.ok).toBe(false);
-    expect(res.errorReason).toMatch(/not found/);
+    expect(res.errorReason).toMatch(/doesn't lead anywhere/);
     c.close();
   });
 
-  it("won't let the host join their own room", async () => {
+  it("joining your own code keeps your seat (the match waits for someone else)", async () => {
     const c = new Client(port, "lobby", "solo");
     await c.open();
-    const created = (await c.req("mm:createRoom", {
-      displayName: "Solo",
-      monsters: ["ember_pup", "prism_owl"],
-    })) as { data: { code: string } };
-    const res = (await c.req("mm:joinRoom", {
-      code: created.data.code,
-      displayName: "Solo",
-      monsters: ["ember_pup", "prism_owl"],
-    })) as { ok: boolean; errorReason?: string };
-    expect(res.ok).toBe(false);
-    expect(res.errorReason).toMatch(/your own room/);
+    const created = (await c.req("mm:host", { displayName: "Solo", settings: { team: "pick" }, data: ["ember_pup", "prism_owl"] })) as Res<{ code: string; roomId: string }>;
+    const res = (await c.req("mm:join", { code: created.data.code, displayName: "Solo", data: ["ember_pup", "prism_owl"] })) as Res<{ seat: number }>;
+    expect(res.ok).toBe(true);
+    expect(res.data.seat).toBe(0);
+    const info = (await c.req("mm:info", { code: created.data.code })) as Res;
+    expect(info.data).toMatchObject({ seatsFree: 1, started: false });
     c.close();
+  });
+
+  it("quick rooms with the same team mode fill up together; a rematch keeps the picks", async () => {
+    const a = new Client(port, "lobby", "qa");
+    const b = new Client(port, "lobby", "qb");
+    await a.open();
+    await b.open();
+    const ra = (await a.req("mm:quick", { displayName: "Ari", settings: { team: "pick" }, data: ["ember_pup", "prism_owl"] })) as Res<{ roomId: string; seat: number }>;
+    const other = (await b.req("mm:quick", { displayName: "Bea", settings: { team: "draft" } })) as Res<{ roomId: string }>;
+    expect(other.data.roomId).not.toBe(ra.data.roomId); // a draft queue of its own
+    await b.req("lobby:leave", {}).catch(() => {});
+    const rb = (await b.req("mm:quick", { displayName: "Bea", settings: { team: "pick" }, data: ["stone_golem", "tide_serpent"] })) as Res<{ roomId: string; seat: number }>;
+    expect(rb.data).toMatchObject({ roomId: ra.data.roomId, seat: 1 });
+    const ga = new Client(port, ra.data.roomId, "qa");
+    const gb = new Client(port, ra.data.roomId, "qb");
+    await ga.open();
+    await gb.open();
+    expect(((await ga.req("lobby:getView", {})) as Res).data).toMatchObject({ mode: "quick", phase: "playing" });
+    await ga.req("mm:forfeit", {});
+    const next = (await gb.req("lobby:rematch", {})) as Res<{ roomId: string; code: string }>;
+    expect(next.ok).toBe(true);
+    await delay(20);
+    expect(ga.notes.some((n) => n.method === "lobby:update" && (n.data as any).view.rematch?.players?.includes("Bea"))).toBe(true);
+    const same = (await ga.req("lobby:rematch", {})) as Res<{ roomId: string }>;
+    expect(same.data.roomId).toBe(next.data.roomId);
+    const g2 = new Client(port, next.data.roomId, "qa");
+    await g2.open();
+    const snap = (await g2.req("mm:getState", {})) as Res<{ players: { displayName: string; monsters: { id: string }[] }[] }>;
+    expect(snap.data.players.map((p) => [p.displayName, p.monsters.map((m) => m.id)])).toEqual([["Bea", ["stone_golem", "tide_serpent"]], ["Ari", ["ember_pup", "prism_owl"]]]);
+    for (const c of [a, b, ga, gb, g2]) c.close();
   });
 });

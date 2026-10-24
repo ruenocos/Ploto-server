@@ -1,0 +1,163 @@
+import { describe, it, expect } from "vitest";
+import { SeaBattleLobby } from "../src/game/sea_battle/lobby.js";
+import { parseSettings, DEFAULT_SETTINGS } from "../src/game/sea_battle/room.js";
+import { Mark, cellsOf, type Fleet } from "../src/game/sea_battle/engine.js";
+import { Rng } from "../src/game/matchmonsters/rng.js";
+
+/** A lobby context with no server around it: rooms in a map, results captured. */
+function fakeCtx() {
+  const rooms = new Map<string, any>();
+  const recorded: any[] = [];
+  let n = 0;
+  const ctx: any = {
+    services: { results: { record: async (r: unknown) => { recorded.push(r); return "id"; } } },
+    invites: { get: () => undefined, drop: () => {} },
+    lobbyPeer: () => undefined,
+    accountOf: () => undefined,
+    nameFor: (_p: unknown, fallback: string) => fallback,
+    addRoom: (id: string, room: unknown) => rooms.set(id, room),
+    getRoom: (id: string) => rooms.get(id),
+    removeRoom: (id: string) => rooms.delete(id),
+    scheduleCleanup: () => {},
+    claimCode: () => `C${n++}`.padEnd(4, "X"),
+    releaseCode: () => {},
+  };
+  return { ctx, rooms, recorded };
+}
+const peer = (id: string) => ({ id, notes: [] as { method: string; data: any }[], notify(method: string, data: unknown) { this.notes.push({ method, data }); }, last() { return this.notes.filter((x) => x.method === "seabattle:update").at(-1)?.data; } });
+const FAST = { placeMs: 60, turnMs: 40, awayMs: 30, botMs: [1, 2] as const, botPlaceMs: [1, 3] as const, quickStartMs: 30, animScale: 0 };
+const until = async (cond: () => boolean, ms = 8000) => {
+  const t0 = Date.now();
+  while (!cond()) {
+    if (Date.now() - t0 > ms) throw new Error("timed out waiting");
+    await new Promise((res) => setTimeout(res, 2));
+  }
+};
+const seeded = (seed: number) => { const r = new Rng(seed); return { random: () => r.next() }; };
+
+const ROWS: Fleet = [
+  { kind: "carrier", x: 0, y: 0, dir: "h" },
+  { kind: "battleship", x: 0, y: 2, dir: "h" },
+  { kind: "cruiser", x: 0, y: 4, dir: "h" },
+  { kind: "submarine", x: 0, y: 6, dir: "h" },
+  { kind: "destroyer", x: 0, y: 8, dir: "h" },
+];
+
+async function hostedPair(timing = FAST) {
+  const { ctx, rooms, recorded } = fakeCtx();
+  const lobby = new SeaBattleLobby(ctx, { timing, ...seeded(4) });
+  const a = peer("a"), b = peer("b");
+  const hosted = (await lobby.handle(a, "seabattle:host", { displayName: "Ann", settings: { board: "classic", timer: false } })) as any;
+  const room = rooms.get(hosted.roomId);
+  room.join(a);
+  await lobby.handle(b, "seabattle:join", { displayName: "Ben", code: hosted.code });
+  room.join(b);
+  return { room, rooms, recorded, a, b };
+}
+
+describe("Sea Battle settings", () => {
+  it("clamps settings to what the game offers; a client can't turn bots on", () => {
+    expect(parseSettings({ board: "huge", timer: "yes", botStyle: "wild", bots: true })).toEqual(DEFAULT_SETTINGS);
+    expect(parseSettings({ board: "quick", timer: false, botStyle: "sharp" })).toMatchObject({ board: "quick", timer: false, botStyle: "sharp", bots: false });
+  });
+});
+
+describe("Sea Battle room", () => {
+  it("starts when the friend joins, deals each a random fleet to place, and starts firing once both are ready", async () => {
+    const { room, a, b } = await hostedPair();
+    expect(room.phase).toBe("playing");
+    const va = a.last().view;
+    expect(va.game.phase).toBe("placing");
+    expect(va.draft).toHaveLength(5);
+    expect(JSON.stringify(va)).not.toContain(JSON.stringify(b.last().view.draft)); // never the rival's fleet
+    room.handleRequest("a", "seabattle:ready", { fleet: ROWS });
+    expect(() => room.handleRequest("a", "seabattle:ready", { fleet: ROWS })).toThrow(/already/);
+    expect(() => room.handleRequest("b", "seabattle:ready", { fleet: ROWS.slice(1) })).toThrow(/fleet/);
+    room.handleRequest("b", "seabattle:ready", {}); // the dealt fleet
+    const v = a.last();
+    expect(v.view.game.phase).toBe("firing");
+    expect(v.events.map((e: any) => e.type)).toEqual(["ready", "start"]);
+    room.dispose();
+  });
+
+  it("plays to the end: hits fire again, the winner is recorded with stats, and a rematch opens", async () => {
+    const { room, rooms, recorded, a, b } = await hostedPair();
+    room.handleRequest("a", "seabattle:ready", { fleet: ROWS });
+    room.handleRequest("b", "seabattle:ready", { fleet: ROWS });
+    const first = room.game.turn as number;
+    const shooter = first === 0 ? "a" : "b";
+    expect(() => room.handleRequest(first === 0 ? "b" : "a", "seabattle:fire", { x: 0, y: 0 })).toThrow(/turn/);
+    for (const p of ROWS) for (const [x, y] of cellsOf(p)) room.handleRequest(shooter, "seabattle:fire", { x, y });
+    expect(room.phase).toBe("over");
+    expect(recorded[0]).toMatchObject({ gameId: "sea_battle", players: [{ place: 1, stats: { accuracy: 100, bestStreak: 17, sunk: 5, shots: 17 } }, { place: 2 }] });
+    const loser = (shooter === "a" ? b : a).last().view;
+    expect(loser.results[0]).toMatchObject({ name: shooter === "a" ? "Ann" : "Ben", place: 1 });
+    expect(loser.game.rivalShips).toHaveLength(5); // the whole fleet shows once it's over
+    const next = room.handleRequest("b", "lobby:rematch", {});
+    expect(rooms.get(next.roomId).seated()[0]).toMatchObject({ name: "Ben", kind: "player" });
+    for (const r of rooms.values()) r.dispose();
+  });
+
+  it("leaving mid-game is a forfeit", async () => {
+    const { room, recorded, b } = await hostedPair();
+    room.handleRequest("a", "seabattle:ready", { fleet: ROWS });
+    room.handleRequest("a", "lobby:leave", {});
+    expect(room.phase).toBe("over");
+    expect(b.last().view.game).toMatchObject({ winner: 1, forfeit: true });
+    expect(recorded[0].summary.forfeit).toBe(true);
+    room.dispose();
+  });
+
+  it("with the timer on, clocks place your fleet and fire for you, so a silent game still ends", async () => {
+    const { ctx, rooms } = fakeCtx();
+    const lobby = new SeaBattleLobby(ctx, { timing: FAST, ...seeded(8) });
+    const a = peer("a"), b = peer("b");
+    const hosted = (await lobby.handle(a, "seabattle:host", { displayName: "Ann", settings: { board: "quick", timer: true } })) as any;
+    const room = rooms.get(hosted.roomId);
+    room.join(a);
+    await lobby.handle(b, "seabattle:join", { displayName: "Ben", code: hosted.code });
+    room.join(b);
+    await until(() => room.game?.phase === "firing");
+    expect(a.last().view.clock).toMatchObject({ seat: room.game.turn });
+    await until(() => room.phase === "over", 15000);
+    expect(a.notes.some((n) => n.data?.events?.some((e: any) => e.type === "shot" && e.auto))).toBe(true);
+    room.dispose();
+  });
+
+  it("practice: you against a bot that places, aims and fires on its own (the setup's board and difficulty hold)", async () => {
+    const { ctx, rooms } = fakeCtx();
+    const lobby = new SeaBattleLobby(ctx, { timing: FAST, ...seeded(2) });
+    const me = peer("me");
+    const t = (await lobby.handle(me, "seabattle:practice", { displayName: "Mia", settings: { board: "quick", botStyle: "sharp", timer: true } })) as any;
+    const room = rooms.get(t.roomId);
+    expect(room.settings).toMatchObject({ board: "quick", botStyle: "sharp", timer: false, bots: true });
+    room.join(me);
+    expect(room.phase).toBe("playing");
+    await until(() => room.game.sides[1].ready);
+    room.handleRequest("me", "seabattle:ready", {});
+    // Mia fires at every cell in order whenever it's her turn; the bot answers on its own.
+    let cell = 0;
+    await until(() => {
+      if (room.phase === "over") return true;
+      if (room.game.turn === 0) {
+        while (room.game.viewFor(0).outgoing[cell] !== Mark.Unknown) cell++;
+        room.handleRequest("me", "seabattle:fire", { x: cell % 8, y: Math.floor(cell / 8) });
+      }
+      return false;
+    }, 20000);
+    expect(room.game.viewFor(0).stats[1].shots).toBeGreaterThan(0);
+    room.dispose();
+  });
+
+  it("quick play: a bot takes the seat when nobody comes", async () => {
+    const { ctx, rooms } = fakeCtx();
+    const lobby = new SeaBattleLobby(ctx, { timing: FAST, ...seeded(3) });
+    const me = peer("me");
+    const t = (await lobby.handle(me, "seabattle:quick", { displayName: "Qia" })) as any;
+    const room = rooms.get(t.roomId);
+    room.join(me);
+    await until(() => room.phase === "playing");
+    expect(room.seated().map((s: any) => s.kind)).toEqual(["player", "bot"]);
+    room.dispose();
+  });
+});

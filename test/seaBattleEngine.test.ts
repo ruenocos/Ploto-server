@@ -1,0 +1,149 @@
+import { describe, it, expect } from "vitest";
+import { BOARDS, Mark, SHIPS, SeaBattleGame, cellsOf, fleetProblem, randomFleet, type Fleet } from "../src/game/sea_battle/engine.js";
+import { chooseShot, type BotLevel } from "../src/game/sea_battle/bot.js";
+import { Rng } from "../src/game/matchmonsters/rng.js";
+
+const rand = (seed: number) => { const r = new Rng(seed); return () => r.next(); };
+
+/** A fixed classic fleet, ships in rows 0, 2, 4, 6, 8 from the left. */
+const ROWS: Fleet = [
+  { kind: "carrier", x: 0, y: 0, dir: "h" },
+  { kind: "battleship", x: 0, y: 2, dir: "h" },
+  { kind: "cruiser", x: 0, y: 4, dir: "h" },
+  { kind: "submarine", x: 0, y: 6, dir: "h" },
+  { kind: "destroyer", x: 0, y: 8, dir: "h" },
+];
+
+function started(seed = 1) {
+  const g = new SeaBattleGame({ board: "classic", random: rand(seed) });
+  expect(g.ready(0, ROWS).ok).toBe(true);
+  expect(g.ready(1, ROWS).ok).toBe(true);
+  return g;
+}
+
+describe("sea battle fleets", () => {
+  it("accepts the board's fleet and refuses overlaps, touching, the wrong ships and the edge", () => {
+    const spec = BOARDS.classic;
+    expect(fleetProblem(spec, ROWS)).toBeNull();
+    expect(fleetProblem(spec, ROWS.slice(1))).toMatch(/fleet/);
+    expect(fleetProblem(spec, [...ROWS.slice(0, 4), { kind: "destroyer", x: 9, y: 9, dir: "h" }])).toMatch(/off the board/);
+    expect(fleetProblem(spec, [...ROWS.slice(0, 4), { kind: "destroyer", x: 0, y: 7, dir: "h" }])).toMatch(/touch/); // right under the submarine
+    expect(fleetProblem(spec, [...ROWS.slice(0, 4), { kind: "destroyer", x: 3, y: 7, dir: "h" }])).toMatch(/touch/); // the submarine's corner (2, 6)
+    expect(fleetProblem(spec, [...ROWS.slice(0, 4), { kind: "destroyer", x: 4, y: 7, dir: "h" }])).toBeNull(); // one cell further: clear
+  });
+
+  it("random fleets are always legal, on both boards", () => {
+    const r = rand(9);
+    for (const board of ["classic", "quick"] as const) for (let i = 0; i < 500; i++) expect(fleetProblem(BOARDS[board], randomFleet(BOARDS[board], r))).toBeNull();
+  });
+});
+
+describe("sea battle firing", () => {
+  it("a coin flip picks the first shooter once both fleets are ready", () => {
+    const g = new SeaBattleGame({ board: "classic", random: rand(3) });
+    const r = g.ready(0, ROWS);
+    expect(r.ok && r.events).toEqual([{ type: "ready", seat: 0 }]);
+    expect(g.phase).toBe("placing");
+    const r2 = g.ready(1, ROWS);
+    expect(r2.ok && r2.events.at(-1)).toMatchObject({ type: "start" });
+    expect(g.turn).toBe(g.first);
+  });
+
+  it("a miss passes the turn, a hit fires again, a sink shows the ship and marks the water around it", () => {
+    const g = started();
+    const a = g.turn!, b = 1 - a;
+    expect(g.fire(b, 0, 0)).toMatchObject({ ok: false, reason: /turn/ });
+    const miss = g.fire(a, 9, 9);
+    expect(miss.ok && miss.events).toEqual([{ type: "shot", by: a, x: 9, y: 9, result: "miss" }, { type: "turn", seat: b }]);
+    expect(g.fire(b, 9, 9).ok).toBe(true); // b misses too
+    expect(g.fire(a, 9, 9)).toMatchObject({ ok: false, reason: /already/ });
+    const hit = g.fire(a, 0, 8);
+    expect(hit.ok && hit.events).toEqual([{ type: "shot", by: a, x: 0, y: 8, result: "hit" }]);
+    expect(g.turn).toBe(a);
+    const sink = g.fire(a, 1, 8);
+    expect(sink.ok && sink.events[0]).toMatchObject({ type: "shot", result: "sunk", ship: { kind: "destroyer", x: 0, y: 8, dir: "h" } });
+    const water = sink.ok && sink.events[0]!.type === "shot" ? sink.events[0]!.water! : [];
+    expect(water).toHaveLength(7); // 3 above (row 7), 3 below (row 9), 1 to the right; the board's edge on the left
+    expect(g.viewFor(a).outgoing[7 * 10 + 0]).toBe(Mark.Water);
+    expect(g.turn).toBe(a);
+  });
+
+  it("sinking the whole fleet wins; the stats count shots, hits, sinks and the longest streak", () => {
+    const g = started(5);
+    const a = g.turn!;
+    let last;
+    for (const p of ROWS) for (const [x, y] of cellsOf(p)) last = g.fire(a, x, y);
+    expect(last!.ok && last!.events.at(-1)).toEqual({ type: "over", winner: a });
+    expect(g.phase).toBe("over");
+    expect(g.viewFor(a).stats[a]).toEqual({ shots: 17, hits: 17, sunk: 5, streak: 17, bestStreak: 17 });
+    expect(g.fire(a, 9, 9).ok).toBe(false);
+  });
+
+  it("views never show the rival's fleet until a ship is sunk (or the game is over)", () => {
+    const g = started(7);
+    const a = g.turn!;
+    const before = g.viewFor(a);
+    expect(before.rivalShips).toEqual([]);
+    expect(before.outgoing.every((m) => m === Mark.Unknown)).toBe(true);
+    g.fire(a, 0, 8);
+    expect(g.viewFor(a).rivalShips).toEqual([]);
+    g.fire(a, 1, 8);
+    expect(g.viewFor(a).rivalShips.map((p) => p.kind)).toEqual(["destroyer"]);
+    g.concede(1 - a);
+    expect(g.viewFor(a).rivalShips).toHaveLength(5);
+    expect(g.viewFor(a)).toMatchObject({ winner: a, forfeit: true });
+  });
+
+  it("the clock's shot is always a cell nobody has fired at", () => {
+    const g = started(11);
+    for (let i = 0; i < 100 && g.phase === "firing"; i++) {
+      const seat = g.turn!;
+      const [x, y] = g.randomTarget(seat);
+      expect(g.viewFor(seat).outgoing[y * 10 + x]).toBe(Mark.Unknown);
+      expect(g.fire(seat, x, y, true).ok).toBe(true);
+    }
+  });
+});
+
+/** Two bots play a whole game; checks every invariant on the way. */
+function botGame(levels: [BotLevel, BotLevel], board: "classic" | "quick", seed: number) {
+  const random = rand(seed);
+  const g = new SeaBattleGame({ board, random });
+  const spec = BOARDS[board];
+  for (const s of [0, 1]) expect(g.ready(s, randomFleet(spec, random)).ok).toBe(true);
+  const cells = spec.fleet.reduce((a, k) => a + SHIPS[k].length, 0);
+  let shots = 0;
+  while (g.phase === "firing") {
+    const seat = g.turn!;
+    const view = g.viewFor(seat);
+    const [x, y] = chooseShot(view, levels[seat]!, random);
+    const r = g.fire(seat, x, y);
+    if (!r.ok) throw new Error(`bot fired an illegal shot: ${r.reason}`);
+    shots++;
+    if (shots > 2 * spec.size ** 2) throw new Error("game didn't end");
+  }
+  const w = g.winner!;
+  expect(g.viewFor(w).stats[w]!.hits).toBe(cells);
+  expect(g.viewFor(w).yourSunk.length).toBeLessThan(spec.fleet.length);
+  return { winner: w, shots: g.viewFor(w).stats[w]!.shots, total: shots };
+}
+
+describe("sea battle simulation (bots)", () => {
+  it("2,000 bot games all end legally; Hard beats Medium; Hard finishes in fewer shots", () => {
+    let hardWins = 0, games = 0;
+    const shotsBy: Record<BotLevel, number[]> = { medium: [], hard: [] };
+    for (let i = 0; i < 2000; i++) {
+      const board = i % 4 === 0 ? "quick" : "classic";
+      const levels: [BotLevel, BotLevel] = i % 2 ? ["hard", "medium"] : ["medium", "hard"];
+      const r = botGame(levels, board, 1000 + i);
+      games++;
+      if (levels[r.winner] === "hard") hardWins++;
+      if (board === "classic") shotsBy[levels[r.winner]!].push(r.shots);
+    }
+    const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    expect(hardWins / games).toBeGreaterThan(0.6);
+    expect(hardWins / games).toBeLessThan(0.95); // Medium still wins some
+    expect(avg(shotsBy.hard)).toBeLessThan(avg(shotsBy.medium));
+    expect(avg(shotsBy.hard)).toBeLessThan(55); // a classic game takes ~45 shots a side for Hard
+  });
+});

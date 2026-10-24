@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Sea Battle · Ploto</title>
+<link rel="stylesheet" href="/play/platform.css" />
+<link rel="stylesheet" href="/play/animate.min.css" />
+<style>
+/*
+ * Sea Battle's page. Everything outside the game itself is Ploto's: the pl-*
+ * blocks from platform.css and the lobby kit (web/lobbykit.js), including the
+ * in-game menu, How to play and the result. Only the game screen and the home
+ * banner have their own look; keep them on Ploto's grid (whole UI pixels, --px),
+ * fonts, tokens, Animate.css presets and steps() motion (docs/STYLE.md, Motion).
+ */
+.scr[hidden] { display: none; }
+
+/* ---- the home banner (TEMPLATE: runners on their lanes; docs/STYLE.md, Home banners) ---- */
+.hero-lane { position: absolute; left: 8%; right: 8%; height: calc(var(--px) * 3); background: var(--c-well); }
+.hero-lane i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--c-accent); transition: width 0.3s steps(4); }
+.hero-lane.me i { background: var(--c-gold); }
+
+/* ---- the game's own screen (TEMPLATE: the tap race; replace) ---- */
+.race { display: grid; gap: 10px; padding: 16px; max-width: 560px; margin: 0 auto; }
+.race-top { display: flex; align-items: center; justify-content: space-between; }
+.lane { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 10px 12px; }
+.lane .bar { grid-column: 1 / -1; height: calc(var(--px) * 4); background: var(--c-well); }
+.lane .bar i { display: block; height: 100%; background: var(--c-accent); transition: width 0.12s steps(3); }
+.lane.me .bar i { background: var(--c-gold); }
+.tap { width: 100%; min-height: 120px; font-size: var(--fl-3); }
+</style>
+</head>
+<body>
+
+<header class="pl-bar" id="bar">
+  <div class="pl-bar-in">
+    <button id="barBack" class="ghost icon-btn" aria-label="Back" title="Back">‹</button>
+    <h1 class="pl-title" id="barTitle" tabindex="-1">Sea Battle</h1>
+  </div>
+</header>
+
+<!-- Home: Ploto's blocks, the game's hero art (your name lives in the launcher's Profile) -->
+<section class="scr" id="scrHome" hidden>
+  <main class="pl-view">
+    <div class="pl-hero pl-frame" id="hero" aria-hidden="true"></div>
+    <button class="pl-row" data-mode="quick"><span class="pl-ic">Q</span><span><b>Quick race</b><small>Play anyone online</small></span><span class="pl-go" data-chev></span></button>
+    <button class="pl-row" data-mode="host"><span class="pl-ic">H</span><span><b>Host a race</b><small>Your rules, your friends</small></span><span class="pl-go" data-chev></span></button>
+    <button class="pl-row" data-mode="practice"><span class="pl-ic">P</span><span><b>Practice</b><small>You vs bots</small></span><span class="pl-go" data-chev></span></button>
+    <p class="pl-label">Have a code?</p>
+    <form class="pl-form" data-code-form autocomplete="off">
+      <input class="pl-code" type="text" placeholder="Race code" maxlength="8" autocapitalize="characters" spellcheck="false" aria-label="Race code" />
+      <button class="ghost small" type="submit">Join</button>
+    </form>
+  </main>
+</section>
+
+<!-- Host: the game's settings, drawn by the kit from SCHEMA -->
+<section class="scr pl-flow" id="scrHost" hidden>
+  <main class="pl-view"><div class="fields" id="hostFields"></div></main>
+  <div class="pl-foot"><div class="pl-foot-in"><button class="big" id="createBtn">Create race</button></div></div>
+</section>
+
+<!-- Room lobby: Ploto's (kit.renderRoom) -->
+<section class="scr pl-flow" id="scrLobby" hidden>
+  <main class="pl-view" id="lobbyMain"></main>
+  <div class="pl-foot"><div class="pl-foot-in" id="lobbyFoot"></div></div>
+</section>
+
+<!-- Waiting for a seat -->
+<section class="scr" id="scrWait" hidden>
+  <main class="pl-view"><div class="pl-waitline"><span class="pl-dots"><i></i><i></i><i></i></span><span id="waitText">Finding a seat</span></div></main>
+</section>
+
+<!-- The game: all its own, plus Ploto's menu button (kit.menu) -->
+<section class="scr" id="scrGame" hidden>
+  <div class="race">
+    <div class="race-top"><span class="pl-label" id="raceGoal"></span>
+      <button id="menuBtn" class="ghost icon-btn" aria-label="Menu" title="Menu"><svg class="px-icon" viewBox="0 0 8 7" width="16" height="14" aria-hidden="true"><rect x="0" y="0" width="8" height="1"/><rect x="0" y="3" width="8" height="1"/><rect x="0" y="6" width="8" height="1"/></svg></button></div>
+    <div id="race"></div>
+  </div>
+</section>
+
+<!-- Result: Ploto's (kit.renderResult), the game's art and stats inside -->
+<section class="scr pl-flow" id="scrResult" hidden>
+  <main class="pl-view" id="resMain"></main>
+  <div class="pl-foot"><div class="pl-foot-in" id="resFoot"></div></div>
+</section>
+
+<script src="/play/riffwave.js"></script>
+<script src="/play/sfxr.js"></script>
+<script src="/play/sounds.js"></script>
+<script src="/play/feedback.js"></script>
+<script src="/play/icons.js"></script>
+<script src="/play/platform.js"></script>
+<script src="/play/motion.js"></script>
+<script src="/play/lobbykit.js"></script>
+<script>
+(() => {
+  "use strict";
+  const P = window.Ploto;
+  const { $, esc, toast, cue } = P;
+  const GAME = "sea_battle", PREFIX = "seabattle:";
+
+  /* ---- the platform's lobby, told about this game once ---- */
+  const SCHEMA = [
+    { key: "seats", label: "Seats", kind: "choice", options: [[2, "2"], [3, "3"], [4, "4"]] },
+    { key: "bots", label: "Fill empty seats with bots", kind: "toggle" },
+    { key: "target", label: "Taps to win", kind: "choice", options: [[10, "10"], [20, "20"], [40, "40"]] },
+  ];
+  const kit = P.lobbyKit({
+    gameId: GAME, prefix: PREFIX, path: "/play/sea-battle", title: "Sea Battle",
+    nouns: { code: "Race code", room: "race", quick: "Quick race", yours: "Your race" },
+    schema: SCHEMA, defaults: { seats: 4, bots: true, target: 20 },
+    summary: (s) => `First to ${s.target} taps`,
+    shareText: (code) => `Race me in Sea Battle on Ploto. Code ${code}`,
+    quickNote: "Bots fill the empty seats",
+    // How to play (kit.rules, also in the menu): steps in the game's own words
+    rules: () => ({ steps: ["Tap as fast as you can.", "First to the target wins the race."] }),
+  });
+
+  /* ---- the game's body language (Animate.css presets, docs/STYLE.md, Motion): the same moment plays the same everywhere ---- */
+  const pose = P.poses({ tap: { preset: "pulse", speed: "faster" }, lead: { preset: "headShake", speed: "fast" }, win: { preset: "tada" } });
+  // Updates play one after another (each animates from what's on screen, then the state settles)
+  const Q = P.playQueue({ run: (v) => playUpdate(v) });
+
+  /* ---- screens: a small stack; the room's phase picks lobby, game or result ---- */
+  const S = { room: null, sock: null, view: null, lobby: null };
+  const nav = { stack: ["home"] };
+  const SCREENS = { home: "scrHome", host: "scrHost", lobby: "scrLobby", wait: "scrWait", game: "scrGame", result: "scrResult" };
+  const cur = () => nav.stack[nav.stack.length - 1];
+  function roomScreen() {
+    const v = S.lobby;
+    if (!v) return "wait";
+    if (v.phase === "lobby") return v.mode === "practice" ? "wait" : "lobby";
+    return v.phase === "over" ? "result" : "game";
+  }
+  const screenNow = () => (cur() === "room" ? roomScreen() : cur());
+  function show() {
+    const name = screenNow();
+    for (const [n, id] of Object.entries(SCREENS)) $(id).hidden = n !== name;
+    $("bar").hidden = name === "game";
+    $("barTitle").textContent = name === "home" ? "Sea Battle" : name === "host" ? "Host a race" : kit.title(S.lobby);
+    if (name === "host") { $("hostFields").innerHTML = kit.fieldsHTML(kit.settings); kit.wireFields($("hostFields"), kit.settings, kit.saveSettings); }
+    if (name === "lobby") kit.renderRoom(S.lobby, { main: $("lobbyMain"), foot: $("lobbyFoot"), req });
+    if (name === "game") renderGame();
+    if (name === "result") renderResult();
+    if (name === "home") banner.paint();
+    P.setActivity(GAME, cur() === "room" ? "Racing in Sea Battle" : "In Sea Battle");
+    syncBack();
+  }
+  const go = (name) => { nav.stack.push(name); show(); };
+  const goHome = () => { nav.stack = ["home"]; show(); };
+  function back() {
+    if (cur() === "room" && !S.room) { kit.cancelSeat(); return goHome(); }
+    if (screenNow() === "game") return openMenu(); // in a game, back opens the menu: never a silent exit
+    if (cur() === "room") return leave();
+    if (nav.stack.length > 1) { nav.stack.pop(); show(); }
+  }
+  const syncBack = P.backGuard({ canGoBack: () => nav.stack.length > 1, onBack: back });
+  $("barBack").onclick = () => (cur() === "home" ? (location.href = "/play") : back());
+
+  /* ---- the in-game menu: Ploto's rows (How to play, Settings), then the way out ---- */
+  const openMenu = () => kit.menu({ view: S.lobby, items: [{ label: "Leave race", danger: true, run: leave }] });
+  $("menuBtn").onclick = openMenu;
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !e.defaultPrevented && !P.sheetOpen() && screenNow() === "game") openMenu();
+  });
+
+  /* ---- home: the banner is the game's trailer (TEMPLATE: replace with the real game's world and signature moment) ---- */
+  const banner = P.banner($("hero"), {
+    draw(hero, W, H) {
+      hero.innerHTML = [0, 1, 2].map((i) => `<div class="hero-lane${i === 1 ? " me" : ""}" style="top:${Math.round(H * (0.28 + i * 0.22))}px"><i style="width:${[55, 80, 40][i]}%"></i></div>`).join("");
+    },
+    intro: (hero) => hero.querySelectorAll(".hero-lane").forEach((l, i) => setTimeout(() => P.playPreset(l, "backInLeft", { speed: "fast" }), i * 120)),
+    beat: (hero, n) => pose(hero.querySelectorAll(".hero-lane i")[n % 3], "lead"),
+    every: 3800,
+  });
+  kit.home($("scrHome"), {
+    onMode: (m) => (m === "host" ? go("host") : takeSeat(m === "quick" ? "Finding a seat" : "Starting", m)),
+    onCode: async (code) => {
+      try { const r = await kit.join(code, { wait: () => wait(`Joining ${code}`) }); if (r) enter(r); else goHome(); }
+      catch (e) { toast(P.errText(e), 2600); goHome(); }
+    },
+  });
+  let inviteFriend = null; // ?inviteFriend=ID from the launcher: invite them once the room exists
+  $("createBtn").onclick = async () => {
+    if (!(await P.ensureName())) return;
+    try {
+      const r = await kit.seat("host", { settings: { ...kit.settings } });
+      if (!r) return;
+      await enter(r);
+      if (inviteFriend) { const id = inviteFriend; inviteFriend = null; kit.invite(id, r.roomId).catch((e) => toast(P.errText(e), 2600)); }
+    } catch (e) { toast(P.errText(e), 2600); }
+  };
+  function wait(text) { $("waitText").textContent = text; nav.stack = ["home", "room"]; S.lobby = null; show(); }
+  async function takeSeat(label, method, data = {}) {
+    if (!(await P.ensureName())) return;
+    wait(label);
+    try {
+      const r = await kit.seat(method, data);
+      if (!r) return;
+      if (cur() !== "room") return kit.abandon(r); // backed out meanwhile
+      enter(r);
+    } catch (e) { toast(P.errText(e), 2600); goHome(); }
+  }
+
+  /* ---- the room connection: the platform's lobby, then the game ---- */
+  async function enter({ roomId, code }) {
+    S.sock?.close();
+    S.room = { roomId, code };
+    P.saveRoom(GAME, S.room);
+    nav.stack = ["home", "room"];
+    const sock = (S.sock = P.connect(roomId));
+    sock.on("lobby:update", (d) => { if (S.sock === sock) { S.lobby = d.view; show(); } });
+    sock.on(PREFIX + "update", (d) => { if (S.sock === sock) Q.add(d.view); });
+    try {
+      await P.waitOpen(sock);
+      S.lobby = await sock.request("lobby:getView");
+      if (S.lobby.phase !== "lobby") S.view = await sock.request(PREFIX + "getState");
+      show();
+    } catch (e) { toast(P.errText(e), 2600); drop(); goHome(); }
+  }
+  const req = (method, data) => (S.sock?.readyState === 1 ? S.sock.request(method, data) : Promise.reject(new Error("not connected")));
+  function drop() { S.sock?.close(); S.sock = null; S.room = null; S.lobby = null; S.view = null; P.forgetRoom(GAME); }
+  async function leave() {
+    if (S.lobby?.phase === "playing" && !(await P.confirm({ title: "Leave the race?", yes: "Leave", no: "Stay", danger: true }))) return;
+    req("lobby:leave").catch(() => {});
+    drop();
+    goHome();
+  }
+
+  /* ---- invites: Ploto's card; a Sea Battle invite seats you here ---- */
+  P.acceptInvitesHere(GAME, (inv) => { if (S.room) leave(); takeSeat("Taking your seat", "acceptInvite", { inviteId: inv.inviteId }); });
+  P.setInviteBusy(() => S.lobby?.phase === "playing");
+
+  /* ---- the game (TEMPLATE: replace with the real game's screen and motion) ---- */
+  /** One update: animate what changed from what's on screen, then settle on the new view. */
+  async function playUpdate(v) {
+    const before = S.view;
+    S.view = v;
+    if (screenNow() === "game") {
+      renderGame();
+      const leader = v.taps.indexOf(Math.max(...v.taps));
+      if (before && before.taps.indexOf(Math.max(...before.taps)) !== leader) pose($("race").querySelector(`[data-seat="${leader}"]`), "lead");
+    }
+    if (screenNow() === "result") renderResult();
+  }
+  function renderGame() {
+    const v = S.view;
+    if (!v) return;
+    $("raceGoal").textContent = `First to ${v.target}`;
+    $("race").innerHTML = v.seats.filter((s) => s.kind === "player" || s.kind === "bot").map((s) =>
+      `<div class="lane pl-frame${s.seat === v.you ? " me" : ""}" data-seat="${s.seat}"><b class="ell">${esc(s.name)}</b><span>${v.taps[s.seat] ?? 0}/${v.target}</span>` +
+      `<div class="bar"><i style="width:${Math.min(100, ((v.taps[s.seat] ?? 0) / v.target) * 100)}%"></i></div></div>`).join("") +
+      `<button class="big tap" id="tapBtn">Tap</button>`;
+    $("tapBtn").onclick = (e) => { cue("tap"); pose(e.currentTarget, "tap"); req(PREFIX + "tap").catch(() => {}); };
+  }
+  /** The result: Ploto's screen (title, standings, stat tiles, rematch), the game's own words and numbers. */
+  function renderResult() {
+    const v = S.view;
+    if (!v?.results) return;
+    const mine = v.results.find((r) => r.seat === v.you);
+    const won = mine?.place === 1;
+    const fresh = $("resMain")._resKey !== S.room?.roomId; // this room's result is new (renderResult also runs on every room update)
+    kit.renderResult($("resMain"), {
+      title: won ? "You won the race" : mine ? `You finished ${kit.ordinal(mine.place)}` : "Race over",
+      sub: `First to ${v.target} taps`,
+      win: won,
+      standings: v.results.map((r) => ({ place: r.place, name: r.name, note: `${r.taps} taps`, you: r.seat === v.you, bot: r.isBot })),
+      tiles: [{ label: "Your taps", value: mine?.taps ?? 0 }],
+      view: S.lobby, rematchHint: "Same race, same settings", actions: $("resFoot"), key: S.room?.roomId,
+      onRematch: async () => { try { enter(await req("lobby:rematch")); } catch (e) { toast(P.errText(e), 2600); } },
+      onLeave: () => { drop(); goHome(); },
+    });
+    if (won && fresh) { cue("win"); pose($("resMain").querySelector(".pl-res-head h2"), "win"); }
+    kit.countResult($("resMain"));
+  }
+
+  /* ---- boot: a link (?code=, ?invite=, ?inviteFriend=), or the room this tab was in ---- */
+  P.restoreAccount();
+  const q = new URLSearchParams(location.search);
+  const code = q.get("code"), invite = q.get("invite"), friend = q.get("inviteFriend");
+  if (code || invite || friend) history.replaceState(null, "", location.pathname);
+  show();
+  const saved = P.savedRoom(GAME);
+  if (invite) takeSeat("Taking your seat", "acceptInvite", { inviteId: invite });
+  else if (code) kit.join(code.toUpperCase(), { wait: () => wait(`Joining ${code}`) }).then((r) => (r ? enter(r) : goHome())).catch((e) => { toast(P.errText(e), 2600); goHome(); });
+  else if (friend) { inviteFriend = friend; go("host"); }
+  else if (saved) enter(saved);
+})();
+</script>
+</body>
+</html>

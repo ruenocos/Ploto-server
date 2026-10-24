@@ -10,6 +10,7 @@ import type { GameInfo } from "./platform/games.js";
 import type { GameLobby, LobbyContext } from "./platform/lobby.js";
 import { MatchMonstersLobby } from "./game/matchmonsters/lobby.js";
 import { HoldemLobby } from "./game/holdem/lobby.js";
+import { SeaBattleLobby } from "./game/sea_battle/lobby.js";
 
 export interface GameEntry extends GameInfo {
   /** The game's page in web/. */
@@ -31,6 +32,12 @@ export const GAMES: readonly GameEntry[] = [
     players: "2–6 players", minSeats: 2, maxSeats: 6, badge: "NEW",
     profile: { played: "Tables", stats: [{ key: "biggestPot", label: "Biggest pot" }] },
     lobby: (ctx) => new HoldemLobby(ctx),
+  },
+  {
+    id: "sea_battle", title: "Sea Battle", path: "/play/sea-battle", page: "sea-battle.html", card: "sea-battle.card.js",
+    players: "1v1", minSeats: 2, maxSeats: 2, badge: "NEW",
+    profile: { played: "Battles", stats: [{ key: "accuracy", label: "Best accuracy %" }, { key: "bestStreak", label: "Longest streak" }] },
+    lobby: (ctx) => new SeaBattleLobby(ctx),
   },
   // new games go above this line (scripts/new-game.mjs adds them here)
 ];

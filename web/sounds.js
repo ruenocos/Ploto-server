@@ -162,5 +162,23 @@ window.PLOTO_SOUNDS = {
         160
       ]
     }
+  },
+  "sea_battle": {
+    "tap": {
+      "code": "11111Mbr7uoHpjekfF9CKeC5wpQPpev8bTdD7mLZxSs8jMdKGpThgpDQ9P4vK3Sz3zbWt611hRLCh9pFVvdEqF6Kit4Z5GBdW1igF946UprrxGCyD6L4V6f",
+      "vol": 0.3,
+      "buzz": 15
+    },
+    "win": {
+      "code": "34T6PkyY9WXqQ3sAuHVkyc64qhB8pEbfvfHqrYTKDEvDis85mX48qaZRqmvTJ9Zs3Qzn92JjQHAtBzeUhaxDe7i5H6Ks5M2DoZELyDwn46VbH7nmxsKBHdHV9",
+      "vol": 0.8,
+      "buzz": [
+        60,
+        40,
+        60,
+        40,
+        120
+      ]
+    }
   }
 };

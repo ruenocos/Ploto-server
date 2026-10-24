@@ -35,6 +35,22 @@ Every page loads, in order: `platform.css`, `feedback.js` deps (`riffwave.js`,
   this game. The game page runs its own host flow (Match Monsters: choose teams;
   Hold'em: host settings) and the invite goes out at the end.
 
+## Game lobbies: the same shape in every game
+
+Every game opens straight into its lobby (no title screen), built from the
+shared `pl-*` blocks in `platform.css`; only the game's own options differ.
+Once a match starts, nothing is shared: each game draws its own table or board.
+
+| Screen | Blocks | Hold'em | Match Monsters |
+|---|---|---|---|
+| Home | `pl-bar` (Back to the launcher, title, one info action), `pl-hero` (the game's art), `pl-row` × 3 (quick / with friends / practice), `pl-form` + `pl-code` ("Have a code?"), `pl-who` (Playing as · Change) | Rules | Monsters (the roster) |
+| The game's options | the game's own controls | Host a table: seats, bots, chips, timer, blinds | Teams: Pick, Draft or Random (then Your team for Pick) |
+| Room lobby | `pl-codecard` (code + Share invite), `pl-sumline` (the room's settings in a line), `pl-label` + `pl-seats` / `pl-seat` (you, players, open seats with Invite), `pl-waitline` or a `pl-foot` action | Seats 2–6, host starts | 1v1: starts as soon as the friend joins |
+
+Invite on an open seat lists your online friends (with what they're doing),
+or shares the code instead. In Match Monsters the code and an invite are open
+side by side; whichever lands first starts the match and the other is withdrawn.
+
 ## Game registry: `GET /play/games`
 
 ```json

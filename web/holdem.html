@@ -32,7 +32,6 @@ body { overscroll-behavior: none; }
 .hero .hero-stack.l { left: 5%; } .hero .hero-stack.r { right: 5%; }
 .hero .dbtn { left: 88%; top: 40%; }
 .pl-row .pl-ic svg { display: block; }
-.code-in { text-transform: uppercase; letter-spacing: 2px; }
 
 /* ---- settings fields ---- */
 .field { display: grid; gap: 6px; }
@@ -271,7 +270,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     <p class="pl-label">Have a code?</p>
     <form class="pl-form" id="codeForm" autocomplete="off">
       <label class="sr-only" for="codeIn">Table code</label>
-      <input id="codeIn" class="code-in" type="text" placeholder="Table code" maxlength="8" autocapitalize="characters" spellcheck="false" />
+      <input id="codeIn" class="pl-code" type="text" placeholder="Table code" maxlength="8" autocapitalize="characters" spellcheck="false" />
       <button class="ghost small" type="submit">Join</button>
     </form>
     <div class="pl-who pl-frame"><span class="muted">Playing as</span><b class="ell" id="whoName">Player</b><span class="grow"></span><button class="pl-link" id="whoChange" type="button">Change</button></div>

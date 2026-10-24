@@ -7,6 +7,7 @@
     <title>Match Monsters</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="/play/animate.min.css" />
+    <link rel="stylesheet" href="/play/platform.css" />
     <style>
       /* =====================================================================
        * Ploto pixel style. Everything below is built from these tokens; see
@@ -147,8 +148,6 @@
       .lb-bar .icon-btn { min-width: 44px; height: 40px; padding: 0 12px 2px; }
       .lb-title { flex: 1; min-width: 0; margin: 0; font: 700 var(--fl-2)/1.1 var(--f-label); text-transform: uppercase; letter-spacing: 1px; color: var(--c-cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; outline: none; }
       .lb-step { flex: none; font: 600 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); white-space: nowrap; }
-      #lobby[data-at="home"] .lb-bar { background: transparent; border-color: transparent; box-shadow: none; }
-      #lobby[data-at="home"] .lb-title, #lobby[data-at="home"] .lb-step { visibility: hidden; }
       .lb-view { flex: 1; width: 100%; max-width: calc(560px + 32px); margin: 0 auto; padding-top: 16px; padding-bottom: calc(28px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
       #lobby[data-at="pick"] .lb-view { padding-bottom: calc(var(--dock-h, 140px) + 16px); }
       .lb-screen { display: grid; align-content: start; gap: 12px; min-width: 0; }
@@ -160,38 +159,30 @@
       /* hover lifts a lobby button one notch brighter; pressing sinks it (the global :active) */
       @media (hover: hover) {
         #lobby button:not(:disabled):hover, .lb-dock button:not(:disabled):hover { filter: brightness(1.12); }
-        .lb-choice:not(:disabled):hover { --b: color-mix(in srgb, var(--c-accent) 16%, var(--c-panel)); --b-hi: var(--c-accent-hi); }
-        .lb-choice:not(:disabled):hover .lb-go { transform: translateX(var(--px)); }
+        .pl-row:not(:disabled):hover { --b: color-mix(in srgb, var(--c-accent) 16%, var(--c-panel)); --b-hi: var(--c-accent-hi); }
       }
       #lobby button:focus-visible, .lb-dock button:focus-visible { outline: var(--px) solid var(--c-cream); outline-offset: calc(var(--px) * -3); }
 
       /* home */
-      .lb-home { flex: 1; align-content: center; gap: 12px; padding-bottom: 8px; }
-      .lb-hero { display: grid; justify-items: center; gap: 14px; text-align: center; padding: 0 0 10px; }
-      .lb-logo { margin: 0; font: 700 var(--fl-4)/1 var(--f-label); text-transform: uppercase; letter-spacing: 2px; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-accent-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
-      .lb-logo span { display: block; margin-top: 4px; color: var(--c-gold); text-shadow: var(--px) var(--px) 0 var(--c-gold-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
-      @media (min-width: 600px) { .lb-logo { font-size: var(--fl-6); } }
-      .lb-trio { display: flex; justify-content: center; align-items: flex-end; gap: 4px; min-height: 96px; }
-      .lb-tagline { margin: 0; color: var(--c-mute); max-width: 32ch; }
-      .lb-play { font-size: var(--fl-3); padding: 22px 12px 24px; letter-spacing: 2px; }
+      /* Home's banner: the arena by day, two monsters facing off (as on the launcher's card) */
+      .mm-hero { background-color: #5aa6e0; background-repeat: repeat-x; background-position: 50% 100%; image-rendering: pixelated; }
+      .mm-hero-f { position: absolute; bottom: calc(var(--u) * 2); width: calc(var(--u) * 48); height: calc(var(--u) * 54); }
+      .mm-hero-f.l { left: 12%; } .mm-hero-f.r { right: 12%; }
+      .mm-hero-f img { position: absolute; left: calc(var(--u) * 4); top: calc(var(--u) * 40); width: calc(var(--u) * 40); height: calc(var(--u) * 14); image-rendering: pixelated; }
+      .mm-hero-spr { position: absolute; left: 0; top: 0; width: calc(var(--u) * 48); height: calc(var(--u) * 48); image-rendering: pixelated;
+        background: 0 0 / calc(var(--u) * 48 * var(--n)) 100% no-repeat; }
+      .mm-hero-f.r .mm-hero-spr { scale: -1 1; }
+      .mm-hero-spr.idle { animation: mmIdle calc(var(--n) * 150ms) steps(var(--n)) infinite; }
+      @keyframes mmIdle { to { background-position-x: calc(var(--u) * -48 * var(--n)); } }
       .lb-note { color: var(--c-mute); font-size: var(--fs-s); text-align: center; }
       .lb-note:empty { display: none; }
 
       /* choice cards: Play how? and Teams */
-      .lb-choice {
-        --b: var(--c-panel); --b-hi: var(--c-edge); --b-lo: var(--c-ink);
-        width: 100%; display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 14px; align-items: center;
-        padding: 12px 14px 14px 12px; text-align: left; text-transform: none; text-shadow: none; white-space: normal; color: var(--c-text);
-      }
-      .lb-choice .lb-ic { width: 64px; height: 64px; display: grid; place-items: center; overflow: hidden; background: var(--c-well); box-shadow: inset 0 var(--px) 0 var(--c-ink); color: var(--c-cream); font: 700 var(--fl-2)/1 var(--f-label); }
-      .lb-choice b { display: block; font: 700 var(--fl-2)/1.15 var(--f-label); text-transform: uppercase; letter-spacing: 1px; color: var(--c-cream); }
-      .lb-choice small { display: block; margin-top: 6px; font: 400 var(--fs-s)/1.35 var(--f-text); color: var(--c-mute); }
-      .lb-choice .lb-go { color: var(--c-accent-hi); transition: transform 0.12s ease-out; }
-      .lb-choice.on { box-shadow: inset 0 0 0 var(--px) var(--c-gold), inset 0 calc(var(--px) * -3) 0 var(--b-lo); border-color: var(--c-gold-lo); }
-      .lb-choice .lb-tag { display: inline-block; margin-top: 6px; font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-gold); }
-      .lb-choice .lb-tag[hidden] { display: none; }
-      .lb-code { margin-top: 12px; display: grid; gap: 8px; }
-      .lb-code .join-row input { font-size: var(--fl-2); }
+      /* the team question's rows: the last-used one is marked */
+      .lb-bar .mm-roster { padding: 0 6px 2px; overflow: hidden; }
+      .pl-row.on { box-shadow: inset 0 0 0 var(--px) var(--c-gold), inset 0 calc(var(--px) * -3) 0 var(--b-lo); border-color: var(--c-gold-lo); }
+      .pl-row .lb-tag { display: inline-block; margin-top: 6px; font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-gold); }
+      .pl-row .lb-tag[hidden] { display: none; }
 
       /* your team: the roster, with your two and Ready in a dock */
       .lb-banner { padding: 10px 12px; background: color-mix(in srgb, var(--c-accent) 22%, var(--c-panel)); border: var(--px) solid var(--c-accent-hi); color: var(--c-cream); font-weight: 600; }
@@ -208,9 +199,6 @@
       @media (min-width: 600px) { .lb-dock-in { grid-template-columns: minmax(0, 1fr) 220px; align-items: center; } }
 
       /* play a friend */
-      #lobby .fpick { margin: 0; gap: 8px; }
-      #lobby .fpick .frow { padding: 10px 10px 10px 14px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
-      #lobby .fpick .frow .fname { font-size: var(--fs-m); }
 
       /* waiting: finding a rival, invite sent */
       .lb-wait { justify-items: center; text-align: center; gap: 14px; padding-top: clamp(24px, 7vh, 72px); }
@@ -222,8 +210,6 @@
       .lb-vs .lb-slot { width: 64px; height: 64px; display: grid; place-items: center; overflow: hidden; background: var(--c-well); box-shadow: inset 0 0 0 var(--px) var(--c-edge); color: var(--c-mute); font: 700 var(--fl-2)/1 var(--f-label); }
       .lb-vs b { font: 700 var(--fl-2)/1 var(--f-label); color: var(--c-cream); }
       @media (max-width: 374px) { .lb-vs { gap: 8px; } .lb-vs .team-side { gap: 4px; } .lb-vs .lb-slot { width: 56px; height: 56px; } }
-      .lb-who { font: 700 var(--fl-3)/1.1 var(--f-label); text-transform: uppercase; color: var(--c-cream); overflow-wrap: anywhere; }
-      .lb-link { max-width: 100%; font-size: var(--fs-s); color: var(--c-mute); overflow-wrap: anywhere; user-select: all; }
       .lb-dots { display: flex; gap: 6px; height: 20px; align-items: flex-end; }
       .lb-dots i { width: 10px; height: 10px; background: var(--c-accent-hi); animation: lbHop 0.9s steps(2) infinite; }
       .lb-dots i:nth-child(2) { animation-delay: 0.15s; } .lb-dots i:nth-child(3) { animation-delay: 0.3s; }
@@ -247,8 +233,6 @@
 
       .row-input { display: flex; gap: 8px; align-items: center; }
       .row-input button { flex: none; }
-      .fpick { display: grid; gap: 6px; margin: 0 0 14px; }
-      .fpick .frow { margin: 0; }
       .sheet h3 { font: 700 var(--fs-xs)/1.2 var(--f-text); letter-spacing: 1px; color: var(--c-mute); margin: 16px 0 6px; text-transform: uppercase; }
       .frow { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: var(--px) solid var(--c-well); min-width: 0; }
       .frow .fname { flex: 1; min-width: 0; font-weight: 700; }
@@ -303,7 +287,6 @@
       .join-row { display: flex; gap: 8px; }
       .join-row input { font: 700 var(--fl-2)/1.2 var(--f-label); text-transform: uppercase; letter-spacing: 3px; }
       .join-row button { flex: none; }
-      .code-big { font: 700 var(--fl-4)/1 var(--f-label); letter-spacing: 6px; color: var(--c-cream); margin: 6px 0 10px; }
       .status { color: var(--c-mute); font-size: var(--fs-s); }
       .status:empty { display: none; }
 
@@ -879,40 +862,28 @@
           <button id="lbBack" class="ghost small icon-btn" aria-label="Back to Ploto" title="Back to Ploto"><svg class="px-icon" viewBox="0 0 4 7" width="8" height="14" aria-hidden="true"><rect x="3" y="0" width="1" height="7"/><rect x="2" y="1" width="1" height="5"/><rect x="1" y="2" width="1" height="3"/><rect x="0" y="3" width="1" height="1"/></svg></button>
           <h2 id="lbTitle" class="lb-title" tabindex="-1">Match Monsters</h2>
           <span id="lbStep" class="lb-step"></span>
-          <button id="settingsBtn" class="ghost small icon-btn" aria-label="Settings" title="Settings"><svg class="px-icon" viewBox="0 0 9 7" width="18" height="14" aria-hidden="true"><rect x="0" y="1" width="9" height="1"/><rect x="2" y="0" width="2" height="3"/><rect x="0" y="5" width="9" height="1"/><rect x="5" y="4" width="2" height="3"/></svg></button>
+          <button id="monstersBtn" class="ghost small icon-btn mm-roster" aria-label="Monsters: all of them and their moves" title="Monsters"></button>
         </div>
       </header>
       <div class="lb-view lb-gutter">
-        <!-- Home: one big Play and the Monsters; friends and your profile live in the launcher (/play) -->
-        <div class="lb-screen lb-home" data-screen="home">
-          <div class="lb-hero">
-            <h1 class="lb-logo">Match <span>Monsters</span></h1>
-            <div class="lb-trio" id="lbTrio" aria-hidden="true"></div>
-            <p class="lb-tagline">Match gems to charge your monsters. Knock out your rival.</p>
-          </div>
-          <button id="lbPlay" class="lb-play">Play</button>
-          <button id="monstersBtn" class="ghost">Monsters</button>
+        <!-- Home: the game's lobby, laid out like every Ploto game's (docs/PLATFORM.md); friends and your profile live in the launcher (/play) -->
+        <div class="lb-screen" data-screen="home">
+          <div class="pl-hero pl-frame mm-hero" id="mmHero" aria-hidden="true"></div>
+          <button class="pl-row" data-how="quick"><span class="pl-ic" data-mon="frost_imp"></span><span><b>Quick match</b><small>Play anyone online</small></span><span class="pl-go" data-chev></span></button>
+          <button class="pl-row" data-how="friend"><span class="pl-ic" data-mon="petal_fawn"></span><span><b>Play a friend</b><small>Invite them or share a code</small></span><span class="pl-go" data-chev></span></button>
+          <button class="pl-row" data-how="bot"><span class="pl-ic" data-mon="stone_golem"></span><span><b>Practice</b><small>You vs the bot</small></span><span class="pl-go" data-chev></span></button>
+          <p class="pl-label">Have a code?</p>
+          <form class="pl-form" data-join autocomplete="off"><input type="text" class="pl-code" placeholder="Room code" maxlength="8" autocapitalize="characters" autocomplete="off" spellcheck="false" enterkeyhint="go" aria-label="Room code" /><button class="ghost small" type="submit">Join</button></form>
+          <div class="pl-who pl-frame"><span class="muted">Playing as</span><b class="ell" id="whoName">Player</b><span class="grow"></span><button class="pl-link" id="whoChange" type="button">Change</button></div>
           <div id="lobbyStatus" class="lb-note" role="status"></div>
-        </div>
-
-        <!-- Play: how? -->
-        <div class="lb-screen" data-screen="how" hidden>
-          <div class="lb-label">How do you want to play?</div>
-          <button class="lb-choice" data-how="quick"><span class="lb-ic" data-mon="frost_imp"></span><span><b>Quick match</b><small>Play someone online right now.</small></span><span class="lb-go" data-chev></span></button>
-          <button class="lb-choice" data-how="friend"><span class="lb-ic" data-mon="petal_fawn"></span><span><b>A friend</b><small>Invite from your friends list, or share a link.</small></span><span class="lb-go" data-chev></span></button>
-          <button class="lb-choice" data-how="bot"><span class="lb-ic" data-mon="stone_golem"></span><span><b>Practice</b><small>Play the bot, with shortcuts to try things out.</small></span><span class="lb-go" data-chev></span></button>
-          <div class="lb-code">
-            <div class="lb-label">Got a code from a friend?</div>
-            <form class="row-input join-row" data-join><input type="text" placeholder="CODE" maxlength="8" autocapitalize="characters" autocomplete="off" spellcheck="false" enterkeyhint="go" aria-label="Room code" /><button class="ghost" type="submit">Join</button></form>
-          </div>
         </div>
 
         <!-- Teams: Pick, Draft or Random (remembered) -->
         <div class="lb-screen" data-screen="teams" hidden>
           <div class="lb-label">How are teams made?</div>
-          <button class="lb-choice" data-team="blind"><span class="lb-ic">1·2</span><span><b>Pick</b><small id="teamBlindNote">Choose your two monsters. Your rival picks theirs blind.</small><span class="lb-tag" hidden>Last used</span></span><span class="lb-go" data-chev></span></button>
-          <button class="lb-choice" data-team="draft"><span class="lb-ic"><span data-icon="ban"></span></span><span><b>Draft</b><small>Ban one each, then pick in turns in the match.</small><span class="lb-tag" hidden>Last used</span></span><span class="lb-go" data-chev></span></button>
-          <button class="lb-choice" data-team="random"><span class="lb-ic">?</span><span><b>Random</b><small>Both teams are dealt at random, revealed at the start.</small><span class="lb-tag" hidden>Last used</span></span><span class="lb-go" data-chev></span></button>
+          <button class="pl-row" data-team="blind"><span class="pl-ic">1·2</span><span><b>Pick</b><small id="teamBlindNote">Choose your two monsters. Your rival picks theirs blind.</small><span class="lb-tag" hidden>Last used</span></span><span class="pl-go" data-chev></span></button>
+          <button class="pl-row" data-team="draft"><span class="pl-ic"><span data-icon="ban"></span></span><span><b>Draft</b><small>Ban one each, then pick in turns in the match.</small><span class="lb-tag" hidden>Last used</span></span><span class="pl-go" data-chev></span></button>
+          <button class="pl-row" data-team="random"><span class="pl-ic">?</span><span><b>Random</b><small>Both teams are dealt at random, revealed at the start.</small><span class="lb-tag" hidden>Last used</span></span><span class="pl-go" data-chev></span></button>
         </div>
 
         <!-- Your team (Pick only): the whole roster; your two and Ready in the dock -->
@@ -922,11 +893,8 @@
           <div id="picker"></div>
         </div>
 
-        <!-- Play a friend: friends first, then a link or a code -->
-        <div class="lb-screen" data-screen="friend" hidden></div>
-
-        <!-- Invite sent / your invite code -->
-        <div class="lb-screen lb-wait" data-screen="invited" hidden></div>
+        <!-- Your room (playing a friend): the code to share, who's in, an open seat to invite a friend to -->
+        <div class="lb-screen" data-screen="room" hidden></div>
 
         <!-- Finding a rival / starting practice / joining -->
         <div class="lb-screen lb-wait" data-screen="searching" hidden>
@@ -1381,7 +1349,7 @@
         const b = $("play");
         b.textContent = pendingJoin ? `Join ${pendingJoin.host}` // a blind-pick invite link
           : nav.accept ? "Accept"
-          : nav.how === "friend" ? (nav.friendId ? `Invite ${friendName(nav.friendId)}` : "Next")
+          : nav.how === "friend" ? (nav.friendId ? `Invite ${friendName(nav.friendId)}` : "Create room")
           : "Ready";
         b.disabled = lbBusy || picks.length < 2;
       }
@@ -1466,17 +1434,15 @@
 
       function lbTitle(name) {
         return {
-          home: "Match Monsters", how: "Play", teams: "Teams", pick: "Your team", friend: "Play a friend",
-          invited: myInvite ? "Invite sent" : "Your invite",
+          home: "Match Monsters", teams: "Teams", pick: "Your team", room: "Your room",
           searching: nav.how === "bot" ? "Practice" : nav.how === "join" ? "Joining" : "Finding a rival",
           monsters: "Monsters", detail: "Monster",
         }[name] || "";
       }
-      /** "Step 2 of 3": the questions this route asks (Pick adds Your team, a friend adds Play a friend). */
+      /** "Step 2 of 3": the screens this route goes through (Pick adds Your team, a friend ends in Your room). */
       function lbStep(name) {
         if (pendingJoin || nav.accept || nav.how === "join") return "";
-        const how = name === "how" ? null : nav.how;
-        const seq = [...(nav.friendId ? [] : ["how"]), "teams", ...(teamMode === "blind" ? ["pick"] : []), ...(how === "friend" && !nav.friendId ? ["friend"] : [])];
+        const seq = ["teams", ...(teamMode === "blind" ? ["pick"] : []), ...(nav.how === "friend" ? ["room"] : [])];
         const i = seq.indexOf(name);
         return i < 0 ? "" : `Step ${i + 1} of ${seq.length}`;
       }
@@ -1496,7 +1462,7 @@
         // Home's Back leaves for the launcher; every other screen's steps back one.
         $("lbBack").setAttribute("aria-label", nav.stack.length < 2 ? "Back to Ploto" : "Back");
         $("lbBack").title = nav.stack.length < 2 ? "Back to Ploto" : "Back";
-        $("settingsBtn").hidden = name !== "home";
+        $("monstersBtn").hidden = name !== "home";
         $("lbTitle").textContent = lbTitle(name);
         $("lbStep").textContent = lbStep(name);
         LB_RENDER[name]?.();
@@ -1525,7 +1491,7 @@
         if (nav.stack.length < 2) return toLauncher();
         const from = curScreen();
         if (from === "searching") cancelSearch();
-        if (from === "invited") cancelInvites();
+        if (from === "room") cancelInvites();
         if (from === "pick" && (pendingJoin || nav.accept)) { pendingJoin = null; nav.accept = null; }
         lbPop();
       }
@@ -1539,7 +1505,7 @@
 
       /** After the team question (and Your team, for Pick): queue, practice, or on to the friend. */
       function afterTeams() {
-        if (nav.how === "friend") return nav.friendId ? sendInvite(nav.friendId) : lbGo("friend");
+        if (nav.how === "friend") return openRoom();
         if (nav.how === "bot") return practice();
         return quickPlay();
       }
@@ -1552,7 +1518,7 @@
       /** Invite from the friends list: choose teams first, then the invite goes out. */
       function inviteFromList(friendId) {
         closePanel();
-        if (curScreen() === "friend") return sendInvite(friendId); // teams are already chosen
+        if (curScreen() === "room") return sendInvite(friendId); // teams are already chosen
         nav.stack = ["home"];
         Object.assign(nav, { how: "friend", friendId, accept: null, joinInfo: null });
         lbGo("teams");
@@ -1645,15 +1611,41 @@
         };
       }
       const LB_RENDER = {
-        teams: renderTeams, pick: renderPickScreen, friend: renderFriendScreen, invited: renderInvited,
+        home: renderHome, teams: renderTeams, pick: renderPickScreen, room: renderRoom,
         searching: renderSearching, monsters: renderCollection, detail: renderDetail,
       };
       /** Lobby art: chevrons, the choice icons and the three monsters on Home (rigs, so they idle). */
       function lbArt() {
         for (const s of document.querySelectorAll("[data-chev]")) { s.innerHTML = CHEV; s.removeAttribute("data-chev"); }
-        for (const s of document.querySelectorAll(".lb-ic[data-mon]")) { s.innerHTML = rigView(s.dataset.mon, 1, snapU(1.4), [4, 6, 40, 42]); s.removeAttribute("data-mon"); }
-        const trio = $("lbTrio");
-        if (!trio.childElementCount) trio.innerHTML = ["ember_pup", "tide_serpent", "prism_owl"].map((id) => rigView(id, 2, snapU(window.innerWidth >= 600 ? 3 : 2))).join("");
+        for (const s of document.querySelectorAll(".pl-ic[data-mon]")) { s.innerHTML = rigView(s.dataset.mon, 1, snapU(1.2), [4, 6, 40, 42]); s.removeAttribute("data-mon"); }
+        if (!$("monstersBtn").firstChild) $("monstersBtn").innerHTML = rigView("ember_pup", 0, snapU(1), [13, 12, 32, 32]);
+        drawHero();
+      }
+      /** Home's banner: the arena by day with two monsters facing off, whole device pixels per art pixel. */
+      function drawHero() {
+        const hero = $("mmHero"), PX = window.PIXELART;
+        const W = hero.clientWidth, H = hero.clientHeight;
+        if (!PX || !W || hero.dataset.size === `${W}x${H}`) return;
+        hero.dataset.size = `${W}x${H}`;
+        const theme = PX.themes?.day || { arena: PX.arena, platform: PX.platform };
+        const k = Math.max(1, Math.round(Math.max(W / 160, H / 100)));
+        const u = Math.max(1, Math.floor(((H * 0.6) / 48) * (window.devicePixelRatio || 1))) / (window.devicePixelRatio || 1);
+        const fighter = (id, side) => {
+          const st = PX.monsters[id]?.stages[1];
+          if (!st) return "";
+          const idle = st.idle && !reduceMotion;
+          return `<div class="mm-hero-f ${side}" style="--u:${u}px"><img src="${theme.platform}" alt="">` +
+            `<div class="mm-hero-spr${idle ? " idle" : ""}" style="background-image:url(${idle ? st.idle : st.flat});--n:${idle ? st.n : 1}"></div></div>`;
+        };
+        hero.style.backgroundImage = `url(${theme.arena})`;
+        hero.style.backgroundSize = `${160 * k}px ${100 * k}px`;
+        hero.innerHTML = fighter("ember_pup", "l") + fighter("tide_serpent", "r");
+      }
+      /** Home: who you're playing as (a guest can change it; a claimed username stays put). */
+      function renderHome() {
+        $("whoName").textContent = displayName();
+        $("whoChange").hidden = !!account;
+        drawHero();
       }
 
       // The lobby socket stays open all session: matchmaking, plus friends'
@@ -1758,41 +1750,69 @@
         }
       }
 
-      /** The Play-a-friend screen: your friends (online first, one tap to invite), then a link or a code. */
-      function renderFriendScreen() {
-        const el = document.querySelector('[data-screen="friend"]');
+      /**
+       * Your room, for playing a friend: laid out like every Ploto game's room lobby
+       * (docs/PLATFORM.md). The code to share up top, the mode in a line, you and an
+       * open seat to invite a friend to. Whoever comes first (code or invite) starts it.
+       */
+      async function openRoom() {
+        lbGo("room");
+        if (!hosting) await createRoom();
+        if (!hosting) { if (curScreen() === "room") lbPop(); return; } // it couldn't be made (a toast said why)
+        if (nav.friendId && !myInvite) sendInvite(nav.friendId);
+      }
+      /** What the friend will do about teams, in a few words (the room's settings line). */
+      function roomLine() {
+        if (draftMode) return "Draft · you'll ban and pick together";
+        if (randomMode) return "Random · both teams dealt at the start";
+        return "Pick · they choose their own two";
+      }
+      function renderRoom() {
+        const el = document.querySelector('[data-screen="room"]');
+        const code = hosting?.code;
+        const team = teamMode === "blind" && picks.length === 2 ? picks.map((id) => monById(id)?.name).filter(Boolean).join(" + ") : "Host";
+        const init = (displayName().trim()[0] || "?").toUpperCase();
+        const rival = myInvite
+          ? `<div class="pl-seat open"><div class="pl-seat-t"><span class="nm ell">${esc(myInvite.name)}</span><span class="note">Invite sent</span></div><button class="ghost small" data-do="cancel">Cancel</button></div>`
+          : `<div class="pl-seat open"><div class="pl-seat-t"><span class="nm">Open seat</span><span class="note">Share the code, or invite a friend</span></div><button class="ghost small" data-do="invite">Invite</button></div>`;
         el.innerHTML =
-          `<div class="lb-label">Your friends</div>` + friendPicker() +
-          `<div class="lb-label" style="margin-top:12px">Anyone else</div>` +
-          `<button id="fCreate">Share an invite link</button>` +
-          `<p class="lb-hint" style="margin-top:0">${draftMode || randomMode ? "They tap it and land straight in the match." : "They pick their two, then they're in."}</p>` +
-          `<div class="lb-label" style="margin-top:12px">Got a code from a friend?</div>` + JOIN_FORM;
-        el.querySelector("#fCreate").onclick = () => createRoom();
-        el.querySelector("#fGetName")?.addEventListener("click", openFriends);
-        el.querySelector("#fAll")?.addEventListener("click", openFriends);
+          `<div class="pl-codecard pl-frame"><div class="code"><small>Room code</small><b${code ? ` aria-label="Room code ${esc(code.split("").join(" "))}"` : ""}>${code ? esc(code) : "····"}</b></div>` +
+          `<button id="hShare"${code ? "" : " disabled"}>Share invite</button></div>` +
+          `<p class="pl-sumline">${esc(roomLine())}</p>` +
+          `<p class="pl-label">Players · 1/2</p><div class="pl-seats">` +
+          `<div class="pl-seat pl-frame"><span class="pl-av">${esc(init)}</span><div class="pl-seat-t"><span class="nm"><span class="ell">${esc(displayName())}</span><span class="pl-you">You</span></span><span class="note">${esc(team)}</span></div></div>` +
+          rival + `</div>` +
+          `<div class="pl-waitline"><span class="pl-dots"><i></i><i></i><i></i></span>Starts as soon as your friend joins</div>`;
+        el.querySelector("#hShare").onclick = shareLink;
+        el.querySelector('[data-do="invite"]')?.addEventListener("click", openInvitePicker);
+        el.querySelector('[data-do="cancel"]')?.addEventListener("click", () => {
+          lobbySock?.request("platform:cancelInvite", { inviteId: myInvite.inviteId }).catch(() => {});
+          myInvite = null;
+          renderRoom();
+        });
+      }
+      /** Invite a friend to the open seat: your friends who are online, or share the code instead. */
+      function openInvitePicker() {
+        if (!account) {
+          const el = showPanel("invite", `<h2>Invite a friend</h2><p class="muted" style="text-align:center;margin:8px 0 14px">Claim a username to add friends and invite them. Or share the room code.</p>` +
+            `<div class="s-actions"><button id="ipClaim">Claim a username</button><button class="ghost" id="ipShare">Share invite</button></div>`);
+          el.querySelector("#ipClaim").onclick = () => { closePanel(); openClaim(); };
+          el.querySelector("#ipShare").onclick = () => { closePanel(); shareLink(); };
+          return;
+        }
+        renderInvitePicker();
+        loadFriends();
+      }
+      function renderInvitePicker() {
+        const online = friendsData.friends.filter((f) => f.online);
+        const rows = online.length
+          ? online.map((f) => `<div class="pl-seat pl-frame"><span class="pl-av">${esc((f.username[0] || "?").toUpperCase())}</span><div class="pl-seat-t"><span class="nm ell">${esc(f.username)}</span>` +
+              `<span class="note">${esc(f.activity?.label || "Online")}</span></div><button class="small" data-invite="${f.id}">Invite</button></div>`).join("")
+          : `<div class="empty">${friendsData.friends.length ? "None of your friends are online right now" : "No friends yet. Add them in Ploto's Friends tab"}</div>`;
+        const el = showPanel("invite", `<h2>Invite a friend</h2><div class="pl-seats">${rows}</div><div class="s-actions"><button class="ghost" id="ipShare">Share invite instead</button></div>`);
+        el.querySelector("#ipShare").onclick = () => { closePanel(); shareLink(); };
         for (const b of el.querySelectorAll("[data-invite]")) b.onclick = () => sendInvite(b.dataset.invite);
-        wireJoinForms(el);
       }
-
-      /** The invite we're waiting on: a friend's name, or our code and link to share. */
-      function renderInvited() {
-        const el = document.querySelector('[data-screen="invited"]');
-        const top = myInvite
-          ? `<div class="lb-label">Invite sent to</div><div class="lb-who">${esc(myInvite.name)}</div>`
-          : hosting
-            ? `<div class="lb-label">Your invite code</div><div class="code-big" aria-label="Code ${esc(hosting.code.split("").join(" "))}">${esc(hosting.code)}</div>` +
-              `<div class="lb-actions" style="margin-top:0"><button id="hShare">${navigator.share ? "Share link" : "Copy link"}</button></div>` +
-              `<div class="lb-link">${esc(hosting.link)}</div>`
-            : "";
-        const note = myInvite ? modeLine() : draftMode || randomMode ? "They land straight in the match." : "They pick their two, then they're in.";
-        el.innerHTML = top +
-          `<div class="lb-dots" aria-hidden="true"><i></i><i></i><i></i></div>` +
-          `<p class="lb-status" role="status">Waiting for them to join.</p><p class="muted">${esc(note)}</p>` +
-          `<div class="lb-actions"><button class="ghost" id="invCancel">Cancel invite</button></div>`;
-        el.querySelector("#hShare")?.addEventListener("click", shareLink);
-        el.querySelector("#invCancel").onclick = lbBack;
-      }
-      const showHosting = () => lbGo("invited");
       async function shareLink() {
         const link = hosting?.link;
         if (!link) return;
@@ -1826,8 +1846,7 @@
         lobbyAction("Creating your invite…", async (sock) => {
           const res = await sock.request("mm:createRoom", payload());
           hosting = { code: res.code, link: `${location.origin}/play/match-monsters?room=${res.code}` };
-          myInvite = null;
-          showHosting();
+          if (curScreen() === "room") renderRoom();
         });
 
       const joinRoom = (code) =>
@@ -3737,7 +3756,7 @@
       }
 
       // Your name and the friends list live in the launcher now; these stay as hooks for the sheets that remain.
-      function renderAccount() { updateBadge(); }
+      function renderAccount() { updateBadge(); if (curScreen() === "home") renderHome(); }
       function updateBadge() {}
 
       /** Claiming a username, in a sheet (offered in the lobby and after a match, never as a gate). */
@@ -3813,7 +3832,7 @@
         try { friendsData = await api("GET", "/api/friends"); } catch { return; }
         updateBadge();
         if (panel === "friends") renderFriends();
-        if (curScreen() === "friend") renderFriendScreen();
+        if (panel === "invite") renderInvitePicker();
       }
 
       /* ---- panels (reuse the bottom sheet) ---- */
@@ -3868,17 +3887,6 @@
         });
       }
       /** Friends in the Play-a-friend sheet: online first, each a tap from a battle invite. */
-      function friendPicker() {
-        if (!account) {
-          return `<div class="fpick"><button class="ghost" id="fGetName">${ic("friends")} Play from a friends list</button></div>`;
-        }
-        const list = [...friendsData.friends].sort((a, b) => Number(b.online) - Number(a.online) || a.username.localeCompare(b.username));
-        if (!list.length) return `<div class="fpick"><button class="ghost" id="fAll">${ic("friends")} Add friends by username</button></div>`;
-        return `<div class="fpick">` + list.slice(0, 4).map((a) => frow(
-          `<span class="dot ${a.online ? "" : "off"}"></span><span class="fname ell">${esc(a.username)}</span>` +
-          `<button class="small" data-invite="${a.id}" ${a.online ? "" : "disabled"}>${ic("battle")} ${a.online ? "Invite" : "Offline"}</button>`)).join("") +
-          (list.length > 4 ? `<button class="ghost small" id="fAll">All friends · ${list.length}</button>` : "") + `</div>`;
-      }
       function renderFriends() {
         const f = friendsData;
         const invites = [...incomingInvites.values()];
@@ -4008,7 +4016,7 @@
         f.online = d.online;
         updateBadge();
         if (panel === "friends") renderFriends();
-        if (curScreen() === "friend") renderFriendScreen(); // their Invite button follows them online and off
+        if (panel === "invite") renderInvitePicker(); // friends come and go from the list as they go online and off
         if (chatWith === d.id) $("chatDot")?.classList.toggle("off", !d.online);
       }
 
@@ -4027,7 +4035,8 @@
           const res = await sock.request("mm:invite", payload({ friendId }));
           myInvite = { inviteId: res.inviteId, friendId, name: f ? f.username : "your friend" };
           closePanel();
-          lbGo("invited");
+          if (curScreen() === "room") renderRoom();
+          else lbGo("room");
         } catch (e) { toast(errText(e)); }
         finally { setBusy(false); }
       }
@@ -4117,7 +4126,7 @@
         if (myInvite && myInvite.inviteId === d.inviteId) {
           const name = myInvite.name;
           myInvite = null;
-          if (curScreen() === "invited" && d.reason !== "accepted") lbPop();
+          if (curScreen() === "room" && d.reason !== "accepted") renderRoom(); // the seat opens up again
           if (d.reason === "declined") toast(`${name} declined`);
           if (d.reason === "expired") toast(`${name} didn't answer in time`);
         }
@@ -4232,10 +4241,8 @@
         });
       }
 
-      $("settingsBtn").addEventListener("click", openSettings);
       // the lobby's screens
       $("lbBack").addEventListener("click", lbBack);
-      $("lbPlay").addEventListener("click", () => { Object.assign(nav, { how: null, friendId: null, accept: null, joinInfo: null }); lbGo("how"); });
       $("monstersBtn").addEventListener("click", () => lbGo("monsters"));
       for (const b of document.querySelectorAll("[data-how]")) {
         b.addEventListener("click", () => { Object.assign(nav, { how: b.dataset.how, friendId: null, joinInfo: null }); lbGo("teams"); });
@@ -4248,7 +4255,12 @@
           else afterTeams();
         });
       }
-      wireJoinForms(document.querySelector('[data-screen="how"]'));
+      wireJoinForms(document.querySelector('[data-screen="home"]'));
+      $("whoChange").addEventListener("click", async () => {
+        await askName({ title: "Change your name", body: "Your rival sees this name during the match.", go: "Save" });
+        renderHome();
+      });
+      window.addEventListener("resize", () => { if (curScreen() === "home") drawHero(); });
       $("searchCancel").addEventListener("click", lbBack);
       $("searchBot").addEventListener("click", () => { cancelSearch(); nav.how = "bot"; practice(); });
       // Escape steps back a screen (capture: an open sheet closes first, on its own Escape)

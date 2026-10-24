@@ -391,6 +391,8 @@ export class HoldemGame {
     const p = this.seat(id);
     if (!p) return reject("unknown player");
     if (p.seat !== s.toAct) return reject("not your turn");
+    // Actions come from clients: don't trust the shape.
+    if (typeof action !== "object" || action === null) return reject("unknown action");
     const legal = this.legal(p.seat);
 
     let kind: ActionKind;

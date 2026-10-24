@@ -124,6 +124,7 @@ interface Table {
   /** Effective stack in big blinds (mine vs the biggest opponent's, counting bets). */
   readonly effBB: number;
   readonly streetRaises: number;
+  readonly bigBlind: boolean;
 }
 
 /**
@@ -149,6 +150,7 @@ export function chooseAction(game: HoldemGame, id: string, random: RandomSource,
     stack: me.stack,
     effBB: Math.min(me.stack + me.bet, biggest) / view.bb,
     streetRaises: game.state.streetRaises,
+    bigBlind: game.state.bbSeat === me.seat,
   };
   const level = opts.level ?? "normal";
   const intent = view.phase === "preflop" ? preflop(t, random, level) : postflop(t, random, level, opts.samples ?? (level === "easy" ? 60 : 150));
@@ -186,7 +188,7 @@ function preflop(t: Table, random: RandomSource, level: BotLevel): Intent {
       if (chen >= pushAt) return { kind: "allIn" };
       return { kind: "passive" };
     }
-    const callAt = (easy ? 7 : 9.5) - (odds < 0.35 ? 2 : 0) - (t.effBB < 4 ? 2 : 0) + (t.streetRaises > 1 ? 1 : 0);
+    const callAt = (easy ? 7 : headsUp ? 7.5 : 9.5) - (odds < 0.35 ? 2 : 0) - (t.effBB < 4 ? 2 : 0) + (t.streetRaises > 1 ? 1 : 0);
     if (chen >= callAt) return chen >= callAt + 2 ? { kind: "allIn" } : { kind: "call" };
     return { kind: "passive" };
   }
@@ -194,7 +196,7 @@ function preflop(t: Table, random: RandomSource, level: BotLevel): Intent {
   if (!facingRaise) {
     const inBB = legal.canCheck;
     const limpers = Math.max(0, view.seats.filter((s) => s.inHand && !s.folded && s.bet >= bb).length - 1);
-    const openAt = inBB ? 9 : headsUp ? 5 : behind <= 1 ? 6.5 : behind <= 3 ? 8 : 9;
+    const openAt = inBB ? 9 : headsUp ? 4 : behind <= 1 ? 6.5 : behind <= 3 ? 8 : 9;
     if (chen >= openAt + (easy ? 1 : 0)) {
       const size = (2.5 + limpers + (random() < 0.3 ? 0.5 : 0)) * bb;
       return { kind: "raise", to: size };
@@ -204,8 +206,9 @@ function preflop(t: Table, random: RandomSource, level: BotLevel): Intent {
   }
 
   if (t.streetRaises === 1) {
-    if (chen >= 12) return { kind: "raise", to: view.currentBet * (behind > 0 ? 3 : 3.5) };
-    const callAt = (easy ? 6 : 9) - (legal.call <= 3 * bb ? 1.5 : 0);
+    if (chen >= (easy ? 13 : headsUp ? 10 : 12)) return { kind: "raise", to: view.currentBet * (behind > 0 ? 3 : 3.5) };
+    // Heads-up ranges are wide, so defend wide; the big blind already has chips in.
+    const callAt = (easy ? 6 : headsUp ? 5.5 : 9) - (legal.call <= 3 * bb ? 1.5 : 0) - (t.bigBlind && !easy ? 1 : 0);
     if (chen >= callAt) return { kind: "call" };
     return { kind: "passive" };
   }
@@ -219,13 +222,16 @@ function postflop(t: Table, random: RandomSource, level: BotLevel, samples: numb
   const { legal, view } = t;
   const easy = level === "easy";
   let equity = monteCarloEquity(t.hole, view.board, t.opponents, samples, random);
-  if (easy) equity = Math.min(1, Math.max(0, equity + (random() - 0.5) * 0.3));
+  if (easy) equity = Math.min(1, Math.max(0, equity + (random() - 0.5) * 0.4));
+  // Equity is against random hands, but a bet or raise means a stronger range.
+  else if (legal.call > 0) equity -= 0.04 + 0.04 * t.streetRaises;
   const k = t.opponents;
   const pot = view.totalPot;
   const toCall = legal.call;
   const odds = toCall / (pot + toCall);
   const river = view.phase === "river";
-  const valueAt = k === 1 ? 0.62 : k === 2 ? 0.5 : 0.42;
+  // Easy misses thin value bets.
+  const valueAt = (k === 1 ? 0.62 : k === 2 ? 0.5 : 0.42) + (easy ? 0.1 : 0);
   const strongAt = valueAt + 0.17;
   const sizing = (lo: number, hi: number) => (easy ? 0.3 + random() * 0.9 : lo + random() * (hi - lo));
   /** A bet/raise of `frac` of the pot (after calling); shove instead if it's most of the stack. */
@@ -247,7 +253,7 @@ function postflop(t: Table, random: RandomSource, level: BotLevel, samples: numb
 
   if (equity >= strongAt && legal.canRaise && random() < (easy ? 0.4 : 0.75)) return bet(sizing(0.6, 1));
   if (!easy && !river && k === 1 && equity >= 0.3 && equity < 0.45 && legal.canRaise && random() < 0.08) return bet(0.6);
-  const margin = easy ? -0.05 : 0.02 + 0.02 * (k - 1);
+  const margin = easy ? -0.1 : 0.02 + 0.02 * (k - 1);
   if (equity >= odds + margin) {
     if (easy && random() < 0.05) return { kind: "passive" };
     return { kind: "call" };

@@ -213,7 +213,11 @@ off, dealt the moment you connect (the first `holdem:update` can arrive before
 your `holdem:getState` answer). Rooms follow the platform's lobby (`lobby:*`):
 the host starts, 2 players or more.
 
-`settings` = `{seats: 2–6, bots: bool, chips: 500|1000|2000|5000, timer: bool, blindsEvery: 10|5|0}`.
+`settings` = `{seats: 2–6, bots: bool, chips: 500|1000|2000|5000, timer: bool, blindsEvery: 10|5|0, botStyle: 'sharp'|'relaxed'}`.
+Bots play short-handed ranges (about a third of hands at 4 seats, more on the
+button and in the big blind, some limps). "Sharp" is the normal bot; "Relaxed"
+calls more, reads its hand noisily and sizes bets at random. Quick tables use
+Sharp; a host picks; practice uses your last choice and can switch mid-game.
 
 ### Table room (`roomId=<roomId>` socket, same peerId)
 
@@ -221,6 +225,7 @@ the host starts, 2 players or more.
 |---|---|---|
 | `holdem:getState` | — | `TableView` |
 | `holdem:act` | `{action}` (`{type:'fold'|'check'|'call'|'allIn'}` or `{type:'raise', to}`) | `{ok}` |
+| `holdem:botStyle` | `{style: 'sharp'|'relaxed'}` (practice tables only) | `{ok}`: the bots play that way from their next move |
 | `lobby:*` | | the platform's room methods above; `lobby:leave` during play sits you out (auto check/fold) |
 
 Notification `holdem:update` = `{view: TableView, events: Event[]}` after every

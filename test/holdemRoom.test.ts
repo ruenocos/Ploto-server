@@ -31,8 +31,21 @@ const until = async (cond: () => boolean, ms = 8000) => {
 
 describe("hold'em table settings", () => {
   it("clamps client settings to what the game offers", () => {
-    expect(parseSettings({ seats: 9, chips: 123, timer: false, blindsEvery: 7, bots: false })).toEqual({ seats: 6, chips: 1000, timer: false, blindsEvery: 10, bots: false });
-    expect(parseSettings({ seats: 1, chips: 5000, blindsEvery: 0 })).toMatchObject({ seats: 2, chips: 5000, blindsEvery: 0 });
+    expect(parseSettings({ seats: 9, chips: 123, timer: false, blindsEvery: 7, bots: false, botStyle: "silly" })).toEqual({ seats: 6, chips: 1000, timer: false, blindsEvery: 10, bots: false, botStyle: "sharp" });
+    expect(parseSettings({ seats: 1, chips: 5000, blindsEvery: 0, botStyle: "relaxed" })).toMatchObject({ seats: 2, chips: 5000, blindsEvery: 0, botStyle: "relaxed" });
+  });
+
+  it("lets a practice table switch how its bots play mid-game, and nobody else", () => {
+    const practice = table({ mode: "practice", hosted: false, settings: { ...DEFAULT_SETTINGS, seats: 3 } });
+    practice.reserve({ peerId: "a", name: "Ann", accountId: null });
+    practice.join(peer("a"));
+    practice.handleRequest("a", "holdem:botStyle", { style: "relaxed" });
+    expect(practice.settings.botStyle).toBe("relaxed");
+    expect(() => practice.handleRequest("a", "holdem:botStyle", { style: "wild" })).toThrow(/unknown bot style/);
+    const hosted = table();
+    hosted.reserve({ peerId: "a", name: "Ann", accountId: null });
+    hosted.join(peer("a"));
+    expect(() => hosted.handleRequest("a", "holdem:botStyle", { style: "relaxed" })).toThrow(/practice/);
   });
 });
 

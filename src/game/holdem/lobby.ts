@@ -13,7 +13,7 @@ import { GameKit } from "../../platform/kit.js";
 import type { LobbyContext } from "../../platform/lobby.js";
 import { DEFAULT_SETTINGS, GAME_ID, parseSettings, TableRoom, type TableOptions, type TableSettings } from "./room.js";
 
-export const QUICK_SETTINGS: TableSettings = { seats: 6, bots: true, chips: 1000, timer: true, blindsEvery: 10 };
+export const QUICK_SETTINGS: TableSettings = { seats: 6, bots: true, chips: 1000, timer: true, blindsEvery: 10, botStyle: "sharp" };
 
 export class HoldemLobby extends GameKit<TableSettings, TableRoom> {
   constructor(

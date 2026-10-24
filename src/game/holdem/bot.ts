@@ -4,14 +4,18 @@
  * It only uses what a player at the table could know: its own `viewFor`, the
  * public betting state and `legal`. Preflop it buckets its hand with the Chen
  * formula, adjusted for position, players left to act and stack depth (push
- * or fold below 10 big blinds). After the flop it estimates its equity by
+ * or fold below 10 big blinds). The thresholds are short-handed ranges (Ploto
+ * tables seat 2–6): about 28% of hands first to act at 4 seats, 45% on the
+ * button, with some limps, and a big blind that defends about half the time.
+ * test/holdemBotStyle.test.ts keeps those numbers from drifting. After the flop it estimates its equity by
  * Monte Carlo against the current number of opponents holding random hands
  * and compares it with the pot odds, with some bluffs, semi-bluffs and
  * half-to-full-pot sizing. Every random choice comes from the injected
  * source, so bot games are reproducible.
  *
- * `easy` adds mistakes: a noisy read of its own equity, calling too much,
- * folding sometimes when it shouldn't, and random bet sizes.
+ * `easy` (a table's "Relaxed" bots) adds mistakes: a noisy read of its own
+ * equity, calling too much, folding sometimes when it shouldn't, and random
+ * bet sizes. `normal` is "Sharp".
  */
 import type { HoldemGame } from "./engine.js";
 import type { Action, Card, HoldemView, LegalActions, RandomSource, SeatView } from "./types.js";
@@ -184,11 +188,11 @@ function preflop(t: Table, random: RandomSource, level: BotLevel): Intent {
   // Short stack, or the price is a big part of the stack: push or fold.
   if (t.effBB < 10 || legal.call > t.stack * 0.35) {
     if (!facingRaise) {
-      const pushAt = (headsUp ? 4 : 5.5 + behind * 0.8) - (10 - Math.min(10, t.effBB)) * 0.3;
+      const pushAt = (headsUp ? 3.5 : 4.5 + behind * 0.5) - (10 - Math.min(10, t.effBB)) * 0.3;
       if (chen >= pushAt) return { kind: "allIn" };
       return { kind: "passive" };
     }
-    const callAt = (easy ? 7 : headsUp ? 7.5 : 9.5) - (odds < 0.35 ? 2 : 0) - (t.effBB < 4 ? 2 : 0) + (t.streetRaises > 1 ? 1 : 0);
+    const callAt = (easy ? 7 : headsUp ? 7 : 8.5) - (odds < 0.35 ? 2 : 0) - (t.effBB < 4 ? 2 : 0) + (t.streetRaises > 1 ? 1 : 0);
     if (chen >= callAt) return chen >= callAt + 2 ? { kind: "allIn" } : { kind: "call" };
     return { kind: "passive" };
   }
@@ -196,19 +200,21 @@ function preflop(t: Table, random: RandomSource, level: BotLevel): Intent {
   if (!facingRaise) {
     const inBB = legal.canCheck;
     const limpers = Math.max(0, view.seats.filter((s) => s.inHand && !s.folded && s.bet >= bb).length - 1);
-    const openAt = inBB ? 9 : headsUp ? 4 : behind <= 1 ? 6.5 : behind <= 3 ? 8 : 9;
+    // By players left to act behind me (the blinds count): short-handed ranges, not full-ring ones.
+    const openAt = inBB ? 8 : headsUp ? 4 : [4, 4.5, 5, 6, 7, 7.5][Math.min(5, behind)]!;
     if (chen >= openAt + (easy ? 1 : 0)) {
       const size = (2.5 + limpers + (random() < 0.3 ? 0.5 : 0)) * bb;
       return { kind: "raise", to: size };
     }
-    if (easy && chen >= openAt - 3) return { kind: "call" };
+    // Just below a raise: limp (or complete the small blind) some of the time, so pots go multiway.
+    if (easy ? chen >= openAt - 3 : chen >= openAt - 1.5 && random() < 0.5) return { kind: "call" };
     return { kind: "passive" };
   }
 
   if (t.streetRaises === 1) {
     if (chen >= (easy ? 13 : headsUp ? 10 : 12)) return { kind: "raise", to: view.currentBet * (behind > 0 ? 3 : 3.5) };
     // Heads-up ranges are wide, so defend wide; the big blind already has chips in.
-    const callAt = (easy ? 6 : headsUp ? 5.5 : 9) - (legal.call <= 3 * bb ? 1.5 : 0) - (t.bigBlind && !easy ? 1 : 0);
+    const callAt = (easy ? 6 : headsUp ? 5.5 : 7.5) - (legal.call <= 3 * bb ? 1.5 : 0) - (t.bigBlind && !easy ? 1.5 : 0);
     if (chen >= callAt) return { kind: "call" };
     return { kind: "passive" };
   }
@@ -224,7 +230,7 @@ function postflop(t: Table, random: RandomSource, level: BotLevel, samples: numb
   let equity = monteCarloEquity(t.hole, view.board, t.opponents, samples, random);
   if (easy) equity = Math.min(1, Math.max(0, equity + (random() - 0.5) * 0.4));
   // Equity is against random hands, but a bet or raise means a stronger range.
-  else if (legal.call > 0) equity -= 0.04 + 0.04 * t.streetRaises;
+  else if (legal.call > 0) equity -= 0.07 + 0.04 * t.streetRaises;
   const k = t.opponents;
   const pot = view.totalPot;
   const toCall = legal.call;

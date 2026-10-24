@@ -16,7 +16,7 @@
  */
 import { LobbyRoom, type LobbyRoomOptions, type LobbyRules, type RoomMode, type Seat as LobbySeat } from "../../platform/lobbyRoom.js";
 import type { PeerLike } from "../../platform/peer.js";
-import { chooseAction } from "./bot.js";
+import { chooseAction, type BotLevel } from "./bot.js";
 import { cryptoRandom } from "./cards.js";
 import { HoldemGame, redactEvents } from "./engine.js";
 import { evaluate } from "./evaluator.js";
@@ -34,9 +34,14 @@ export interface TableSettings {
   readonly timer: boolean;
   /** Hands per blind level: 10, 5, or 0 = never. */
   readonly blindsEvery: 0 | 5 | 10;
+  /** How the bots play: "sharp" (the normal bot) or "relaxed" (looser, makes mistakes). */
+  readonly botStyle: BotStyle;
 }
 
-export const DEFAULT_SETTINGS: TableSettings = { seats: 6, bots: true, chips: 1000, timer: true, blindsEvery: 10 };
+export type BotStyle = "sharp" | "relaxed";
+export const BOT_LEVEL: Record<BotStyle, BotLevel> = { sharp: "normal", relaxed: "easy" };
+
+export const DEFAULT_SETTINGS: TableSettings = { seats: 6, bots: true, chips: 1000, timer: true, blindsEvery: 10, botStyle: "sharp" };
 
 /** Settings from a client, clamped to what the game offers. */
 export function parseSettings(raw: unknown, base: TableSettings = DEFAULT_SETTINGS): TableSettings {
@@ -50,6 +55,7 @@ export function parseSettings(raw: unknown, base: TableSettings = DEFAULT_SETTIN
     chips,
     timer: typeof d["timer"] === "boolean" ? d["timer"] : base.timer,
     blindsEvery,
+    botStyle: d["botStyle"] === "sharp" || d["botStyle"] === "relaxed" ? d["botStyle"] : base.botStyle,
   };
 }
 
@@ -196,6 +202,16 @@ export class TableRoom extends LobbyRoom<TableSettings, Seat> {
       case "holdem:act":
         this.act(seat, parseAction(d["action"]));
         return { ok: true };
+
+      // Practice only: switch how the bots play mid-game (a hosted table's style is set before the start).
+      case "holdem:botStyle": {
+        if (this.mode !== "practice") throw new Error("only at a practice table");
+        const style = d["style"];
+        if (style !== "sharp" && style !== "relaxed") throw new Error("unknown bot style");
+        this.settings = { ...this.settings, botStyle: style };
+        this.broadcast([]);
+        return { ok: true };
+      }
 
       case "holdem:back": {
         const s = this.seats[seat]!;
@@ -355,7 +371,7 @@ export class TableRoom extends LobbyRoom<TableSettings, Seat> {
   private botAct(seat: number): void {
     const game = this.game;
     if (!game || game.toActId !== idOf(seat)) return;
-    const action = chooseAction(game, idOf(seat), this.random, { level: "normal" });
+    const action = chooseAction(game, idOf(seat), this.random, { level: BOT_LEVEL[this.settings.botStyle] });
     let r = game.act(idOf(seat), action);
     if (!r.ok) r = game.timeoutAction(idOf(seat)); // never stall on a bot bug
     if (r.ok) this.afterEvents(r.events);

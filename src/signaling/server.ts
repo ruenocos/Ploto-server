@@ -122,10 +122,12 @@ export class SignalingServer {
         socket,
         (p, method, data) => this.handleLobby(p, method, data),
         (p) => {
-          // A reload may already have replaced this peer with a new connection.
+          // A reload (or moving between the launcher and a game page, same peer id) may
+          // already have replaced this peer with a new connection: then its invites,
+          // queue tickets and rooms belong to the new one and stay.
           this.signOut(p);
-          this.invites.dropByHost(p.id);
           if (this.lobbyPeers.get(p.id) !== p) return;
+          this.invites.dropByHost(p.id);
           for (const lobby of this.lobbies) lobby.peerGone(p.id);
           this.lobbyPeers.delete(p.id);
         },

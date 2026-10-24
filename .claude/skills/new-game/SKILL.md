@@ -72,7 +72,15 @@ Ship in milestones (playable rules, then the screen, then feel, then art),
 each committed and pushed with both existing games still working. Show the
 user screenshots at each milestone and ask before big direction changes.
 
-## 4. Checks before every push
+## 4. Score and refine (docs/SCORING.md)
+
+After the art milestone, score every category with two fresh reviewer agents
+(give them the evidence pack and the rubric, never your own scores), take the
+lower score per category, build the fixes for everything under 9, and repeat
+with fresh reviewers until every category is 9/10 or better (stop after 6
+rounds and say what's left). Log each round in `docs/games/<id>-scores.md`.
+
+## 5. Checks before every push
 
 - `npm test`, `npm run typecheck`.
 - `npm run build && npm run e2e`: every game's lobby paths, a full game and a

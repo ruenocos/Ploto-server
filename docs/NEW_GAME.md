@@ -121,7 +121,16 @@ In this order, each step tested before the next:
       sizes snapped per screen; check against the reference images, at 1× and 3×.
 - [ ] **Words in its world**: what a room, a code, a win are called.
 
-## 6. Ship
+## 6. Score and refine
+
+Score the game on the ten categories in docs/SCORING.md (game design, signature
+moment, animation, sound and haptics, visual design, UX, platform consistency,
+bots, implementation, accessibility) with two independent reviewers, take the
+lower score, build the fixes for everything under 9, and score again. Repeat
+until every category is 9/10 or better, and log each round in
+`docs/games/<id>-scores.md`.
+
+## 7. Ship
 
 - [ ] `npm test` and `npm run typecheck` clean; the simulation test passes.
 - [ ] `npm run build && npm run e2e`: every lobby path (host + code, invite from

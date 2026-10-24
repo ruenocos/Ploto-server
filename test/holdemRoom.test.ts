@@ -31,8 +31,8 @@ const until = async (cond: () => boolean, ms = 8000) => {
 
 describe("hold'em table settings", () => {
   it("clamps client settings to what the game offers", () => {
-    expect(parseSettings({ seats: 9, chips: 123, timer: false, blindsEvery: 7, bots: false, botStyle: "silly" })).toEqual({ seats: 6, chips: 1000, timer: false, blindsEvery: 10, bots: false, botStyle: "sharp" });
-    expect(parseSettings({ seats: 1, chips: 5000, blindsEvery: 0, botStyle: "relaxed" })).toMatchObject({ seats: 2, chips: 5000, blindsEvery: 0, botStyle: "relaxed" });
+    expect(parseSettings({ seats: 9, chips: 123, timer: false, blindsEvery: 7, bots: false, botStyle: "silly" })).toEqual({ seats: 6, chips: 1000, timer: false, blindsEvery: 10, bots: false, botStyle: "relaxed" });
+    expect(parseSettings({ seats: 1, chips: 5000, blindsEvery: 0, botStyle: "sharp" })).toMatchObject({ seats: 2, chips: 5000, blindsEvery: 0, botStyle: "sharp" });
   });
 });
 

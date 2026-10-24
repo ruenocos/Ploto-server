@@ -217,8 +217,8 @@ the host starts, 2 players or more.
 Bots play short-handed ranges (about a third of hands at 4 seats, more on the
 button and in the big blind, some limps). Players see the style as "Bot
 difficulty": Hard is `sharp`, the normal bot; Medium is `relaxed`, which
-calls more, reads its hand noisily and sizes bets at random. Quick tables use
-Hard; a host picks in the table settings; practice has its own setup screen
+calls more, reads its hand noisily and sizes bets at random. Medium is the
+default (quick tables use it); a host picks in the table settings; practice has its own setup screen
 (how many bots, how they play, chips, blinds).
 
 ### Table room (`roomId=<roomId>` socket, same peerId)

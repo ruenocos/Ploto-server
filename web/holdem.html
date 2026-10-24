@@ -721,7 +721,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   });
 
   /* ================================================================ the platform lobby */
-  const DEFAULTS = { seats: 6, bots: true, chips: 1000, timer: true, blindsEvery: 10, botStyle: "sharp" };
+  const DEFAULTS = { seats: 6, bots: true, chips: 1000, timer: true, blindsEvery: 10, botStyle: "relaxed" };
   // The game declares its table settings; screens just render this list.
   const SCHEMA = [
     { key: "seats", label: "Seats", kind: "choice", options: [[2, "2"], [3, "3"], [4, "4"], [5, "5"], [6, "6"]] },
@@ -824,7 +824,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     SCHEMA.find((f) => f.key === "chips"),
     SCHEMA.find((f) => f.key === "blindsEvery"),
   ];
-  const practiceSettings = { seats: 4, botStyle: "sharp", chips: 1000, blindsEvery: 10, ...(P.local.get("holdem.practice") || {}) };
+  const practiceSettings = { seats: 4, botStyle: "relaxed", chips: 1000, blindsEvery: 10, ...(P.local.get("holdem.practice") || {}) };
   function renderPractice() {
     const root = $("practiceFields");
     root.innerHTML = kit.fieldsHTML(practiceSettings, { schema: PRACTICE_SCHEMA });

@@ -41,7 +41,7 @@ export interface TableSettings {
 export type BotStyle = "sharp" | "relaxed";
 export const BOT_LEVEL: Record<BotStyle, BotLevel> = { sharp: "normal", relaxed: "easy" };
 
-export const DEFAULT_SETTINGS: TableSettings = { seats: 6, bots: true, chips: 1000, timer: true, blindsEvery: 10, botStyle: "sharp" };
+export const DEFAULT_SETTINGS: TableSettings = { seats: 6, bots: true, chips: 1000, timer: true, blindsEvery: 10, botStyle: "relaxed" };
 
 /** Settings from a client, clamped to what the game offers. */
 export function parseSettings(raw: unknown, base: TableSettings = DEFAULT_SETTINGS): TableSettings {

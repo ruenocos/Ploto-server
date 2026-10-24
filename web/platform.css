@@ -46,6 +46,7 @@ body {
   font: 400 var(--fs-m)/1.35 var(--f-text);
   overflow-x: hidden; min-height: 100vh; min-height: 100dvh;
   -webkit-font-smoothing: none; font-smooth: never;
+  font-variant-ligatures: none; /* Pixelify Sans draws "fi" as a glyph that reads as "A" */
 }
 .hidden { display: none !important; }
 [hidden] { display: none !important; }
@@ -56,9 +57,11 @@ body {
 h1, h2, h3 { font-family: var(--f-label); font-weight: 700; }
 a { color: var(--c-accent-hi); }
 :focus-visible { outline: var(--px) solid var(--c-gold); outline-offset: var(--px); }
+/* Pixel-cut frames clip anything drawn outside them, so their focus ring sits inside. */
+button:focus-visible, .pl-frame:focus-visible { outline-color: var(--c-cream); outline-offset: calc(var(--px) * -3); }
 
 /* ---- the frame: pixel-cut corners, 1-UI-pixel ink outline, bevel ---- */
-button, input[type="text"], input[type="search"], .pl-frame, .pl-sheet, .pl-toast, .pl-chip, .pl-badge {
+button, input[type="text"], input[type="search"], input[type="password"], .pl-frame, .pl-sheet, .pl-toast, .pl-chip, .pl-badge {
   --n: var(--px);
   clip-path: polygon(0 var(--n), var(--n) var(--n), var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n),
     100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%,
@@ -87,13 +90,13 @@ button.small { padding: 11px 10px 13px; }
 button.big { font-size: var(--fl-2); padding: 16px 12px 18px; }
 button.flat { --b: transparent; --b-hi: transparent; --b-lo: transparent; border-color: transparent; box-shadow: none; color: var(--c-mute); text-shadow: none; clip-path: none; }
 button.icon { min-width: 44px; padding: 0 10px 2px; display: inline-grid; place-items: center; }
-input[type="text"], input[type="search"] {
+input[type="text"], input[type="search"], input[type="password"] {
   font: 600 var(--fs-m)/1.2 var(--f-text); width: 100%; min-width: 0; min-height: 44px; color: var(--c-text);
   background: var(--c-well); border: var(--px) solid var(--c-ink); padding: 11px 12px; outline: none;
   box-shadow: inset 0 var(--px) 0 var(--c-ink);
 }
 input::placeholder { color: var(--c-mute); }
-input[type="text"]:focus, input[type="search"]:focus { border-color: var(--c-accent-hi); }
+input[type="text"]:focus, input[type="search"]:focus, input[type="password"]:focus { border-color: var(--c-accent-hi); }
 
 /* ---- chips, badges, presence dots ---- */
 .pl-chip { display: inline-flex; align-items: center; gap: 4px; font: 700 var(--fs-xs)/1 var(--f-text); padding: 4px 6px; background: var(--c-well); color: var(--c-text); white-space: nowrap; }

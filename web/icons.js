@@ -182,6 +182,22 @@ const GRIDS = {
     "XXXX.XXXX",
     "XXXX.XXXX",
   ],
+  games: [
+    ".XXXXXXX.",
+    "XX.XXXX.X",
+    "X...XXXXX",
+    "XX.XX.XXX",
+    "XXXXXXXXX",
+    "XX.....XX",
+  ],
+  person: [
+    "..XXX..",
+    "..XXX..",
+    ".......",
+    ".XXXXX.",
+    "XXXXXXX",
+    "XXXXXXX",
+  ],
   forfeit: [
     "XXXXX..",
     "XXXXXXX",

@@ -208,8 +208,8 @@ its lobby module (`src/game/<game>/lobby.ts`).
 
 The game kit's methods with the `holdem:` prefix. Quick tables: 6 seats, 1,000
 chips, timer on, blinds every 10; they start when full, or 20 s after the first
-player sits down, with bots in the empty seats. Practice: you and 3 bots, timer
-off, dealt the moment you connect (the first `holdem:update` can arrive before
+player sits down, with bots in the empty seats. Practice: you and 1–5 bots
+picked on its setup screen (3 by default), timer off, dealt the moment you connect (the first `holdem:update` can arrive before
 your `holdem:getState` answer). Rooms follow the platform's lobby (`lobby:*`):
 the host starts, 2 players or more.
 
@@ -217,7 +217,8 @@ the host starts, 2 players or more.
 Bots play short-handed ranges (about a third of hands at 4 seats, more on the
 button and in the big blind, some limps). "Sharp" is the normal bot; "Relaxed"
 calls more, reads its hand noisily and sizes bets at random. Quick tables use
-Sharp; a host picks; practice uses your last choice and can switch mid-game.
+Sharp; a host picks in the table settings; practice has its own setup screen
+(how many bots, how they play, chips, blinds).
 
 ### Table room (`roomId=<roomId>` socket, same peerId)
 
@@ -225,7 +226,6 @@ Sharp; a host picks; practice uses your last choice and can switch mid-game.
 |---|---|---|
 | `holdem:getState` | — | `TableView` |
 | `holdem:act` | `{action}` (`{type:'fold'|'check'|'call'|'allIn'}` or `{type:'raise', to}`) | `{ok}` |
-| `holdem:botStyle` | `{style: 'sharp'|'relaxed'}` (practice tables only) | `{ok}`: the bots play that way from their next move |
 | `lobby:*` | | the platform's room methods above; `lobby:leave` during play sits you out (auto check/fold) |
 
 Notification `holdem:update` = `{view: TableView, events: Event[]}` after every

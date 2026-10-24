@@ -203,16 +203,6 @@ export class TableRoom extends LobbyRoom<TableSettings, Seat> {
         this.act(seat, parseAction(d["action"]));
         return { ok: true };
 
-      // Practice only: switch how the bots play mid-game (a hosted table's style is set before the start).
-      case "holdem:botStyle": {
-        if (this.mode !== "practice") throw new Error("only at a practice table");
-        const style = d["style"];
-        if (style !== "sharp" && style !== "relaxed") throw new Error("unknown bot style");
-        this.settings = { ...this.settings, botStyle: style };
-        this.broadcast([]);
-        return { ok: true };
-      }
-
       case "holdem:back": {
         const s = this.seats[seat]!;
         s.away = false;

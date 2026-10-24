@@ -34,19 +34,6 @@ describe("hold'em table settings", () => {
     expect(parseSettings({ seats: 9, chips: 123, timer: false, blindsEvery: 7, bots: false, botStyle: "silly" })).toEqual({ seats: 6, chips: 1000, timer: false, blindsEvery: 10, bots: false, botStyle: "sharp" });
     expect(parseSettings({ seats: 1, chips: 5000, blindsEvery: 0, botStyle: "relaxed" })).toMatchObject({ seats: 2, chips: 5000, blindsEvery: 0, botStyle: "relaxed" });
   });
-
-  it("lets a practice table switch how its bots play mid-game, and nobody else", () => {
-    const practice = table({ mode: "practice", hosted: false, settings: { ...DEFAULT_SETTINGS, seats: 3 } });
-    practice.reserve({ peerId: "a", name: "Ann", accountId: null });
-    practice.join(peer("a"));
-    practice.handleRequest("a", "holdem:botStyle", { style: "relaxed" });
-    expect(practice.settings.botStyle).toBe("relaxed");
-    expect(() => practice.handleRequest("a", "holdem:botStyle", { style: "wild" })).toThrow(/unknown bot style/);
-    const hosted = table();
-    hosted.reserve({ peerId: "a", name: "Ann", accountId: null });
-    hosted.join(peer("a"));
-    expect(() => hosted.handleRequest("a", "holdem:botStyle", { style: "relaxed" })).toThrow(/practice/);
-  });
 });
 
 describe("hold'em table lobby", () => {
@@ -341,8 +328,10 @@ describe("hold'em rematch and results", () => {
     const r = new Rng(11);
     const lobby = new HoldemLobby(ctx, { timing: FAST, random: () => r.next() });
     const me = peer("me");
-    const t = (await lobby.handle(me, "holdem:practice", { displayName: "Mia", settings: { seats: 3, chips: 500 } })) as any;
+    const t = (await lobby.handle(me, "holdem:practice", { displayName: "Mia", settings: { seats: 3, chips: 500, botStyle: "relaxed", timer: true, bots: false } })) as any;
     const room = rooms.get(t.roomId);
+    // The practice setup's choices hold; practice always has bots and never a clock.
+    expect(room.settings).toMatchObject({ seats: 3, chips: 500, botStyle: "relaxed", timer: false, bots: true });
     room.join(me); // practice deals right away (no clock)
     room.handleRequest("me", "lobby:leave", {}); // Mia sits out, so the server plays for her
     await until(() => room.phase === "over", 20000);

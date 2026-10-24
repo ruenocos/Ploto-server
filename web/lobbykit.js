@@ -76,8 +76,9 @@
     };
 
     /* ------------------------------------------------------------ settings fields */
-    kit.fieldsHTML = (values, { minSeats = 2 } = {}) =>
-      (def.schema || []).map((f) => {
+    /** Settings controls from the game's schema (or another list, e.g. practice's own). */
+    kit.fieldsHTML = (values, { minSeats = 2, schema = def.schema } = {}) =>
+      (schema || []).map((f) => {
         if (f.kind === "toggle") {
           return `<button class="pl-switch" role="switch" data-key="${f.key}" aria-checked="${!!values[f.key]}">${esc(f.label)}<span class="pl-knob"></span></button>`;
         }

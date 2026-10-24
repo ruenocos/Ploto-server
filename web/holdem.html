@@ -265,7 +265,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     <div class="hero pl-hero pl-frame" id="hero" aria-hidden="true"></div>
     <button class="pl-row" data-mode="quick"><span class="pl-ic" data-ic="quick"></span><span><b>Quick table</b><small>Play anyone online</small></span><span class="pl-go" data-chev></span></button>
     <button class="pl-row" data-mode="host"><span class="pl-ic" data-ic="host"></span><span><b>Host a table</b><small>Your rules, your friends</small></span><span class="pl-go" data-chev></span></button>
-    <button class="pl-row" data-mode="practice"><span class="pl-ic" data-ic="practice"></span><span><b>Practice</b><small id="practiceSub">You vs bots</small></span><span class="pl-go" data-chev></span></button>
+    <button class="pl-row" data-mode="practice"><span class="pl-ic" data-ic="practice"></span><span><b>Practice</b><small>You vs bots</small></span><span class="pl-go" data-chev></span></button>
     <p class="pl-label">Have a code?</p>
     <form class="pl-form" id="codeForm" data-code-form autocomplete="off">
       <label class="sr-only" for="codeIn">Table code</label>
@@ -279,6 +279,12 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
 <section class="scr pl-flow" id="scrHost" hidden>
   <main class="pl-view"><div class="fields" id="hostFields"></div></main>
   <div class="pl-foot"><div class="pl-foot-in"><button class="big" id="createBtn">Create table</button></div></div>
+</section>
+
+<!-- 2b. Practice: pick the bots -->
+<section class="scr pl-flow" id="scrPractice" hidden>
+  <main class="pl-view"><div class="fields" id="practiceFields"></div></main>
+  <div class="pl-foot"><div class="pl-foot-in"><button class="big" id="practiceBtn">Start practice</button></div></div>
 </section>
 
 <!-- 3. Table lobby -->
@@ -636,7 +642,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
 
   /* ================================================================ screens + back */
   const nav = { stack: ["home"] };
-  const SCREENS = { home: "scrHome", host: "scrHost", lobby: "scrLobby", wait: "scrWait", table: "scrTable", result: "scrResult" };
+  const SCREENS = { home: "scrHome", host: "scrHost", practice: "scrPractice", lobby: "scrLobby", wait: "scrWait", table: "scrTable", result: "scrResult" };
   let shown = null;
   function roomScreen() {
     const v = S.anim && S.M ? S.M : S.view;
@@ -652,12 +658,13 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     const changed = name !== shown;
     shown = name;
     for (const [n, id] of Object.entries(SCREENS)) $(id).hidden = n !== name;
-    const bar = name === "home" || name === "host" || name === "lobby" || name === "wait";
+    const bar = name === "home" || name === "host" || name === "practice" || name === "lobby" || name === "wait";
     $("bar").hidden = !bar;
     document.body.style.overflow = name === "table" ? "hidden" : "";
     if (bar) renderBar(name);
     if (name === "home") renderHome();
     if (name === "host") renderHost();
+    if (name === "practice") renderPractice();
     if (name === "lobby") renderLobby();
     if (name === "table" && S.M) renderTable(S.M);
     if (name === "result") renderResult();
@@ -679,7 +686,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   }
   function renderBar(name) {
     const v = S.view;
-    const titles = { home: "Hold'em", host: "Host a table", wait: "Hold'em",
+    const titles = { home: "Hold'em", host: "Host a table", practice: "Practice", wait: "Hold'em",
       lobby: kit.title(S.lobby || v) };
     $("barTitle").textContent = titles[name];
     const b = $("barBack");
@@ -739,7 +746,6 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   function renderHome() {
     for (const s of document.querySelectorAll("[data-chev]")) s.innerHTML = px("chev", 2);
     for (const s of document.querySelectorAll("[data-ic]")) if (!s.firstChild) s.innerHTML = ICON_ART[s.dataset.ic]();
-    $("practiceSub").textContent = `You vs ${kit.settings.botStyle === "relaxed" ? "relaxed" : "sharp"} bots`;
     heroBanner.paint();
   }
   /**
@@ -780,7 +786,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     onMode: (m) => {
       if (m === "host") return go("host");
       if (m === "quick") return quickTable();
-      if (m === "practice") return practice();
+      if (m === "practice") return go("practice");
     },
     onCode: joinCode,
   });
@@ -810,6 +816,22 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     finally { btn.disabled = false; }
   });
 
+  /* ================================================================ 2b. practice: you pick the bots */
+  // Practice tables have no timer and always fill with bots; you choose how many, how they play, chips and blinds.
+  const PRACTICE_SCHEMA = [
+    { key: "seats", label: "Bots", kind: "choice", options: [[2, "1"], [3, "2"], [4, "3"], [5, "4"], [6, "5"]] },
+    SCHEMA.find((f) => f.key === "botStyle"),
+    SCHEMA.find((f) => f.key === "chips"),
+    SCHEMA.find((f) => f.key === "blindsEvery"),
+  ];
+  const practiceSettings = { seats: 4, botStyle: "sharp", chips: 1000, blindsEvery: 10, ...(P.local.get("holdem.practice") || {}) };
+  function renderPractice() {
+    const root = $("practiceFields");
+    root.innerHTML = kit.fieldsHTML(practiceSettings, { schema: PRACTICE_SCHEMA });
+    kit.wireFields(root, practiceSettings, () => P.local.set("holdem.practice", practiceSettings));
+  }
+  $("practiceBtn").addEventListener("click", () => practice());
+
   /* ================================================================ getting a seat */
   function waitFor(text) {
     $("waitText").textContent = text;
@@ -832,7 +854,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   }
   async function practice() {
     if (!(await P.ensureName())) return;
-    try { await takeSeat("Shuffling", "practice", { settings: { botStyle: kit.settings.botStyle } }); }
+    try { await takeSeat("Shuffling", "practice", { settings: { ...practiceSettings } }); }
     catch (e) { toast(P.errText(e), 2600); dropRoom(); goHome(); }
   }
   async function joinCode(code) {
@@ -1852,23 +1874,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
 
   /* ================================================================ menu, rules, leaving */
   /** The in-game menu is Ploto's (share, how to play, settings); Hold'em adds the way out. */
-  const openMenu = () => kit.menu({ view: S.lobby, items: [...(S.lobby?.mode === "practice" ? [botStyleRow()] : []), { label: "Leave table", danger: true, run: leaveFlow }] });
-  /** Practice: switch how the bots play, right away (remembered for the next practice table). */
-  function botStyleRow() {
-    const now = S.view?.settings?.botStyle ?? kit.settings.botStyle;
-    const next = now === "relaxed" ? "sharp" : "relaxed";
-    return {
-      label: next === "relaxed" ? "Easier bots" : "Tougher bots",
-      run: async () => {
-        try {
-          await req("holdem:botStyle", { style: next });
-          kit.settings.botStyle = next;
-          kit.saveSettings();
-          toast(next === "relaxed" ? "Bots play relaxed now" : "Bots play sharp now");
-        } catch (e) { toast(P.errText(e), 2600); }
-      },
-    };
-  }
+  const openMenu = () => kit.menu({ view: S.lobby, items: [{ label: "Leave table", danger: true, run: leaveFlow }] });
   const RULE_HANDS = [
     ["Royal flush", "As Ks Qs Js 10s"], ["Straight flush", "9h 8h 7h 6h 5h"], ["Four of a kind", "Qs Qh Qd Qc 3s"],
     ["Full house", "Kd Kc Ks 7h 7d"], ["Flush", "Ac Jc 8c 6c 2c"], ["Straight", "10d 9s 8h 7c 6d"],

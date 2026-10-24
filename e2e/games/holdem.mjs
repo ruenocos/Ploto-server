@@ -17,7 +17,7 @@ export default {
   start: (p) => p.click('[data-do="start"]'),
   quick: (p) => p.click('[data-mode="quick"]'),
   quickMs: 40000, // a quick table waits 20 s for players, then bots fill in
-  practice: (p) => p.click('[data-mode="practice"]'),
+  async practice(p) { await p.click('[data-mode="practice"]'); await p.click("#practiceBtn"); },
   inGame: inTable,
   isInGame: async (p) => (await p.locator("#scrTable:not([hidden])").count()) > 0,
   /** Back out of the room's lobby (it asks first). */
@@ -53,6 +53,7 @@ export default {
   screens: [
     ["host", (p) => p.click('[data-mode="host"]')],
     ["lobby", async (p) => { await p.click('[data-mode="host"]'); await p.click("#createBtn"); await p.waitForSelector("#scrLobby:not([hidden])"); }],
-    ["table", async (p) => { await p.click('[data-mode="practice"]'); await inTable(p); await p.waitForTimeout(2500); }],
+    ["practice", (p) => p.click('[data-mode="practice"]')],
+    ["table", async (p) => { await p.click('[data-mode="practice"]'); await p.click("#practiceBtn"); await inTable(p); await p.waitForTimeout(2500); }],
   ],
 };

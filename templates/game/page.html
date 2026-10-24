@@ -262,9 +262,9 @@
     if (!v?.results) return;
     const mine = v.results.find((r) => r.seat === v.you);
     const won = mine?.place === 1;
-    if (won && $("resMain")._resKey !== S.room?.roomId) cue("win");
+    const fresh = $("resMain")._resKey !== S.room?.roomId; // this room's result is new (renderResult also runs on every room update)
     kit.renderResult($("resMain"), {
-      title: won ? "You won the race" : `You finished ${kit.ordinal(mine?.place ?? 0)}`,
+      title: won ? "You won the race" : mine ? `You finished ${kit.ordinal(mine.place)}` : "Race over",
       sub: `First to ${v.target} taps`,
       win: won,
       standings: v.results.map((r) => ({ place: r.place, name: r.name, note: `${r.taps} taps`, you: r.seat === v.you, bot: r.isBot })),
@@ -273,7 +273,7 @@
       onRematch: async () => { try { enter(await req("lobby:rematch")); } catch (e) { toast(P.errText(e), 2600); } },
       onLeave: () => { drop(); goHome(); },
     });
-    if (won) pose($("resMain").querySelector(".pl-res-head h2"), "win");
+    if (won && fresh) { cue("win"); pose($("resMain").querySelector(".pl-res-head h2"), "win"); }
     kit.countResult($("resMain"));
   }
 

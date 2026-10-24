@@ -163,7 +163,7 @@ settings carry across pages: `mm.key`, `mm.account`, `mm.guestName`,
 | `Ploto.reduceMotion()` | Motion setting / prefers-reduced-motion |
 | `Ploto.playPreset(el, preset, {speed, keep})` → Promise | A stock Animate.css preset on an element (web/motion.js) |
 | `Ploto.poses(map)` → `pose(el, name)` | A game's body language: moment → preset, played the same everywhere (nothing with reduced motion) |
-| `Ploto.playQueue({run, onError, onReturn})` → `q` | Play updates strictly one after another: `q.add(item)`, `q.speed()` (1, 0.45, 0.3 as the backlog grows), `q.clear()`, `q.collapse(fn)`; `onReturn(items)` cuts the backlog when the tab comes back |
+| `Ploto.playQueue({run, onError, onReturn})` → `q` | Play updates strictly one after another: `q.add(item)`, `q.speed()` (1 with one waiting, 0.45 with two, 0.3 with more), `q.clear()`, `q.collapse(fn)`; `onReturn(items)` cuts the backlog when the tab comes back |
 | `Ploto.banner(el, {draw, intro, beat, every})` → `{paint, stop}` | A home banner (docs/STYLE.md, Home banners): drawn for its size, an intro once on screen, a beat while visible |
 | `Ploto.countUp(el, to, {steps, ms, format})` | A number counting up in stepped frames |
 | `Ploto.games()` → Promise<registry> | `/play/games` (cached) |

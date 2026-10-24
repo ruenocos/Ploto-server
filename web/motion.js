@@ -59,8 +59,9 @@
   /**
    * Play items (updates, or functions) strictly one after another: a game
    * animates each event from what's on screen, then settles on its state.
-   * `speed()` tells an animation how far behind it is (1, then 0.45 with one
-   * waiting, 0.3 with more), so a backlog catches up instead of piling up.
+   * `speed()` tells an animation how far behind it is (1 with one update
+   * waiting, the usual case at a busy table; 0.45 with two; 0.3 with three or
+   * more), so a backlog catches up instead of piling up.
    * When the tab comes back, `onReturn(items)` may cut the backlog (keep only
    * the latest state).
    */
@@ -83,7 +84,7 @@
     const q = {
       get backlog() { return items.length; },
       get busy() { return busy; },
-      speed: () => (items.length > 1 ? 0.3 : items.length ? 0.45 : 1),
+      speed: () => (items.length > 2 ? 0.3 : items.length > 1 ? 0.45 : 1),
       /** Queue an item; resolves once it has played. */
       add(item) { return new Promise((resolve) => { items.push({ item, resolve }); pump(); }); },
       /** Drop everything waiting (a fresh state is coming). */
@@ -110,18 +111,23 @@
   function banner(el, { draw, intro = null, beat = null, every = 3600 }) {
     let size = "", introduced = false, n = 0, timer = 0;
     const onScreen = () => el.isConnected && !el.closest("[hidden]") && el.getBoundingClientRect().width > 0 && !document.hidden;
+    /** The intro plays the first time it's drawn and on screen (a background tab waits until it's shown). */
+    function maybeIntro() {
+      if (introduced || !size || !onScreen()) return;
+      introduced = true;
+      if (intro && !RM()) intro(el);
+    }
     function paint() {
       const W = el.clientWidth, H = el.clientHeight;
-      if (!W || !H || `${W}x${H}` === size) return;
-      size = `${W}x${H}`;
-      if (draw(el, W, H) === false) { size = ""; return; } // not ready yet (art still loading): try again next time
-      if (!introduced && onScreen()) {
-        introduced = true;
-        if (intro && !RM()) intro(el);
+      if (W && H && `${W}x${H}` !== size) {
+        size = `${W}x${H}`;
+        if (draw(el, W, H) === false) { size = ""; return; } // not ready yet (art still loading): try again next time
       }
+      maybeIntro();
     }
     if (window.ResizeObserver) new ResizeObserver(paint).observe(el);
-    if (beat) timer = setInterval(() => { if (!RM() && onScreen()) beat(el, n++); }, every);
+    document.addEventListener("visibilitychange", maybeIntro);
+    if (beat) timer = setInterval(() => { maybeIntro(); if (introduced && !RM() && onScreen()) beat(el, n++); }, every);
     paint();
     return { paint, stop: () => clearInterval(timer) };
   }

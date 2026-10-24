@@ -389,9 +389,10 @@
         `<li class="pl-frame${r.place === 1 ? " first" : ""}${r.you ? " me" : ""}"><span class="pl">${esc(ordinal(r.place).toUpperCase())}</span>` +
         `<span class="nm"><span class="ell">${esc(r.name)}</span>${r.you ? `<span class="pl-you">You</span>` : ""}${r.bot ? `<span class="pl-bot">Bot</span>` : ""}</span>` +
         `<span class="note">${esc(r.note || "")}</span></li>`).join("")}</ol>` : "";
-      const tileHTML = tiles?.length ? `<div class="pl-tiles">${tiles.map((t) => {
+      const show = (t, v) => (t.format ? t.format(v) : typeof v === "number" ? v.toLocaleString("en-US") : v);
+      const tileHTML = tiles?.length ? `<div class="pl-tiles">${tiles.map((t, i) => {
         const n = typeof t.value === "number" ? t.value : null;
-        return `<div class="pl-frame"><small>${esc(t.label)}</small><b${n !== null ? ` data-count="${n}"` : ""}>${esc(n !== null && !counted ? 0 : t.format ? t.format(t.value) : t.value)}</b></div>`;
+        return `<div class="pl-frame"><small>${esc(t.label)}</small><b${n !== null ? ` data-count="${n}" data-tile="${i}"` : ""}>${esc(show(t, n !== null && !counted ? 0 : t.value))}</b></div>`;
       }).join("")}</div>` : "";
       const label = blocked ? "Rematch" : asked ? "Join rematch" : "Rematch";
       const note = blocked || asked || rematchHint;
@@ -399,15 +400,16 @@
         `<p class="pl-res-note${asked && !blocked ? " hot" : ""}">${esc(note)}</p><button class="ghost" data-res="leave">${esc(leaveLabel)}</button>`;
       const html = `<div class="pl-result">${head}${list}${tileHTML}${actions ? "" : `<div class="pl-res-acts">${acts}</div>`}${extra}</div>`;
       // Redrawn on every room update: only touch the page when something changed (no replayed animations).
-      if (root._resSig === html + acts) return;
+      if (root._resSig === key + html + acts) return;
       const fresh = root._resKey !== key || !root.querySelector(".pl-result"); // a new game's result (key: its room)
       root._resKey = key;
-      root._resSig = html + acts;
+      root._resSig = key + html + acts;
+      root._tileFormat = (b, v) => show(tiles[Number(b.dataset.tile)], v); // count-ups end on the tile's own format
       root.innerHTML = html;
       if (actions) actions.innerHTML = acts;
       // Numbers count up once (countResult); a later redraw shows them at their value.
       root._needsCount = fresh && !counted;
-      if (!root._needsCount) for (const b of root.querySelectorAll("[data-count]")) b.textContent = Number(b.dataset.count).toLocaleString("en-US");
+      if (!root._needsCount) for (const b of root.querySelectorAll("[data-count]")) b.textContent = root._tileFormat(b, Number(b.dataset.count));
       const wire = (scope) => {
         scope.querySelector('[data-res="rematch"]').onclick = async (e) => {
           const b = e.currentTarget;
@@ -425,7 +427,7 @@
       root._needsCount = false;
       for (const el of root.querySelectorAll("[data-count]")) {
         const to = Number(el.dataset.count);
-        await P.countUp(el, to, { format: (v) => v.toLocaleString("en-US") });
+        await P.countUp(el, to, { format: (v) => root._tileFormat(el, v) });
         if (to > 0) P.playPreset(el, "pulse", { speed: "faster" });
         await P.sleep(P.reduceMotion() ? 0 : 120);
       }

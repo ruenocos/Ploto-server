@@ -877,7 +877,8 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     closeSock();
     S.room = { roomId, code };
     P.saveRoom("holdem", S.room);
-    Object.assign(S, { view: null, lobby: null, M: null, queue: [], tags: {}, handNames: {}, lift: null, banner: null, pre: null, resultReady: false, elimShown: false, turnKey: "", clock: null, leaving: false, retry: 0 });
+    Q.clear(); // the old room's updates never play here
+    Object.assign(S, { view: null, lobby: null, M: null, tags: {}, handNames: {}, lift: null, banner: null, pre: null, resultReady: false, elimShown: false, turnKey: "", clock: null, leaving: false, retry: 0 });
     S.out = store.get(`holdem.out.${roomId}`) || {};
     if (cur() !== "room") nav.stack = ["home", "room"];
     show(1);
@@ -1004,14 +1005,14 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     M.pot = (M.pots || []).reduce((a, p) => a + p.amount, 0);
     S.M = M;
     S.anim = true;
-    S.speed = Q.backlog ? 0.45 : 1;
+    S.speed = Q.speed();
     if (S.raiseOpen) P.closeSheet();
     show(0);
     renderTable(M);
     for (const e of events) {
       const fn = EV[e.type];
       if (fn) await fn(e, M, view);
-      if (Q.backlog > 1) S.speed = 0.3; // falling behind: catch up
+      S.speed = Math.min(S.speed, Q.speed()); // falling further behind: catch up
     }
     S.anim = false;
     if (gen !== S.gen) return; // reconnected meanwhile: a fresher state is already on screen

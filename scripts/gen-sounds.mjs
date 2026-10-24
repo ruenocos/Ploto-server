@@ -39,7 +39,8 @@ const CHIME = {
 const PARAMS = { chime: CHIME };
 const root = new URL("..", import.meta.url);
 const files = [new URL("src/platform/sounds.json", root)];
-for (const dir of readdirSync(new URL("src/game/", root), { withFileTypes: true })) {
+// Sorted, so web/sounds.js comes out the same on every machine.
+for (const dir of readdirSync(new URL("src/game/", root), { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
   const f = new URL(`src/game/${dir.name}/sounds.json`, root);
   if (dir.isDirectory() && existsSync(f)) files.push(f);
 }
@@ -59,13 +60,25 @@ function seeded(seed) {
 const random = Math.random;
 const sets = {};
 let count = 0;
+/** Stop with a message that names the file and cue, instead of writing a sound that breaks at runtime. */
+const fail = (file, msg) => { console.error(`${file.pathname.replace(root.pathname, "")}: ${msg}`); process.exit(1); };
 for (const file of files) {
   const { set, cues } = JSON.parse(readFileSync(file, "utf8"));
+  if (typeof set !== "string" || !set) fail(file, 'needs a "set" name');
+  if (sets[set]) fail(file, `the set "${set}" is already taken (by Ploto's or another game's sounds.json)`);
   sets[set] = {};
   for (const [name, c] of Object.entries(cues)) {
+    if (!c.preset) fail(file, `cue "${name}" needs a "preset"`);
+    if (typeof c.seed !== "number") fail(file, `cue "${name}" needs a numeric "seed"`);
+    if (typeof c.params === "string" && !PARAMS[c.params]) fail(file, `cue "${name}": unknown params "${c.params}" (known: ${Object.keys(PARAMS).join(", ")})`);
+    const vol = c.vol ?? 0.5;
+    if (typeof vol !== "number" || !(vol > 0 && vol <= 1)) fail(file, `cue "${name}": "vol" must be a number from 0 to 1`);
+    const buzz = c.buzz ?? 0;
     Math.random = seeded(c.seed);
     const overrides = typeof c.params === "string" ? PARAMS[c.params] : c.params;
-    sets[set][name] = { code: sfxr.b58encode(Object.assign(sfxr.generate(c.preset), overrides)), vol: c.vol, buzz: c.buzz };
+    let generated;
+    try { generated = sfxr.generate(c.preset); } catch { fail(file, `cue "${name}": unknown preset "${c.preset}"`); }
+    sets[set][name] = { code: sfxr.b58encode(Object.assign(generated, overrides)), vol, buzz };
     count++;
   }
 }

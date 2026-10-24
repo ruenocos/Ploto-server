@@ -610,6 +610,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     resultReady: false,
     invites: {},         // invited name -> inviteId (sent from this tab)
     inviteFriend: null,  // ?inviteFriend=ID: invite them once the table exists
+    seatToken: 0,        // bumps when the player backs out of a pending seat request
     out: {},             // seat -> hand number they went out on
   };
   const isHost = (v = S.view) => !!v && v.host >= 0 && v.host === v.you;
@@ -654,6 +655,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   function goHome() { nav.stack = ["home"]; show(-1); }
   /** Back from the top bar, Escape, or the phone's back button. */
   function back() {
+    if (cur() === "room" && !S.room) { S.seatToken++; return goHome(); } // still waiting for a seat: give it up
     if (cur() === "room") return leaveFlow();
     if (nav.stack.length > 1) { nav.stack.pop(); show(-1); }
   }
@@ -667,7 +669,26 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     $("barAct").innerHTML = name === "home" ? `<button class="ghost small" id="rulesBtn">Rules</button>` : "";
     if (name === "home") $("rulesBtn").onclick = openRules;
   }
-  $("barBack").addEventListener("click", () => { if (screenNow() === "home") location.href = "/play"; else back(); });
+  /** Back to the launcher: a step back when we came from it (no extra history entry), else open it. */
+  function toLauncher() {
+    const ref = document.referrer ? new URL(document.referrer) : null;
+    if (ref && ref.origin === location.origin && ref.pathname === "/play" && history.length > 1) history.back();
+    else location.href = "/play";
+  }
+  $("barBack").addEventListener("click", () => { if (screenNow() === "home") toLauncher(); else back(); });
+
+  // Invites from friends while you're here: a Hold'em table seats you right away; another game opens its page.
+  P.onLobby("social:invite", async (inv) => {
+    if (S.room && S.view?.phase === "playing") return toast(`${inv.from.username} invited you to ${inv.label}`, 3000);
+    const ok = await P.confirm({ title: `${inv.from.username} invited you`, body: inv.label, yes: "Join", no: "Not now" });
+    if (!ok) return P.lobby().then((s) => s.request("platform:declineInvite", { inviteId: inv.inviteId })).catch(() => {});
+    if (inv.gameId === "holdem") {
+      if (S.room) { req("holdem:leave").catch(() => {}); dropRoom(); }
+      return acceptInvite(inv.inviteId);
+    }
+    const game = (await P.games()).find((g) => g.id === inv.gameId);
+    if (game) location.href = `${game.path}?invite=${encodeURIComponent(inv.inviteId)}`;
+  });
   window.addEventListener("keydown", (e) => {
     if (e.key !== "Escape" || P.sheetOpen() || e.target.matches?.("input")) return;
     if (screenNow() === "table") return openMenu();
@@ -808,7 +829,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       if (S.inviteFriend) {
         const id = S.inviteFriend;
         S.inviteFriend = null;
-        sendInvite(id).catch(() => {});
+        sendInvite(id).catch((e) => toast(P.errText(e), 2600));
       }
     } catch (e) { toast(P.errText(e), 2600); }
     finally { btn.disabled = false; }
@@ -821,21 +842,36 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     S.view = null;
     show(1);
   }
+  /**
+   * Ask the lobby for a seat while the wait screen shows. If the player backs out
+   * before the answer comes, the seat is given straight back instead of pulling
+   * them into the table.
+   */
+  async function takeSeat(label, method, data) {
+    const token = ++S.seatToken;
+    waitFor(label);
+    const lob = await P.lobby();
+    const r = await lob.request(method, data);
+    if (token !== S.seatToken || cur() !== "room") return abandonSeat(r);
+    await enterRoom(r);
+  }
+  async function abandonSeat({ roomId }) {
+    try {
+      const s = P.connect(roomId);
+      await P.waitOpen(s);
+      await s.request("holdem:leave", {});
+      s.close();
+    } catch {}
+  }
   async function quickTable() {
     if (!(await P.ensureName())) return;
-    waitFor("Finding a seat");
-    try {
-      const lob = await P.lobby();
-      await enterRoom(await lob.request("holdem:quick", { displayName: P.displayName() }));
-    } catch (e) { toast(P.errText(e), 2600); dropRoom(); goHome(); }
+    try { await takeSeat("Finding a seat", "holdem:quick", { displayName: P.displayName() }); }
+    catch (e) { toast(P.errText(e), 2600); dropRoom(); goHome(); }
   }
   async function practice() {
     if (!(await P.ensureName())) return;
-    waitFor("Shuffling");
-    try {
-      const lob = await P.lobby();
-      await enterRoom(await lob.request("holdem:practice", { displayName: P.displayName() }));
-    } catch (e) { toast(P.errText(e), 2600); dropRoom(); goHome(); }
+    try { await takeSeat("Shuffling", "holdem:practice", { displayName: P.displayName() }); }
+    catch (e) { toast(P.errText(e), 2600); dropRoom(); goHome(); }
   }
   async function joinCode(code) {
     if (S.room && S.room.code === code && S.sock) { nav.stack = ["home", "room"]; return show(1); }
@@ -843,16 +879,13 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       const lob = await P.lobby();
       const info = await lob.request("holdem:tableInfo", { code });
       if (!(await P.ensureName({ title: "Take a seat", body: `${info.host ? `${info.host} is hosting. ` : ""}Other players see this name.`, go: "Take a seat" }))) return;
-      waitFor(`Joining table ${code}`);
-      await enterRoom(await lob.request("holdem:join", { code, displayName: P.displayName() }));
+      await takeSeat(`Joining table ${code}`, "holdem:join", { code, displayName: P.displayName() });
     } catch (e) { toast(P.errText(e), 2800); dropRoom(); goHome(); }
   }
   async function acceptInvite(inviteId) {
     try {
       if (!(await P.ensureName())) return;
-      waitFor("Taking your seat");
-      const lob = await P.lobby();
-      await enterRoom(await lob.request("holdem:acceptInvite", { inviteId, displayName: P.displayName() }));
+      await takeSeat("Taking your seat", "holdem:acceptInvite", { inviteId, displayName: P.displayName() });
     } catch (e) { toast(P.errText(e), 2800); dropRoom(); goHome(); }
   }
 

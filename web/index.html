@@ -1684,7 +1684,9 @@
       function toLauncher() {
         activityLabel = null;
         Ploto.setActivity(null);
-        location.href = "/play";
+        // Came from the launcher: step back to it (no extra history entry); else open it.
+        if (document.referrer && new URL(document.referrer).origin === location.origin && new URL(document.referrer).pathname === "/play" && history.length > 1) history.back();
+        else location.href = "/play";
       }
 
       function setBusy(b) {
@@ -4030,11 +4032,33 @@
       }
 
       function onInvite(inv) {
+        // Another game's invite (Hold'em…): offer to open that game's page, which accepts it there.
+        if (inv.gameId && inv.gameId !== "match_monsters") return showOtherGameInvite(inv);
         incomingInvites.set(inv.inviteId, inv);
         updateBadge();
         if (panel === "friends") renderFriends();
         if (room) return toast(`${inv.from.username} challenged you. Finish this game first`, 3000);
         showInviteCard(inv);
+      }
+
+      async function showOtherGameInvite(inv) {
+        if (room) return toast(`${inv.from.username} invited you to ${inv.label}. Finish this game first`, 3000);
+        const game = (await Ploto.games()).find((g) => g.id === inv.gameId);
+        if (!game) return;
+        const card = $("inviteCard");
+        card.innerHTML =
+          `<div class="ic-top"><div class="ell"><b>${esc(inv.from.username)}</b> invited you<div class="muted" style="font-size:12px">${esc(inv.label)}</div></div></div>` +
+          `<div class="ic-actions"><button class="ghost" data-ic="decline">Decline</button><button data-ic="open">Join</button></div><div class="ic-timer"></div>`;
+        card.dataset.invite = inv.inviteId;
+        card.classList.remove("hidden");
+        card.querySelector(".ic-timer").animate([{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }], { duration: inv.expiresInMs || 90000, fill: "forwards" });
+        card.onclick = (e) => {
+          const btn = e.target.closest("[data-ic]");
+          if (!btn) return;
+          card.classList.add("hidden");
+          if (btn.dataset.ic === "open") location.href = `${game.path}?invite=${encodeURIComponent(inv.inviteId)}`;
+          else lobbySock?.request("platform:declineInvite", { inviteId: inv.inviteId }).catch(() => {});
+        };
       }
 
       function showInviteCard(inv) {

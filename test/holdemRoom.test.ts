@@ -316,6 +316,42 @@ describe("hold'em rematch and results", () => {
     expect(fresh.phase).toBe("lobby");
     expect(fresh.seated()[0]).toMatchObject({ kind: "player", name: "Mia" });
     expect(lobby.roomRequest(t.roomId, room, me, "holdem:rematch")).toEqual(next); // asking again lands at the same table
+    expect(fresh.hosted).toBe(true);
     for (const x of rooms.values()) x.dispose();
   }, 30000);
+});
+
+describe("hold'em review fixes", () => {
+  it("a quick table everyone left counts down again for the next player", async () => {
+    const t = table({ mode: "quick", hosted: false, settings: { ...DEFAULT_SETTINGS, seats: 6 }, timing: { ...FAST, quickStartMs: 40 } });
+    t.reserve("a", "Ann", null);
+    expect(t.startsAt).not.toBeNull();
+    t.handleRequest("a", "holdem:leave", {});
+    expect(t.startsAt).toBeNull(); // nobody left: the countdown stops
+    await new Promise((r) => setTimeout(r, 60));
+    t.reserve("b", "Ben", null);
+    expect(t.startsAt).toBeGreaterThan(Date.now());
+    await until(() => t.phase === "playing", 2000); // and it does deal, with bots
+    t.dispose();
+  });
+
+  it("a rejected action doesn't refund the time bank", async () => {
+    const t = table({ settings: { ...DEFAULT_SETTINGS, seats: 2 }, timing: { ...FAST, turnMs: 10, bankMs: 400, botMs: [60_000, 60_001] } });
+    const a = peer("a"), b = peer("b");
+    t.reserve("a", "Ann", null);
+    t.reserve("b", "Ben", null);
+    t.join(a);
+    t.join(b);
+    t.start();
+    const mover = (t.viewFor(0) as any).toAct === 0 ? "a" : "b";
+    const seat = mover === "a" ? 0 : 1;
+    await until(() => (t.viewFor(seat) as any).inBank === true, 1000);
+    await new Promise((r) => setTimeout(r, 150));
+    expect(() => t.handleRequest(mover, "holdem:act", { action: { type: "raise", to: 1 } })).toThrow(/minimum/);
+    expect((t.viewFor(seat) as any).inBank).toBe(true); // still in the bank, still counting
+    await new Promise((r) => setTimeout(r, 100));
+    t.handleRequest(mover, "holdem:act", { action: { type: "call" } });
+    expect((t.viewFor(seat) as any).bank).toBeLessThanOrEqual(0.2 * 1000); // ~250 ms of 400 spent (shown in whole seconds)
+    t.dispose();
+  });
 });

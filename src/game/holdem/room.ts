@@ -192,7 +192,7 @@ export class TableRoom implements Room {
     if (seat < 0) throw new Error("this table is full");
     this.seats[seat] = { ...emptySeat(), kind: "player", peerId, accountId, name: clean(name) };
     if (this.hosted && this.hostSeat < 0) this.hostSeat = seat;
-    if (this.mode === "quick" && this.startsAt === null) this.armQuickStart();
+    if (this.mode === "quick" && !this.quickTimer) this.armQuickStart();
     this.broadcast([]);
     if (this.mode === "quick" && this.freeSeats() === 0) this.start();
     return seat;
@@ -200,12 +200,18 @@ export class TableRoom implements Room {
 
   /** Hold a free seat for an invited friend. Returns the seat, or throws when there's none. */
   holdFor(accountId: string, name: string, inviteId: string): number {
+    const seat = this.seatFor(accountId);
+    this.seats[seat] = { ...emptySeat(), kind: "invited", accountId, name: clean(name), inviteId };
+    this.broadcast([]);
+    return seat;
+  }
+
+  /** The seat an invite for this account would hold; throws a readable reason when there's none. */
+  seatFor(accountId: string): number {
     if (this.phase !== "lobby") throw new Error("this table has already started");
     if (this.seats.some((s) => s.accountId === accountId && (s.kind === "player" || s.kind === "invited"))) throw new Error("they already have a seat here");
     const seat = this.seats.findIndex((s) => s.kind === "empty");
     if (seat < 0) throw new Error("there's no free seat for them");
-    this.seats[seat] = { ...emptySeat(), kind: "invited", accountId, name: clean(name), inviteId };
-    this.broadcast([]);
     return seat;
   }
 
@@ -368,11 +374,13 @@ export class TableRoom implements Room {
     const game = this.requireGame();
     if (game.toActId !== idOf(seat)) throw new Error("it's not your turn");
     const s = this.seats[seat]!;
+    const bankStart = this.bankStartedAt;
+    const r = game.act(idOf(seat), action);
+    if (!r.ok) throw new Error(REASON_TEXT[r.reason] ?? r.reason); // a rejected action changes nothing, clock included
+    this.bankStartedAt = bankStart;
+    this.spendBank(seat);
     s.timeouts = 0;
     s.away = false;
-    this.spendBank(seat);
-    const r = game.act(idOf(seat), action);
-    if (!r.ok) throw new Error(REASON_TEXT[r.reason] ?? r.reason);
     this.afterEvents(r.events);
   }
 
@@ -619,7 +627,7 @@ export class TableRoom implements Room {
       inBank: this.bankStartedAt !== null,
       bank: seat === null ? 0 : Math.round((this.bank.get(seat) ?? this.timing.bankMs) / 1000),
       standings: game ? game.standings().filter((x) => x.place !== null).map((x) => ({ seat: seatOf(x.id), name: x.name, place: x.place })) : [],
-      results: this.phase === "over" ? this.results() : null,
+      results: this.phase === "over" ? this.results().map(({ accountId: _account, ...r }) => r) : null,
       rematch: this.rematch,
     };
   }
@@ -672,6 +680,11 @@ export class TableRoom implements Room {
         this.hostSeat = this.seats.findIndex((x) => x.kind === "player");
       }
       if (s.peerId) this.peers.delete(s.peerId);
+      if (this.mode === "quick" && !this.seats.some((x) => x.kind === "player")) {
+        if (this.quickTimer) clearTimeout(this.quickTimer);
+        this.quickTimer = null;
+        this.startsAt = null;
+      }
       this.broadcast([]);
       return;
     }
@@ -686,12 +699,16 @@ export class TableRoom implements Room {
     this.startsAt = Date.now() + this.timing.quickStartMs;
     this.quickTimer = setTimeout(() => {
       this.quickTimer = null;
-      if (this.phase === "lobby" && this.seats.some((s) => s.kind === "player")) {
-        try {
-          this.start();
-        } catch {
-          /* everyone left */
-        }
+      if (this.phase !== "lobby") return;
+      if (!this.seats.some((s) => s.kind === "player")) {
+        // Everyone left before the deal: the next player to sit starts a fresh countdown.
+        this.startsAt = null;
+        return;
+      }
+      try {
+        this.start();
+      } catch {
+        this.startsAt = null;
       }
     }, this.timing.quickStartMs);
     this.quickTimer.unref?.();

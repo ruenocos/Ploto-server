@@ -55,7 +55,8 @@ export class HoldemLobby implements GameLobby {
     if (!next || next.phase !== "lobby") {
       // Practice deals again straight away; other tables gather in a lobby first.
       const practice = room.mode === "practice";
-      next = this.open(practice ? "practice" : "rematch", room.settings, room.hosted || room.mode !== "quick", practice);
+      // The first player to ask hosts it (even after a quick table, which had no host).
+      next = this.open(practice ? "practice" : "rematch", room.settings, true, practice);
       room.rematch = { roomId: next.roomId, code: next.code, players: [] };
     }
     next.reserve(peer.id, me.name, me.accountId);
@@ -120,6 +121,7 @@ export class HoldemLobby implements GameLobby {
         if (!ctx.services.presence.isOnline(friendId)) throw new Error("they're offline right now");
         const friend = await ctx.services.accounts.byId(friendId);
         if (!friend) throw new Error("you can only invite friends");
+        room.seatFor(friendId); // check there's a seat before the friend hears about it
         let seatHeld = false;
         const inv = ctx.invites.create<InviteData>({
           gameId: GAME_ID,

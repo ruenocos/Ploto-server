@@ -170,6 +170,8 @@
       .mm-hero-f { position: absolute; bottom: calc(var(--u) * 2); width: calc(var(--u) * 48); height: calc(var(--u) * 54); }
       .mm-hero-f.l { left: 12%; } .mm-hero-f.r { right: 12%; }
       .mm-hero-f img { position: absolute; left: calc(var(--u) * 4); top: calc(var(--u) * 40); width: calc(var(--u) * 40); height: calc(var(--u) * 14); image-rendering: pixelated; }
+      .mm-hero.entering .mm-hero-b:not(.animate__animated) { visibility: hidden; } /* off stage until they run in (as .arena.entering) */
+      .mm-hero-b { position: absolute; left: 0; top: 0; width: calc(var(--u) * 48); height: calc(var(--u) * 48); }
       .mm-hero-spr { position: absolute; left: 0; top: 0; width: calc(var(--u) * 48); height: calc(var(--u) * 48); image-rendering: pixelated;
         background: 0 0 / calc(var(--u) * 48 * var(--n)) 100% no-repeat; }
       .mm-hero-f.r .mm-hero-spr { scale: -1 1; }
@@ -1636,7 +1638,7 @@
           if (!st) return "";
           const idle = st.idle && !reduceMotion;
           return `<div class="mm-hero-f ${side}" style="--u:${u}px"><img src="${theme.platform}" alt="">` +
-            `<div class="mm-hero-spr${idle ? " idle" : ""}" style="background-image:url(${idle ? st.idle : st.flat});--n:${idle ? st.n : 1}"></div></div>`;
+            `<div class="bounce mm-hero-b" style="--dir:${side === "l" ? 1 : -1}"><div class="mm-hero-spr${idle ? " idle" : ""}" style="background-image:url(${idle ? st.idle : st.flat});--n:${idle ? st.n : 1}"></div></div></div>`;
         };
         hero.style.backgroundImage = `url(${theme.arena})`;
         hero.style.backgroundSize = `${160 * k}px ${100 * k}px`;
@@ -1644,31 +1646,35 @@
         hero.innerHTML = fighter("ember_pup", "l") + fighter("tide_serpent", "r");
         if (first) heroIntro(hero);
       }
-      /** The banner comes alive: the two run in and land, then trade a hit every few seconds while Home is open. */
+      /**
+       * The banner comes alive with the arena's own body language (POSES): the two run in
+       * like the battle intro, then trade a hit every few seconds while Home is open:
+       * the attacker's lunge, the element's impact on the target, and its hurt shake.
+       */
       let heroLoop = 0, heroTurn = 0;
       function heroIntro(hero) {
         if (reduceMotion) return;
-        hero.querySelectorAll(".mm-hero-f").forEach((f, i) => f.animate(
-          [{ transform: `translateX(${i ? 170 : -170}%)` }, { transform: "translateY(-8px)", offset: 0.75 }, { transform: "none" }],
-          { duration: 520, delay: 150 + i * 140, easing: "steps(8, end)", fill: "backwards" }));
+        hero.classList.add("entering");
+        const bs = [...hero.querySelectorAll(".mm-hero-b")];
+        const runs = bs.map((b, i) => sleep(120 + i * 140).then(() => playPreset(b, i ? "backInRight" : "backInLeft", { speed: "fast", keep: true })));
+        Promise.all(runs).then(() => { // both landed: clear the entrance (kept so neither blinks out while the other runs)
+          for (const b of bs) b.classList.remove("animate__animated", "animate__backInLeft", "animate__backInRight", "animate__fast");
+          hero.classList.remove("entering");
+        });
         clearInterval(heroLoop);
         heroLoop = setInterval(() => heroClash($("mmHero")), 3600);
       }
       function heroClash(hero) {
         if (reduceMotion || document.hidden || curScreen() !== "home" || $("lobby").classList.contains("hidden")) return;
-        const fs = hero.querySelectorAll(".mm-hero-f");
-        if (fs.length < 2) return;
-        const a = heroTurn++ % 2, att = fs[a], tgt = fs[1 - a];
-        const ra = att.getBoundingClientRect(), rt = tgt.getBoundingClientRect();
-        const dist = Math.round((rt.left - ra.left) * 0.4); // a lunge, two-fifths of the way across
-        att.animate([{ transform: "none" }, { transform: `translate(${dist}px, -10px)`, offset: 0.45 }, { transform: `translate(${dist}px, 0)`, offset: 0.55 }, { transform: "none" }],
-          { duration: 600, easing: "steps(10, end)" });
-        setTimeout(() => {
-          const r = tgt.getBoundingClientRect(), u = parseFloat(att.style.getPropertyValue("--u")) || 2;
-          impact({ x: r.left + r.width / 2, y: r.top + r.height * 0.45 }, a ? "water" : "fire", { k: u, dur: 360 });
-          tgt.animate([{ transform: "none" }, { transform: `translateX(${a ? -6 : 6}px)`, offset: 0.5 }, { transform: "none" }], { duration: 280, easing: "steps(4, end)" });
-          tgt.querySelector(".mm-hero-spr")?.animate([{ filter: "brightness(2.4)" }, { filter: "none" }], { duration: 200, easing: "steps(2, end)" }); // the monster flashes, not its platform
-        }, 290);
+        const bs = hero.querySelectorAll(".mm-hero-b");
+        if (bs.length < 2) return;
+        const a = heroTurn++ % 2, att = bs[a], tgt = bs[1 - a];
+        playPreset(att, POSES.attack.preset);
+        setTimeout(() => { // contact: the lunge's forward peak
+          const r = tgt.getBoundingClientRect(), u = parseFloat(att.closest(".mm-hero-f").style.getPropertyValue("--u")) || 2;
+          impact({ x: r.left + r.width / 2, y: r.top + r.height * 0.5 }, a ? "water" : "fire", { k: u });
+          playPreset(tgt, POSES.hurt.preset, { speed: POSES.hurt.speed });
+        }, 260);
       }
       /** Home: who you're playing as (a guest can change it; a claimed username stays put). */
       function renderHome() {

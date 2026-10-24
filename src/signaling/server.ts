@@ -239,7 +239,7 @@ export class SignalingServer {
   private async announcePresence(accountId: string, online: boolean): Promise<void> {
     try {
       for (const id of await this.services.social.friendIds(accountId)) {
-        this.services.presence.notify(id, "social:presence", { id: accountId, online });
+        this.services.presence.notify(id, "social:presence", { id: accountId, online, activity: this.services.presence.activityOf(accountId) });
       }
     } catch {
       /* presence is best-effort */
@@ -257,7 +257,8 @@ export class SignalingServer {
   private async handleLobby(peer: Peer, method: string, data: unknown): Promise<unknown> {
     switch (method) {
       // --- Accounts: sign this connection in, for presence/invites ---
-      case "mm:auth": {
+      case "mm:auth":
+      case "platform:auth": {
         const key = (data as Record<string, unknown> | null)?.["key"];
         const account = await this.services.accounts.authenticate(key);
         if (!account) throw new Error("unknown account key");
@@ -265,6 +266,24 @@ export class SignalingServer {
         this.lobbyAccounts.set(peer, account);
         if (this.services.presence.add(account.id, peer)) void this.announcePresence(account.id, true);
         return { account };
+      }
+
+      // --- What you're doing, for your friends' lists ("At a Hold'em table") ---
+      case "platform:activity": {
+        const me = this.lobbyAccounts.get(peer);
+        if (!me) return { ok: true };
+        const d = (data ?? {}) as Record<string, unknown>;
+        const gameId = typeof d["gameId"] === "string" ? d["gameId"].slice(0, 40) : "";
+        const label = typeof d["label"] === "string" ? d["label"].slice(0, 60) : "";
+        if (this.services.presence.setActivity(me.id, gameId ? { gameId, label } : null)) void this.announcePresence(me.id, true);
+        return { ok: true };
+      }
+
+      // --- Invites waiting for me (the launcher lists them; any game) ---
+      case "platform:invites": {
+        const me = this.lobbyAccounts.get(peer);
+        if (!me) return { invites: [] };
+        return { invites: [...this.invites.values()].filter((i) => i.to === me.id).map((i) => inviteView(i)) };
       }
 
       // --- Friend invites: a private match without sharing a code ---
@@ -279,6 +298,10 @@ export class SignalingServer {
         for (const inv of [...this.invites.values()]) if (inv.host.peerId === peer.id) this.dropInvite(inv, "cancelled");
         const inv: Invite = {
           id: randomUUID(),
+          gameId: "match_monsters",
+          label: `Match Monsters · ${req.draft ? "Draft" : req.random ? "Random" : "Pick"}`,
+          from: { id: me.id, username: me.username },
+          createdAt: Date.now(),
           to: friendId,
           draft: req.draft,
           random: req.random,
@@ -287,14 +310,7 @@ export class SignalingServer {
         };
         inv.timer.unref?.();
         this.invites.set(inv.id, inv);
-        this.services.presence.notify(friendId, "social:invite", {
-          inviteId: inv.id,
-          from: { id: me.id, username: me.username },
-          monsters: req.draft || req.random ? [] : req.monsters.map((m) => m.id),
-          draft: req.draft,
-          random: req.random,
-          expiresInMs: INVITE_MS,
-        });
+        this.services.presence.notify(friendId, "social:invite", inviteView(inv));
         return { inviteId: inv.id, expiresInMs: INVITE_MS };
       }
 
@@ -316,12 +332,14 @@ export class SignalingServer {
       }
 
       case "mm:declineInvite":
-      case "mm:cancelInvite": {
+      case "mm:cancelInvite":
+      case "platform:declineInvite":
+      case "platform:cancelInvite": {
         const d = (data ?? {}) as Record<string, unknown>;
         const inv = this.invites.get(typeof d["inviteId"] === "string" ? d["inviteId"] : "");
         const me = this.lobbyAccounts.get(peer);
         if (inv && (inv.host.peerId === peer.id || (me && inv.to === me.id))) {
-          this.dropInvite(inv, method === "mm:declineInvite" ? "declined" : "cancelled");
+          this.dropInvite(inv, method.endsWith("declineInvite") ? "declined" : "cancelled");
         }
         return { ok: true };
       }
@@ -547,6 +565,12 @@ interface RoomSetup {
 
 interface Invite {
   readonly id: string;
+  /** Which game the invite is for (the launcher routes Join to that game's page). */
+  readonly gameId: string;
+  /** Shown as is in the invite card ("Match Monsters · Draft", "Hold'em table"). */
+  readonly label: string;
+  readonly from: { readonly id: string; readonly username: string };
+  readonly createdAt: number;
   /** Draft or blind: the host's choice. */
   readonly draft: boolean;
   /** Random teams: both players are dealt two monsters. */
@@ -556,6 +580,21 @@ interface Invite {
   /** The inviter, as they'll be seated. */
   readonly host: PlayerDesc;
   readonly timer: ReturnType<typeof setTimeout>;
+}
+
+/** An invite as the invited player sees it (the `social:invite` notification and `platform:invites`). */
+function inviteView(inv: Invite): Record<string, unknown> {
+  return {
+    inviteId: inv.id,
+    gameId: inv.gameId,
+    label: inv.label,
+    from: inv.from,
+    expiresInMs: Math.max(0, INVITE_MS - (Date.now() - inv.createdAt)),
+    // Match Monsters' own fields: the host's team (blind picks) and mode.
+    monsters: inv.draft || inv.random ? [] : inv.host.monsters.map((m) => m.id),
+    draft: inv.draft,
+    random: inv.random,
+  };
 }
 
 interface PendingRoom {

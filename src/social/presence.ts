@@ -4,8 +4,15 @@
  */
 import type { PeerLike } from "../signaling/gameRoom.js";
 
+/** What a signed-in player is doing, for their friends ("At a Hold'em table"). */
+export interface Activity {
+  readonly gameId: string;
+  readonly label: string;
+}
+
 export class Presence {
   private readonly peers = new Map<string, Set<PeerLike>>();
+  private readonly activities = new Map<string, Activity>();
 
   /** Returns true if this made the account come online. */
   add(accountId: string, peer: PeerLike): boolean {
@@ -22,7 +29,21 @@ export class Presence {
     if (!set || !set.delete(peer)) return false;
     if (set.size > 0) return false;
     this.peers.delete(accountId);
+    this.activities.delete(accountId);
     return true;
+  }
+
+  /** Set (or with null, clear) what an online account is doing. Returns true if it changed. */
+  setActivity(accountId: string, activity: Activity | null): boolean {
+    const before = this.activities.get(accountId);
+    if (!activity) return this.activities.delete(accountId);
+    if (before && before.gameId === activity.gameId && before.label === activity.label) return false;
+    this.activities.set(accountId, activity);
+    return true;
+  }
+
+  activityOf(accountId: string): Activity | null {
+    return this.activities.get(accountId) ?? null;
   }
 
   isOnline(accountId: string): boolean {

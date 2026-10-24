@@ -113,7 +113,7 @@ describe("friends, DMs and invites", () => {
     expect((await api("POST", `/api/messages/${ben.id}`, { key: ann.key, body: { body: "hi" } })).status).toBe(403);
     await api("POST", `/api/friends/${ann.id}/accept`, { key: ben.key });
     const friends = (await api("GET", "/api/friends", { key: ann.key })).body.friends;
-    expect(friends).toEqual([{ id: ben.id, username: "Ben", online: true, unread: 0 }]);
+    expect(friends).toEqual([{ id: ben.id, username: "Ben", online: true, activity: null, unread: 0 }]);
 
     const sent = await api("POST", `/api/messages/${ben.id}`, { key: ann.key, body: { body: "rematch tonight?" } });
     expect(sent.status).toBe(200);

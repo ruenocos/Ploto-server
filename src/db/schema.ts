@@ -71,6 +71,30 @@ export const SCHEMA: readonly string[] = [
     PRIMARY KEY (match_id, seat)
   )`,
   `CREATE INDEX IF NOT EXISTS match_players_by_account ON match_players (account_id)`,
+
+  // Results for every game other than Match Monsters (which keeps its richer
+  // tables above): who sat where, finishing place, and a small per-player stats
+  // object the game defines (e.g. Hold'em's biggest pot).
+  `CREATE TABLE IF NOT EXISTS game_results (
+    id TEXT PRIMARY KEY,
+    game_id TEXT NOT NULL,
+    mode TEXT NOT NULL,
+    vs_bots INTEGER NOT NULL,
+    started_at TEXT NOT NULL,
+    ended_at TEXT NOT NULL DEFAULT ${NOW},
+    summary TEXT NOT NULL DEFAULT '{}'
+  )`,
+  `CREATE TABLE IF NOT EXISTS game_result_players (
+    result_id TEXT NOT NULL REFERENCES game_results(id) ON DELETE CASCADE,
+    seat INTEGER NOT NULL,
+    account_id TEXT REFERENCES accounts(id) ON DELETE SET NULL,
+    is_bot INTEGER NOT NULL,
+    display_name TEXT NOT NULL,
+    place INTEGER NOT NULL,
+    stats TEXT NOT NULL DEFAULT '{}',
+    PRIMARY KEY (result_id, seat)
+  )`,
+  `CREATE INDEX IF NOT EXISTS game_result_players_by_account ON game_result_players (account_id)`,
 ];
 
 /**

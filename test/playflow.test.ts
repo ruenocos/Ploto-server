@@ -52,14 +52,23 @@ afterAll(async () => {
 });
 
 describe("web client routes", () => {
-  it("serves the play page from the same origin as the WebSocket", async () => {
-    const res = await fetch(`http://127.0.0.1:${port}/play`);
-    expect(res.headers.get("content-type")).toContain("text/html");
-    const html = await res.text();
-    expect(html).toContain("Match Monsters");
-    // Client derives the WebSocket URL from its own origin — no port injection.
-    expect(html).toContain("location.host");
-    expect(html).not.toContain("__SIGNALING_PORT__");
+  it("serves the launcher and each game page from the same origin as the WebSocket", async () => {
+    for (const [path, title] of [["/play", "Ploto"], ["/play/match-monsters", "Match Monsters"], ["/play/holdem", "Hold"]] as const) {
+      const res = await fetch(`http://127.0.0.1:${port}${path}`);
+      expect(res.headers.get("content-type")).toContain("text/html");
+      const html = await res.text();
+      expect(html).toContain(title);
+      expect(html).toContain("/play/platform.js");
+    }
+    // Clients derive the WebSocket URL from their own origin — no port injection.
+    const toolkit = await (await fetch(`http://127.0.0.1:${port}/play/platform.js`)).text();
+    expect(toolkit).toContain("location.host");
+  });
+
+  it("serves the game registry with live player counts", async () => {
+    const games = (await (await fetch(`http://127.0.0.1:${port}/play/games`)).json()) as { id: string; path: string; online: number }[];
+    expect(games.map((g) => g.id)).toEqual(["match_monsters", "holdem"]);
+    expect(games.every((g) => typeof g.online === "number" && g.path.startsWith("/play/"))).toBe(true);
   });
 
   it("serves the monster roster", async () => {

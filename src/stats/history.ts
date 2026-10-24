@@ -7,7 +7,7 @@
  */
 import { randomUUID } from "node:crypto";
 import type { Db } from "../db/db.js";
-import { BALANCE_VERSION } from "../game/matchmonsters/monsters.js";
+import { BALANCE_VERSION, MONSTERS } from "../game/matchmonsters/monsters.js";
 
 export type MatchMode = "quick" | "private" | "invite" | "practice" | "rematch";
 
@@ -71,6 +71,34 @@ export class MatchHistory {
       [accountId],
     );
     return { games: Number(rows[0]?.games ?? 0), wins: Number(rows[0]?.wins ?? 0) };
+  }
+
+  /** Match Monsters tiles and recent games for the Profile tab. */
+  async statsFor(accountId: string) {
+    const { games, wins } = await this.playerRecord(accountId);
+    const fav = await this.db.query<{ monster: string; n: string }>(
+      `SELECT monster, count(*) AS n FROM (
+         SELECT monster_a AS monster FROM match_players WHERE account_id = $1
+         UNION ALL SELECT monster_b FROM match_players WHERE account_id = $1) t
+       GROUP BY monster ORDER BY n DESC, monster LIMIT 1`,
+      [accountId],
+    );
+    const recent = await this.recentFor(accountId, 5);
+    const name = (id: unknown) => MONSTERS[String(id)]?.name ?? String(id);
+    return {
+      played: games,
+      wins,
+      tiles: [
+        { label: "Matches", value: String(games) },
+        { label: "Wins", value: String(wins) },
+        { label: "Win rate", value: games ? `${Math.round((wins / games) * 100)}%` : "—" },
+        { label: "Favourite", value: fav[0] ? name(fav[0].monster) : "—" },
+      ],
+      recent: (recent as Record<string, unknown>[]).map((r) => ({
+        what: `${r.won ? "Won" : "Lost"} vs ${String(r["opponent"])} · ${name(r["monsterA"])} + ${name(r["monsterB"])}`,
+        when: String(r["endedAt"]),
+      })),
+    };
   }
 
   /** A player's recent matches, newest first. */

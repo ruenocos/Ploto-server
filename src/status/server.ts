@@ -14,6 +14,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import type { ServerConfig } from "../config/env.js";
 import { ARCHETYPES, roster } from "../game/matchmonsters/monsters.js";
 import { abilityView } from "../game/matchmonsters/engine.js";
+import { gamesView } from "../platform/games.js";
 
 export interface StatusBody {
   downtime: 0 | 1;
@@ -38,11 +39,28 @@ export function buildStatusServer(config: ServerConfig): FastifyInstance {
   // Convenience alias for load balancers / uptime checks.
   app.get("/healthz", async () => ({ status: "ok" }));
 
-  // Playable web client: open /play on two devices to battle a friend.
-  // The client connects WebSockets same-origin, so no port needs injecting.
-  app.get("/play", async (_req, reply) => {
-    reply.header("content-type", "text/html; charset=utf-8");
-    return loadClientHtml();
+  // The web client: /play is the launcher (Games · Friends · Profile); each game
+  // has its own page under it (docs/PLATFORM.md). WebSockets connect same-origin.
+  const page = (path: string, file: string) =>
+    app.get(path, async (_req, reply) => {
+      reply.header("content-type", "text/html; charset=utf-8");
+      return loadWebFile(file);
+    });
+  page("/play", "launcher.html");
+  page("/play/match-monsters", "index.html");
+  page("/play/holdem", "holdem.html");
+
+  // The game registry the launcher, invite sheet and profile read.
+  app.get("/play/games", async () => gamesView());
+
+  // The shared toolkit and style every page loads.
+  app.get("/play/platform.js", async (_req, reply) => {
+    reply.header("content-type", "application/javascript; charset=utf-8");
+    return loadWebFile("platform.js");
+  });
+  app.get("/play/platform.css", async (_req, reply) => {
+    reply.header("content-type", "text/css; charset=utf-8");
+    return loadWebFile("platform.css");
   });
 
   // Monster roster for the client's picker: move text + element archetype.
@@ -161,21 +179,13 @@ function loadArtJs(): string {
   return cachedArt;
 }
 
+/** Web files are read once; PLOTO_NO_CACHE=1 re-reads them on every request (handy while editing). */
 const webCache = new Map<string, string>();
 function loadWebFile(name: string): string {
-  let text = webCache.get(name);
+  let text = process.env["PLOTO_NO_CACHE"] === "1" ? undefined : webCache.get(name);
   if (text === undefined) {
     text = readFileSync(fileURLToPath(new URL(`../../web/${name}`, import.meta.url)), "utf8");
     webCache.set(name, text);
   }
   return text;
-}
-
-let cachedHtml: string | null = null;
-function loadClientHtml(): string {
-  if (cachedHtml === null) {
-    const path = fileURLToPath(new URL("../../web/index.html", import.meta.url));
-    cachedHtml = readFileSync(path, "utf8");
-  }
-  return cachedHtml;
 }

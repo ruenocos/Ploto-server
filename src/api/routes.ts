@@ -56,6 +56,18 @@ export function registerApi(app: FastifyInstance, s: Services): void {
     return renamed;
   });
 
+  // Per-game stats for the launcher's Profile tab.
+  app.get("/api/me/stats", async (req) => {
+    const me = await auth(req);
+    const [mm, results] = await Promise.all([s.history.statsFor(me.id), s.results.statsFor(me.id)]);
+    const games: Record<string, { tiles: { label: string; value: string }[]; recent: { what: string; when: string }[]; played: number; wins: number }> = {
+      match_monsters: mm,
+      ...results,
+    };
+    const all = Object.values(games);
+    return { totals: { played: all.reduce((n, g) => n + g.played, 0), wins: all.reduce((n, g) => n + g.wins, 0) }, games };
+  });
+
   app.get("/api/me/matches", async (req) => {
     const me = await auth(req);
     return s.history.recentFor(me.id);
@@ -66,7 +78,7 @@ export function registerApi(app: FastifyInstance, s: Services): void {
     const me = await auth(req);
     const [lists, unread] = await Promise.all([s.social.lists(me.id), s.social.unread(me.id)]);
     return {
-      friends: lists.friends.map((f) => ({ ...f, online: s.presence.isOnline(f.id), unread: unread[f.id] ?? 0 })),
+      friends: lists.friends.map((f) => ({ ...f, online: s.presence.isOnline(f.id), activity: s.presence.activityOf(f.id), unread: unread[f.id] ?? 0 })),
       incoming: lists.incoming,
       outgoing: lists.outgoing,
     };

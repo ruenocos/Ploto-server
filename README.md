@@ -6,9 +6,9 @@ service goes down. This is a preservation project: the server is written
 independently from what the Plato client does *on the wire*, using open protocols
 and libraries. It ships no Plato code or game assets.
 
-> Status: early. The status endpoint, matchmaking, the protoo signaling front
-> door, and a playable clean-room Match Monsters engine are in and tested. The
-> exact in-game wire payloads and the voice SFU are the next pieces — see
+> Status: 1.0 ([`CHANGELOG.md`](CHANGELOG.md)). The Ploto launcher and platform
+> with two games, Match Monsters and Hold'em, playable in the browser at `/play`.
+> The exact Plato in-game wire payloads and the voice SFU are still to come — see
 > [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
 
 ## What's here

@@ -50,6 +50,7 @@ const BOT_PER_STEP_MS = 420;
 const BOT_SLOPPINESS = 0.25;
 
 export class GameRoom {
+  readonly gameId = "match_monsters";
   readonly game: MatchMonstersGame;
   readonly options: RoomOptions;
   readonly createdAt = new Date();

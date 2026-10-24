@@ -164,6 +164,64 @@ describe("friends, DMs and invites", () => {
   });
 });
 
+describe("platform: activity, pending invites, profile stats", () => {
+  it("shares what you're doing, lists invites waiting for you, and declines them", async () => {
+    const eve = (await api("POST", "/api/accounts", { body: { username: "Eve" } })).body;
+    const fay = (await api("POST", "/api/accounts", { body: { username: "Fay" } })).body;
+    await api("POST", "/api/friends", { key: eve.key, body: { username: "Fay" } });
+    await api("POST", "/api/friends", { key: fay.key, body: { username: "Eve" } });
+    const eveLobby = new Client(server.port, "lobby", "eve-peer");
+    const fayLobby = new Client(server.port, "lobby", "fay-peer");
+    await Promise.all([eveLobby.open(), fayLobby.open()]);
+    await eveLobby.req("platform:auth", { key: eve.key });
+    await fayLobby.req("platform:auth", { key: fay.key });
+
+    await eveLobby.req("platform:activity", { gameId: "holdem", label: "At a Hold'em table" });
+    await delay(20);
+    const seen = fayLobby.notes.filter((n) => n.method === "social:presence").pop()!.data;
+    expect(seen).toMatchObject({ id: eve.id, online: true, activity: { gameId: "holdem", label: "At a Hold'em table" } });
+    expect((await api("GET", "/api/friends", { key: fay.key })).body.friends[0].activity).toEqual({ gameId: "holdem", label: "At a Hold'em table" });
+
+    // An invite shows up in the list (with its game and label) until it's declined.
+    const inv = await eveLobby.req("mm:invite", { friendId: fay.id, draft: true });
+    const pending = (await fayLobby.req("platform:invites", {})).invites;
+    expect(pending).toHaveLength(1);
+    expect(pending[0]).toMatchObject({ inviteId: inv.inviteId, gameId: "match_monsters", label: "Match Monsters · Draft", from: { username: "Eve" } });
+    await fayLobby.req("platform:declineInvite", { inviteId: inv.inviteId });
+    await delay(20);
+    expect((await fayLobby.req("platform:invites", {})).invites).toEqual([]);
+    expect(eveLobby.note("social:inviteGone")?.data).toMatchObject({ inviteId: inv.inviteId, reason: "declined" });
+
+    // Profile stats: Match Monsters tiles even with no games yet; guests are turned away.
+    const stats = (await api("GET", "/api/me/stats", { key: eve.key })).body;
+    expect(stats.totals).toEqual({ played: 0, wins: 0 });
+    expect(stats.games.match_monsters.tiles.map((t: { label: string }) => t.label)).toEqual(["Matches", "Wins", "Win rate", "Favourite"]);
+    expect((await api("GET", "/api/me/stats")).status).toBe(401);
+    for (const c of [eveLobby, fayLobby]) c.close();
+  });
+
+  it("builds Profile tiles from other games' results", async () => {
+    const gus = (await api("POST", "/api/accounts", { body: { username: "Gus" } })).body;
+    const at = new Date();
+    for (const place of [1, 3]) {
+      await server.services.results.record({
+        gameId: "holdem", mode: "private", startedAt: at,
+        players: [
+          { seat: 0, accountId: gus.id, isBot: false, displayName: "Gus", place, stats: { biggestPot: place === 1 ? 1400 : 300 } },
+          { seat: 1, accountId: null, isBot: true, displayName: "Bot Ace", place: place === 1 ? 2 : 1 },
+          { seat: 2, accountId: null, isBot: true, displayName: "Bot Lu", place: place === 1 ? 3 : 2 },
+        ],
+      });
+    }
+    const stats = (await api("GET", "/api/me/stats", { key: gus.key })).body;
+    expect(stats.totals).toEqual({ played: 2, wins: 1 });
+    expect(stats.games.holdem.tiles).toEqual([
+      { label: "Tables", value: "2" }, { label: "Wins", value: "1" }, { label: "Avg finish", value: "2.0" }, { label: "Biggest pot", value: "1,400" },
+    ]);
+    expect(stats.games.holdem.recent.map((r: { what: string }) => r.what)).toEqual(expect.arrayContaining(["1st of 3", "3rd of 3"]));
+  });
+});
+
 describe("match history and the monster lab", () => {
   it("records a finished match through the room hook", async () => {
     const recorded: unknown[] = [];

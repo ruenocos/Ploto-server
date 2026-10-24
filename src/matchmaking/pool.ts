@@ -86,6 +86,13 @@ export class Matchmaker {
     }
   }
 
+  /** Number of players waiting across every pool. */
+  waitingTotal(): number {
+    let n = 0;
+    for (const pool of this.pools.values()) n += pool.length;
+    return n;
+  }
+
   /** Number of players currently waiting in a given pool. */
   waiting(key: QueueKey): number {
     return this.pools.get(keyString(key))?.length ?? 0;

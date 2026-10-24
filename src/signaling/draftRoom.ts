@@ -33,6 +33,7 @@ export interface DraftRoomOptions {
 const BOT_DRAFT_MS = 900;
 
 export class DraftRoom {
+  readonly gameId = "match_monsters";
   readonly draft: Draft;
   private readonly seats = new Map<string, 0 | 1>();
   private readonly peers: (PeerLike | undefined)[] = [undefined, undefined];

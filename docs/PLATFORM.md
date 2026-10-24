@@ -215,9 +215,10 @@ the host starts, 2 players or more.
 
 `settings` = `{seats: 2–6, bots: bool, chips: 500|1000|2000|5000, timer: bool, blindsEvery: 10|5|0, botStyle: 'sharp'|'relaxed'}`.
 Bots play short-handed ranges (about a third of hands at 4 seats, more on the
-button and in the big blind, some limps). "Sharp" is the normal bot; "Relaxed"
+button and in the big blind, some limps). Players see the style as "Bot
+difficulty": Hard is `sharp`, the normal bot; Medium is `relaxed`, which
 calls more, reads its hand noisily and sizes bets at random. Quick tables use
-Sharp; a host picks in the table settings; practice has its own setup screen
+Hard; a host picks in the table settings; practice has its own setup screen
 (how many bots, how they play, chips, blinds).
 
 ### Table room (`roomId=<roomId>` socket, same peerId)

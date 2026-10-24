@@ -13,9 +13,9 @@
  * half-to-full-pot sizing. Every random choice comes from the injected
  * source, so bot games are reproducible.
  *
- * `easy` (a table's "Relaxed" bots) adds mistakes: a noisy read of its own
+ * `easy` (a table's "Medium" bots, style `relaxed`) adds mistakes: a noisy read of its own
  * equity, calling too much, folding sometimes when it shouldn't, and random
- * bet sizes. `normal` is "Sharp".
+ * bet sizes. `normal` is "Hard" (style `sharp`).
  */
 import type { HoldemGame } from "./engine.js";
 import type { Action, Card, HoldemView, LegalActions, RandomSource, SeatView } from "./types.js";

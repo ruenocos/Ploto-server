@@ -726,7 +726,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   const SCHEMA = [
     { key: "seats", label: "Seats", kind: "choice", options: [[2, "2"], [3, "3"], [4, "4"], [5, "5"], [6, "6"]] },
     { key: "bots", label: "Fill empty seats with bots", kind: "toggle" },
-    { key: "botStyle", label: "Bots play", kind: "choice", options: [["sharp", "Sharp"], ["relaxed", "Relaxed"]], hint: "Relaxed bots call more and make mistakes" },
+    { key: "botStyle", label: "Bot difficulty", kind: "choice", options: [["relaxed", "Medium"], ["sharp", "Hard"]], hint: "Medium bots play relaxed: they call more and make mistakes. Hard bots play sharp" },
     { key: "chips", label: "Starting chips", kind: "choice", options: [[500, "500"], [1000, "1,000"], [2000, "2,000"], [5000, "5,000"]] },
     { key: "timer", label: "Turn timer", kind: "choice", options: [[true, "On"], [false, "Off"]], hint: "25 s per move, plus a 60 s time bank" },
     { key: "blindsEvery", label: "Blinds go up every", kind: "choice", options: [[10, "10 hands"], [5, "5 hands"], [0, "Never"]] },
@@ -1040,7 +1040,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   /* ================================================================ 3. table lobby */
   function summary(st) {
     return [`${fmt(st.chips)} chips`, st.timer ? "timer on" : "no timer", st.blindsEvery ? `blinds up every ${st.blindsEvery}` : "blinds stay the same",
-      ...(st.bots ? [`${st.botStyle === "relaxed" ? "relaxed" : "sharp"} bots`] : [])].join(" · ");
+      ...(st.bots ? [`${st.botStyle === "relaxed" ? "medium" : "hard"} bots`] : [])].join(" · ");
   }
   const avatar = (s, cls = "") => kit.avatar(s, cls);
   /** The room lobby is the platform's; Hold'em only says what its settings mean (summary). */

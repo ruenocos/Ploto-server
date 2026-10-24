@@ -16,7 +16,7 @@
  * clients see seat numbers.
  */
 import { randomUUID } from "node:crypto";
-import type { PeerLike } from "../../signaling/gameRoom.js";
+import type { PeerLike } from "../../platform/peer.js";
 import type { Room } from "../../platform/lobby.js";
 import { chooseAction } from "./bot.js";
 import { cryptoRandom } from "./cards.js";

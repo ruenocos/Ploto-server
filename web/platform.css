@@ -61,6 +61,7 @@ a { color: var(--c-accent-hi); }
 :focus-visible { outline: var(--px) solid var(--c-gold); outline-offset: var(--px); }
 /* Pixel-cut frames clip anything drawn outside them, so their focus ring sits inside. */
 button:focus-visible, .pl-frame:focus-visible { outline-color: var(--c-cream); outline-offset: calc(var(--px) * -3); }
+input:focus-visible { outline: none; } /* text boxes show focus with their border */
 
 /* ---- the frame: pixel-cut corners, 1-UI-pixel ink outline, bevel ---- */
 button, input[type="text"], input[type="search"], input[type="password"], .pl-frame, .pl-sheet, .pl-toast, .pl-chip, .pl-badge {
@@ -110,6 +111,8 @@ input[type="text"]:focus, input[type="search"]:focus, input[type="password"]:foc
 .pl-bar { position: sticky; top: 0; z-index: 20; padding-top: env(safe-area-inset-top); background: var(--c-panel); border-bottom: var(--px) solid var(--c-ink); box-shadow: inset 0 calc(var(--px) * -1) 0 rgba(74, 84, 134, 0.5); }
 .pl-bar-in { max-width: var(--pl-max); margin: 0 auto; min-height: 60px; display: flex; align-items: center; gap: 12px; padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)); }
 @media (max-width: 400px) { .pl-bar-in { gap: 8px; } .pl-title { letter-spacing: 0; } } /* "Match Monsters" fits a 360 px phone */
+.pl-step { flex: none; font: 600 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); white-space: nowrap; } /* "Step 2 of 3" */
+.pl-bar .icon-btn { min-width: 44px; height: 40px; min-height: 40px; padding: 0 12px 2px; display: inline-grid; place-items: center; }
 .pl-title { flex: 1; min-width: 0; margin: 0; font: 700 var(--fl-2)/1.1 var(--f-label); text-transform: uppercase; letter-spacing: 1px; color: var(--c-cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; outline: none; }
 .pl-sub { flex: none; font: 600 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); white-space: nowrap; }
 .pl-view { width: 100%; max-width: calc(var(--pl-max) + 32px); margin: 0 auto; padding: 16px max(16px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); display: grid; align-content: start; gap: 12px; }

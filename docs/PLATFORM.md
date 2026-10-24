@@ -149,9 +149,9 @@ its lobby module (`src/game/<game>/lobby.ts`).
 
 Notification `holdem:update` = `{view: TableView, events: Event[]}` after every
 change; events are filtered per viewer (you only ever see your own hole cards
-until showdown). `holdem:back` (no data) ends sitting out.
+until showdown). The request `holdem:back` (no data) ends sitting out.
 
-`TableView` = `{roomId, code, mode: 'quick'|'private'|'practice'|'invite'|'rematch',
+`TableView` = `{roomId, code, mode: 'quick'|'private'|'practice'|'rematch',
 phase: 'lobby'|'playing'|'over', you: seat, host: seat (-1 for quick tables),
 settings, startsAt: epochMs|null (quick tables: when bots fill in and the deal starts),
 seats: [{seat, kind: 'player'|'bot'|'empty'|'invited', name, connected, away, chips, bet,

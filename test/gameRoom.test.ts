@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { GameRoom, type PeerLike } from "../src/signaling/gameRoom.js";
+import { GameRoom, type PeerLike } from "../src/game/matchmonsters/gameRoom.js";
 import type { GameConfig } from "../src/game/matchmonsters/engine.js";
 import { MONSTERS } from "../src/game/matchmonsters/monsters.js";
 import { ELEMENTS } from "../src/game/matchmonsters/types.js";

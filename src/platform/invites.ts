@@ -4,7 +4,7 @@
  * declined, cancelled or expires. What accepting does is up to the game.
  */
 import { randomUUID } from "node:crypto";
-import type { PeerLike } from "../signaling/gameRoom.js";
+import type { PeerLike } from "./peer.js";
 import type { Presence } from "../social/presence.js";
 
 /** How long an invite stays open. */

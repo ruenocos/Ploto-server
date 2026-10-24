@@ -15,8 +15,9 @@
  * Every call answers {roomId, code}; the client then connects to the room.
  */
 import { randomUUID } from "node:crypto";
+import { makeCode, normalizeCode } from "../../platform/codes.js";
 import type { GameLobby, LobbyContext, Room } from "../../platform/lobby.js";
-import type { PeerLike } from "../../signaling/gameRoom.js";
+import type { PeerLike } from "../../platform/peer.js";
 import { DEFAULT_SETTINGS, GAME_ID, parseSettings, TableRoom, type TableMode, type TableOptions, type TableSettings } from "./room.js";
 
 export const QUICK_SETTINGS: TableSettings = { seats: 6, bots: true, chips: 1000, timer: true, blindsEvery: 10 };
@@ -112,15 +113,11 @@ export class HoldemLobby implements GameLobby {
       }
 
       case "holdem:invite": {
-        const me = ctx.accountOf(peer);
-        if (!me) throw new Error("sign in to invite friends");
-        const friendId = typeof d["friendId"] === "string" ? d["friendId"] : "";
+        if (!ctx.accountOf(peer)) throw new Error("sign in to invite friends");
         const room = ctx.getRoom(typeof d["roomId"] === "string" ? d["roomId"] : "");
         if (!(room instanceof TableRoom) || !room.seated().some((s) => s.peerId === peer.id)) throw new Error("you're not at that table");
-        if (!(await ctx.services.social.areFriends(me.id, friendId))) throw new Error("you can only invite friends");
-        if (!ctx.services.presence.isOnline(friendId)) throw new Error("they're offline right now");
-        const friend = await ctx.services.accounts.byId(friendId);
-        if (!friend) throw new Error("you can only invite friends");
+        const { me, friend } = await ctx.inviteTarget(peer, d["friendId"]);
+        const friendId = friend.id;
         room.seatFor(friendId); // check there's a seat before the friend hears about it
         let seatHeld = false;
         const inv = ctx.invites.create<InviteData>({
@@ -162,8 +159,7 @@ export class HoldemLobby implements GameLobby {
   }
 
   private byCode(raw: unknown): TableRoom {
-    const code = typeof raw === "string" ? raw.trim().toUpperCase() : "";
-    const table = this.tables.get(code);
+    const table = this.tables.get(normalizeCode(raw));
     if (!table) throw new Error("that table doesn't exist anymore");
     return table;
   }
@@ -171,7 +167,7 @@ export class HoldemLobby implements GameLobby {
   /** Open a table and register its room (it's cleaned up if nobody connects). */
   private open(mode: TableMode, settings: TableSettings, hosted: boolean, autoStart = false): TableRoom {
     const roomId = randomUUID();
-    const code = this.makeCode();
+    const code = makeCode((c) => this.tables.has(c));
     const table = new TableRoom({
       roomId,
       code,
@@ -223,14 +219,4 @@ export class HoldemLobby implements GameLobby {
       });
   }
 
-  /** A short, unambiguous, currently-unused table code. */
-  private makeCode(): string {
-    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no O/0/1/I
-    for (let attempt = 0; attempt < 1000; attempt++) {
-      let code = "";
-      for (let i = 0; i < 4; i++) code += alphabet[Math.floor(Math.random() * alphabet.length)];
-      if (!this.tables.has(code)) return code;
-    }
-    return randomUUID().slice(0, 8).toUpperCase();
-  }
 }

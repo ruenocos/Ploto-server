@@ -3,8 +3,9 @@
 One visual language for the whole client: the monsters, gems and arena are
 pixel art, so the UI is too. It stays clean, though: flat colours, a short
 palette, generous spacing, and no texture for the sake of texture. The tokens
-are the CSS custom properties at the top of `web/index.html`; use them, never
-raw values.
+are the CSS custom properties at the top of `web/platform.css` (shared by every
+page; a game adds only its own, like Match Monsters' element hues); use them,
+never raw values.
 
 ## The pixel unit
 
@@ -95,7 +96,8 @@ No rounded corners, no blur, no soft drop shadows. Depth is bevels only.
 - **Toasts** sit at the top of the screen, clear of the dock, the board and
   the thumb. Plain text, sentence case, no exclamation marks.
 - **Questions** ("Forfeit this match?", "Sign out?") are the in-game sheet
-  via `confirmPanel`, never the browser's confirm box.
+  via `Ploto.confirm` (Match Monsters' in-game ones via its `confirmPanel`),
+  never the browser's confirm box.
 - **Your name** gets a small YOU tag rather than a "(you)" suffix, so it never
   pushes the name into an ellipsis.
 - **Icons:** never emoji (every phone draws them differently, and some can't

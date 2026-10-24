@@ -7,7 +7,7 @@
  * via {@link notify}.
  */
 import type { WebSocket } from "ws";
-import type { PeerLike } from "./gameRoom.js";
+import type { PeerLike } from "../platform/peer.js";
 import {
   createErrorResponse,
   createNotification,

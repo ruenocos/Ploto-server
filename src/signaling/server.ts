@@ -30,7 +30,7 @@ import { InviteBook } from "../platform/invites.js";
 import type { GameLobby, LobbyContext, Room } from "../platform/lobby.js";
 import { MatchMonstersLobby } from "../game/matchmonsters/lobby.js";
 import { HoldemLobby } from "../game/holdem/lobby.js";
-import type { PeerLike } from "./gameRoom.js";
+import type { PeerLike } from "../platform/peer.js";
 import { Peer } from "./peer.js";
 
 const LOBBY = "lobby";
@@ -72,6 +72,16 @@ export class SignalingServer {
         this.rooms.delete(roomId);
       },
       scheduleCleanup: (roomId) => this.scheduleRoomCleanup(roomId),
+      inviteTarget: async (peer, friendId) => {
+        const me = this.accountOf(peer);
+        if (!me) throw new Error("sign in to invite friends");
+        const id = typeof friendId === "string" ? friendId : "";
+        if (!(await services.social.areFriends(me.id, id))) throw new Error("you can only invite friends");
+        if (!services.presence.isOnline(id)) throw new Error("they're offline right now");
+        const friend = await services.accounts.byId(id);
+        if (!friend) throw new Error("you can only invite friends");
+        return { me, friend };
+      },
     };
     this.lobbies = LOBBY_FACTORIES.map((make) => make(ctx));
     setOnlineCounter(() => this.onlineCounts());

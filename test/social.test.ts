@@ -3,7 +3,7 @@ import { WebSocket } from "ws";
 import { startServer, type RunningServer } from "../src/app.js";
 import type { ServerConfig } from "../src/config/env.js";
 import { createRequest, parse, stringify, type ProtooMessage } from "../src/signaling/protoo.js";
-import { GameRoom } from "../src/signaling/gameRoom.js";
+import { GameRoom } from "../src/game/matchmonsters/gameRoom.js";
 import { MONSTERS } from "../src/game/matchmonsters/monsters.js";
 import { chooseMove } from "../src/game/matchmonsters/bot.js";
 import { effectiveCost } from "../src/game/matchmonsters/engine.js";

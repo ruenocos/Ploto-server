@@ -7,10 +7,10 @@
  * view: the rival's ban stays secret until both are in), `mm:draftCancelled`.
  * The `mm:draftDone` notification is sent by the server after the swap.
  */
-import { Draft, draftScore, type DraftView } from "../game/matchmonsters/draft.js";
-import { MONSTERS, monsterById } from "../game/matchmonsters/monsters.js";
-import type { Monster } from "../game/matchmonsters/types.js";
-import type { PeerLike } from "./gameRoom.js";
+import { Draft, draftScore, type DraftView } from "./draft.js";
+import { MONSTERS, monsterById } from "./monsters.js";
+import type { Monster } from "./types.js";
+import type { PeerLike } from "../../platform/peer.js";
 
 export interface DraftSeat {
   readonly peerId: string;

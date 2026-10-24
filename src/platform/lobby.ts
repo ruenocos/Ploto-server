@@ -8,7 +8,7 @@
  */
 import type { Account } from "../accounts/accounts.js";
 import type { Services } from "../services.js";
-import type { PeerLike } from "../signaling/gameRoom.js";
+import type { PeerLike } from "./peer.js";
 import type { InviteBook } from "./invites.js";
 
 /** A live game room: seats, connections and requests. */
@@ -39,6 +39,11 @@ export interface LobbyContext {
   removeRoom(roomId: string, room?: Room): void;
   /** Drop the room after a grace period if nobody is connected (cancelled when someone joins). */
   scheduleCleanup(roomId: string): void;
+  /**
+   * Check a peer may invite this friend (signed in, friends, friend online) and
+   * return both accounts; throws the player-facing reason otherwise.
+   */
+  inviteTarget(peer: PeerLike, friendId: unknown): Promise<{ me: Account; friend: Account }>;
 }
 
 /** One game's lobby methods. */

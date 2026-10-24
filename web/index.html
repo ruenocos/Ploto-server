@@ -10,81 +10,28 @@
     <link rel="stylesheet" href="/play/platform.css" />
     <style>
       /* =====================================================================
-       * Ploto pixel style. Everything below is built from these tokens; see
-       * docs/STYLE.md. One UI pixel = --px (2 CSS px, whole device pixels on
-       * every screen). Surfaces are pixel-cornered, bevelled frames; depth
-       * comes from bevels and hard 1-UI-pixel shadows, never blur. Glow is
-       * reserved for moves (casts, motes, orbs).
+       * Match Monsters' own styles. The shared base (tokens, fonts, body,
+       * buttons, inputs, frames, lobby blocks) comes from /play/platform.css;
+       * see docs/STYLE.md. What's here is the game: element hues, the arena,
+       * the board, sheets and screens. Glow is reserved for moves.
        * ===================================================================== */
-      @font-face { font-family: "Silkscreen"; src: url(/play/fonts/silkscreen-latin-400-normal.woff2) format("woff2"); font-weight: 400; font-display: swap; }
-      @font-face { font-family: "Silkscreen"; src: url(/play/fonts/silkscreen-latin-700-normal.woff2) format("woff2"); font-weight: 700; font-display: swap; }
-      @font-face { font-family: "Pixelify Sans"; src: url(/play/fonts/pixelify-sans-latin-400-normal.woff2) format("woff2"); font-weight: 400; font-display: swap; }
-      @font-face { font-family: "Pixelify Sans"; src: url(/play/fonts/pixelify-sans-latin-600-normal.woff2) format("woff2"); font-weight: 600; font-display: swap; }
-      @font-face { font-family: "Pixelify Sans"; src: url(/play/fonts/pixelify-sans-latin-700-normal.woff2) format("woff2"); font-weight: 700; font-display: swap; }
       :root {
-        --px: 2px;
-        /* palette: the only UI colours (plus the element hues below) */
-        --c-ink: #0a0c14;      /* outlines, hard shadows */
-        --c-night: #121626;    /* page */
-        --c-well: #181d31;     /* sunken: inputs, bar tracks, the board */
-        --c-panel: #232a46;    /* panels, cards */
-        --c-raise: #2f375c;    /* raised: ghost buttons, chips */
-        --c-edge: #4a5486;     /* bevel highlight, dividers */
-        --c-mute: #9aa3cb;     /* secondary text (AA on panel and raise) */
-        --c-text: #eef0ff;     /* text */
-        --c-cream: #fff4d6;    /* numbers, emphasis */
-        --c-accent-lo: #33267d;
-        --c-accent: #6a4fe0;   /* primary actions, your turn */
-        --c-accent-hi: #a08cff;
-        --c-good: #36b65b;  --c-good-hi: #92e27c;
-        --c-bad: #d8364b;   --c-bad-hi: #ff8080;
-        --c-gold: #ffcc33;  --c-gold-lo: #a8740e;
         --fire: #ff6b3d; --water: #3aa0ff; --earth: #c98a46; --nature: #4ccb6b; --light: #ffd23c; --berry: #e8304a; --stone: #9aa0ad; --prism: #f2eaff;
         /* the element hues above are the only ones: tiles, motes, bursts and tags all read them */
-        /*
-         * type: Silkscreen for labels, numbers and headings; Pixelify Sans for reading.
-         * Silkscreen is drawn on an 8px grid, so it's only crisp when each of its
-         * pixels is a whole number of device pixels: --fl-* are 8 font pixels at
-         * k = 1.5, 2, 3, 4, 6 CSS px each, snapped per screen by sizeType()
-         * (phones ~12-13 / 16 / 24 / 32 / 48 px; desktop 16 / 16 / 24 / 32 / 48).
-         * Nothing smaller uses it: small text is Pixelify Sans, at least 12px.
-         */
-        --f-label: "Silkscreen", ui-monospace, monospace;
-        --f-text: "Pixelify Sans", ui-sans-serif, system-ui, sans-serif;
-        --fl-1: 12px; --fl-2: 16px; --fl-3: 24px; --fl-4: 32px; --fl-6: 48px;
-        --ts: 1; /* text size setting (Pixelify Sans only): 1, 1.15, 1.3 */
-        --fs-xs: calc(12px * var(--ts)); --fs-s: calc(13px * var(--ts)); --fs-m: calc(15px * var(--ts));
-        /* spacing: 4px grid */
-        --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s6: 24px;
         /* legacy names used by inline styles in the markup */
         --panel2: var(--c-raise); --muted: var(--c-mute); --accent: var(--c-accent); --accent2: var(--c-accent-hi); --good: var(--c-good); --bad: var(--c-bad); --line: var(--c-edge); --ink: var(--c-text);
       }
       @property --p { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
-      /* Pixelify Sans draws "fi" as a glyph that reads as "A". On every element: the `font`
-         shorthand resets ligatures, so inheriting from body isn't enough. */
-      *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-variant-ligatures: none !important; }
-      html, body { margin: 0; }
-      body {
-        background: var(--c-night); color: var(--c-text);
-        font: 400 var(--fs-m)/1.35 var(--f-text);
-        overflow-x: hidden; min-height: 100vh;
-        -webkit-font-smoothing: none; font-smooth: never;
-      }
       /*
        * In a match the page is pinned to the visible screen: a fixed body can't
        * scroll, so the HUD can never slide up under a phone's address bar
        * (100vh there is the height with the bar hidden).
        */
       body.in-game { position: fixed; inset: 0; overflow: hidden; }
-      .hidden { display: none !important; }
-      .muted { color: var(--c-mute); }
-      .ell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-      .px { display: block; image-rendering: pixelated; }
-      h1, h2, h3 { font-family: var(--f-label); font-weight: 700; }
 
       /* ---- the frame: pixel-cut corners (one UI pixel), 1-UI-pixel ink outline, bevel ---- */
-      button, input[type="text"], .frame, .pcard, .hud-card, .banner, .board-wrap, .sheet, .end-card, .toast, .invite, .invite-card,
-      .chip, .el-arch, .badge-n, .pcost, .pick-no, .slot, .cast-name, .peer-warn, .bubble, .s-next, .evo-st.cur, .cbadge .evo, .cbadge .lock,
+      .frame, .pcard, .hud-card, .banner, .board-wrap, .sheet, .end-card, .toast, .invite, .invite-card,
+      .chip, .el-arch, .pcost, .pick-no, .slot, .cast-name, .peer-warn, .bubble, .s-next, .evo-st.cur, .cbadge .evo, .cbadge .lock,
       .hp .bar, .cbar, .arena {
         --n: var(--px);
         clip-path: polygon(0 var(--n), var(--n) var(--n), var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n),
@@ -96,29 +43,6 @@
         box-shadow: inset 0 var(--px) 0 var(--c-edge), inset 0 calc(var(--px) * -2) 0 rgba(10, 12, 20, 0.45);
       }
 
-      /* ---- buttons: a raised block with a 2-UI-pixel lip that presses down ---- */
-      button {
-        --b: var(--c-accent); --b-hi: var(--c-accent-hi); --b-lo: var(--c-accent-lo);
-        font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: #fff;
-        border: var(--px) solid var(--c-ink); background: var(--b); cursor: pointer;
-        padding: 13px 12px 14px; position: relative; white-space: nowrap;
-        box-shadow: inset 0 var(--px) 0 var(--b-hi), inset 0 calc(var(--px) * -2) 0 var(--b-lo);
-        text-shadow: var(--px) var(--px) 0 var(--b-lo);
-      }
-      button:active { transform: translateY(var(--px)); box-shadow: inset 0 var(--px) 0 var(--b-lo), inset 0 calc(var(--px) * -1) 0 var(--b-lo); }
-      button:disabled { --b: #3a3f57; --b-hi: #4b5170; --b-lo: #2a2e42; color: #8b90a8; cursor: default; transform: none; text-shadow: none; }
-      button.ghost { --b: var(--c-raise); --b-hi: var(--c-edge); --b-lo: var(--c-well); color: var(--c-text); }
-      button.danger { --b: var(--c-bad); --b-hi: var(--c-bad-hi); --b-lo: #7c1626; }
-      button.small { padding: 11px 10px 13px; }
-      input[type="text"] {
-        font: 600 var(--fs-m)/1.2 var(--f-text); width: 100%; min-width: 0; color: var(--c-text);
-        background: var(--c-well); border: var(--px) solid var(--c-ink); padding: 11px 12px; outline: none;
-        box-shadow: inset 0 var(--px) 0 var(--c-ink);
-      }
-      input[type="text"]::placeholder { color: var(--c-mute); }
-      input[type="text"]:focus { border-color: var(--c-accent-hi); }
-      a { color: var(--c-accent-hi); }
-
       /* ---- chips and tags ---- */
       .chip { display: inline-flex; align-items: center; gap: 4px; font: 700 var(--fs-xs)/1 var(--f-text); padding: 4px 6px; background: var(--c-well); color: var(--c-text); white-space: nowrap; }
       .chips { display: flex; gap: var(--s1); flex-wrap: wrap; }
@@ -129,7 +53,6 @@
       .chip.bubble { color: #bfefff; } .chip.regen { color: var(--c-good-hi); }
       .chip.buff { box-shadow: inset 0 calc(var(--px) * -1) 0 var(--c-good); } .chip.debuff { box-shadow: inset 0 calc(var(--px) * -1) 0 var(--c-bad); }
       .chip.shield { color: #8fd8ff; } .chip.dot-fx { color: #ffa24a; } .chip.berry { color: #ff9cc0; } .chip.slow { color: #9bf6ff; }
-      .badge-n { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; margin-left: 6px; background: var(--c-bad); color: #fff; font: 700 var(--fs-xs)/1 var(--f-text); }
       .dot { width: 8px; height: 8px; background: var(--c-good); flex: none; box-shadow: 0 0 0 var(--px) var(--c-ink); }
       .dot.off { background: var(--c-bad); }
 
@@ -143,18 +66,10 @@
        */
       #lobby { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
       .lb-gutter { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
-      .lb-bar { position: sticky; top: 0; z-index: 20; padding-top: env(safe-area-inset-top); background: var(--c-panel); border-bottom: var(--px) solid var(--c-ink); box-shadow: inset 0 calc(var(--px) * -1) 0 rgba(74, 84, 134, 0.5); }
-      .lb-bar-in { max-width: 560px; margin: 0 auto; min-height: 60px; display: flex; align-items: center; gap: 12px; }
-      .lb-bar .icon-btn { min-width: 44px; height: 40px; padding: 0 12px 2px; }
-      @media (max-width: 400px) { .lb-bar-in { gap: 8px; } .lb-title { letter-spacing: 0; } }
-      .lb-title { flex: 1; min-width: 0; margin: 0; font: 700 var(--fl-2)/1.1 var(--f-label); text-transform: uppercase; letter-spacing: 1px; color: var(--c-cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; outline: none; }
-      .lb-step { flex: none; font: 600 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); white-space: nowrap; }
       .lb-view { flex: 1; width: 100%; max-width: calc(560px + 32px); margin: 0 auto; padding-top: 16px; padding-bottom: calc(28px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
       #lobby[data-at="pick"] .lb-view { padding-bottom: calc(var(--dock-h, 140px) + 16px); }
       .lb-screen { display: grid; align-content: start; gap: 12px; min-width: 0; }
       .lb-screen[hidden], .lb-dock[hidden] { display: none !important; }
-      .lb-label { margin: 6px 0 -2px; font: 700 var(--fs-xs)/1.2 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-mute); }
-      .lb-label:first-child { margin-top: 0; }
       .lb-hint { margin: -4px 0 0; color: var(--c-mute); font-size: var(--fs-s); }
       .lb-px { display: block; fill: currentColor; shape-rendering: crispEdges; }
       /* hover lifts a lobby button one notch brighter; pressing sinks it (the global :active) */
@@ -162,7 +77,6 @@
         #lobby button:not(:disabled):hover, .lb-dock button:not(:disabled):hover { filter: brightness(1.12); }
         .pl-row:not(:disabled):hover { --b: color-mix(in srgb, var(--c-accent) 16%, var(--c-panel)); --b-hi: var(--c-accent-hi); }
       }
-      #lobby button:focus-visible, .lb-dock button:focus-visible { outline: var(--px) solid var(--c-cream); outline-offset: calc(var(--px) * -3); }
 
       /* home */
       /* Home's banner: the arena by day, two monsters facing off (as on the launcher's card) */
@@ -182,7 +96,7 @@
 
       /* choice cards: Play how? and Teams */
       /* the team question's rows: the last-used one is marked */
-      .lb-bar .mm-roster { padding: 0 6px 2px; overflow: hidden; }
+      .pl-bar .mm-roster { padding: 0 6px 2px; overflow: hidden; }
       .pl-row.on { box-shadow: inset 0 0 0 var(--px) var(--c-gold), inset 0 calc(var(--px) * -3) 0 var(--b-lo); border-color: var(--c-gold-lo); }
       .pl-row .lb-tag { display: inline-block; margin-top: 6px; font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-gold); }
       .pl-row .lb-tag[hidden] { display: none; }
@@ -237,21 +151,7 @@
       .row-input { display: flex; gap: 8px; align-items: center; }
       .row-input button { flex: none; }
       .sheet h3 { font: 700 var(--fs-xs)/1.2 var(--f-text); letter-spacing: 1px; color: var(--c-mute); margin: 16px 0 6px; text-transform: uppercase; }
-      .frow { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: var(--px) solid var(--c-well); min-width: 0; }
-      .frow .fname { flex: 1; min-width: 0; font-weight: 700; }
-      .frow button { flex: none; }
-      .frow .muted { font-size: var(--fs-s); }
       .empty { color: var(--c-mute); padding: 8px 0; }
-      .chat-head { display: flex; align-items: center; gap: 8px; }
-      .chat-head b { font: 700 var(--fl-2)/1 var(--f-label); }
-      .chat-log { height: 46vh; overflow: auto; display: flex; flex-direction: column; gap: 6px; padding: 10px 0; }
-      .bubble { max-width: 80%; padding: 8px 10px; background: var(--c-raise); align-self: flex-start; overflow-wrap: anywhere; white-space: pre-wrap; animation: bubbleIn 0.2s steps(3); }
-      .bubble.mine { align-self: flex-end; background: var(--c-accent); }
-      .bubble time { display: block; font: 400 var(--fs-xs)/1.2 var(--f-text); color: rgba(238, 240, 255, 0.6); margin-top: 2px; }
-      @keyframes bubbleIn { from { transform: translateY(6px); opacity: 0; } }
-      .match-row { font-size: var(--fs-s); padding: 6px 0; border-bottom: var(--px) solid var(--c-well); display: flex; gap: 8px; }
-      .match-row .res { font: 700 var(--fl-1)/1.35 var(--f-label); width: 18px; }
-      .match-row .res.w { color: var(--c-good-hi); } .match-row .res.l { color: var(--c-bad-hi); }
       .invite-card {
         position: fixed; left: 50%; top: calc(10px + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 50;
         width: min(94vw, 420px); padding: 12px; border-color: var(--c-accent-hi); animation: dropIn 0.3s steps(4);
@@ -743,8 +643,6 @@
       .settings .s-actions { margin-top: 14px; }
 
       /* keyboard focus: an inset cream ring (an outer ring would be cut by the pixel corners) */
-      :focus-visible { outline: var(--px) solid var(--c-cream); outline-offset: calc(var(--px) * -3); }
-      input[type="text"]:focus-visible { outline: none; }
 
       /* the Motion setting forces reduced motion even when the device doesn't ask for it */
       .reduce-motion .animate__animated { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
@@ -860,11 +758,11 @@
     </svg>
     <!-- ============================================================ LOBBY -->
     <section id="lobby" data-at="home">
-      <header class="lb-bar lb-gutter">
-        <div class="lb-bar-in">
+      <header class="pl-bar">
+        <div class="pl-bar-in">
           <button id="lbBack" class="ghost small icon-btn" aria-label="Back to Ploto" title="Back to Ploto"><svg class="px-icon" viewBox="0 0 4 7" width="8" height="14" aria-hidden="true"><rect x="3" y="0" width="1" height="7"/><rect x="2" y="1" width="1" height="5"/><rect x="1" y="2" width="1" height="3"/><rect x="0" y="3" width="1" height="1"/></svg></button>
-          <h2 id="lbTitle" class="lb-title" tabindex="-1">Match Monsters</h2>
-          <span id="lbStep" class="lb-step"></span>
+          <h1 id="lbTitle" class="pl-title" tabindex="-1">Match Monsters</h1>
+          <span id="lbStep" class="pl-step"></span>
           <button id="monstersBtn" class="ghost small icon-btn mm-roster" aria-label="Monsters: all of them and their moves" title="Monsters"></button>
         </div>
       </header>
@@ -883,7 +781,7 @@
 
         <!-- Teams: Pick, Draft or Random (remembered) -->
         <div class="lb-screen" data-screen="teams" hidden>
-          <div class="lb-label">How are teams made?</div>
+          <div class="pl-label">How are teams made?</div>
           <button class="pl-row" data-team="blind"><span class="pl-ic">1·2</span><span><b>Pick</b><small id="teamBlindNote">Choose your two monsters. Your rival picks theirs blind.</small><span class="lb-tag" hidden>Last used</span></span><span class="pl-go" data-chev></span></button>
           <button class="pl-row" data-team="draft"><span class="pl-ic"><span data-icon="ban"></span></span><span><b>Draft</b><small>Ban one each, then pick in turns in the match.</small><span class="lb-tag" hidden>Last used</span></span><span class="pl-go" data-chev></span></button>
           <button class="pl-row" data-team="random"><span class="pl-ic">?</span><span><b>Random</b><small>Both teams are dealt at random, revealed at the start.</small><span class="lb-tag" hidden>Last used</span></span><span class="pl-go" data-chev></span></button>
@@ -1032,16 +930,8 @@
       /** Sound + haptic for a game moment (web/feedback.js); called where its visual happens. */
       const cue = (name, opts) => window.MM_FEEDBACK?.cue(name, opts);
 
-      // Session storage is a convenience (resume after reload); never required.
-      const store = {
-        get(k) { try { return JSON.parse(sessionStorage.getItem(k)); } catch { return null; } },
-        set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch {} },
-        del(k) { try { sessionStorage.removeItem(k); } catch {} },
-      };
-      const newId = () =>
-        (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
-      const peerId = store.get("mm.peer") || (() => { const id = newId(); store.set("mm.peer", id); return id; })();
-      const WS_BASE = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
+      // The shared toolkit's plumbing (web/platform.js): storage, the protoo client, the API, error texts.
+      const { store, local, sleep, esc, errText, connect, waitOpen, api } = Ploto;
 
       let roster = [];
       let picks = [];
@@ -1170,25 +1060,6 @@
           ? `<img class="gem px" src="${px}" alt="" draggable="false">`
           : `<svg class="gem" viewBox="0 0 100 100"><use href="#gem-${gem}"/></svg>`;
       };
-      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-      const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-
-      /**
-       * A failure as players should read it: known connection errors in plain
-       * words, internal ones as a generic retry, server messages capitalised.
-       */
-      const ERROR_TEXT = {
-        "not connected": "Not connected. Check your connection and try again",
-        "connection closed": "The connection dropped. Try again",
-        "connection failed": "Couldn't reach the server",
-        "timed out": "The server didn't answer. Try again",
-      };
-      function errText(e) {
-        const m = String(e?.message ?? e ?? "").trim();
-        if (ERROR_TEXT[m]) return ERROR_TEXT[m];
-        if (!m || /^parse\(\)|required$|payload|coordinate|unknown (lobby )?method|not seated|^HTTP \d|unsupported/.test(m)) return "Something went wrong. Try again";
-        return m[0].toUpperCase() + m.slice(1);
-      }
 
       function toast(msg, ms = 1800) {
         const t = $("toast");
@@ -1197,45 +1068,6 @@
         clearTimeout(toast._t);
         toast._t = setTimeout(() => t.classList.remove("show"), ms);
       }
-
-      /* ------------------------------------------------------------ protoo client */
-      function connect(roomId) {
-        const sock = new WebSocket(`${WS_BASE}/?roomId=${encodeURIComponent(roomId)}&peerId=${encodeURIComponent(peerId)}`, "protoo");
-        const pending = new Map();
-        let nextId = 1;
-        sock._handlers = {};
-        sock.request = (method, data = {}) =>
-          new Promise((resolve, reject) => {
-            if (sock.readyState !== WebSocket.OPEN) return reject(new Error("not connected"));
-            const id = nextId++;
-            pending.set(id, { resolve, reject });
-            sock.send(JSON.stringify({ request: true, id, method, data }));
-          });
-        sock.on = (method, fn) => { sock._handlers[method] = fn; };
-        sock.addEventListener("message", (ev) => {
-          let msg;
-          try { msg = JSON.parse(ev.data); } catch { return; }
-          if (msg.response) {
-            const p = pending.get(msg.id);
-            if (!p) return;
-            pending.delete(msg.id);
-            msg.ok ? p.resolve(msg.data) : p.reject(new Error(msg.errorReason || "error"));
-          } else if (msg.notification) {
-            sock._handlers[msg.method]?.(msg.data);
-          }
-        });
-        sock.addEventListener("close", () => {
-          for (const p of pending.values()) p.reject(new Error("connection closed"));
-          pending.clear();
-        });
-        return sock;
-      }
-      const waitOpen = (sock) =>
-        new Promise((res, rej) => {
-          sock.addEventListener("open", () => res(), { once: true });
-          sock.addEventListener("error", () => rej(new Error("connection failed")), { once: true });
-          sock.addEventListener("close", (ev) => rej(Object.assign(new Error("connection closed"), { code: ev.code })), { once: true });
-        });
 
       /* ------------------------------------------------------------ lobby */
       async function loadRoster() {
@@ -3760,29 +3592,11 @@
        * Anonymous accounts: claiming a name returns a secret key, kept in
        * localStorage. That key is the login (there's no password).
        */
-      const local = {
-        get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
-        set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
-        del(k) { try { localStorage.removeItem(k); } catch {} },
-      };
       let account = local.get("mm.account"); // { id, username }
       let friendsData = { friends: [], incoming: [], outgoing: [] };
-      let panel = null; // "friends" | "chat" | "claim" | "key" | "name" | "confirm"
-      let chatWith = null;
+      let panel = null; // "claim" | "key" | "name" | "confirm" | "invite" (the sheet's lobby panels)
       let myInvite = null; // { inviteId, friendId, name }
       const incomingInvites = new Map();
-
-      async function api(method, path, body) {
-        const key = local.get("mm.key");
-        const res = await fetch(path, {
-          method,
-          headers: { ...(body !== undefined ? { "content-type": "application/json" } : {}), ...(key ? { authorization: `Bearer ${key}` } : {}) },
-          ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw Object.assign(new Error(data.error || `HTTP ${res.status}`), { status: res.status });
-        return data;
-      }
 
       function setAccount(a) {
         account = a;
@@ -3790,9 +3604,8 @@
         renderAccount();
       }
 
-      // Your name and the friends list live in the launcher now; these stay as hooks for the sheets that remain.
-      function renderAccount() { updateBadge(); if (curScreen() === "home") renderHome(); }
-      function updateBadge() {}
+      // Your name and the friends list live in the launcher now; Home shows who you're playing as.
+      function renderAccount() { if (curScreen() === "home") renderHome(); }
 
       /** Claiming a username, in a sheet (offered in the lobby and after a match, never as a gate). */
       let afterClaim = null; // what to open once the claim succeeds (the friends list, adding a rival)
@@ -3865,8 +3678,6 @@
       async function loadFriends() {
         if (!account) return;
         try { friendsData = await api("GET", "/api/friends"); } catch { return; }
-        updateBadge();
-        if (panel === "friends") renderFriends();
         if (panel === "invite") renderInvitePicker();
       }
 
@@ -3884,7 +3695,6 @@
         if (panel === "confirm") confirmPanel.cancel?.();
         if (panel === "name" && nameAsk) { const r = nameAsk; nameAsk = null; r(null); }
         panel = null;
-        chatWith = null;
       }
 
       /**
@@ -3911,119 +3721,6 @@
         });
       }
 
-      const frow = (inner) => `<div class="frow">${inner}</div>`;
-      /** The friends list; a guest first claims a username (it's how friends find each other). */
-      function openFriends() {
-        if (account) { renderFriends(); loadFriends(); return; }
-        openClaim({
-          title: "Play with friends",
-          body: "Friends find each other by username. Claim yours (your name is filled in), then add them.",
-          then: async () => { renderFriends(); await loadFriends(); },
-        });
-      }
-      /** Friends in the Play-a-friend sheet: online first, each a tap from a battle invite. */
-      function renderFriends() {
-        const f = friendsData;
-        const invites = [...incomingInvites.values()];
-        const el = showPanel("friends",
-          `<h2>Friends</h2><div class="s-sub" style="--el: var(--accent2)">You're @${esc(account.username)}</div>` +
-          `<div class="row-input"><input id="addFriend" type="text" placeholder="Add a friend by username" maxlength="16" autocomplete="off" /><button id="addFriendBtn" class="small">Add</button></div>` +
-          (invites.length ? `<h3>Battle invites</h3>` + invites.map((i) => frow(
-            `<span class="fname ell">${ic("battle")} ${esc(i.from.username)}</span><button class="small ghost" data-act="declineInv" data-id="${i.inviteId}">Decline</button><button class="small" data-act="acceptInv" data-id="${i.inviteId}">Accept</button>`)).join("") : "") +
-          (f.incoming.length || f.outgoing.length ? `<h3>Requests</h3>` : "") +
-          f.incoming.map((a) => frow(
-            `<span class="fname ell">${esc(a.username)}</span><button class="small ghost" data-act="remove" data-id="${a.id}">Decline</button><button class="small" data-act="accept" data-id="${a.id}">Accept</button>`)).join("") +
-          f.outgoing.map((a) => frow(
-            `<span class="fname ell">${esc(a.username)} <span class="muted">· pending</span></span><button class="small ghost" data-act="remove" data-id="${a.id}">Cancel</button>`)).join("") +
-          `<h3>Friends · ${f.friends.length}</h3>` +
-          (f.friends.length ? f.friends.map((a) => frow(
-            `<span class="dot ${a.online ? "" : "off"}"></span><span class="fname ell">${esc(a.username)}${a.unread ? `<span class="badge-n">${a.unread}</span>` : ""}</span>` +
-            `<button class="small ghost" data-act="chat" data-id="${a.id}" aria-label="Message">${ic("chat")}</button>` +
-            `<button class="small" data-act="invite" data-id="${a.id}" ${a.online ? "" : "disabled"}>${ic("battle")} Invite</button>`)).join("")
-            : `<div class="empty">No friends yet. Ask yours for their username and add them above.</div>`) +
-          `<div class="s-actions" style="margin-top:16px"><button class="ghost" data-act="close">Close</button></div>`);
-        const add = async () => {
-          const name = el.querySelector("#addFriend").value.trim();
-          if (!name) return;
-          try {
-            const r = await api("POST", "/api/friends", { username: name });
-            toast(r.status === "accepted" ? `You and ${r.friend.username} are now friends` : `Request sent to ${r.friend.username}`);
-            await loadFriends();
-          } catch (e) { toast(errText(e)); }
-        };
-        el.querySelector("#addFriendBtn").onclick = add;
-        el.querySelector("#addFriend").onkeydown = (e) => { if (e.key === "Enter") add(); };
-        el.onclick = async (e) => {
-          const btn = e.target.closest("[data-act]");
-          if (!btn) return;
-          const id = btn.dataset.id;
-          try {
-            if (btn.dataset.act === "close") return closePanel();
-            if (btn.dataset.act === "accept") { await api("POST", `/api/friends/${id}/accept`); await loadFriends(); }
-            if (btn.dataset.act === "remove") { await api("DELETE", `/api/friends/${id}`); await loadFriends(); }
-            if (btn.dataset.act === "chat") return openChat(id);
-            if (btn.dataset.act === "invite") return inviteFromList(id);
-            if (btn.dataset.act === "acceptInv") return acceptInvite(id);
-            if (btn.dataset.act === "declineInv") { declineInvite(id); renderFriends(); }
-          } catch (err) { toast(errText(err)); }
-        };
-      }
-
-      /* ---- DMs ---- */
-      const timeOf = (iso) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      function appendMessage(m) {
-        const log = $("chatLog");
-        if (!log) return;
-        const b = document.createElement("div");
-        b.className = "bubble" + (m.from === account.id ? " mine" : "");
-        b.innerHTML = `${esc(m.body)}<time>${timeOf(m.at)}</time>`;
-        log.appendChild(b);
-        log.scrollTop = log.scrollHeight;
-      }
-
-      async function openChat(id) {
-        const f = friendsData.friends.find((x) => x.id === id);
-        if (!f) return;
-        const el = showPanel("chat",
-          `<div class="chat-head"><button class="ghost small" data-act="back" aria-label="Back">‹</button><b class="ell">${esc(f.username)}</b>` +
-          `<span class="dot ${f.online ? "" : "off"}" id="chatDot"></span><span style="flex:1"></span>` +
-          `<button class="ghost small" data-act="invite" aria-label="Invite to battle" ${f.online ? "" : "disabled"}>${ic("battle")}</button><button class="ghost small" data-act="unfriend">Unfriend</button></div>` +
-          `<div id="chatLog" class="chat-log"><div class="empty">Loading…</div></div>` +
-          `<div class="row-input"><input id="chatInput" type="text" placeholder="Message ${esc(f.username)}" maxlength="500" autocomplete="off" /><button id="chatSend" class="small">Send</button></div>`);
-        chatWith = id;
-        const send = async () => {
-          const input = el.querySelector("#chatInput");
-          const body = input.value.trim();
-          if (!body) return;
-          input.value = "";
-          try { appendMessage(await api("POST", `/api/messages/${id}`, { body })); }
-          catch (e) { input.value = body; toast(errText(e)); }
-        };
-        el.querySelector("#chatSend").onclick = send;
-        el.querySelector("#chatInput").onkeydown = (e) => { if (e.key === "Enter") send(); };
-        el.onclick = async (e) => {
-          const btn = e.target.closest("[data-act]");
-          if (!btn) return;
-          if (btn.dataset.act === "back") return renderFriends();
-          if (btn.dataset.act === "invite") return inviteFromList(id);
-          if (btn.dataset.act === "unfriend") {
-            if (!(await confirmPanel({ title: `Unfriend ${f.username}?`, body: "You can add each other again later.", yes: "Unfriend" }))) return openChat(id);
-            await api("DELETE", `/api/friends/${id}`).catch((err) => toast(errText(err)));
-            await loadFriends();
-            renderFriends();
-          }
-        };
-        try {
-          const msgs = await api("GET", `/api/messages/${id}`);
-          if (chatWith !== id) return;
-          $("chatLog").innerHTML = msgs.length ? "" : `<div class="empty">Say hi</div>`;
-          for (const m of msgs) appendMessage(m);
-          f.unread = 0;
-          updateBadge();
-        } catch (e) { toast(errText(e)); }
-        if (!touch()) el.querySelector("#chatInput").focus();
-      }
-
       /* ---- live updates from the lobby socket ---- */
       function onSocialChanged(d) {
         if (d.reason === "request") toast(`${d.from} wants to be friends`, 2600);
@@ -4031,17 +3728,8 @@
         loadFriends();
       }
 
+      /** A friend's message: a toast here (the conversation itself lives in the launcher). */
       function onMessage(m) {
-        if (chatWith === m.from) {
-          $("chatLog")?.querySelector(".empty")?.remove();
-          appendMessage(m);
-          api("GET", `/api/messages/${m.from}?before=1`).catch(() => {}); // marks it read
-          return;
-        }
-        const f = friendsData.friends.find((x) => x.id === m.from);
-        if (f) f.unread = (f.unread || 0) + 1;
-        updateBadge();
-        if (panel === "friends") renderFriends();
         toast(`${m.fromUsername}: ${m.body.length > 48 ? m.body.slice(0, 47) + "…" : m.body}`, 3000);
       }
 
@@ -4049,10 +3737,7 @@
         const f = friendsData.friends.find((x) => x.id === d.id);
         if (!f) return;
         f.online = d.online;
-        updateBadge();
-        if (panel === "friends") renderFriends();
         if (panel === "invite") renderInvitePicker(); // friends come and go from the list as they go online and off
-        if (chatWith === d.id) $("chatDot")?.classList.toggle("off", !d.online);
       }
 
       /* ---- invites ---- */
@@ -4080,8 +3765,6 @@
         // Another game's invite (Hold'em…): offer to open that game's page, which accepts it there.
         if (inv.gameId && inv.gameId !== "match_monsters") return showOtherGameInvite(inv);
         incomingInvites.set(inv.inviteId, inv);
-        updateBadge();
-        if (panel === "friends") renderFriends();
         if (room) return toast(`${inv.from.username} challenged you. Finish this game first`, 3000);
         showInviteCard(inv);
       }
@@ -4146,13 +3829,11 @@
           toast(errText(e));
           incomingInvites.delete(inviteId);
           $("inviteCard").classList.add("hidden");
-          updateBadge();
         }
       }
 
       function declineInvite(inviteId) {
         incomingInvites.delete(inviteId);
-        updateBadge();
         if ($("inviteCard").dataset.invite === inviteId) $("inviteCard").classList.add("hidden");
         lobbySock?.request("platform:declineInvite", { inviteId }).catch(() => {});
       }
@@ -4169,10 +3850,7 @@
           toast("That invite has expired");
           lbReset();
         }
-        if (incomingInvites.delete(d.inviteId)) {
-          updateBadge();
-          if (panel === "friends") renderFriends();
-        }
+        incomingInvites.delete(d.inviteId);
         if ($("inviteCard").dataset.invite === d.inviteId && d.reason !== "accepted") $("inviteCard").classList.add("hidden");
       }
 

@@ -16,11 +16,12 @@
  */
 import { randomUUID } from "node:crypto";
 import { Matchmaker, type QueueKey, type Ticket } from "../../matchmaking/pool.js";
+import { makeCode, normalizeCode } from "../../platform/codes.js";
 import { INVITE_MS } from "../../platform/invites.js";
 import type { GameLobby, LobbyContext, Room } from "../../platform/lobby.js";
-import type { PeerLike } from "../../signaling/gameRoom.js";
-import { GameRoom, type RoomOptions } from "../../signaling/gameRoom.js";
-import { DraftRoom } from "../../signaling/draftRoom.js";
+import type { PeerLike } from "../../platform/peer.js";
+import { GameRoom, type RoomOptions } from "./gameRoom.js";
+import { DraftRoom } from "./draftRoom.js";
 import type { MatchMode } from "../../stats/history.js";
 import type { GameConfig } from "./engine.js";
 import { dealTeam, monsterById, MONSTERS } from "./monsters.js";
@@ -93,12 +94,9 @@ export class MatchMonstersLobby implements GameLobby {
     switch (method) {
       // --- Friend invites: a private match without sharing a code ---
       case "mm:invite": {
-        const me = ctx.accountOf(peer);
-        if (!me) throw new Error("sign in to invite friends");
         const d = (data ?? {}) as Record<string, unknown>;
-        const friendId = typeof d["friendId"] === "string" ? d["friendId"] : "";
-        if (!(await ctx.services.social.areFriends(me.id, friendId))) throw new Error("you can only invite friends");
-        if (!ctx.services.presence.isOnline(friendId)) throw new Error("they're offline right now");
+        const { me, friend } = await ctx.inviteTarget(peer, d["friendId"]);
+        const friendId = friend.id;
         const req = parseEnqueue(data);
         const host: PlayerDesc = { peerId: peer.id, displayName: me.username, monsters: req.monsters };
         const inv = ctx.invites.create<MmInvite>({
@@ -172,7 +170,7 @@ export class MatchMonstersLobby implements GameLobby {
       // --- Private rooms: share a code / link instead of queueing ---
       case "mm:createRoom": {
         const req = parseEnqueue(data);
-        const code = this.makeCode();
+        const code = makeCode((c) => this.pendingRooms.has(c));
         this.pendingRooms.set(code, {
           code,
           hostPeerId: peer.id,
@@ -187,7 +185,7 @@ export class MatchMonstersLobby implements GameLobby {
       // away, blind-pick rooms first need the guest's two monsters.
       case "mm:roomInfo": {
         const d = (data ?? {}) as Record<string, unknown>;
-        const code = typeof d["code"] === "string" ? d["code"].trim().toUpperCase() : "";
+        const code = normalizeCode(d["code"]);
         const pending = this.pendingRooms.get(code);
         if (!pending) throw new Error("that invite has expired");
         return { code, draft: pending.draft, random: pending.random, host: pending.host.displayName };
@@ -196,7 +194,7 @@ export class MatchMonstersLobby implements GameLobby {
       case "mm:joinRoom": {
         const req = parseEnqueue(data);
         const d = (data ?? {}) as Record<string, unknown>;
-        const code = typeof d["code"] === "string" ? d["code"].trim().toUpperCase() : "";
+        const code = normalizeCode(d["code"]);
         const pending = this.pendingRooms.get(code);
         if (!pending) throw new Error("room not found or expired");
         if (pending.hostPeerId === peer.id) throw new Error("cannot join your own room");
@@ -346,17 +344,6 @@ export class MatchMonstersLobby implements GameLobby {
     return { roomId, matchId, firstTurn };
   }
 
-  /** Generate a short, unambiguous, currently-unused room code. */
-  private makeCode(): string {
-    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no O/0/1/I
-    for (let attempt = 0; attempt < 1000; attempt++) {
-      let code = "";
-      for (let i = 0; i < 4; i++) code += alphabet[Math.floor(Math.random() * alphabet.length)];
-      if (!this.pendingRooms.has(code)) return code;
-    }
-    // Astronomically unlikely; fall back to a longer unique code.
-    return randomUUID().slice(0, 8).toUpperCase();
-  }
 
   private removePendingByHost(hostPeerId: string): void {
     for (const [code, pending] of this.pendingRooms) {

@@ -2,7 +2,7 @@
  * Who is online, and a way to reach them. An account is online while it has at
  * least one authenticated lobby connection (a phone and a laptop count once).
  */
-import type { PeerLike } from "../signaling/gameRoom.js";
+import type { PeerLike } from "../platform/peer.js";
 
 /** What a signed-in player is doing, for their friends ("At a Hold'em table"). */
 export interface Activity {

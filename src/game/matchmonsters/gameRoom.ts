@@ -15,18 +15,15 @@ import {
   fatigueDamage,
   scaledPassive,
   type GameConfig,
-} from "../game/matchmonsters/engine.js";
-import { chooseEvolution, chooseMove } from "../game/matchmonsters/bot.js";
-import { dealTeam } from "../game/matchmonsters/monsters.js";
-import type { Move, MoveResult, MonsterState, PlayerState } from "../game/matchmonsters/types.js";
-import { BERRIES_TO_EVOLVE, FATIGUE_AFTER } from "../game/matchmonsters/types.js";
-import type { MatchMode, MatchRecord } from "../stats/history.js";
+} from "./engine.js";
+import { chooseEvolution, chooseMove } from "./bot.js";
+import { dealTeam } from "./monsters.js";
+import type { Move, MoveResult, MonsterState, PlayerState } from "./types.js";
+import { BERRIES_TO_EVOLVE, FATIGUE_AFTER } from "./types.js";
+import type { PeerLike } from "../../platform/peer.js";
+import type { MatchMode, MatchRecord } from "../../stats/history.js";
 
-/** Minimal view of a protoo peer, so rooms are testable without a live socket. */
-export interface PeerLike {
-  readonly id: string;
-  notify(method: string, data: unknown): void;
-}
+export type { PeerLike } from "../../platform/peer.js";
 
 export interface RoomOptions {
   /** Seat played by the built-in practice bot. Practice rooms also allow debug actions. */

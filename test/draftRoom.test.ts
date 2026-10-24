@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { DraftRoom } from "../src/signaling/draftRoom.js";
+import { DraftRoom } from "../src/game/matchmonsters/draftRoom.js";
 import type { Monster } from "../src/game/matchmonsters/types.js";
 
 class FakePeer {

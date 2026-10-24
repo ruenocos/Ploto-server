@@ -69,7 +69,7 @@ In this order, each step tested before the next:
 6. **Feel pass**: the signature moment first, then motion, sound, haptics.
 7. **Art**: the launcher card (to the rule in docs/STYLE.md, "Launcher cards":
    a still collage of what's inside on the 80×50 grid: the star, what you play
-   with, one piece of interface top left; the icon a crop of the star), the home banner,
+   with, one piece of interface only it has; the icon a crop of the star), the home banner,
    then in-game art.
 
 ## 4. Consistency: what every game does the same

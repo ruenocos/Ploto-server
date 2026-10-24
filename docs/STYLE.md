@@ -171,13 +171,16 @@ to one rule, so the grid reads as one set while every card looks like its game.
      platform; Hold'em: the hand, A♠ K♥);
   2. **what you play with**: its pieces on their surface (a corner of the gem
      board with gems and a berry; the felt in its rail with chips);
-  3. **one piece of its interface**, always top left (Match Monsters' HP bar,
-     Hold'em's turn timer), plus at most one small extra (the dealer button).
+  3. **one piece of its interface that only this game has**, where it sits in
+     the game (Match Monsters' HP bar over the monster; Hold'em's dealer button
+     on the felt). Never borrow another game's piece to make cards match: a bare
+     bar on Hold'em would read as health it doesn't have. Consistency comes from
+     the grid, the frame and the depth, not from the same parts.
   Elements overlap (the star in front, cropping the edge of the surface behind),
   and the biggest may crop at the card's edge. Four to six elements, never a
   full screen or a landscape.
-- **Composition.** The star takes the left or the middle at about two thirds of
-  the card's height; the pieces fill the rest. Keep the top right (about 20×10)
+- **Composition.** The star takes the left or the middle, big enough to read
+  first; the pieces fill the rest. Keep the top right (about 20×10)
   free of detail for the NEW badge.
 - **Depth.** The frame is 2 art px with its top row lit; objects get a 1 px ink
   outline and a hard 1 px shadow down-right at 14% ink. No gradients, glows,

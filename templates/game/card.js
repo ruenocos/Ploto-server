@@ -2,7 +2,7 @@
  * __TITLE__'s launcher card and list icon: the game's own art, drawn to the
  * launcher card rule (docs/STYLE.md, "Launcher cards"): still, an 80×50 art grid
  * at a whole-number scale, a collage of what's inside (the star, what you play
- * with, one piece of interface top left), its own deep backdrop colour, the icon
+ * with, one piece of interface only this game has), its own deep backdrop colour, the icon
  * a 24×24 crop of the star.
  * TEMPLATE: replace the placeholder below (see web/holdem.card.js and
  * web/match-monsters.card.js).

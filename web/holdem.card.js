@@ -1,8 +1,8 @@
 /**
  * Hold'em's card in the launcher (and its icon in lists), following the launcher
  * card rule (docs/STYLE.md, "Launcher cards"): a still close-up on the 80×50 art
- * grid, a collage of what's inside: the felt in its rail, A♠ K♥, chip stacks,
- * the dealer button and the turn timer.
+ * grid, a collage of what's inside: the felt in its rail, A♠ K♥, chip stacks
+ * and the dealer button.
  */
 (() => {
   "use strict";
@@ -12,7 +12,7 @@
   .lc-he .ft { fill: var(--c-felt-lo); } .lc-he .fm { fill: var(--c-felt); } .lc-he .fh { fill: var(--c-felt-hi); }
   .lc-he .rl { fill: var(--c-rail); } .lc-he .rh { fill: var(--c-rail-hi); } .lc-he .ik { fill: var(--c-ink); } .lc-he .cr { fill: var(--c-cream); }
   .lc-he .rd { fill: var(--c-bad); } .lc-he .gd { fill: var(--c-gold); } .lc-he .ac { fill: var(--c-accent); }
-  .lc-he .sh { fill: var(--c-ink); opacity: 0.14; } .lc-he .wl { fill: var(--c-well); }`;
+  .lc-he .sh { fill: var(--c-ink); opacity: 0.14; }`;
   document.head.appendChild(style);
 
   /** Pixel rects from ASCII rows ("X" = filled) at (x, y), `s` art pixels per cell. */
@@ -51,8 +51,7 @@
       r(8, 9, 64, 41, "fm") + r(7, 10, 66, 40, "fm") + r(9, 10, 62, 1, "fh") +
       card(25, 15, "A", "spade") + card(37, 18, "K", "heart") +
       chips(57, 38, 4, "gd", "cr") + chips(13, 40, 2, "ac", "cr") + chips(14, 37, 1, "rd", "cr") +
-      button(56, 13) + // the dealer button
-      r(5, 3, 30, 6, "ik") + r(6, 4, 28, 4, "wl") + r(6, 4, 19, 4, "gd") + r(6, 4, 19, 1, "cr") + // the turn timer (the table's HUD)
+      button(56, 13) + // the dealer button: the table's own piece of interface
       `</svg>`;
   }
   window.Ploto.gameCard("holdem", {

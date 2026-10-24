@@ -156,6 +156,49 @@ input[type="text"]:focus, input[type="search"]:focus, input[type="password"]:foc
 }
 .pl-toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+/* ---- game lobbies: the same building blocks in every game (docs/PLATFORM.md) ----
+ * pl-hero (the game's art banner), pl-who (playing as · Change), pl-codecard (room code + share),
+ * pl-sumline (the room's settings in a line), pl-seats / pl-seat (who's in, open seats with actions),
+ * pl-waitline (what we're waiting for), pl-foot (the sticky action bar), pl-av / pl-you / pl-bot. */
+.pl-you { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; letter-spacing: 1px; padding: 2px 4px; background: var(--c-accent); color: #fff; }
+.pl-bot { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; letter-spacing: 1px; padding: 2px 4px; background: var(--c-raise); color: var(--c-mute); }
+.pl-foot { position: sticky; bottom: 0; z-index: 10; background: var(--c-night); border-top: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 rgba(74, 84, 134, 0.35); padding: 12px max(16px, env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+.pl-foot-in { max-width: var(--pl-max); margin: 0 auto; display: grid; gap: 8px; }
+.pl-flow { min-height: 100dvh; display: flex; flex-direction: column; }
+.pl-flow > .pl-view { flex: 1; }
+.pl-hero { position: relative; aspect-ratio: 16 / 7; min-height: 150px; overflow: hidden; background: var(--c-well); }
+.pl-who { display: flex; align-items: center; gap: 8px; padding: 10px 12px 12px; }
+.pl-who b { font: 700 var(--fl-1)/1.2 var(--f-label); color: var(--c-cream); text-transform: uppercase; }
+.pl-who .grow { flex: 1; }
+.pl-link { background: none; border: 0; box-shadow: none; clip-path: none; padding: 8px 4px; min-height: 40px; color: var(--c-accent-hi); font: 600 var(--fs-s)/1 var(--f-text); text-transform: none; text-shadow: none; cursor: pointer; }
+.pl-link:active { transform: none; box-shadow: none; }
+.pl-codecard { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 12px 14px; }
+.pl-codecard .code { flex: 1 1 120px; display: grid; gap: 6px; }
+.pl-codecard .code b { font: 700 var(--fl-4)/1 var(--f-label); color: var(--c-gold); letter-spacing: 0; text-shadow: var(--px) var(--px) 0 var(--c-gold-lo); }
+.pl-codecard .code small { font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-mute); }
+.pl-sumline { --b: transparent; --b-hi: transparent; --b-lo: transparent; border-color: transparent; box-shadow: none; clip-path: none; text-shadow: none; display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 2px; text-align: left; text-transform: none; color: var(--c-mute); font: 400 var(--fs-s)/1.3 var(--f-text); white-space: normal; }
+.pl-sumline .edit { color: var(--c-accent-hi); font-weight: 700; }
+p.pl-sumline { margin: 0; min-height: 0; }
+.pl-seats { display: grid; gap: 8px; }
+.pl-seat { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 6px 8px 8px; }
+.pl-seat.open { background: transparent; border: var(--px) dashed var(--c-edge); box-shadow: none; clip-path: none; }
+.pl-seat .pl-seat-t { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.pl-seat .pl-seat-t .nm { display: flex; align-items: center; gap: 6px; min-width: 0; font: 600 var(--fs-m)/1.2 var(--f-text); color: var(--c-text); }
+.pl-seat.open .pl-seat-t .nm { color: var(--c-mute); font-weight: 400; }
+.pl-seat .note { font: 400 var(--fs-xs)/1.2 var(--f-text); color: var(--c-mute); }
+.pl-seat .note.ok { color: var(--c-good-hi); }
+.pl-seat button { flex: none; min-height: 40px; padding: 10px 10px 12px; }
+.pl-seat .pl-av { width: 36px; height: 36px; }
+.pl-waitline { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 8px 12px 10px; background: var(--c-well); box-shadow: inset 0 var(--px) 0 var(--c-ink); color: var(--c-mute); font: 600 var(--fs-m)/1.3 var(--f-text); text-align: center; }
+.pl-dots { display: inline-flex; gap: 4px; }
+.pl-dots i { width: 6px; height: 6px; background: var(--c-mute); animation: dot 0.9s steps(1) infinite; }
+.pl-dots i:nth-child(2) { animation-delay: 0.3s; } .pl-dots i:nth-child(3) { animation-delay: 0.6s; }
+@keyframes dot { 0%, 100% { opacity: 0.25; } 33% { opacity: 1; } }
+.pl-av { --av: var(--c-accent); position: relative; width: 40px; height: 40px; flex: none; display: grid; place-items: center; background: var(--av); color: var(--c-cream);
+  font: 700 var(--fl-2)/1 var(--f-label); text-shadow: var(--px) var(--px) 0 rgba(10, 12, 20, 0.5); border: var(--px) solid var(--c-ink);
+  box-shadow: inset 0 var(--px) 0 rgba(255, 255, 255, 0.28), inset 0 calc(var(--px) * -2) 0 rgba(10, 12, 20, 0.35); --n: var(--px);
+  clip-path: polygon(0 var(--n), var(--n) var(--n), var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n), 100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%, var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n))); }
+.pl-av.bot { color: var(--c-text); }
 /* ---- screens slide in from the side they come from ---- */
 @keyframes plIn { from { opacity: 0; transform: translateX(calc(var(--dir, 1) * 20px)); } to { opacity: 1; transform: none; } }
 .pl-enter { animation: plIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); }

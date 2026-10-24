@@ -150,6 +150,29 @@ describe("friends, DMs and invites", () => {
     for (const c of [annLobby, g]) c.close();
   });
 
+  it("a room lobby's code and invite: whichever lands first starts, the other is withdrawn", async () => {
+    const hal = (await api("POST", "/api/accounts", { body: { username: "Hal" } })).body;
+    const ivy = (await api("POST", "/api/accounts", { body: { username: "Ivy" } })).body;
+    await api("POST", "/api/friends", { key: hal.key, body: { username: "Ivy" } });
+    await api("POST", "/api/friends", { key: ivy.key, body: { username: "Hal" } });
+    const halLobby = new Client(server.port, "lobby", "hal-peer");
+    const ivyLobby = new Client(server.port, "lobby", "ivy-peer");
+    const guest = new Client(server.port, "lobby", "guest-peer");
+    await Promise.all([halLobby.open(), ivyLobby.open(), guest.open()]);
+    await halLobby.req("platform:auth", { key: hal.key });
+    await ivyLobby.req("platform:auth", { key: ivy.key });
+    const team = { monsters: ["ember_pup", "prism_owl"] };
+    const { code } = await halLobby.req("mm:createRoom", team);
+    const inv = await halLobby.req("mm:invite", { friendId: ivy.id, ...team });
+    // A guest joins by code first: Ivy's invite goes away, and so does the code.
+    await guest.req("mm:joinRoom", { code, monsters: ["stone_golem", "tide_serpent"] });
+    await delay(20);
+    expect(ivyLobby.note("social:inviteGone")?.data).toMatchObject({ inviteId: inv.inviteId, reason: "cancelled" });
+    await expect(ivyLobby.req("mm:acceptInvite", { inviteId: inv.inviteId, ...team })).rejects.toThrow(/expired/);
+    await expect(guest.req("mm:roomInfo", { code })).rejects.toThrow(/expired/);
+    for (const c of [halLobby, ivyLobby, guest]) c.close();
+  });
+
   it("won't invite strangers or offline friends", async () => {
     const cat = (await api("POST", "/api/accounts", { body: { username: "Cat" } })).body;
     const dan = (await api("POST", "/api/accounts", { body: { username: "Dan" } })).body;

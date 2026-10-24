@@ -327,6 +327,10 @@ export class MatchMonstersLobby implements GameLobby {
     draft = false,
     random = false,
   ): { roomId: string; matchId: string; firstTurn: 0 | 1 } {
+    // The host's room lobby offers a code and friend invites side by side: whichever
+    // lands first starts the match, and the other one is withdrawn.
+    this.removePendingByHost(a.peerId);
+    this.ctx.invites.dropByHost(a.peerId);
     const roomId = randomUUID();
     const matchId = randomUUID();
     const seed = (Math.random() * 0xffffffff) >>> 0;

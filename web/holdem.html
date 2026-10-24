@@ -19,31 +19,19 @@
 html, body { height: 100%; }
 body { overscroll-behavior: none; }
 .px-s { display: block; fill: currentColor; shape-rendering: crispEdges; flex: none; }
-.you-tag { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; letter-spacing: 1px; padding: 2px 4px; background: var(--c-accent); color: #fff; }
-.bot-tag { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; letter-spacing: 1px; padding: 2px 4px; background: var(--c-raise); color: var(--c-mute); }
 
 /* ---- top bar (home, host, table lobby) ---- */
 .pl-bar .icon-btn { min-width: 44px; height: 40px; min-height: 40px; padding: 0 12px 2px; display: inline-grid; place-items: center; }
 .bar-act { flex: none; }
 .scr[hidden] { display: none !important; }
-.view-foot { position: sticky; bottom: 0; z-index: 10; background: var(--c-night); border-top: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 rgba(74, 84, 134, 0.35); padding: 12px max(16px, env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
-.view-foot-in { max-width: var(--pl-max); margin: 0 auto; display: grid; gap: 8px; }
-.scr-flow { min-height: 100dvh; display: flex; flex-direction: column; }
-.scr-flow > .pl-view { flex: 1; }
 
 /* ---- game home ---- */
-.hero { position: relative; aspect-ratio: 16 / 7; min-height: 150px; overflow: hidden; background: var(--c-well); }
 .hero canvas { position: absolute; inset: 0; image-rendering: pixelated; }
 .hero .hero-board { position: absolute; left: 50%; top: 60%; translate: -50% -50%; display: flex; gap: 6px; }
 .hero .hero-stack { position: absolute; bottom: 10%; }
 .hero .hero-stack.l { left: 5%; } .hero .hero-stack.r { right: 5%; }
 .hero .dbtn { left: 88%; top: 40%; }
 .pl-row .pl-ic svg { display: block; }
-.who { display: flex; align-items: center; gap: 8px; padding: 10px 12px 12px; }
-.who b { font: 700 var(--fl-1)/1.2 var(--f-label); color: var(--c-cream); text-transform: uppercase; }
-.who .grow { flex: 1; }
-.linkbtn { background: none; border: 0; box-shadow: none; clip-path: none; padding: 8px 4px; min-height: 40px; color: var(--c-accent-hi); font: 600 var(--fs-s)/1 var(--f-text); text-transform: none; text-shadow: none; cursor: pointer; }
-.linkbtn:active { transform: none; box-shadow: none; }
 .code-in { text-transform: uppercase; letter-spacing: 2px; }
 
 /* ---- settings fields ---- */
@@ -52,58 +40,39 @@ body { overscroll-behavior: none; }
 .fields { display: grid; gap: 16px; }
 
 /* ---- table lobby ---- */
-.codecard { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 12px 14px; }
-.codecard .code { flex: 1 1 120px; display: grid; gap: 6px; }
-.codecard .code b { font: 700 var(--fl-4)/1 var(--f-label); color: var(--c-gold); letter-spacing: 0; text-shadow: var(--px) var(--px) 0 var(--c-gold-lo); }
-.codecard .code small { font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-mute); }
 .quickcard { display: grid; gap: 6px; justify-items: center; text-align: center; padding: 16px 12px 18px; }
 .quickcard b { font: 700 var(--fl-3)/1.1 var(--f-label); color: var(--c-cream); }
 .quickcard small { font: 400 var(--fs-s)/1.3 var(--f-text); color: var(--c-mute); }
-.sumline { --b: transparent; --b-hi: transparent; --b-lo: transparent; border-color: transparent; box-shadow: none; clip-path: none; text-shadow: none; display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 2px; text-align: left; text-transform: none; color: var(--c-mute); font: 400 var(--fs-s)/1.3 var(--f-text); white-space: normal; }
-.sumline .edit { color: var(--c-accent-hi); font-weight: 700; }
-p.sumline { margin: 0; min-height: 0; }
-.seatrows { display: grid; gap: 8px; }
-.srow { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 6px 8px 8px; }
-.srow.open { background: transparent; border: var(--px) dashed var(--c-edge); box-shadow: none; clip-path: none; }
-.srow .who-t { flex: 1; min-width: 0; display: grid; gap: 3px; }
-.srow .who-t .nm { display: flex; align-items: center; gap: 6px; min-width: 0; font: 600 var(--fs-m)/1.2 var(--f-text); color: var(--c-text); }
-.srow.open .who-t .nm { color: var(--c-mute); font-weight: 400; }
-.srow .note { font: 400 var(--fs-xs)/1.2 var(--f-text); color: var(--c-mute); }
-.srow .note.ok { color: var(--c-good-hi); }
-.srow button { flex: none; min-height: 40px; padding: 10px 10px 12px; }
-.srow .av { width: 36px; height: 36px; }
-.waitline { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 8px 12px 10px; background: var(--c-well); box-shadow: inset 0 var(--px) 0 var(--c-ink); color: var(--c-mute); font: 600 var(--fs-m)/1.3 var(--f-text); text-align: center; }
-.dots { display: inline-flex; gap: 4px; }
-.dots i { width: 6px; height: 6px; background: var(--c-mute); animation: dot 0.9s steps(1) infinite; }
-.dots i:nth-child(2) { animation-delay: 0.3s; } .dots i:nth-child(3) { animation-delay: 0.6s; }
-@keyframes dot { 0%, 100% { opacity: 0.25; } 33% { opacity: 1; } }
 
 /* ---- avatars (seats and seat rows) ---- */
-.av { --av: var(--c-accent); position: relative; width: 40px; height: 40px; flex: none; display: grid; place-items: center; background: var(--av); color: var(--c-cream);
-  font: 700 var(--fl-2)/1 var(--f-label); text-shadow: var(--px) var(--px) 0 rgba(10, 12, 20, 0.5); border: var(--px) solid var(--c-ink);
-  box-shadow: inset 0 var(--px) 0 rgba(255, 255, 255, 0.28), inset 0 calc(var(--px) * -2) 0 rgba(10, 12, 20, 0.35); --n: var(--px);
-  clip-path: polygon(0 var(--n), var(--n) var(--n), var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n), 100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%, var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n))); }
-.av.bot { color: var(--c-text); }
 
 /* ---- cards ---- */
 .card { --w: 40px; --h: 56px; position: relative; flex: none; width: var(--w); height: var(--h); background: var(--card); color: var(--card-ink); border: var(--px) solid var(--c-ink);
   box-shadow: inset 0 calc(var(--px) * -2) 0 var(--card-lo); --n: var(--px);
   clip-path: polygon(0 var(--n), var(--n) var(--n), var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n), 100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%, var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n))); }
 .card.red { color: var(--card-red); }
-.card .r { position: absolute; left: 3px; top: 3px; font: 700 var(--fl-1)/1 var(--f-label); white-space: nowrap; }
-.card .s { position: absolute; left: 3px; top: calc(5px + var(--fl-1)); }
-.card .g { position: absolute; right: 3px; bottom: 5px; }
+.card .r { position: absolute; left: 3px; top: 3px; line-height: 0; }
+.card .s { position: absolute; left: 3px; top: 15px; }
 .card.back { background: repeating-conic-gradient(var(--c-accent) 0 25%, #5a41c8 0 50%) 0 0 / 8px 8px; box-shadow: inset 0 0 0 var(--px) var(--c-accent-hi), inset 0 0 0 calc(var(--px) * 2) var(--c-accent-lo); }
 .card.back > * { display: none; }
 .card.xs { --w: 20px; --h: 28px; } .card.xs > * { display: none; }
-.card.sm { --w: 28px; --h: 40px; } .card.sm .r { left: 2px; top: 3px; } .card.sm .s { left: 3px; } .card.sm .g { display: none; }
-.card.mini { --w: 24px; --h: 34px; } .card.mini .r { left: 2px; top: 2px; } .card.mini .s { left: 3px; top: calc(4px + var(--fl-1)); } .card.mini .g { display: none; }
-.card.md { --w: var(--bw, 40px); --h: var(--bh, 56px); } .card.md .r { font-size: var(--fl-2); } .card.md .s { display: none; }
-.card.lg { --w: var(--hw, 56px); --h: var(--hh, 78px); } .card.lg .r { font-size: var(--fl-3); left: 4px; top: 4px; } .card.lg .s { left: 5px; top: calc(8px + var(--fl-3)); } .card.lg .g { right: 4px; bottom: 6px; }
-.card .court { position: absolute; left: 50%; bottom: calc(var(--px) * 2); translate: -50% 0; width: 78%; image-rendering: pixelated; pointer-events: none; }
-.card.lg .court { left: 56%; } /* clear of the corner's suit */
-.card .ace { position: absolute; left: 50%; top: 55%; translate: -50% -50%; }
-.card.lg .ace { left: 56%; top: 60%; }
+.card.sm { --w: 28px; --h: 40px; } .card.sm .r { left: 2px; top: 3px; } .card.sm .s { left: 3px; }
+.card.mini { --w: 24px; --h: 34px; } .card.mini .r { left: 2px; top: 2px; } .card.mini .s { left: 3px; top: 14px; }
+.card.md { --w: var(--bw, 40px); --h: var(--bh, 56px); }
+.card.lg { --w: var(--hw, 56px); --h: var(--hh, 78px); }
+/* big cards: index top-left and upside down bottom-right, pips / court / ace in the middle */
+.card .ix { position: absolute; left: 3px; top: 3px; display: grid; justify-items: center; gap: 2px; }
+.card .ix.b { left: auto; top: auto; right: 3px; bottom: 3px; rotate: 180deg; }
+.card.lg .ix { left: 4px; top: 4px; gap: 3px; } .card.lg .ix.b { left: auto; top: auto; right: 4px; bottom: 4px; }
+.card .pips { position: absolute; inset: 12% 36%; } /* side margins clear of the two indices */
+.card .pips i, .card .ace { position: absolute; display: block; line-height: 0; translate: -50% -50%; }
+.card .pips i.flip { rotate: 180deg; }
+.card .ace { left: 50%; top: 50%; }
+.card .court { position: absolute; inset: 9% 22%; display: grid; grid-template-rows: 1fr 1fr; overflow: hidden;
+  background: color-mix(in srgb, currentColor 7%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 45%, transparent); }
+.card .court .half { min-height: 0; display: flex; justify-content: center; align-items: flex-end; overflow: hidden; }
+.card .court .half.flip { rotate: 180deg; }
+.card .court img { height: 100%; max-width: 100%; object-fit: contain; object-position: 50% 100%; image-rendering: pixelated; pointer-events: none; }
 .card.lift { translate: 0 -6px; border-color: var(--c-gold); box-shadow: inset 0 0 0 var(--px) var(--c-gold), inset 0 calc(var(--px) * -3) 0 var(--card-lo); }
 .card.dim { opacity: 0.42; }
 .slot { flex: none; width: var(--bw, 40px); height: var(--bh, 56px); box-shadow: inset 0 0 0 var(--px) rgba(44, 122, 91, 0.3); }
@@ -163,7 +132,7 @@ p.sumline { margin: 0; min-height: 0; }
 .seat.shown .ring { visibility: hidden; }
 .seat.fold .ring, .seat.fold .plate, .seat.out .ring, .seat.out .plate, .seat.dim .ring, .seat.dim .plate { filter: brightness(0.55) saturate(0.6); }
 .seat.out .tag, .seat.dim .tag { filter: brightness(0.7); }
-.seat.empty .av { --av: transparent; border: var(--px) dashed var(--c-felt-hi); box-shadow: none; clip-path: none; }
+.seat.empty .pl-av { --av: transparent; border: var(--px) dashed var(--c-felt-hi); box-shadow: none; clip-path: none; }
 .seat.empty .plate, .seat.empty .tag { display: none; }
 .seat.bump .ring { animation: bump 0.2s steps(2); }
 @keyframes bump { 50% { transform: translateY(-4px); } }
@@ -295,7 +264,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
 <!-- 1. Game home -->
 <section class="scr" id="scrHome" hidden>
   <main class="pl-view">
-    <div class="hero pl-frame" id="hero" aria-hidden="true"></div>
+    <div class="hero pl-hero pl-frame" id="hero" aria-hidden="true"></div>
     <button class="pl-row" data-mode="quick"><span class="pl-ic" data-ic="quick"></span><span><b>Quick table</b><small>Play anyone online</small></span><span class="pl-go" data-chev></span></button>
     <button class="pl-row" data-mode="host"><span class="pl-ic" data-ic="host"></span><span><b>Host a table</b><small>Your rules, your friends</small></span><span class="pl-go" data-chev></span></button>
     <button class="pl-row" data-mode="practice"><span class="pl-ic" data-ic="practice"></span><span><b>Practice</b><small>You vs bots</small></span><span class="pl-go" data-chev></span></button>
@@ -305,20 +274,20 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       <input id="codeIn" class="code-in" type="text" placeholder="Table code" maxlength="8" autocapitalize="characters" spellcheck="false" />
       <button class="ghost small" type="submit">Join</button>
     </form>
-    <div class="who pl-frame"><span class="muted">Playing as</span><b class="ell" id="whoName">Player</b><span class="grow"></span><button class="linkbtn" id="whoChange" type="button">Change</button></div>
+    <div class="pl-who pl-frame"><span class="muted">Playing as</span><b class="ell" id="whoName">Player</b><span class="grow"></span><button class="pl-link" id="whoChange" type="button">Change</button></div>
   </main>
 </section>
 
 <!-- 2. Host a table -->
-<section class="scr scr-flow" id="scrHost" hidden>
+<section class="scr pl-flow" id="scrHost" hidden>
   <main class="pl-view"><div class="fields" id="hostFields"></div></main>
-  <div class="view-foot"><div class="view-foot-in"><button class="big" id="createBtn">Create table</button></div></div>
+  <div class="pl-foot"><div class="pl-foot-in"><button class="big" id="createBtn">Create table</button></div></div>
 </section>
 
 <!-- 3. Table lobby -->
-<section class="scr scr-flow" id="scrLobby" hidden>
+<section class="scr pl-flow" id="scrLobby" hidden>
   <main class="pl-view" id="lobbyMain"></main>
-  <div class="view-foot"><div class="view-foot-in" id="lobbyFoot"></div></div>
+  <div class="pl-foot"><div class="pl-foot-in" id="lobbyFoot"></div></div>
 </section>
 
 <!-- waiting for a table -->
@@ -356,9 +325,9 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
 </section>
 
 <!-- 6. Result -->
-<section class="scr scr-flow" id="scrResult" hidden>
+<section class="scr pl-flow" id="scrResult" hidden>
   <main class="pl-view" id="resMain"></main>
-  <div class="view-foot"><div class="view-foot-in">
+  <div class="pl-foot"><div class="pl-foot-in">
     <button class="big" id="rematchBtn">Rematch</button>
     <p class="rm-note" id="rmNote"></p>
     <button class="ghost" id="resLeave">Leave table</button>
@@ -396,10 +365,27 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     menu: ["XXXXXXX", ".......", "XXXXXXX", ".......", "XXXXXXX"],
     back: ["...X", "..XX", ".XXX", "XXXX", ".XXX", "..XX", "...X"],
     chev: ["XX...", ".XX..", "..XX.", "...XX", "..XX.", ".XX..", "XX..."],
+    // small suits (5 wide): pips on number cards, the corner index on big cards
+    ps: ["..X..", ".XXX.", "XXXXX", "XXXXX", "..X..", ".XXX."],
+    ph: [".X.X.", "XXXXX", "XXXXX", ".XXX.", "..X.."],
+    pd: ["..X..", ".XXX.", "XXXXX", ".XXX.", "..X.."],
+    pc: [".XXX.", "XXXXX", "XXXXX", "XX.XX", "..X..", ".XXX."],
     x: ["X...X", ".X.X.", "..X..", ".X.X.", "X...X"],
     minus: [".....", ".....", "XXXXX", ".....", "....."],
     plus: ["..X..", "..X..", "XXXXX", "..X..", "..X.."],
   };
+  // Card ranks in a narrow 3x5 pixel font (crisp at any size; "10" stays as narrow as a real deck's index)
+  const RANK_GLYPH = {
+    A: [".X.", "X.X", "XXX", "X.X", "X.X"], K: ["X.X", "X.X", "XX.", "X.X", "X.X"], Q: [".X.", "X.X", "X.X", "X.X", ".XX"],
+    J: ["..X", "..X", "..X", "X.X", ".X."], 0: ["XXX", "X.X", "X.X", "X.X", "XXX"], 1: [".X", "XX", ".X", ".X", ".X"],
+    2: ["XX.", "..X", ".X.", "X..", "XXX"], 3: ["XX.", "..X", ".X.", "..X", "XX."], 4: ["X.X", "X.X", "XXX", "..X", "..X"],
+    5: ["XXX", "X..", "XX.", "..X", "XX."], 6: [".XX", "X..", "XXX", "X.X", "XXX"], 7: ["XXX", "..X", ".X.", ".X.", ".X."],
+    8: ["XXX", "X.X", "XXX", "X.X", "XXX"], 9: ["XXX", "X.X", "XXX", "..X", "XX."],
+  };
+  for (let r = 2; r <= 14; r++) {
+    const gs = [...({ 11: "J", 12: "Q", 13: "K", 14: "A" }[r] || String(r))].map((ch) => RANK_GLYPH[ch]);
+    GRIDS["rk" + r] = gs[0].map((_, y) => gs.map((g) => g[y]).join("."));
+  }
   function px(name, s = 2, cls = "px-s") {
     const g = GRIDS[name];
     if (!g) return "";
@@ -552,16 +538,33 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   const key = (c) => c ? `${c.rank}${c.suit}` : "";
   const BIG = { md: 3, lg: 4 };
   const COURT = { 11: "jack", 12: "queen", 13: "king" };
+  // Number cards' pips as on a real deck: x across and y down the pip area; the lower half is drawn upside down.
+  const SIX = [[0, 0], [1, 0], [0, 0.5], [1, 0.5], [0, 1], [1, 1]];
+  const PIPS = {
+    2: [[0.5, 0], [0.5, 1]], 3: [[0.5, 0], [0.5, 0.5], [0.5, 1]], 4: [[0, 0], [1, 0], [0, 1], [1, 1]],
+    5: [[0, 0], [1, 0], [0.5, 0.5], [0, 1], [1, 1]], 6: SIX, 7: [...SIX, [0.5, 0.25]], 8: [...SIX, [0.5, 0.25], [0.5, 0.75]],
+    9: [[0, 0], [1, 0], [0, 1 / 3], [1, 1 / 3], [0.5, 0.5], [0, 2 / 3], [1, 2 / 3], [0, 1], [1, 1]],
+    10: [[0, 0], [1, 0], [0.5, 1 / 6], [0, 1 / 3], [1, 1 / 3], [0, 2 / 3], [1, 2 / 3], [0.5, 5 / 6], [0, 1], [1, 1]],
+  };
+  // Big cards get a full face: [grid prefix, scale] for the corner suit and the pips, and the ace's pip scale.
+  const FACE = { md: { idx: ["p", 1], pip: ["", 1], ace: 3 }, lg: { idx: ["", 1], pip: ["p", 2], ace: 4 } };
   function cardHTML(c, size, cls = "") {
     if (!c) return `<div class="card back ${size} ${cls}"></div>`;
     const red = c.suit === "h" || c.suit === "d";
-    // Big cards get a face: a court portrait (web/cards.js, red or navy robe by suit), a large ace pip, else the suit
-    const art = BIG[size] && COURT[c.rank] && window.PLOTO_CARDS?.[COURT[c.rank]];
-    const ace = BIG[size] && c.rank === 14;
-    const face = art ? `<img class="court" src="${art[red ? "red" : "black"]}" alt="" draggable="false">`
-      : ace ? `<i class="ace">${px(c.suit, BIG[size] + (size === "lg" ? 1 : 2))}</i>`
-      : `<i class="g">${px(c.suit, BIG[size] || 2)}</i>`;
-    return `<div class="card ${size}${red ? " red" : ""} ${cls}" data-k="${key(c)}"><b class="r">${rk(c.rank)}</b><i class="s">${px(c.suit, 2)}</i>${face}</div>`;
+    const head = `<div class="card ${size}${red ? " red" : ""} ${cls}" data-k="${key(c)}">`;
+    const F = FACE[size];
+    if (!F) return head + `<b class="r">${px("rk" + c.rank, 2)}</b><i class="s">${px(c.suit, 2)}</i></div>`;
+    // the index in the top-left corner, and again upside down in the bottom-right
+    const ix = (flip) => `<span class="ix${flip ? " b" : ""}">${px("rk" + c.rank, 2)}${px(F.idx[0] + c.suit, F.idx[1])}</span>`;
+    const art = COURT[c.rank] && window.PLOTO_CARDS?.[COURT[c.rank]];
+    let body;
+    if (art) { // a double-headed court: the portrait, and the same upside down, meeting in the middle of a frame
+      const img = `<img src="${art[red ? "red" : "black"]}" alt="" draggable="false">`;
+      body = `<div class="court"><div class="half">${img}</div><div class="half flip">${img}</div></div>`;
+    } else if (PIPS[c.rank]) {
+      body = `<div class="pips">${PIPS[c.rank].map(([x, y]) => `<i${y > 0.5 ? ' class="flip"' : ""} style="left:${x * 100}%;top:${y * 100}%">${px(F.pip[0] + c.suit, F.pip[1])}</i>`).join("")}</div>`;
+    } else body = `<i class="ace">${px(c.suit, F.ace)}</i>`;
+    return head + ix(false) + ix(true) + body + "</div>";
   }
   const cardLabel = (c) => `${({ 11: "jack", 12: "queen", 13: "king", 14: "ace" })[c.rank] || c.rank} of ${({ s: "spades", h: "hearts", d: "diamonds", c: "clubs" })[c.suit]}`;
 
@@ -1075,9 +1078,9 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   }
   const AV_COLORS = ["#6a4fe0", "#36b65b", "#d8364b", "#a8740e", "#4a5486", "#33267d"];
   function avatar(s, cls = "") {
-    if (s.kind === "bot") return `<span class="av bot ${cls}" style="--av:#2f375c">${px("bot", 2)}</span>`;
+    if (s.kind === "bot") return `<span class="pl-av bot ${cls}" style="--av:#2f375c">${px("bot", 2)}</span>`;
     const init = (String(s.name || "?").trim()[0] || "?").toUpperCase();
-    return `<span class="av ${cls}" style="--av:${AV_COLORS[s.seat % AV_COLORS.length]}">${esc(init)}</span>`;
+    return `<span class="pl-av ${cls}" style="--av:${AV_COLORS[s.seat % AV_COLORS.length]}">${esc(init)}</span>`;
   }
   function renderLobby() {
     const v = S.view;
@@ -1091,12 +1094,12 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     if (quick) {
       top = `<div class="quickcard pl-frame"><b id="qCount">${quickText(v)}</b><small>Bots fill the empty seats</small></div>`;
     } else {
-      top = `<div class="codecard pl-frame"><div class="code"><small>Table code</small><b aria-label="Table code ${esc(v.code.split("").join(" "))}">${esc(v.code)}</b></div><button id="shareBtn">Share invite</button></div>` +
-        (host ? `<button class="sumline" id="sumBtn"><span style="flex:1">${esc(summary(v.settings))}</span><span class="edit">Edit</span></button>` : `<p class="sumline">${esc(summary(v.settings))}</p>`);
+      top = `<div class="pl-codecard pl-frame"><div class="code"><small>Table code</small><b aria-label="Table code ${esc(v.code.split("").join(" "))}">${esc(v.code)}</b></div><button id="shareBtn">Share invite</button></div>` +
+        (host ? `<button class="pl-sumline" id="sumBtn"><span style="flex:1">${esc(summary(v.settings))}</span><span class="edit">Edit</span></button>` : `<p class="pl-sumline">${esc(summary(v.settings))}</p>`);
     }
     const firstEmpty = seats.find((s) => s.kind === "empty")?.seat;
     const rows = seats.map((s) => seatRow(s, v, host, s.seat === firstEmpty)).join("");
-    $("lobbyMain").innerHTML = top + `<p class="pl-label">Seats · ${filled}/${seats.length}</p><div class="seatrows">${rows}</div>`;
+    $("lobbyMain").innerHTML = top + `<p class="pl-label">Seats · ${filled}/${seats.length}</p><div class="pl-seats">${rows}</div>`;
     // footer
     let foot;
     if (quick) foot = "";
@@ -1107,7 +1110,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       foot = `<button class="big" id="startBtn"${can ? "" : " disabled"}>${label}</button>`;
     } else {
       const hn = v.seats[v.host]?.name || "the host";
-      foot = `<div class="waitline"><span class="dots"><i></i><i></i><i></i></span>Waiting for ${esc(hn)} to start</div>`;
+      foot = `<div class="pl-waitline"><span class="pl-dots"><i></i><i></i><i></i></span>Waiting for ${esc(hn)} to start</div>`;
     }
     $("lobbyFoot").innerHTML = foot;
     $("lobbyFoot").parentElement.hidden = !foot;
@@ -1119,7 +1122,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       e.currentTarget.disabled = true;
       try { await req("holdem:start"); cue("ready"); } catch (err) { toast(P.errText(err), 2600); e.currentTarget.disabled = false; }
     });
-    $("lobbyMain").querySelector(".seatrows").onclick = async (e) => {
+    $("lobbyMain").querySelector(".pl-seats").onclick = async (e) => {
       const b = e.target.closest("[data-do]");
       if (!b) return;
       const seat = Number(b.dataset.seat);
@@ -1143,12 +1146,12 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     if (s.kind === "empty") {
       // Only the first open seat carries the buttons: the rest read as plain empty seats.
       const btns = host && first ? `<button class="ghost small" data-do="invite" data-seat="${s.seat}">Invite</button><button class="ghost small" data-do="bot" data-seat="${s.seat}">Add bot</button>` : "";
-      return `<div class="srow open"><div class="who-t"><span class="nm">Empty seat</span></div>${btns}</div>`;
+      return `<div class="pl-seat open"><div class="pl-seat-t"><span class="nm">Empty seat</span></div>${btns}</div>`;
     }
     if (s.kind === "invited") {
       const id = S.invites[s.name];
       const btn = host && id ? `<button class="ghost small" data-do="cancel" data-seat="${s.seat}" data-name="${esc(s.name)}">Cancel</button>` : "";
-      return `<div class="srow open"><div class="who-t"><span class="nm ell">${esc(s.name)}</span><span class="note">Invite sent</span></div>${btn}</div>`;
+      return `<div class="pl-seat open"><div class="pl-seat-t"><span class="nm ell">${esc(s.name)}</span><span class="note">Invite sent</span></div>${btn}</div>`;
     }
     const isH = s.seat === v.host;
     let note, ok = false;
@@ -1156,9 +1159,9 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     else if (!s.connected || s.away) note = "Away";
     else { note = isH ? "Host · ready" : "Ready"; ok = true; }
     if (you) { note = isH ? "Host" : "Ready"; ok = !isH; }
-    const tag = you ? `<span class="you-tag">You</span>` : "";
+    const tag = you ? `<span class="pl-you">You</span>` : "";
     const rm = host && s.kind === "bot" ? `<button class="ghost small icon" data-do="unbot" data-seat="${s.seat}" aria-label="Remove ${esc(s.name)}" title="Remove bot">${px("x", 2)}</button>` : "";
-    return `<div class="srow pl-frame">${avatar(s)}<div class="who-t"><span class="nm"><span class="ell">${esc(s.name)}</span>${tag}</span><span class="note${ok ? " ok" : ""}">${note}</span></div>${rm}</div>`;
+    return `<div class="pl-seat pl-frame">${avatar(s)}<div class="pl-seat-t"><span class="nm"><span class="ell">${esc(s.name)}</span>${tag}</span><span class="note${ok ? " ok" : ""}">${note}</span></div>${rm}</div>`;
   }
   function quickText(v) {
     if (!v.startsAt) return "Waiting for players";
@@ -1215,7 +1218,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       el.querySelector("#ipShare").onclick = () => { P.closeSheet(); shareInvite(); };
       return;
     }
-    const el = P.sheet(`<h2>Invite a friend</h2><div class="seatrows" id="ipList"><div class="pl-empty">Loading friends</div></div><div class="pl-actions"><button class="ghost" id="ipShare">Share invite instead</button></div>`, { label: "Invite a friend" });
+    const el = P.sheet(`<h2>Invite a friend</h2><div class="pl-seats" id="ipList"><div class="pl-empty">Loading friends</div></div><div class="pl-actions"><button class="ghost" id="ipShare">Share invite instead</button></div>`, { label: "Invite a friend" });
     el.querySelector("#ipShare").onclick = () => { P.closeSheet(); shareInvite(); };
     let friends = [];
     try { friends = (await P.api("GET", "/api/friends")).friends || []; } catch { friends = []; }
@@ -1229,7 +1232,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     }
     list.innerHTML = online.map((f) => {
       const here = seated.has(f.username);
-      return `<div class="srow pl-frame">${avatar({ seat: f.username.length, name: f.username, kind: "player" })}<div class="who-t"><span class="nm ell">${esc(f.username)}</span><span class="note">${esc(f.activity?.label || "Online")}</span></div>` +
+      return `<div class="pl-seat pl-frame">${avatar({ seat: f.username.length, name: f.username, kind: "player" })}<div class="pl-seat-t"><span class="nm ell">${esc(f.username)}</span><span class="note">${esc(f.activity?.label || "Online")}</span></div>` +
         `<button class="small" data-fid="${esc(f.id)}" data-fn="${esc(f.username)}"${here ? " disabled" : ""}>${here ? "Here" : "Invite"}</button></div>`;
     }).join("");
     list.onclick = async (e) => {
@@ -1248,7 +1251,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     const W = f.clientWidth, H = f.clientHeight;
     const roomy = H > 540;
     const hw = snap(clamp(W * (roomy ? 0.17 : 0.15), 46, 72)), hh = snap(hw * 1.4);
-    const bw = snap(clamp(W * (roomy ? 0.122 : 0.11), 34, 54)), bh = snap(bw * 1.4);
+    const bw = snap(clamp(W * (roomy ? 0.136 : 0.122), 34, 56)), bh = snap(bw * 1.4);
     const ox = snap(clamp(W * 0.035, 8, 24)), oy = snap(clamp(H * 0.075, 30, 56));
     const ow = W - ox * 2, oh = H - oy - snap(hh * 0.6) - 6;
     const cx = W / 2, cy = oy + oh / 2;
@@ -1386,7 +1389,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       const win = !!S.lift?.seats.has(s.seat);
       el.className = "seat" + (A.side[s.seat] < 0 ? " l" : "") + (empty ? " empty" : "") + (M.toAct === s.seat && !S.anim ? " act" : "") + (s.folded ? " fold" : "") + (s.busted ? " out" : "") +
         (win ? " win" : "") + (S.lift && S.lift.dim && !win && !s.busted ? " dim" : "");
-      setHTML(el.querySelector(".ring"), empty ? `<span class="av"></span>` : avatar(s));
+      setHTML(el.querySelector(".ring"), empty ? `<span class="pl-av"></span>` : avatar(s));
       el.querySelector(".nm").textContent = empty ? "" : s.name;
       const st = el.querySelector(".st");
       if (!empty) countTo(st, s.chips, chip("gold", 1));
@@ -2035,7 +2038,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       const s = v.seats[r.seat];
       const note = r.place === 1 ? `${fmt(s?.chips || 0)} chips` : S.out[r.seat] ? `out hand ${S.out[r.seat]}` : "";
       const cls = (r.place === 1 ? " first" : "") + (r.seat === v.you ? " me" : "");
-      return `<li class="pl-frame${cls}"><span class="pl">${ordinal(r.place).toUpperCase()}</span><span class="nm"><span class="ell">${esc(r.name)}</span>${r.seat === v.you ? `<span class="you-tag">You</span>` : ""}${r.isBot ? `<span class="bot-tag">Bot</span>` : ""}</span><span class="note">${note}</span></li>`;
+      return `<li class="pl-frame${cls}"><span class="pl">${ordinal(r.place).toUpperCase()}</span><span class="nm"><span class="ell">${esc(r.name)}</span>${r.seat === v.you ? `<span class="pl-you">You</span>` : ""}${r.isBot ? `<span class="pl-bot">Bot</span>` : ""}</span><span class="note">${note}</span></li>`;
     }).join("");
     const tiles = mine ? [["Hands won", fmt(mine.handsWon ?? 0)], ["Biggest pot", fmt(mine.biggestPot ?? 0)], ["Best hand", mine.bestHand ? shortHand(mine.bestHand) : "None"]] : [];
     setHTML($("resMain"),

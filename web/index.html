@@ -765,7 +765,6 @@
           <button class="pl-row" data-mode="bot"><span class="pl-ic" data-mon="stone_golem"></span><span><b>Practice</b><small>You vs the bot</small></span><span class="pl-go" data-chev></span></button>
           <p class="pl-label">Have a code?</p>
           <form class="pl-form" data-join data-code-form autocomplete="off"><input type="text" class="pl-code" placeholder="Room code" maxlength="8" autocapitalize="characters" autocomplete="off" spellcheck="false" enterkeyhint="go" aria-label="Room code" /><button class="ghost small" type="submit">Join</button></form>
-          <div class="pl-who pl-frame"><span class="muted">Playing as</span><b class="ell" id="whoName" data-who>Player</b><span class="grow"></span><button class="pl-link" id="whoChange" data-who-change type="button">Change</button></div>
           <div id="lobbyStatus" class="lb-note" role="status"></div>
         </div>
 
@@ -1464,10 +1463,8 @@
           playPreset(tgt, POSES.hurt.preset, { speed: POSES.hurt.speed });
         }, 260);
       }
-      /** Home: who you're playing as (a guest can change it; a claimed username stays put). */
+      /** Home: the banner (your name lives in the launcher's Profile). */
       function renderHome() {
-        $("whoName").textContent = displayName();
-        $("whoChange").hidden = !!account;
         drawHero();
       }
 

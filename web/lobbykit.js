@@ -7,7 +7,7 @@
  * `lobby:update {view}` notification. This file is the matching client: a game
  * describes itself once and gets
  *
- *   home(root, …)        the game home: modes, "Have a code?", "Playing as"
+ *   home(root, …)        the game home: modes and "Have a code?" (your name lives in the launcher's Profile)
  *   seat(method, data)   take a seat from the lobby (backing out gives it back)
  *   join(code)           what a code leads to, a name, then the seat
  *   renderRoom(view, …)  the room lobby from a LobbyView: code card, settings line,
@@ -101,7 +101,8 @@
     /* ------------------------------------------------------------ home */
     /**
      * Wire the game home: mode rows (`[data-mode]`), the code form (`[data-code-form]`)
-     * and "Playing as" (`[data-who]`, `[data-who-change]`). The game draws its hero.
+     * The game draws its hero. Your name isn't here: it lives in the launcher's
+     * Profile, and Ploto asks for one the first time you take a seat.
      */
     kit.home = (root, { onMode, onCode }) => {
       for (const s of root.querySelectorAll("[data-chev]")) if (!s.firstChild) s.innerHTML = art.chev();
@@ -116,15 +117,6 @@
         if (!code) return input.focus();
         (onCode || kit.join)(code);
       };
-      const change = root.querySelector("[data-who-change]");
-      if (change) change.onclick = async () => { await P.askName({ title: "Change your name", go: "Save" }); kit.renderWho(root); };
-      kit.renderWho(root);
-    };
-    kit.renderWho = (root) => {
-      const who = root.querySelector("[data-who]");
-      if (who) who.textContent = P.displayName();
-      const change = root.querySelector("[data-who-change]");
-      if (change) change.hidden = !!P.account; // a claimed username stays put
     };
 
     /* ------------------------------------------------------------ taking a seat */

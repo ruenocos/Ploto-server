@@ -46,7 +46,7 @@ Once a match starts, nothing is shared: each game draws its own table or board.
 
 | Screen | Blocks | Hold'em | Match Monsters |
 |---|---|---|---|
-| Home | `pl-bar` (Back to the launcher, title, one info action), `pl-hero` (the game's art), `pl-row` × 3 (quick / with friends / practice), `pl-form` + `pl-code` ("Have a code?"), `pl-who` (Playing as · Change) | Rules | Monsters (the roster) |
+| Home | `pl-bar` (Back to the launcher, title, one info action), `pl-hero` (the game's art), `pl-row` × 3 (quick / with friends / practice), `pl-form` + `pl-code` ("Have a code?"). Your name isn't on game pages: it's in the launcher's Profile, and Ploto asks for one the first time you play | Rules | Monsters (the roster) |
 | The game's options | the game's own controls | Host a table: seats, bots, chips, timer, blinds | Teams: Pick, Draft or Random (then Your team for Pick) |
 | Room lobby | `pl-codecard` (code + Share invite), `pl-sumline` (the room's settings in a line), `pl-label` + `pl-seats` / `pl-seat` (you, players, open seats with Invite), `pl-waitline` or a `pl-foot` action | Seats 2–6, host starts | 1v1: starts as soon as the friend joins |
 
@@ -99,7 +99,7 @@ seats: [{seat, kind: 'player'|'bot'|'empty'|'invited', name, connected, inviteId
 rematch: {roomId, code, players} | null}`.
 
 **Client.** `Ploto.lobbyKit(def)` (web/lobbykit.js) draws the lobby screens from
-those: the game home (`[data-mode]` rows, `[data-code-form]`, `[data-who]`), seat
+those: the game home (`[data-mode]` rows, `[data-code-form]`), seat
 taking that gives the seat back if you back out (`kit.seat`, `kit.cancelSeat`),
 joining by code (`kit.info`, `kit.join`), the room lobby from a `LobbyView`
 (`kit.renderRoom(view, {main, foot, req})`), the invite picker, sharing,

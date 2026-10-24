@@ -176,7 +176,7 @@ input[type="text"]:focus, input[type="search"]:focus, input[type="password"]:foc
 .pl-invite .pl-inv-timer { height: var(--px); background: var(--c-accent-hi); transform-origin: left; }
 
 /* ---- game lobbies: the same building blocks in every game (docs/PLATFORM.md) ----
- * pl-hero (the game's art banner), pl-who (playing as · Change), pl-codecard (room code + share),
+ * pl-hero (the game's art banner), pl-codecard (room code + share),
  * pl-sumline (the room's settings in a line), pl-seats / pl-seat (who's in, open seats with actions),
  * pl-waitline (what we're waiting for), pl-foot (the sticky action bar), pl-av / pl-you / pl-bot. */
 .pl-you { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; letter-spacing: 1px; padding: 2px 4px; background: var(--c-accent); color: #fff; }
@@ -188,9 +188,6 @@ input[type="text"]:focus, input[type="search"]:focus, input[type="password"]:foc
 .pl-flow > .pl-view { flex: 1; }
 /* the banner keeps a 16:7 shape from the column's width (never wider than the screen, never too flat) */
 .pl-hero { position: relative; width: 100%; min-width: 0; height: clamp(124px, calc((min(100vw, var(--pl-max) + 32px) - 32px) * 0.4375), 245px); overflow: hidden; background: var(--c-well); }
-.pl-who { display: flex; align-items: center; gap: 8px; padding: 10px 12px 12px; }
-.pl-who b { font: 700 var(--fl-1)/1.2 var(--f-label); color: var(--c-cream); text-transform: uppercase; }
-.pl-who .grow { flex: 1; }
 .pl-link { background: none; border: 0; box-shadow: none; clip-path: none; padding: 8px 4px; min-height: 40px; color: var(--c-accent-hi); font: 600 var(--fs-s)/1 var(--f-text); text-transform: none; text-shadow: none; cursor: pointer; }
 .pl-link:active { transform: none; box-shadow: none; }
 .pl-codecard { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 12px 14px; }

@@ -32,7 +32,7 @@
   </div>
 </header>
 
-<!-- Home: Ploto's blocks, the game's hero art -->
+<!-- Home: Ploto's blocks, the game's hero art (your name lives in the launcher's Profile) -->
 <section class="scr" id="scrHome" hidden>
   <main class="pl-view">
     <div class="pl-hero pl-frame" id="hero" aria-hidden="true"></div>
@@ -44,7 +44,6 @@
       <input class="pl-code" type="text" placeholder="Race code" maxlength="8" autocapitalize="characters" spellcheck="false" aria-label="Race code" />
       <button class="ghost small" type="submit">Join</button>
     </form>
-    <div class="pl-who pl-frame"><span class="muted">Playing as</span><b class="ell" data-who>Player</b><span class="grow"></span><button class="pl-link" data-who-change type="button">Change</button></div>
   </main>
 </section>
 
@@ -125,7 +124,6 @@
     for (const [n, id] of Object.entries(SCREENS)) $(id).hidden = n !== name;
     $("bar").hidden = name === "game";
     $("barTitle").textContent = name === "home" ? "__TITLE__" : name === "host" ? "Host a race" : kit.title(S.lobby);
-    if (name === "home") kit.renderWho($("scrHome"));
     if (name === "host") { $("hostFields").innerHTML = kit.fieldsHTML(kit.settings); kit.wireFields($("hostFields"), kit.settings, kit.saveSettings); }
     if (name === "lobby") kit.renderRoom(S.lobby, { main: $("lobbyMain"), foot: $("lobbyFoot"), req });
     if (name === "game") renderGame();

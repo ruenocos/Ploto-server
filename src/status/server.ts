@@ -94,9 +94,9 @@ export function buildStatusServer(config: ServerConfig): FastifyInstance {
   });
 
   // Sound and haptics (web/feedback.js), the generated sound set (web/sounds.js),
-  // the pixel icons (web/icons.js), and jsfxr, the synth that plays the sounds
-  // (pinned npm dependency).
-  for (const name of ["feedback.js", "sounds.js", "icons.js"]) {
+  // the pixel icons (web/icons.js), Hold'em's face-card portraits (web/cards.js),
+  // and jsfxr, the synth that plays the sounds (pinned npm dependency).
+  for (const name of ["feedback.js", "sounds.js", "icons.js", "cards.js"]) {
     app.get(`/play/${name}`, async (_req, reply) => {
       reply.header("content-type", "application/javascript; charset=utf-8");
       return loadWebFile(name);

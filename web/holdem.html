@@ -100,6 +100,10 @@ p.sumline { margin: 0; min-height: 0; }
 .card.mini { --w: 24px; --h: 34px; } .card.mini .r { left: 2px; top: 2px; } .card.mini .s { left: 3px; top: calc(4px + var(--fl-1)); } .card.mini .g { display: none; }
 .card.md { --w: var(--bw, 40px); --h: var(--bh, 56px); } .card.md .r { font-size: var(--fl-2); } .card.md .s { display: none; }
 .card.lg { --w: var(--hw, 56px); --h: var(--hh, 78px); } .card.lg .r { font-size: var(--fl-3); left: 4px; top: 4px; } .card.lg .s { left: 5px; top: calc(8px + var(--fl-3)); } .card.lg .g { right: 4px; bottom: 6px; }
+.card .court { position: absolute; left: 50%; bottom: calc(var(--px) * 2); translate: -50% 0; width: 78%; image-rendering: pixelated; pointer-events: none; }
+.card.lg .court { left: 56%; } /* clear of the corner's suit */
+.card .ace { position: absolute; left: 50%; top: 55%; translate: -50% -50%; }
+.card.lg .ace { left: 56%; top: 60%; }
 .card.lift { translate: 0 -6px; border-color: var(--c-gold); box-shadow: inset 0 0 0 var(--px) var(--c-gold), inset 0 calc(var(--px) * -3) 0 var(--card-lo); }
 .card.dim { opacity: 0.42; }
 .slot { flex: none; width: var(--bw, 40px); height: var(--bh, 56px); box-shadow: inset 0 0 0 var(--px) rgba(44, 122, 91, 0.3); }
@@ -368,6 +372,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
 <script src="/play/sounds.js"></script>
 <script src="/play/feedback.js"></script>
 <script src="/play/icons.js"></script>
+<script src="/play/cards.js"></script>
 <script src="/play/platform.js"></script>
 <script>
 (() => {
@@ -546,10 +551,17 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   const rk = (r) => RANK_TXT[r] || String(r);
   const key = (c) => c ? `${c.rank}${c.suit}` : "";
   const BIG = { md: 3, lg: 4 };
+  const COURT = { 11: "jack", 12: "queen", 13: "king" };
   function cardHTML(c, size, cls = "") {
     if (!c) return `<div class="card back ${size} ${cls}"></div>`;
     const red = c.suit === "h" || c.suit === "d";
-    return `<div class="card ${size}${red ? " red" : ""} ${cls}" data-k="${key(c)}"><b class="r">${rk(c.rank)}</b><i class="s">${px(c.suit, 2)}</i><i class="g">${px(c.suit, BIG[size] || 2)}</i></div>`;
+    // Big cards get a face: a court portrait (web/cards.js, red or navy robe by suit), a large ace pip, else the suit
+    const art = BIG[size] && COURT[c.rank] && window.PLOTO_CARDS?.[COURT[c.rank]];
+    const ace = BIG[size] && c.rank === 14;
+    const face = art ? `<img class="court" src="${art[red ? "red" : "black"]}" alt="" draggable="false">`
+      : ace ? `<i class="ace">${px(c.suit, BIG[size] + (size === "lg" ? 1 : 2))}</i>`
+      : `<i class="g">${px(c.suit, BIG[size] || 2)}</i>`;
+    return `<div class="card ${size}${red ? " red" : ""} ${cls}" data-k="${key(c)}"><b class="r">${rk(c.rank)}</b><i class="s">${px(c.suit, 2)}</i>${face}</div>`;
   }
   const cardLabel = (c) => `${({ 11: "jack", 12: "queen", 13: "king", 14: "ace" })[c.rank] || c.rank} of ${({ s: "spades", h: "hearts", d: "diamonds", c: "clubs" })[c.suit]}`;
 

@@ -56,3 +56,16 @@ python3 ../pixel/build.py                              # swaps approved lines in
 - `evolve.py`, `generate.py`, `idle.py` — img2img evolution, Pixen candidates,
   idle loops (optional; the client plays an `<id>-<stage>-idle.png` strip if present).
 - `candidates/` — review material, not committed.
+
+## Hold'em face cards
+
+`cards.py` draws the court portraits (one jack, queen and king, used for every
+suit) with the Pro model in classic card colours; `build` writes `web/cards.js`
+with each portrait twice, in a red robe (hearts, diamonds) and a navy one
+(clubs, spades). Picks live in `cards/`.
+
+```bash
+python3 cards.py concept --seed 1                       # 64 options per rank -> candidates/cards/<rank>-1-sheet.png
+python3 cards.py pick king candidates/cards/king-1-f24.png
+python3 cards.py build                                  # cards/*.png -> web/cards.js
+```

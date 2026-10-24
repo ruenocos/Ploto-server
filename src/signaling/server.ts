@@ -28,6 +28,7 @@ import type { Services } from "../services.js";
 import { makeCode, normalizeCode } from "../platform/codes.js";
 import { GAMES, setOnlineCounter } from "../platform/games.js";
 import { InviteBook } from "../platform/invites.js";
+import { LobbyRoom } from "../platform/lobbyRoom.js";
 import type { GameLobby, LobbyContext, Room } from "../platform/lobby.js";
 import { MatchMonstersLobby } from "../game/matchmonsters/lobby.js";
 import { HoldemLobby } from "../game/holdem/lobby.js";
@@ -258,6 +259,14 @@ export class SignalingServer {
         if (!hit || !this.rooms.has(hit.roomId)) throw new Error("that code doesn't lead anywhere any more");
         const game = GAMES.find((g) => g.id === hit.gameId);
         return { code, gameId: hit.gameId, path: game?.path ?? null };
+      }
+
+      // --- The room this tab saved: still there, and still yours? (the launcher's Continue) ---
+      case "platform:room": {
+        const d = (data ?? {}) as Record<string, unknown>;
+        const room = this.rooms.get(typeof d["roomId"] === "string" ? d["roomId"] : "");
+        if (!(room instanceof LobbyRoom) || room.seatOfPeer(peer.id) < 0 || room.phase === "over") throw new Error("that game has ended");
+        return { gameId: room.gameId, phase: room.phase, code: room.code };
       }
 
       // --- Invites waiting for me (the launcher lists them; any game) ---

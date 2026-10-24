@@ -724,18 +724,12 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   }
   $("barBack").addEventListener("click", () => { if (screenNow() === "home") toLauncher(); else back(); });
 
-  // Invites from friends while you're here: a Hold'em table seats you right away; another game opens its page.
-  P.onLobby("social:invite", async (inv) => {
-    if (S.room && S.view?.phase === "playing") return toast(`${inv.from.username} invited you to ${inv.label}`, 3000);
-    const ok = await P.confirm({ title: `${inv.from.username} invited you`, body: inv.label, yes: "Join", no: "Not now" });
-    if (!ok) return P.lobby().then((s) => s.request("platform:declineInvite", { inviteId: inv.inviteId })).catch(() => {});
-    if (inv.gameId === "holdem") {
-      if (S.room) { req("lobby:leave").catch(() => {}); dropRoom(); }
-      return acceptInvite(inv.inviteId);
-    }
-    const game = (await P.games()).find((g) => g.id === inv.gameId);
-    if (game) location.href = `${game.path}?invite=${encodeURIComponent(inv.inviteId)}`;
+  // Invites are Ploto's card (web/platform.js); a Hold'em invite seats you here, leaving the table you're at.
+  P.acceptInvitesHere("holdem", (inv) => {
+    if (S.room) { req("lobby:leave").catch(() => {}); dropRoom(); }
+    acceptInvite(inv.inviteId);
   });
+  P.setInviteBusy(() => !!S.room && S.view?.phase === "playing");
   window.addEventListener("keydown", (e) => {
     if (e.key !== "Escape" || P.sheetOpen() || e.target.matches?.("input")) return;
     if (screenNow() === "table") return openMenu();
@@ -884,7 +878,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   async function enterRoom({ roomId, code }) {
     closeSock();
     S.room = { roomId, code };
-    store.set("holdem.room", S.room);
+    P.saveRoom("holdem", S.room);
     Object.assign(S, { view: null, lobby: null, M: null, queue: [], tags: {}, handNames: {}, lift: null, banner: null, pre: null, resultReady: false, elimShown: false, turnKey: "", clock: null, leaving: false, retry: 0 });
     S.out = store.get(`holdem.out.${roomId}`) || {};
     if (cur() !== "room") nav.stack = ["home", "room"];
@@ -958,7 +952,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     S.lobby = null;
     S.M = null;
     S.queue = [];
-    store.del("holdem.room");
+    P.forgetRoom("holdem");
     if (S.raiseOpen) P.closeSheet();
   }
   const req = (method, data) => (S.sock && S.sock.readyState === OPEN ? S.sock.request(method, data) : Promise.reject(new Error("not connected")));
@@ -1999,7 +1993,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   const qTable = q.get("code") || q.get("table"), qInvite = q.get("invite"), qFriend = q.get("inviteFriend");
   if (qTable || qInvite || qFriend) history.replaceState(null, "", location.pathname);
   show(0);
-  const saved = store.get("holdem.room");
+  const saved = P.savedRoom("holdem");
   if (qInvite) acceptInvite(qInvite);
   else if (qTable) joinCode(qTable.trim().toUpperCase());
   else if (qFriend) { S.inviteFriend = qFriend; go("host"); }

@@ -30,7 +30,7 @@
       body.in-game { position: fixed; inset: 0; overflow: hidden; }
 
       /* ---- the frame: pixel-cut corners (one UI pixel), 1-UI-pixel ink outline, bevel ---- */
-      .frame, .pcard, .hud-card, .banner, .board-wrap, .sheet, .end-card, .toast, .invite, .invite-card,
+      .frame, .pcard, .hud-card, .banner, .board-wrap, .sheet, .end-card, .toast, .invite,
       .chip, .el-arch, .pcost, .pick-no, .slot, .cast-name, .peer-warn, .bubble, .s-next, .evo-st.cur, .cbadge .evo, .cbadge .lock,
       .hp .bar, .cbar, .arena {
         --n: var(--px);
@@ -38,7 +38,7 @@
           100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%,
           var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n)));
       }
-      .frame, .pcard, .hud-card, .sheet, .end-card, .toast, .invite, .invite-card, .s-next {
+      .frame, .pcard, .hud-card, .sheet, .end-card, .toast, .invite, .s-next {
         background: var(--c-panel); border: var(--px) solid var(--c-ink);
         box-shadow: inset 0 var(--px) 0 var(--c-edge), inset 0 calc(var(--px) * -2) 0 rgba(10, 12, 20, 0.45);
       }
@@ -81,7 +81,7 @@
       /* home */
       /* Home's banner: the arena by day, two monsters facing off (as on the launcher's card) */
       .mm-hero { background-color: #5aa6e0; background-repeat: repeat-x; background-position: 50% 100%; image-rendering: pixelated; }
-      .mm-hero-f { position: absolute; bottom: calc(var(--u) * 2); width: calc(var(--u) * 48); height: calc(var(--u) * 54); }
+      .mm-hero-f { position: absolute; bottom: calc(var(--u) * 9); width: calc(var(--u) * 48); height: calc(var(--u) * 54); }
       .mm-hero-f.l { left: 12%; } .mm-hero-f.r { right: 12%; }
       .mm-hero-f img { position: absolute; left: calc(var(--u) * 4); top: calc(var(--u) * 40); width: calc(var(--u) * 40); height: calc(var(--u) * 14); image-rendering: pixelated; }
       .mm-hero.entering .mm-hero-b:not(.animate__animated) { visibility: hidden; } /* off stage until they run in (as .arena.entering) */
@@ -152,16 +152,6 @@
       .row-input button { flex: none; }
       .sheet h3 { font: 700 var(--fs-xs)/1.2 var(--f-text); letter-spacing: 1px; color: var(--c-mute); margin: 16px 0 6px; text-transform: uppercase; }
       .empty { color: var(--c-mute); padding: 8px 0; }
-      .invite-card {
-        position: fixed; left: 50%; top: calc(10px + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 50;
-        width: min(94vw, 420px); padding: 12px; border-color: var(--c-accent-hi); animation: dropIn 0.3s steps(4);
-      }
-      @keyframes dropIn { from { transform: translate(-50%, -24px); opacity: 0; } }
-      .invite-card .ic-top { display: flex; align-items: center; gap: 10px; }
-      .invite-card .ic-team { display: flex; flex: none; gap: 4px; }
-      .invite-card .ic-team svg { width: 40px; height: 40px; }
-      .invite-card .ic-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-      .invite-card .ic-timer { height: var(--px); background: var(--c-accent-hi); margin-top: 10px; transform-origin: left; }
       .el-group { margin: 22px 0 8px; }
       .el-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
       .el-head .el-title { font: 700 var(--fl-2)/1 var(--f-label); color: var(--c-cream); display: flex; align-items: center; gap: 6px; }
@@ -871,7 +861,6 @@
     <div id="end" class="scrim hidden"></div>
     <div id="toast" class="toast"></div>
     <div id="turnCall" class="turn-call hidden" role="status" aria-live="assertive"></div>
-    <div id="inviteCard" class="invite-card hidden"></div>
     <div id="fx" aria-hidden="true"></div>
 
     <script src="/play/riffwave.js"></script>
@@ -895,39 +884,18 @@
       const BERRIES_TO_EVOLVE = 4;
 
       /*
-       * Settings, per device (localStorage): sound, haptics, idle hints, text
-       * size and motion. Motion "device" follows prefers-reduced-motion;
-       * "reduced" forces it on whatever the device says.
+       * Settings are Ploto's (sound, vibration, text size, motion: web/platform.js), the
+       * same on every page; Match Monsters adds its idle hints.
        */
-      const SETTINGS_KEY = "mm.settings";
-      const settings = Object.assign(
-        { sound: true, haptics: true, hints: true, text: 1, motion: "device" },
-        (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch { return {}; } })(),
-      );
-      const systemReduce = window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : null;
-      let reduceMotion = false;
-      /** Snap the Silkscreen sizes (--fl-*) so each font pixel is whole device pixels on this screen. */
-      function sizeType() {
-        const dpr = window.devicePixelRatio || 1;
-        const root = document.documentElement.style;
-        for (const [name, k] of [["--fl-1", 1.5], ["--fl-2", 2], ["--fl-3", 3], ["--fl-4", 4], ["--fl-6", 6]]) {
-          root.setProperty(name, (8 * Math.max(1, Math.round(k * dpr))) / dpr + "px");
-        }
-      }
-      sizeType();
-      window.addEventListener("resize", sizeType); // zooming changes the device pixel ratio
-      function applySettings() {
-        reduceMotion = settings.motion === "reduced" || !!systemReduce?.matches;
-        document.documentElement.classList.toggle("reduce-motion", reduceMotion);
-        document.documentElement.style.setProperty("--ts", String(settings.text));
-        window.MM_FEEDBACK?.configure({ sound: settings.sound, haptics: settings.haptics });
+      const settings = Ploto.settings;
+      let reduceMotion = Ploto.reduceMotion();
+      Ploto.addSettings([{ key: "hints", label: "Hints", options: [[true, "On"], [false, "Off"]], note: () => "A good swap wiggles after 8 seconds without a move" }]);
+      Ploto.onSettings(() => {
+        reduceMotion = Ploto.reduceMotion();
         if (!settings.hints) clearHint();
-      }
-      function saveSettings() {
-        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch {}
-        applySettings();
-      }
-      systemReduce?.addEventListener?.("change", applySettings);
+        if (!$("game").classList.contains("hidden")) { sizeArena(); sizeBoard(); }
+      });
+      const applySettings = () => Ploto.applySettings();
       /** Sound + haptic for a game moment (web/feedback.js); called where its visual happens. */
       const cue = (name, opts) => window.MM_FEEDBACK?.cue(name, opts);
 
@@ -1190,41 +1158,8 @@
         b.disabled = lbBusy || picks.length < 2;
       }
 
-      /* ---- your name: a guest picks one in a modal the first time it's needed ---- */
-      const guestName = () => { const n = local.get("mm.guestName"); return typeof n === "string" && n.trim() ? n.trim() : null; };
-      const displayName = () => (account ? account.username : guestName() || "Player");
-      let nameAsk = null; // resolves the open name modal
-      /** Ask for a name (or change it). Resolves the name, or null if closed. */
-      function askName({ title = "What should we call you?", body = "Your rival sees this name during the match.", go = "Let's play" } = {}) {
-        return new Promise((resolve) => {
-          const el = showPanel("name",
-            `<h2>${esc(title)}</h2>` +
-            `<p class="muted" style="text-align:center;margin:8px 0 14px">${esc(body)}</p>` +
-            `<form class="row-input" id="nameForm"><input id="nameInput" type="text" placeholder="Your name" maxlength="16" autocomplete="nickname" required />` +
-            `<button class="small" type="submit">${esc(go)}</button></form>` +
-            `<p class="muted" style="font-size:var(--fs-s);margin:12px 0 0;text-align:center">Want to keep your record and add friends? <a href="#" id="toClaim">Claim a username</a></p>`);
-          nameAsk = resolve;
-          const input = el.querySelector("#nameInput");
-          input.value = guestName() || "";
-          el.querySelector("#nameForm").onsubmit = (e) => {
-            e.preventDefault();
-            const name = input.value.trim();
-            if (!name) return input.focus();
-            local.set("mm.guestName", name);
-            renderAccount();
-            nameAsk = null;
-            closePanel();
-            resolve(name);
-          };
-          el.querySelector("#toClaim").onclick = (e) => { e.preventDefault(); nameAsk = null; resolve(null); openClaim(); };
-          if (!touch()) { input.focus(); input.select(); } // on a phone the keyboard waits for a tap
-        });
-      }
-      /** True once there's a name to play under: an account, a guest name, or one just given. */
-      async function ensureName(opts) {
-        if (account || guestName()) return true;
-        return (await askName(opts)) != null;
-      }
+      /* ---- your name: Ploto's (a guest picks one in a modal the first time it's needed) ---- */
+      const { guestName, displayName, askName, ensureName } = Ploto;
       /** How this player's rooms make teams, and their two monsters (blind picks need them). */
       const teamKey = () => (draftMode ? "draft" : randomMode ? "random" : "pick");
       const seatReq = (extra = {}) => ({ settings: { team: teamKey() }, data: picks, ...extra });
@@ -1542,7 +1477,6 @@
       Ploto.onLobby("social:changed", (d) => onSocialChanged(d));
       Ploto.onLobby("social:message", (d) => onMessage(d));
       Ploto.onLobby("social:presence", (d) => onPresence(d));
-      Ploto.onLobby("social:invite", (d) => onInvite(d));
       Ploto.onLobby("social:inviteGone", (d) => onInviteGone(d));
       // After a reconnect, catch up on what changed while away.
       Ploto.onLobbyOpen((sock) => { lobbySock = sock; if (account) loadFriends(); });
@@ -1659,7 +1593,7 @@
         gameSock = null;
         room = null;
         roomView = null;
-        store.del("mm.room");
+        Ploto.forgetRoom("match_monsters");
         if (sock) sock.request("lobby:leave", {}).catch(() => {}).finally(() => { try { sock.close(); } catch {} });
       }
       const cancelInvites = leaveLobbyRoom;
@@ -1709,13 +1643,13 @@
         try { old?.close(); } catch {}
         room = { roomId: r.roomId, seat: r.seat };
         roomView = null;
-        store.set("mm.room", room);
+        Ploto.saveRoom("match_monsters", room);
         await openGame();
       }
       /** The room's lobby changed: who's in, the start, a rematch on offer. */
       function onLobbyView(v) {
         roomView = v;
-        if (room && v.you != null && room.seat !== v.you) { room.seat = v.you; store.set("mm.room", room); }
+        if (room && v.you != null && room.seat !== v.you) { room.seat = v.you; Ploto.saveRoom("match_monsters", room); }
         if (v.phase === "lobby") {
           if ($("lobby").classList.contains("hidden")) showScreen("lobby");
           const wait = v.mode === "quick" || v.mode === "practice" ? "searching" : "room";
@@ -1738,7 +1672,7 @@
         starting ??= (async () => {
           clearTimeout(searchTimer);
           lbReset(); // back in the lobby later, you start at Home
-          $("inviteCard").classList.add("hidden");
+          Ploto.hideInviteCard();
           if (panel) closePanel();
           if (Ploto.sheetOpen()) Ploto.closeSheet(true);
           await refresh();
@@ -1816,14 +1750,14 @@
       }
 
       async function resumeIfAny() {
-        const saved = store.get("mm.room");
+        const saved = Ploto.savedRoom("match_monsters");
         if (!saved) return false;
         room = saved;
         try {
           await openGame();
           return true;
         } catch {
-          store.del("mm.room");
+          Ploto.forgetRoom("match_monsters");
           room = null;
           showScreen("lobby");
           return false;
@@ -1843,7 +1777,7 @@
         selected = null;
         endInfo = null;
         clearTimeout(searchTimer);
-        store.del("mm.room");
+        Ploto.forgetRoom("match_monsters");
         $("end").classList.add("hidden");
         $("lobbyStatus").textContent = "";
         showScreen("lobby");
@@ -2681,52 +2615,12 @@
       }
 
       async function leaveDraft() {
-        if (!(await confirmPanel({ title: "Leave the draft?", body: "The match is cancelled for both of you.", yes: "Leave", no: "Keep drafting" }))) return;
+        if (!(await Ploto.confirm({ title: "Leave the draft?", body: "The match is cancelled for both of you.", yes: "Leave", no: "Keep drafting", danger: true }))) return;
         try { await gameSock?.request("mm:leaveDraft", {}); } catch {}
         leaveGame();
       }
 
-      /* ------------------------------------------------------------ settings sheet */
-      const SETTING_ROWS = [
-        { key: "sound", label: "Sound", options: [[true, "On"], [false, "Off"]] },
-        { key: "haptics", label: "Vibration", options: [[true, "On"], [false, "Off"]], test: true,
-          note: () => (window.MM_FEEDBACK?.canVibrate ? "Feel nothing? Turn off silent mode: Android mutes vibration in it" : "Not supported on this device (iPhones don't allow it)") },
-        { key: "hints", label: "Hints", options: [[true, "On"], [false, "Off"]], note: () => "A good swap wiggles after 8 seconds without a move" },
-        { key: "text", label: "Text size", options: [[1, "Normal"], [1.15, "Large"], [1.3, "Larger"]] },
-        { key: "motion", label: "Motion", options: [["device", "Device"], ["reduced", "Reduced"]], note: () => (systemReduce?.matches ? "Your device asks for reduced motion" : "") },
-      ];
-      function openSettings() {
-        const sheet = $("sheet");
-        sheet.innerHTML =
-          `<div class="sheet settings" role="dialog" aria-label="Settings"><h2>Settings</h2>` +
-          SETTING_ROWS.map((r) => {
-            const note = r.note?.() || "";
-            return `<div class="set-row"><div class="set-label">${r.label}${note ? `<span class="set-note">${esc(note)}</span>` : ""}</div>` +
-              `<div class="seg" role="group" aria-label="${r.label}">` +
-              r.options.map(([v, l]) => `<button class="ghost small" data-key="${r.key}" data-val='${JSON.stringify(v)}' aria-pressed="${settings[r.key] === v}">${l}</button>`).join("") +
-              (r.test && window.MM_FEEDBACK?.canVibrate ? `<button class="ghost small" data-test="buzz">Test</button>` : "") +
-              `</div></div>`;
-          }).join("") +
-          `<div class="s-actions"><button class="ghost" id="sheetClose">Close</button></div></div>`;
-        sheet.classList.remove("hidden");
-        const close = () => sheet.classList.add("hidden");
-        $("sheetClose").onclick = close;
-        sheet.onclick = (e) => {
-          if (e.target === sheet) return close();
-          if (e.target.closest?.("[data-test]")) {
-            if (!settings.haptics) return toast("Vibration is off");
-            return toast(window.MM_FEEDBACK?.testBuzz() ? "Buzzing now. Feel nothing? Check that silent mode is off" : "Your browser blocked vibration", 3000);
-          }
-          const b = e.target.closest?.("[data-key]");
-          if (!b) return;
-          settings[b.dataset.key] = JSON.parse(b.dataset.val);
-          saveSettings();
-          if (b.dataset.key === "sound" && settings.sound) cue("select");
-          if (b.dataset.key === "haptics" && settings.haptics) window.MM_FEEDBACK?.testBuzz();
-          openSettings();
-          sizeArena(); sizeBoard();
-        };
-      }
+      const openSettings = () => Ploto.openSettings();
 
       /* ------------------------------------------------------------ animation
        * Motion language: matched tiles burst into motes that fly into the
@@ -3437,7 +3331,7 @@
       }
 
       function showEnd(won, forfeitedBy = null) {
-        store.del("mm.room");
+        Ploto.forgetRoom("match_monsters");
         if (panel) closePanel();
         const forfeit = forfeitedBy == null ? null : forfeitedBy === room.seat ? "me" : "them";
         endInfo = { won, forfeit, mine: false, theirs: false };
@@ -3569,7 +3463,7 @@
         $("end").classList.add("hidden");
         room = { roomId: r.roomId, seat };
         roomView = null;
-        store.set("mm.room", room);
+        Ploto.saveRoom("match_monsters", room);
         state = null;
         draftState = null;
         selected = null;
@@ -3586,81 +3480,26 @@
        * Anonymous accounts: claiming a name returns a secret key, kept in
        * localStorage. That key is the login (there's no password).
        */
-      let account = local.get("mm.account"); // { id, username }
+      let account = Ploto.account; // { id, username }
       let friendsData = { friends: [], incoming: [], outgoing: [] };
       let panel = null; // "claim" | "key" | "name" | "confirm" | "invite" (the sheet's lobby panels)
       const incomingInvites = new Map();
 
-      function setAccount(a) {
-        account = a;
-        Ploto.setAccount(a); // the shared toolkit (and its lobby sign-in) follows
-        renderAccount();
-      }
+      // Your account is Ploto's (web/platform.js): claiming, signing in with a key, restoring it.
+      Ploto.onAccount((a) => { account = a; renderAccount(); if (a) connectLobby().catch(() => {}); });
 
       // Your name and the friends list live in the launcher now; Home shows who you're playing as.
       function renderAccount() { if (curScreen() === "home") renderHome(); }
 
-      /** Claiming a username, in a sheet (offered in the lobby and after a match, never as a gate). */
-      let afterClaim = null; // what to open once the claim succeeds (the friends list, adding a rival)
-      function openClaim({ title = "Claim a username", body = "It keeps your record and lets friends find you. No password: this device keeps a key.", then = null } = {}) {
-        afterClaim = then;
-        const el = showPanel("claim",
-          `<h2>${esc(title)}</h2>` +
-          `<p class="muted" style="text-align:center;margin:8px 0 14px">${esc(body)}</p>` +
-          `<div class="row-input"><input id="name" type="text" placeholder="Username" maxlength="16" autocomplete="nickname" /><button id="claim" class="small">Claim</button></div>` +
-          `<p class="muted" style="font-size:var(--fs-s);margin:10px 0 0">Played on another device? <a href="#" id="useKey">Sign in with your key</a></p>` +
-          `<div class="s-actions" style="margin-top:16px"><button class="ghost" data-act="close">Close</button></div>`);
-        const input = el.querySelector("#name");
-        input.value = guestName() || "";
-        input.onkeydown = (e) => { if (e.key === "Enter") claimName(input.value); };
-        el.querySelector("#claim").onclick = () => claimName(input.value);
-        el.querySelector("#useKey").onclick = (e) => { e.preventDefault(); openKeyPrompt(); };
-        el.querySelector('[data-act="close"]').onclick = closePanel;
-        if (!touch()) input.focus();
-      }
-
-      async function claimName(name) {
-        try {
-          const res = await api("POST", "/api/accounts", { username: name });
-          local.set("mm.key", res.key);
-          setAccount({ id: res.id, username: res.username });
-          toast(`Signed in as ${res.username} on this device`, 2600);
-          if (panel === "claim") closePanel();
-          await connectLobby();
-          const next = afterClaim;
-          afterClaim = null;
-          if (next) await next();
-        } catch (e) { toast(errText(e), 2600); }
-      }
-
-      async function signInWithKey(key) {
-        const before = local.get("mm.key");
-        local.set("mm.key", key.trim());
-        try {
-          const me = await api("GET", "/api/me");
-          setAccount({ id: me.id, username: me.username });
-          if (lobbySock) lobbySock._authed = null;
-          await connectLobby();
-          toast(`Signed in as ${me.username}`);
-          return true;
-        } catch (e) {
-          if (before) local.set("mm.key", before); else local.del("mm.key");
-          toast(e.status === 401 ? "That key doesn't match an account" : errText(e));
-          return false;
-        }
+      /** Claiming a username, in Ploto's sheet (offered after a match, never as a gate); `then` runs once claimed. */
+      async function openClaim({ title, body, then = null } = {}) {
+        const a = await Ploto.openClaim({ ...(title ? { title } : {}), ...(body ? { body } : {}) });
+        if (a && then) await then();
       }
 
       async function restoreAccount() {
-        if (!local.get("mm.key")) return setAccount(null);
-        try {
-          const me = await api("GET", "/api/me");
-          setAccount({ id: me.id, username: me.username });
-        } catch (e) {
-          // 401: the key no longer exists (e.g. the server's data was reset).
-          if (e.status === 401) { local.del("mm.key"); setAccount(null); toast("Your account wasn't found. Claim a name again", 3000); }
-          else renderAccount();
-        }
-        if (account) connectLobby().catch(() => {});
+        account = await Ploto.restoreAccount();
+        renderAccount();
       }
 
       async function connectLobby() {
@@ -3684,33 +3523,7 @@
       }
       function closePanel() {
         $("sheet").classList.add("hidden");
-        if (panel === "confirm") confirmPanel.cancel?.();
-        if (panel === "name" && nameAsk) { const r = nameAsk; nameAsk = null; r(null); }
         panel = null;
-      }
-
-      /**
-       * An in-game yes/no question in the bottom sheet (never the browser's own
-       * confirm box). Resolves true for yes; closing it any other way is no.
-       * `yes` is trusted markup (it may hold an icon); the rest is text.
-       */
-      function confirmPanel({ title, body, yes, no = "Cancel", danger = true }) {
-        return new Promise((resolve) => {
-          const el = showPanel("confirm",
-            `<h2>${esc(title)}</h2>` +
-            `<p class="muted" style="text-align:center;margin:8px 0 16px">${esc(body)}</p>` +
-            `<div class="s-actions"><button class="${danger ? "danger" : ""}" data-act="yes">${yes}</button><button class="ghost" data-act="no">${esc(no)}</button></div>`);
-          let answered = false;
-          const answer = (v) => { if (answered) return; answered = true; resolve(v); };
-          confirmPanel.cancel = () => answer(false);
-          el.onclick = (e) => {
-            const btn = e.target.closest("[data-act]");
-            if (!btn) return;
-            answer(btn.dataset.act === "yes"); // before closePanel, which would answer no
-            closePanel();
-          };
-          el.querySelector('[data-act="no"]').focus();
-        });
       }
 
       /* ---- live updates from the lobby socket ---- */
@@ -3740,58 +3553,22 @@
         catch (e) { toast(errText(e)); }
       }
 
-      function onInvite(inv) {
-        // Another game's invite (Hold'em…): offer to open that game's page, which accepts it there.
-        if (inv.gameId && inv.gameId !== "match_monsters") return showOtherGameInvite(inv);
-        incomingInvites.set(inv.inviteId, inv);
-        if (room) return toast(`${inv.from.username} challenged you. Finish this game first`, 3000);
-        showInviteCard(inv);
-      }
-
-      async function showOtherGameInvite(inv) {
-        if (room) return toast(`${inv.from.username} invited you to ${inv.label}. Finish this game first`, 3000);
-        const game = (await Ploto.games()).find((g) => g.id === inv.gameId);
-        if (!game) return;
-        const card = $("inviteCard");
-        card.innerHTML =
-          `<div class="ic-top"><div class="ell"><b>${esc(inv.from.username)}</b> invited you<div class="muted" style="font-size:12px">${esc(inv.label)}</div></div></div>` +
-          `<div class="ic-actions"><button class="ghost" data-ic="decline">Decline</button><button data-ic="open">Join</button></div><div class="ic-timer"></div>`;
-        card.dataset.invite = inv.inviteId;
-        card.classList.remove("hidden");
-        card.querySelector(".ic-timer").animate([{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }], { duration: inv.expiresInMs || 90000, fill: "forwards" });
-        card.onclick = (e) => {
-          const btn = e.target.closest("[data-ic]");
-          if (!btn) return;
-          card.classList.add("hidden");
-          if (btn.dataset.ic === "open") location.href = `${game.path}?invite=${encodeURIComponent(inv.inviteId)}`;
-          else lobbySock?.request("platform:declineInvite", { inviteId: inv.inviteId }).catch(() => {});
-        };
-      }
-
-      function showInviteCard(inv) {
-        const card = $("inviteCard");
+      // Invites are Ploto's card (web/platform.js); Match Monsters adds the host's team and accepts its own here.
+      Ploto.inviteDetails("match_monsters", (inv) => {
         const [m0, m1] = inv.monsters || [];
-        const note = inv.team === "draft" ? "A draft match: you'll ban and pick together" : inv.team === "random" ? "Random teams: you'll both be dealt two monsters" : picks.length === 2 ? "Accept to battle with your current team" : "Pick two monsters, then accept";
-        card.innerHTML =
-          `<div class="ic-top">${inv.team !== "pick" || !m0 ? "" : `<div class="ic-team">${art(m0, 40)}${art(m1, 40)}</div>`}` +
-          `<div class="ell"><b>${esc(inv.from.username)}</b> challenges you<div class="muted" style="font-size:12px">${note}</div></div></div>` +
-          `<div class="ic-actions"><button class="ghost" data-ic="decline">Decline</button><button data-ic="accept">${ic("battle")} Accept</button></div><div class="ic-timer"></div>`;
-        card.dataset.invite = inv.inviteId;
-        card.classList.remove("hidden");
-        card.querySelector(".ic-timer").animate([{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }], { duration: inv.expiresInMs || 90000, fill: "forwards" });
-        card.onclick = (e) => {
-          const btn = e.target.closest("[data-ic]");
-          if (!btn) return;
-          if (btn.dataset.ic === "accept") acceptInvite(inv.inviteId);
-          else declineInvite(inv.inviteId);
+        return {
+          art: inv.team === "pick" && m0 ? `${art(m0, 40)}${art(m1, 40)}` : "",
+          note: inv.team === "pick" ? (picks.length === 2 ? "With your current team" : "Pick two first") : "",
         };
-      }
+      });
+      Ploto.acceptInvitesHere("match_monsters", (inv) => { incomingInvites.set(inv.inviteId, inv); acceptInvite(inv.inviteId); });
+      Ploto.setInviteBusy(() => !!(state || draftState));
 
       async function acceptInvite(inviteId) {
         const inv = incomingInvites.get(inviteId);
         if (inv?.team === "pick" && picks.length < 2) { // blind pick: choose your two, then Accept in the dock
           closePanel();
-          $("inviteCard").classList.add("hidden");
+          Ploto.hideInviteCard();
           if (curScreen() === "searching") cancelSearch();
           lbReset();
           nav.accept = inviteId;
@@ -3802,21 +3579,15 @@
           const res = await kit.seat("acceptInvite", seatReq({ inviteId }));
           incomingInvites.delete(inviteId);
           closePanel();
-          $("inviteCard").classList.add("hidden");
+          Ploto.hideInviteCard();
           if (!res) return;
           lbReset();
           await enterRoom(res);
         } catch (e) {
           toast(errText(e));
           incomingInvites.delete(inviteId);
-          $("inviteCard").classList.add("hidden");
+          Ploto.hideInviteCard();
         }
-      }
-
-      function declineInvite(inviteId) {
-        incomingInvites.delete(inviteId);
-        if ($("inviteCard").dataset.invite === inviteId) $("inviteCard").classList.add("hidden");
-        lobbySock?.request("platform:declineInvite", { inviteId }).catch(() => {});
       }
 
       function onInviteGone(d) {
@@ -3831,21 +3602,12 @@
           lbReset();
         }
         incomingInvites.delete(d.inviteId);
-        if ($("inviteCard").dataset.invite === d.inviteId && d.reason !== "accepted") $("inviteCard").classList.add("hidden");
-      }
-
-      function openKeyPrompt() {
-        const el = showPanel("key", `<h2>Sign in with a key</h2><div class="muted" style="font-size:13px;margin:8px 0">Paste the key from your profile on another device.</div>` +
-          `<div class="row-input"><input id="keyInput" type="text" placeholder="mm_…" autocomplete="off" /><button class="small" id="keyGo">Sign in</button></div>` +
-          `<div class="s-actions" style="margin-top:16px"><button class="ghost" id="keyClose">Close</button></div>`);
-        el.querySelector("#keyClose").onclick = closePanel;
-        el.querySelector("#keyGo").onclick = async () => { if (await signInWithKey(el.querySelector("#keyInput").value)) closePanel(); };
       }
 
       /* ------------------------------------------------------------ forfeit */
       async function confirmForfeit() {
         if (!room) return;
-        if (await confirmPanel({ title: "Forfeit this match?", body: "Your rival wins, and it counts as a loss.", yes: `${ic("forfeit")} Forfeit`, no: "Keep playing" })) forfeit();
+        if (await Ploto.confirm({ title: "Forfeit this match?", body: "Your rival wins, and it counts as a loss.", yes: "Forfeit", no: "Keep playing", danger: true })) forfeit();
       }
 
       async function forfeit() {
@@ -3865,17 +3627,16 @@
       $("play").addEventListener("click", pickReady);
       /** In-game menu: one button in the top bar instead of two, so the turn banner keeps its room. */
       function openGameMenu() {
-        const sheet = $("sheet");
-        sheet.innerHTML =
-          `<div class="sheet" role="dialog" aria-label="Menu"><h2>Menu</h2><div class="s-actions" style="margin-top: 14px">` +
-          `<button id="menuSettings" class="ghost">Settings</button>` +
-          `<button id="menuForfeit" class="danger">Forfeit match</button>` +
-          `<button id="sheetClose" class="ghost">Close</button></div></div>`;
-        sheet.classList.remove("hidden");
-        sheet.onclick = (e) => { if (e.target === sheet) sheet.classList.add("hidden"); };
-        $("sheetClose").onclick = () => sheet.classList.add("hidden");
-        $("menuSettings").onclick = openSettings;
-        $("menuForfeit").onclick = () => { sheet.classList.add("hidden"); confirmForfeit(); };
+        const el = Ploto.sheet(`<h2>Menu</h2><div class="pl-actions"><button class="ghost" data-m="settings">Settings</button>` +
+          `<button class="danger" data-m="forfeit">Forfeit match</button><button class="ghost" data-m="close">Close</button></div>`, { label: "Menu" });
+        el.onclick = (e) => {
+          const b = e.target.closest("[data-m]");
+          if (!b) return;
+          if (b.dataset.m === "close") return Ploto.closeSheet();
+          Ploto.closeSheet(true);
+          if (b.dataset.m === "settings") openSettings();
+          if (b.dataset.m === "forfeit") confirmForfeit();
+        };
       }
       $("gameMenuBtn").addEventListener("click", openGameMenu);
       for (const el of document.querySelectorAll("[data-icon]")) el.outerHTML = ic(el.dataset.icon);

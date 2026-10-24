@@ -350,6 +350,18 @@
   P.onSettings(() => paintArt());
 
   /* ------------------------------------------------------------ GAMES tab */
+  /** Is the room this tab saved still going? Then the Games tab offers Continue. */
+  async function checkContinue() {
+    const saved = P.savedRoom();
+    if (!saved) { S.continue = null; return renderGames(); }
+    try {
+      S.continue = await (await P.lobby()).request("platform:room", { roomId: saved.roomId });
+    } catch {
+      S.continue = null;
+      P.forgetRoom();
+    }
+    renderGames();
+  }
   async function loadGames(fresh = false) {
     try {
       S.games = fresh ? await (await fetch("/play/games")).json() : await P.games();
@@ -367,12 +379,14 @@
     return `${pals[0]} and ${pals.length - 1} more are playing`;
   }
   function renderGames() {
-    // Continue: only when this tab left a Match Monsters match in progress.
-    const saved = P.store.get("mm.room");
+    // Continue: the room this tab is in, any game, while it's still going (checked with the server).
+    const cont = S.continue;
+    const g = cont && gameById(cont.gameId);
     const box = $("continueBox");
-    box.hidden = !saved;
-    box.innerHTML = saved
-      ? `<div class="pl-label">Continue</div><a class="pl-row pl-frame" href="/play/match-monsters" style="text-decoration:none"><span class="pl-ic">${iconFor("match_monsters")}</span><span><b>Match Monsters</b><small>Back to your match</small></span><span class="pl-go">${CHEV}</span></a>`
+    box.hidden = !g;
+    box.innerHTML = g
+      ? `<div class="pl-label">Continue</div><a class="pl-row pl-frame" href="${esc(g.path)}" style="text-decoration:none"><span class="pl-ic">${iconFor(g.id)}</span>` +
+        `<span><b>${esc(g.title)}</b><small>${cont.phase === "lobby" ? `Your room · ${esc(cont.code)}` : "Game in progress"}</small></span><span class="pl-go">${CHEV}</span></a>`
       : "";
     const many = S.games.length > 6;
     $("searchBox").hidden = !many;
@@ -853,10 +867,8 @@
     loadFriends(true); // presence may have changed while we were away
   });
   P.onLobby("social:invite", (inv) => {
-    S.invites.set(inv.inviteId, inv);
+    S.invites.set(inv.inviteId, inv); // Ploto's card shows it too; the Friends tab keeps it listed
     renderFriends(); renderBadge();
-    P.cue("ready");
-    P.toast(`${inv.from?.username || "A friend"} invited you to ${inv.label || "a game"}`, 3000);
   });
   P.onLobby("social:inviteGone", (d) => {
     if (S.invites.delete(d.inviteId)) { renderFriends(); renderBadge(); }
@@ -1009,7 +1021,7 @@
     leaving = false;
     P.setActivity(null);
     route(history.state, 0);
-    loadGames(true);
+    loadGames(true).then(checkContinue);
     if (P.account) { loadInvites(); loadFriends(true); loadStats(); }
   });
 
@@ -1035,7 +1047,7 @@
   }
   $("meHandle").textContent = P.account?.username || "";
   renderBadge();
-  loadGames();
+  loadGames().then(checkContinue);
   P.restoreAccount().then((a) => {
     accountId = a?.id ?? null;
     renderFriends(); renderBadge(); renderProfile(); renderGames();

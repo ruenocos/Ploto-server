@@ -147,6 +147,9 @@ settings carry across pages: `mm.key`, `mm.account`, `mm.guestName`,
 | `Ploto.games()` → Promise<registry> | `/play/games` (cached) |
 | `Ploto.setActivity(gameId, label)` | Tell friends what you're doing ("At a Hold'em table") |
 | `Ploto.errText(e)` | A failure as players should read it |
+| `Ploto.addSettings(rows)` | A game's own rows in the Settings sheet (Match Monsters: hints) |
+| `Ploto.acceptInvitesHere(gameId, fn)` / `Ploto.inviteDetails(gameId, fn)` / `Ploto.setInviteBusy(fn)` | The invite card is Ploto's, on every page: Join opens the game's page (`?invite=`) unless this page accepts that game's invites itself; a game can add art and a note to its invites' card; while busy (in a match) an invite is a toast |
+| `Ploto.saveRoom(gameId, room)` / `Ploto.savedRoom(gameId?)` / `Ploto.forgetRoom(gameId?)` | The room this tab is in (sessionStorage `ploto.room`): the game page resumes it, the launcher offers Continue |
 
 ## Lobby socket (`roomId=lobby`)
 
@@ -157,6 +160,8 @@ Platform methods (shared by every page):
 | `platform:auth` (alias `mm:auth`) | `{key}` | `{account}` |
 | `platform:activity` | `{gameId, label}` or `{}` to clear | `{ok}` — friends get `social:presence` with `activity` |
 | `platform:invites` | — | `{invites: [Invite]}` pending invites addressed to me |
+| `platform:room` | `{roomId}` | `{gameId, phase, code}` while that room is going and you have a seat (the launcher's Continue) |
+| `platform:findCode` | `{code}` | `{code, gameId, path}`: which game a code belongs to |
 | `platform:declineInvite` (alias `mm:declineInvite`) | `{inviteId}` | `{ok}` |
 | `platform:cancelInvite` (alias `mm:cancelInvite`) | `{inviteId}` | `{ok}` |
 

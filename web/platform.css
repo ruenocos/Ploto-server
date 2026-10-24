@@ -160,6 +160,21 @@ input[type="text"]:focus, input[type="search"]:focus, input[type="password"]:foc
 }
 .pl-toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+/* ---- invite card: a friend's invite, on every page (Ploto's, not the game's) ---- */
+.pl-invite {
+  position: fixed; left: 50%; top: calc(10px + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 55;
+  width: min(94vw, 420px); padding: 12px; border-color: var(--c-accent-hi); animation: plDropIn 0.3s steps(4);
+  display: grid; gap: 10px;
+}
+.pl-invite[hidden] { display: none; }
+@keyframes plDropIn { from { transform: translate(-50%, -24px); opacity: 0; } }
+.pl-invite .pl-inv-top { display: flex; align-items: center; gap: 10px; }
+.pl-invite .pl-inv-art { display: flex; flex: none; gap: 4px; }
+.pl-invite .pl-inv-art:empty { display: none; }
+.pl-invite small { display: block; color: var(--c-mute); font-size: var(--fs-s); margin-top: 2px; }
+.pl-invite .pl-inv-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pl-invite .pl-inv-timer { height: var(--px); background: var(--c-accent-hi); transform-origin: left; }
+
 /* ---- game lobbies: the same building blocks in every game (docs/PLATFORM.md) ----
  * pl-hero (the game's art banner), pl-who (playing as · Change), pl-codecard (room code + share),
  * pl-sumline (the room's settings in a line), pl-seats / pl-seat (who's in, open seats with actions),

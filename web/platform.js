@@ -162,22 +162,32 @@
 
   const SETTING_ROWS = [
     { key: "sound", label: "Sound", options: [[true, "On"], [false, "Off"]] },
-    { key: "haptics", label: "Vibration", options: [[true, "On"], [false, "Off"]] },
+    { key: "haptics", label: "Vibration", options: [[true, "On"], [false, "Off"]], test: true,
+      note: () => (window.MM_FEEDBACK?.canVibrate ? "Feel nothing? Turn off silent mode: Android mutes vibration in it" : "Not supported on this device (iPhones don't allow it)") },
     { key: "text", label: "Text size", options: [[1, "Normal"], [1.15, "Large"], [1.3, "Larger"]] },
-    { key: "motion", label: "Motion", options: [["device", "Device"], ["reduced", "Reduced"]] },
+    { key: "motion", label: "Motion", options: [["device", "Device"], ["reduced", "Reduced"]], note: () => (systemReduce?.matches ? "Your device asks for reduced motion" : "") },
   ];
+  /** A game's own settings rows (e.g. Match Monsters' hints), shown after Ploto's on that game's pages. */
+  function addSettings(rows) { SETTING_ROWS.push(...rows); }
   function openSettings() {
     const el = sheet(
       `<h2>Settings</h2>` +
-      SETTING_ROWS.map((r) =>
-        `<div style="display:grid;gap:6px"><span class="pl-label">${r.label}</span><div class="pl-seg" role="group" aria-label="${r.label}">` +
-        r.options.map(([v, l]) => `<button data-key="${r.key}" data-val='${JSON.stringify(v)}' aria-pressed="${settings[r.key] === v}">${l}</button>`).join("") +
-        `</div></div>`).join("") +
+      SETTING_ROWS.map((r) => {
+        const note = r.note?.() || "";
+        return `<div style="display:grid;gap:6px"><span class="pl-label">${r.label}</span><div class="pl-seg" role="group" aria-label="${r.label}">` +
+          r.options.map(([v, l]) => `<button data-key="${r.key}" data-val='${JSON.stringify(v)}' aria-pressed="${settings[r.key] === v}">${l}</button>`).join("") +
+          (r.test && window.MM_FEEDBACK?.canVibrate ? `<button data-test>Test</button>` : "") +
+          `</div>${note ? `<span class="muted" style="font-size:var(--fs-s)">${esc(note)}</span>` : ""}</div>`;
+      }).join("") +
       `<div class="pl-actions"><button class="ghost" data-close>Close</button></div>`,
       { label: "Settings" },
     );
     el.onclick = (e) => {
       if (e.target.closest("[data-close]")) return closeSheet();
+      if (e.target.closest("[data-test]")) {
+        if (!settings.haptics) return toast("Vibration is off");
+        return toast(window.MM_FEEDBACK?.testBuzz?.() ? "Buzzing now. Feel nothing? Check that silent mode is off" : "Your browser blocked vibration", 3000);
+      }
       const b = e.target.closest("[data-key]");
       if (!b) return;
       settings[b.dataset.key] = JSON.parse(b.dataset.val);
@@ -413,6 +423,81 @@
     if (account) lobby().then((s) => s.request("platform:activity", activity)).catch(() => {});
   }
 
+  /* ------------------------------------------------------------ the room you're in */
+  // One per tab (sessionStorage): the game page resumes it after a reload, the
+  // launcher offers Continue. `room` is the game's own {roomId, …}.
+  const ROOM_KEY = "ploto.room";
+  function saveRoom(gameId, room) { store.set(ROOM_KEY, { ...room, gameId }); }
+  /** The saved room, if it's `gameId`'s (or any game's, without one). */
+  function savedRoom(gameId) {
+    const r = store.get(ROOM_KEY);
+    return r && r.roomId && (!gameId || r.gameId === gameId) ? r : null;
+  }
+  function forgetRoom(gameId) { if (!gameId || savedRoom(gameId)) store.del(ROOM_KEY); }
+
+  /* ------------------------------------------------------------ invites: one card on every page */
+  // A friend's invite shows the same card wherever you are. Join accepts it on
+  // this page when it's that game's page (acceptInvitesHere), else opens the
+  // game's page, which accepts it there (?invite=ID).
+  const inviteHere = new Map(); // gameId -> accept(inv)
+  const inviteLook = new Map(); // gameId -> (inv) => {art?, note?}
+  let inviteBusy = () => false;
+  let cardInv = null;
+  /** This page accepts `gameId`'s invites itself. */
+  function acceptInvitesHere(gameId, fn) { inviteHere.set(gameId, fn); }
+  /** What the card shows for `gameId`'s invites besides who and what: art (trusted markup) and a note. */
+  function inviteDetails(gameId, fn) { inviteLook.set(gameId, fn); }
+  /** While this returns true (in a match), an invite is a toast instead of a card. */
+  function setInviteBusy(fn) { inviteBusy = fn; }
+  function hideInviteCard() {
+    cardInv = null;
+    const c = $("plInvite");
+    if (c) c.hidden = true;
+  }
+  async function joinInvite(inv) {
+    hideInviteCard();
+    const here = inviteHere.get(inv.gameId);
+    if (here) return here(inv);
+    const game = (await games()).find((g) => g.id === inv.gameId);
+    if (game) location.href = `${game.path}?invite=${encodeURIComponent(inv.inviteId)}`;
+    else toast("That game isn't available here yet", 2600);
+  }
+  function declineInvite(inv) {
+    hideInviteCard();
+    lobby().then((s) => s.request("platform:declineInvite", { inviteId: inv.inviteId })).catch(() => {});
+  }
+  function showInviteCard(inv) {
+    let c = $("plInvite");
+    if (!c) {
+      c = document.createElement("div");
+      c.id = "plInvite";
+      c.className = "pl-invite pl-frame";
+      c.setAttribute("role", "alertdialog");
+      document.body.appendChild(c);
+    }
+    cardInv = inv;
+    const look = inviteLook.get(inv.gameId)?.(inv) || {};
+    const who = esc(inv.from?.username || "A friend");
+    c.innerHTML =
+      `<div class="pl-inv-top"><span class="pl-inv-art">${look.art || ""}</span><div class="ell"><b>${who}</b> invited you` +
+      `<small>${esc([inv.label, look.note].filter(Boolean).join(" · "))}</small></div></div>` +
+      `<div class="pl-inv-acts"><button class="ghost" data-inv="no">Decline</button><button data-inv="yes">Join</button></div><div class="pl-inv-timer"></div>`;
+    c.setAttribute("aria-label", `${inv.from?.username || "A friend"} invited you to ${inv.label || "a game"}`);
+    c.hidden = false;
+    // The countdown: the invite runs out on the server at the same time.
+    c.querySelector(".pl-inv-timer").animate([{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }], { duration: Math.max(0, inv.expiresInMs ?? 90000), fill: "forwards" });
+    c.onclick = (e) => {
+      const b = e.target.closest("[data-inv]");
+      if (b) b.dataset.inv === "yes" ? joinInvite(inv) : declineInvite(inv);
+    };
+  }
+  onLobby("social:invite", (inv) => {
+    cue("ready");
+    if (inviteBusy()) return toast(`${inv.from?.username || "A friend"} invited you to ${inv.label || "a game"}. Finish this game first`, 3000);
+    showInviteCard(inv);
+  });
+  onLobby("social:inviteGone", (d) => { if (cardInv?.inviteId === d.inviteId) hideInviteCard(); });
+
   /* ------------------------------------------------------------ games registry */
   let gamesCache = null;
   const games = () => (gamesCache ??= fetch("/play/games").then((r) => r.json()).catch(() => { gamesCache = null; return []; }));
@@ -426,7 +511,8 @@
 
   window.Ploto = {
     $, esc, sleep, local, store, newId, peerId, WS_BASE, errText,
-    settings, saveSettings, applySettings, openSettings, onSettings: (fn) => settingsHooks.push(fn), reduceMotion, cue,
+    settings, saveSettings, applySettings, openSettings, addSettings, onSettings: (fn) => settingsHooks.push(fn), reduceMotion, cue,
+    acceptInvitesHere, inviteDetails, setInviteBusy, hideInviteCard, saveRoom, savedRoom, forgetRoom,
     toast, sheet, closeSheet, sheetOpen, confirm,
     connect, waitOpen, lobby, onLobby, onLobbyOpen, setActivity,
     get account() { return account; }, onAccount: (fn) => accountHooks.push(fn), setAccount, api, restoreAccount, claim, signInWithKey, openClaim,

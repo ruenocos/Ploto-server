@@ -109,6 +109,7 @@ input[type="text"]:focus, input[type="search"]:focus, input[type="password"]:foc
 /* ---- page chrome: a sticky top bar and a content column ---- */
 .pl-bar { position: sticky; top: 0; z-index: 20; padding-top: env(safe-area-inset-top); background: var(--c-panel); border-bottom: var(--px) solid var(--c-ink); box-shadow: inset 0 calc(var(--px) * -1) 0 rgba(74, 84, 134, 0.5); }
 .pl-bar-in { max-width: var(--pl-max); margin: 0 auto; min-height: 60px; display: flex; align-items: center; gap: 12px; padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)); }
+@media (max-width: 400px) { .pl-bar-in { gap: 8px; } .pl-title { letter-spacing: 0; } } /* "Match Monsters" fits a 360 px phone */
 .pl-title { flex: 1; min-width: 0; margin: 0; font: 700 var(--fl-2)/1.1 var(--f-label); text-transform: uppercase; letter-spacing: 1px; color: var(--c-cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; outline: none; }
 .pl-sub { flex: none; font: 600 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); white-space: nowrap; }
 .pl-view { width: 100%; max-width: calc(var(--pl-max) + 32px); margin: 0 auto; padding: 16px max(16px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); display: grid; align-content: start; gap: 12px; }
@@ -167,7 +168,8 @@ input[type="text"]:focus, input[type="search"]:focus, input[type="password"]:foc
 .pl-code { text-transform: uppercase; letter-spacing: 2px; } /* a room code input */
 .pl-flow { min-height: 100dvh; display: flex; flex-direction: column; }
 .pl-flow > .pl-view { flex: 1; }
-.pl-hero { position: relative; aspect-ratio: 16 / 7; min-height: 150px; overflow: hidden; background: var(--c-well); }
+/* the banner keeps a 16:7 shape from the column's width (never wider than the screen, never too flat) */
+.pl-hero { position: relative; width: 100%; min-width: 0; height: clamp(124px, calc((min(100vw, var(--pl-max) + 32px) - 32px) * 0.4375), 245px); overflow: hidden; background: var(--c-well); }
 .pl-who { display: flex; align-items: center; gap: 8px; padding: 10px 12px 12px; }
 .pl-who b { font: 700 var(--fl-1)/1.2 var(--f-label); color: var(--c-cream); text-transform: uppercase; }
 .pl-who .grow { flex: 1; }

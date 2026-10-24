@@ -16,6 +16,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { Matchmaker, type QueueKey, type Ticket } from "../../matchmaking/pool.js";
+import { INVITE_MS } from "../../platform/invites.js";
 import type { GameLobby, LobbyContext, Room } from "../../platform/lobby.js";
 import type { PeerLike } from "../../signaling/gameRoom.js";
 import { GameRoom, type RoomOptions } from "../../signaling/gameRoom.js";
@@ -111,7 +112,7 @@ export class MatchMonstersLobby implements GameLobby {
           // The invite card shows the host's team for blind picks.
           extra: { monsters: req.draft || req.random ? [] : req.monsters.map((m) => m.id), draft: req.draft, random: req.random },
         });
-        return { inviteId: inv.id, expiresInMs: inv.createdAt + 90_000 - Date.now() };
+        return { inviteId: inv.id, expiresInMs: inv.createdAt + INVITE_MS - Date.now() };
       }
 
       case "mm:acceptInvite": {

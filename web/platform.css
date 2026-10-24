@@ -205,5 +205,6 @@ p.pl-sumline { margin: 0; min-height: 0; }
 /* ---- screens slide in from the side they come from ---- */
 @keyframes plIn { from { opacity: 0; transform: translateX(calc(var(--dir, 1) * 20px)); } to { opacity: 1; transform: none; } }
 .pl-enter { animation: plIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+.reduce-motion .pl-dots i { animation: none !important; opacity: 0.6; } /* still, not a 0.01 ms flicker */
 @media (prefers-reduced-motion: reduce) { .pl-enter { animation: none; } }

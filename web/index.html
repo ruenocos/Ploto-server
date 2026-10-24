@@ -748,7 +748,7 @@
       .reduce-motion .animate__animated { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
       .reduce-motion .bob svg, .reduce-motion .bob img, .reduce-motion .tile.sel .gem, .reduce-motion .board.shuffling .gem,
       .reduce-motion .rig .part, .reduce-motion .rig .hd-art, .reduce-motion button.pulse, .reduce-motion .st, .reduce-motion .clouds { animation: none; }
-      .reduce-motion .float { animation: fadeOnly 1s ease forwards; }
+      .reduce-motion .float { animation: fadeOnly 1s ease forwards !important; } /* numbers fade rather than vanish (beats the platform-wide 0.01 ms rule) */
       /*
        * Battle intro: while .entering, the monsters wait off stage (each runs in
        * with a stock backIn preset) and the board is empty; the VS lands in the
@@ -1861,7 +1861,7 @@
       function cancelInvites() {
         if (hosting) cancelHosting();
         if (myInvite) {
-          lobbySock?.request("mm:cancelInvite", { inviteId: myInvite.inviteId }).catch(() => {});
+          lobbySock?.request("platform:cancelInvite", { inviteId: myInvite.inviteId }).catch(() => {});
           myInvite = null;
         }
       }
@@ -4148,7 +4148,7 @@
         incomingInvites.delete(inviteId);
         updateBadge();
         if ($("inviteCard").dataset.invite === inviteId) $("inviteCard").classList.add("hidden");
-        lobbySock?.request("mm:declineInvite", { inviteId }).catch(() => {});
+        lobbySock?.request("platform:declineInvite", { inviteId }).catch(() => {});
       }
 
       function onInviteGone(d) {

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0f1117" />
     <title>Match Monsters</title>
+    <link rel="icon" href="data:," />
     <link rel="stylesheet" href="/play/animate.min.css" />
     <style>
       /* =====================================================================
@@ -65,6 +66,7 @@
         font: 400 var(--fs-m)/1.35 var(--f-text);
         overflow-x: hidden; min-height: 100vh;
         -webkit-font-smoothing: none; font-smooth: never;
+        font-variant-ligatures: none; /* Pixelify Sans draws "fi" as a glyph that reads as "A" */
       }
       /*
        * In a match the page is pinned to the visible screen: a fixed body can't
@@ -171,12 +173,6 @@
       .lb-trio { display: flex; justify-content: center; align-items: flex-end; gap: 4px; min-height: 96px; }
       .lb-tagline { margin: 0; color: var(--c-mute); max-width: 32ch; }
       .lb-play { font-size: var(--fl-3); padding: 22px 12px 24px; letter-spacing: 2px; }
-      .lb-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-      .lb-row2 button { display: flex; align-items: center; justify-content: center; gap: 2px; padding-left: 8px; padding-right: 8px; }
-      .lb-chip { --b: var(--c-panel); --b-hi: var(--c-edge); --b-lo: var(--c-ink); width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px 14px; text-transform: none; text-shadow: none; color: var(--c-text); font: 400 var(--fs-m)/1.2 var(--f-text); }
-      .lb-chip .muted { flex: none; }
-      .lb-chip b { flex: 1; min-width: 0; font: 700 var(--fl-1)/1.2 var(--f-label); text-transform: uppercase; color: var(--c-cream); text-align: left; overflow: hidden; text-overflow: ellipsis; }
-      .lb-chip .lb-chip-act { flex: none; font: 700 var(--fs-s)/1 var(--f-text); color: var(--c-accent-hi); }
       .lb-note { color: var(--c-mute); font-size: var(--fs-s); text-align: center; }
       .lb-note:empty { display: none; }
 
@@ -250,8 +246,6 @@
 
       .row-input { display: flex; gap: 8px; align-items: center; }
       .row-input button { flex: none; }
-      .online-n { margin-left: 6px; font-size: var(--fs-xs); color: var(--c-good-hi); }
-      .online-n::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 4px; background: var(--c-good-hi); vertical-align: middle; }
       .fpick { display: grid; gap: 6px; margin: 0 0 14px; }
       .fpick .frow { margin: 0; }
       .sheet h3 { font: 700 var(--fs-xs)/1.2 var(--f-text); letter-spacing: 1px; color: var(--c-mute); margin: 16px 0 6px; text-transform: uppercase; }
@@ -881,14 +875,14 @@
     <section id="lobby" data-at="home">
       <header class="lb-bar lb-gutter">
         <div class="lb-bar-in">
-          <button id="lbBack" class="ghost small icon-btn" aria-label="Back" title="Back" hidden><svg class="px-icon" viewBox="0 0 4 7" width="8" height="14" aria-hidden="true"><rect x="3" y="0" width="1" height="7"/><rect x="2" y="1" width="1" height="5"/><rect x="1" y="2" width="1" height="3"/><rect x="0" y="3" width="1" height="1"/></svg></button>
+          <button id="lbBack" class="ghost small icon-btn" aria-label="Back to Ploto" title="Back to Ploto"><svg class="px-icon" viewBox="0 0 4 7" width="8" height="14" aria-hidden="true"><rect x="3" y="0" width="1" height="7"/><rect x="2" y="1" width="1" height="5"/><rect x="1" y="2" width="1" height="3"/><rect x="0" y="3" width="1" height="1"/></svg></button>
           <h2 id="lbTitle" class="lb-title" tabindex="-1">Match Monsters</h2>
           <span id="lbStep" class="lb-step"></span>
           <button id="settingsBtn" class="ghost small icon-btn" aria-label="Settings" title="Settings"><svg class="px-icon" viewBox="0 0 9 7" width="18" height="14" aria-hidden="true"><rect x="0" y="1" width="9" height="1"/><rect x="2" y="0" width="2" height="3"/><rect x="0" y="5" width="9" height="1"/><rect x="5" y="4" width="2" height="3"/></svg></button>
         </div>
       </header>
       <div class="lb-view lb-gutter">
-        <!-- Home: one big Play; Monsters and Friends are their own places -->
+        <!-- Home: one big Play and the Monsters; friends and your profile live in the launcher (/play) -->
         <div class="lb-screen lb-home" data-screen="home">
           <div class="lb-hero">
             <h1 class="lb-logo">Match <span>Monsters</span></h1>
@@ -896,16 +890,7 @@
             <p class="lb-tagline">Match gems to charge your monsters. Knock out your rival.</p>
           </div>
           <button id="lbPlay" class="lb-play">Play</button>
-          <div class="lb-row2">
-            <button id="monstersBtn" class="ghost">Monsters</button>
-            <button id="friendsBtn" class="ghost"><span data-icon="friends"></span> Friends<span id="friendsOnline" class="online-n hidden"></span><span id="friendsBadge" class="badge-n hidden"></span></button>
-          </div>
-          <div id="acctGuest">
-            <button id="nameBtn" class="lb-chip" aria-haspopup="dialog"><span class="muted">Playing as</span><b id="guestName">Player</b><span class="lb-chip-act">Change</span></button>
-          </div>
-          <div id="acctUser" class="hidden">
-            <button id="profileBtn" class="lb-chip"><span class="muted">Signed in as</span><b>@<span id="acctName"></span></b><span class="lb-chip-act">Profile</span></button>
-          </div>
+          <button id="monstersBtn" class="ghost">Monsters</button>
           <div id="lobbyStatus" class="lb-note" role="status"></div>
         </div>
 
@@ -1030,6 +1015,7 @@
     <script src="/play/pixelart.js"></script>
     <script>
       const $ = (id) => document.getElementById(id);
+      const touch = () => window.matchMedia?.("(pointer: coarse)").matches ?? false;
       const EMOJI = { fire: "🔥", water: "💧", earth: "⛰️", nature: "🌿", light: "✨", berry: "🍓", stone: "🪨", prism: "💎" };
       const EL_LABEL = { fire: "Fire", water: "Water", earth: "Earth", nature: "Nature", light: "Light" };
       const ORDER = ["fire", "water", "earth", "nature", "light"];
@@ -1426,8 +1412,7 @@
             resolve(name);
           };
           el.querySelector("#toClaim").onclick = (e) => { e.preventDefault(); nameAsk = null; resolve(null); openClaim(); };
-          input.focus();
-          input.select();
+          if (!touch()) { input.focus(); input.select(); } // on a phone the keyboard waits for a tap
         });
       }
       /** True once there's a name to play under: an account, a guest name, or one just given. */
@@ -1507,7 +1492,9 @@
         }
         const dock = $("dock"), dockWas = !dock.hidden;
         dock.hidden = name !== "pick";
-        $("lbBack").hidden = nav.stack.length < 2;
+        // Home's Back leaves for the launcher; every other screen's steps back one.
+        $("lbBack").setAttribute("aria-label", nav.stack.length < 2 ? "Back to Ploto" : "Back");
+        $("lbBack").title = nav.stack.length < 2 ? "Back to Ploto" : "Back";
         $("settingsBtn").hidden = name !== "home";
         $("lbTitle").textContent = lbTitle(name);
         $("lbStep").textContent = lbStep(name);
@@ -1534,7 +1521,7 @@
       }
       /** Back: leaving a wait cancels it (the queue, the invite); leaving Your team drops a pending join. */
       function lbBack() {
-        if (nav.stack.length < 2) return;
+        if (nav.stack.length < 2) return toLauncher();
         const from = curScreen();
         if (from === "searching") cancelSearch();
         if (from === "invited") cancelInvites();
@@ -1669,37 +1656,35 @@
       }
 
       // The lobby socket stays open all session: matchmaking, plus friends'
-      // messages, presence and invites once signed in.
-      let lobbyOpening = null;
-      let lobbyRetry = 0;
+      // messages, presence and invites once signed in. It's the shared one
+      // (Ploto.lobby(): one per tab, signed in, reconnecting), so what the
+      // toolkit sends on it (your activity) and what this page sends share it.
+      Ploto.onLobby("mm:matched", (d) => startGame(d));
+      Ploto.onLobby("social:changed", (d) => onSocialChanged(d));
+      Ploto.onLobby("social:message", (d) => onMessage(d));
+      Ploto.onLobby("social:presence", (d) => onPresence(d));
+      Ploto.onLobby("social:invite", (d) => onInvite(d));
+      Ploto.onLobby("social:inviteGone", (d) => onInviteGone(d));
+      // After a reconnect, catch up on what changed while away.
+      Ploto.onLobbyOpen((sock) => { lobbySock = sock; if (account) loadFriends(); });
       async function ensureLobby() {
-        if (!lobbySock || lobbySock.readyState > WebSocket.OPEN) {
-          if (!lobbyOpening) {
-            lobbyOpening = (async () => {
-              const sock = connect("lobby");
-              await waitOpen(sock);
-              lobbySock = sock;
-              lobbyRetry = 0;
-              sock.on("mm:matched", (d) => startGame(d));
-              sock.on("social:changed", onSocialChanged);
-              sock.on("social:message", onMessage);
-              sock.on("social:presence", onPresence);
-              sock.on("social:invite", onInvite);
-              sock.on("social:inviteGone", onInviteGone);
-              sock.addEventListener("close", () => {
-                if (lobbySock !== sock) return;
-                lobbySock = null;
-                if (account) setTimeout(() => connectLobby().catch(() => {}), Math.min(15000, 1000 * 2 ** lobbyRetry++));
-              });
-            })().finally(() => { lobbyOpening = null; });
-          }
-          await lobbyOpening;
-        }
-        if (account && lobbySock._authed !== account.id) {
-          await lobbySock.request("mm:auth", { key: local.get("mm.key") });
-          lobbySock._authed = account.id;
-        }
+        lobbySock = await Ploto.lobby();
         return lobbySock;
+      }
+
+      /** What friends see you doing: in a match or a draft, or just here. */
+      let activityLabel = null;
+      function reportActivity() {
+        const label = room ? "Playing Match Monsters" : "In Match Monsters";
+        if (label === activityLabel) return;
+        activityLabel = label;
+        Ploto.setActivity("match_monsters", label);
+      }
+      /** Back to the launcher, which is where friends and your profile live. */
+      function toLauncher() {
+        activityLabel = null;
+        Ploto.setActivity(null);
+        location.href = "/play";
       }
 
       function setBusy(b) {
@@ -1837,7 +1822,7 @@
       const createRoom = () =>
         lobbyAction("Creating your invite…", async (sock) => {
           const res = await sock.request("mm:createRoom", payload());
-          hosting = { code: res.code, link: `${location.origin}/play?room=${res.code}` };
+          hosting = { code: res.code, link: `${location.origin}/play/match-monsters?room=${res.code}` };
           myInvite = null;
           showHosting();
         });
@@ -1994,6 +1979,7 @@
         $("game").classList.toggle("hidden", !game);
         $("draft").classList.toggle("hidden", !draft);
         document.body.classList.toggle("in-game", game);
+        reportActivity();
         window.scrollTo(0, 0); // each screen starts at its top (the lobby may have been scrolled)
         if (game) requestAnimationFrame(() => { sizeArena(); sizeBoard(); });
       }
@@ -3637,7 +3623,7 @@
           `<div class="end-hint${invited ? " hot" : ""}">${hint}</div>` +
           `<button id="again" class="ghost">Back to lobby</button></div>` +
           addRivalHtml() +
-          (account ? "" : `<p class="end-hint" style="margin:12px 0 0">Claim a username in the lobby to keep a record of your matches.</p>`) + `</div>`;
+          (account ? "" : `<p class="end-hint" style="margin:12px 0 0">Claim a username in your Ploto profile to keep a record of your matches.</p>`) + `</div>`;
         $("rematch").onclick = requestRematch;
         $("again").onclick = leaveGame;
         $("addRival")?.addEventListener("click", addRival);
@@ -3724,7 +3710,7 @@
       };
       let account = local.get("mm.account"); // { id, username }
       let friendsData = { friends: [], incoming: [], outgoing: [] };
-      let panel = null; // "friends" | "chat" | "profile" | "key"
+      let panel = null; // "friends" | "chat" | "claim" | "key" | "name" | "confirm"
       let chatWith = null;
       let myInvite = null; // { inviteId, friendId, name }
       const incomingInvites = new Map();
@@ -3743,28 +3729,13 @@
 
       function setAccount(a) {
         account = a;
-        if (a) local.set("mm.account", a); else local.del("mm.account");
+        Ploto.setAccount(a); // the shared toolkit (and its lobby sign-in) follows
         renderAccount();
       }
 
-      function renderAccount() {
-        $("acctGuest").classList.toggle("hidden", !!account);
-        $("guestName").textContent = guestName() || "Player";
-        $("acctUser").classList.toggle("hidden", !account);
-        if (account) $("acctName").textContent = account.username;
-        updateBadge();
-      }
-
-      function updateBadge() {
-        const n = friendsData.incoming.length + friendsData.friends.reduce((s, f) => s + (f.unread || 0), 0) + incomingInvites.size;
-        const b = $("friendsBadge");
-        b.textContent = n;
-        b.classList.toggle("hidden", n === 0);
-        const online = account ? friendsData.friends.filter((f) => f.online).length : 0;
-        $("friendsOnline").textContent = online;
-        $("friendsOnline").classList.toggle("hidden", online === 0);
-        $("friendsOnline").setAttribute("aria-label", `${online} online`);
-      }
+      // Your name and the friends list live in the launcher now; these stay as hooks for the sheets that remain.
+      function renderAccount() { updateBadge(); }
+      function updateBadge() {}
 
       /** Claiming a username, in a sheet (offered in the lobby and after a match, never as a gate). */
       let afterClaim = null; // what to open once the claim succeeds (the friends list, adding a rival)
@@ -3782,7 +3753,7 @@
         el.querySelector("#claim").onclick = () => claimName(input.value);
         el.querySelector("#useKey").onclick = (e) => { e.preventDefault(); openKeyPrompt(); };
         el.querySelector('[data-act="close"]').onclick = closePanel;
-        input.focus();
+        if (!touch()) input.focus();
       }
 
       async function claimName(name) {
@@ -4004,7 +3975,7 @@
           f.unread = 0;
           updateBadge();
         } catch (e) { toast(errText(e)); }
-        el.querySelector("#chatInput").focus();
+        if (!touch()) el.querySelector("#chatInput").focus();
       }
 
       /* ---- live updates from the lobby socket ---- */
@@ -4136,53 +4107,6 @@
         if ($("inviteCard").dataset.invite === d.inviteId && d.reason !== "accepted") $("inviteCard").classList.add("hidden");
       }
 
-      /* ---- profile ---- */
-      async function openProfile() {
-        const el = showPanel("profile", `<h2>@${esc(account.username)}</h2><div class="s-sub" style="--el: var(--accent2)" id="profRecord">…</div>` +
-          `<h3>Rename</h3><div class="row-input"><input id="renameInput" type="text" maxlength="16" value="${esc(account.username)}" /><button class="small" data-act="rename">Save</button></div>` +
-          `<h3>Your key</h3><div class="muted" style="font-size:13px">This key is your login: use it to sign in on another device. Anyone who has it can play as you, so keep it to yourself.</div>` +
-          `<div class="row-input" style="margin-top:6px"><input id="keyField" type="password" readonly value="${esc(local.get("mm.key") || "")}" /><button class="small" data-act="copyKey">Copy</button></div>` +
-          `<h3>Recent matches</h3><div id="profMatches"><div class="empty">Loading…</div></div>` +
-          `<div class="s-actions" style="margin-top:16px"><button class="ghost" data-act="signout">Sign out on this device</button><button class="ghost" data-act="close">Close</button></div>`);
-        el.onclick = async (e) => {
-          const btn = e.target.closest("[data-act]");
-          if (!btn) return;
-          if (btn.dataset.act === "close") return closePanel();
-          if (btn.dataset.act === "copyKey") {
-            const key = local.get("mm.key") || "";
-            try { await navigator.clipboard.writeText(key); toast("Key copied"); }
-            catch { const f = el.querySelector("#keyField"); f.type = "text"; f.select(); toast("Select and copy your key"); }
-          }
-          if (btn.dataset.act === "rename") {
-            try {
-              const r = await api("PATCH", "/api/me", { username: el.querySelector("#renameInput").value });
-              setAccount({ id: r.id, username: r.username });
-              toast(`You're now @${r.username}`);
-              openProfile();
-            } catch (err) { toast(errText(err)); }
-          }
-          if (btn.dataset.act === "signout") {
-            if (!(await confirmPanel({ title: "Sign out?", body: "You'll need your key to get this account back, so copy it first.", yes: "Sign out", no: "Stay signed in" }))) return openProfile();
-            local.del("mm.key");
-            setAccount(null);
-            friendsData = { friends: [], incoming: [], outgoing: [] };
-            try { lobbySock?.close(); } catch {}
-            closePanel();
-          }
-        };
-        try {
-          const [me, matches] = await Promise.all([api("GET", "/api/me"), api("GET", "/api/me/matches")]);
-          const losses = me.record.games - me.record.wins;
-          el.querySelector("#profRecord").textContent = `${me.record.wins} win${me.record.wins === 1 ? "" : "s"} · ${losses} loss${losses === 1 ? "" : "es"}`;
-          const name = (id) => roster.find((m) => m.id === id)?.name || id;
-          el.querySelector("#profMatches").innerHTML = matches.length
-            ? matches.slice(0, 8).map((m) =>
-                `<div class="match-row"><span class="res ${m.won ? "w" : "l"}">${m.won ? "W" : "L"}</span>` +
-                `<span class="ell">vs ${esc(m.opponent)} · ${esc(name(m.monsterA))} + ${esc(name(m.monsterB))}</span></div>`).join("")
-            : `<div class="empty">No matches yet.</div>`;
-        } catch {}
-      }
-
       function openKeyPrompt() {
         const el = showPanel("key", `<h2>Sign in with a key</h2><div class="muted" style="font-size:13px;margin:8px 0">Paste the key from your profile on another device.</div>` +
           `<div class="row-input"><input id="keyInput" type="text" placeholder="mm_…" autocomplete="off" /><button class="small" id="keyGo">Sign in</button></div>` +
@@ -4256,7 +4180,8 @@
             const title = dialog.querySelector("h2");
             if (title) dialog.setAttribute("aria-label", title.textContent.trim());
             if (!wasOpen) opener = lastOutside;
-            if (!sheet.contains(document.activeElement)) focusables()[0]?.focus();
+            // On a touch screen, never a text box: focusing one would pop the keyboard before you tap.
+            if (!sheet.contains(document.activeElement)) (touch() ? focusables().find((el) => !el.matches("input")) : focusables()[0])?.focus();
           } else if (!open && wasOpen) {
             if (opener && document.contains(opener)) opener.focus();
             opener = null;
@@ -4281,10 +4206,6 @@
           } catch (e) { toast(errText(e)); }
         });
       }
-      $("nameBtn").addEventListener("click", () => askName({ title: "Your name", body: "Your rival sees this name during the match.", go: "Save" }));
-      $("friendsBtn").addEventListener("click", openFriends);
-      $("profileBtn").addEventListener("click", openProfile);
-      renderAccount();
 
       $("settingsBtn").addEventListener("click", openSettings);
       // the lobby's screens
@@ -4344,16 +4265,43 @@
       applySettings();
 
       // An invite link (?room=CODE) goes straight to the match once the roster is in (see below).
-      const invited = new URLSearchParams(location.search).get("room");
-      if (invited) history.replaceState(null, "", location.pathname);
+      // From the launcher: ?invite=ID (Join on an invite) and ?inviteFriend=ID (Invite on a friend).
+      const params = new URLSearchParams(location.search);
+      const invited = params.get("room");
+      const launcherInvite = params.get("invite");
+      const launcherFriend = params.get("inviteFriend");
+      if (invited || launcherInvite || launcherFriend) history.replaceState(null, "", location.pathname);
+
+      /** Join on an invite in the launcher: the same accept flow as the invite card (blind picks choose a team first). */
+      async function acceptFromLauncher(inviteId, signedIn) {
+        await signedIn;
+        if (!account) return toast("Claim a username to play with friends", 3000);
+        let inv;
+        try { inv = ((await (await ensureLobby()).request("platform:invites", {})).invites || []).find((i) => i.inviteId === inviteId); }
+        catch (e) { return toast(errText(e), 3000); }
+        if (!inv) return toast("That invite has expired", 3000);
+        incomingInvites.set(inv.inviteId, inv);
+        acceptInvite(inv.inviteId);
+      }
+      /** Invite on a friend in the launcher: choose teams here, then the invite goes out. */
+      async function inviteFromLauncher(friendId, signedIn) {
+        await signedIn;
+        if (!account) return toast("Claim a username to play with friends", 3000);
+        await loadFriends();
+        if (!friendsData.friends.some((f) => f.id === friendId)) return toast("They're not on your friends list", 3000);
+        inviteFromList(friendId);
+      }
 
       (async () => {
-        restoreAccount();
+        const signedIn = restoreAccount();
         // The roster first: resuming straight into a draft needs it.
         try { await loadRoster(); } catch (e) { $("lobbyStatus").textContent = "Couldn't load the monsters. Reload to try again"; }
         const resumed = await resumeIfAny();
         if (!resumed) showScreen("lobby");
-        if (!resumed && invited) joinFromCode(invited.trim().toUpperCase());
+        if (resumed && (invited || launcherInvite || launcherFriend)) return toast("Finish this match first", 3000);
+        if (invited) joinFromCode(invited.trim().toUpperCase());
+        else if (launcherInvite) acceptFromLauncher(launcherInvite, signedIn);
+        else if (launcherFriend) inviteFromLauncher(launcherFriend, signedIn);
       })();
     </script>
   </body>

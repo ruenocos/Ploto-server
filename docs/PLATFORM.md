@@ -60,10 +60,11 @@ settings carry across pages: `mm.key`, `mm.account`, `mm.guestName`,
 | `Ploto.peerId` | This tab's peer id |
 | `Ploto.connect(roomId)` → sock | protoo-over-WebSocket: `sock.request(method, data)` → Promise, `sock.on(method, fn)` for notifications |
 | `Ploto.waitOpen(sock)` | Resolves when open |
-| `Ploto.lobby()` → Promise<sock> | The shared lobby socket (`roomId=lobby`), signed in when there's an account; reconnects with backoff. `Ploto.onLobby(method, fn)` registers notification handlers that survive reconnects. |
+| `Ploto.lobby()` → Promise<sock> | The shared lobby socket (`roomId=lobby`), signed in when there's an account; reconnects with backoff. `Ploto.onLobby(method, fn)` registers notification handlers that survive reconnects. `Ploto.onLobbyOpen(fn)` runs `fn(sock)` after each (re)connect once signed in, to catch up on what was missed. One per tab: a page never opens a second lobby socket of its own (they share a peer id). |
 | `Ploto.api(method, path, body?)` | JSON HTTP with the account key |
 | `Ploto.account` / `Ploto.restoreAccount()` / `Ploto.onAccount(fn)` | `{id, username}` or null |
 | `Ploto.claim(username)` | Create an account (stores the key) |
+| `Ploto.openClaim()` → Promise<account> / `Ploto.signInWithKey(key)` | The claim sheet (with "sign in with your key") / sign in with a key from another device |
 | `Ploto.displayName()` / `Ploto.ensureName(opts)` / `Ploto.askName(opts)` | Name to play under; the name modal |
 | `Ploto.toast(msg, ms?)` | Toast at the top |
 | `Ploto.sheet(html, {onClose})` → el / `Ploto.closeSheet()` | Bottom sheet (modal). Never auto-focuses a text box on touch screens, so the keyboard waits for a tap. |

@@ -2,12 +2,1047 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#121626">
 <title>Ploto</title>
+<link rel="icon" href="data:,">
+<script>
+  // Old Match Monsters invite links (/play?room=CODE) now live on the game's own page.
+  (() => {
+    const room = new URLSearchParams(location.search).get("room");
+    if (room) location.replace("/play/match-monsters?room=" + encodeURIComponent(room));
+  })();
+</script>
 <link rel="stylesheet" href="/play/platform.css">
+<style>
+  /* ===== Launcher only. Shared pieces live in platform.css. ===== */
+  body { overscroll-behavior-y: none; }
+  .lc-screen { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+  .lc-screen[hidden] { display: none !important; }
+  .lc-tabbed .pl-view { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .lc-logo { flex: 1; min-width: 0; margin: 0; font: 700 var(--fl-3)/1 var(--f-label); color: var(--c-gold); letter-spacing: 2px; outline: none;
+    text-shadow: var(--px) var(--px) 0 var(--c-gold-lo), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--c-ink); }
+  .lc-px { display: block; fill: currentColor; shape-rendering: crispEdges; }
+  .pl-bar .icon { height: 40px; min-height: 40px; }
+  .lc-act { flex: none; }
+  @media (hover: hover) {
+    button:not(:disabled):hover, a.lc-card:hover { filter: brightness(1.12); }
+    .pl-row:not(:disabled):hover .pl-go { transform: translateX(var(--px)); }
+  }
+  .pl-row .pl-go { transition: transform 0.12s steps(2); }
+  button.lc-link { display: inline-flex; align-items: center; min-height: 32px; padding: 4px 2px; font: 700 var(--fs-s)/1.2 var(--f-text); text-transform: none; color: var(--c-accent-hi); white-space: normal; text-align: left; }
+  .lc-link:active { transform: none; }
+
+  /* ---- bottom tab bar ---- */
+  .lc-tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--c-panel); border-top: var(--px) solid var(--c-ink);
+    box-shadow: inset 0 var(--px) 0 rgba(74, 84, 134, 0.6); padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  .lc-tabs[hidden] { display: none; }
+  .lc-tabs-in { max-width: var(--pl-max); margin: 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .lc-tab { --b: transparent; --b-hi: transparent; --b-lo: transparent; border-color: transparent; box-shadow: none; text-shadow: none; clip-path: none;
+    min-height: 60px; padding: 8px 4px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--c-mute); position: relative; }
+  .lc-tab:active { transform: none; }
+  .lc-tab .px-icon { display: block; }
+  .lc-tab[aria-current="page"] { color: var(--c-gold); }
+  .lc-tab[aria-current="page"]::before { content: ""; position: absolute; top: calc(var(--px) * -1); left: 28%; right: 28%; height: calc(var(--px) * 2); background: var(--c-gold); }
+  .lc-tab .pl-badge { position: absolute; top: 4px; left: calc(50% + 10px); }
+
+  /* ---- Games ---- */
+  .lc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+  .lc-card { position: relative; display: grid; align-content: start; gap: 4px; padding: 6px 6px 10px; color: var(--c-text); text-decoration: none; min-width: 0; }
+  .lc-card:active { transform: translateY(var(--px)); }
+  .lc-art { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--c-well); box-shadow: inset 0 0 0 var(--px) var(--c-ink); margin-bottom: 4px; }
+  .lc-art > * { position: absolute; }
+  .lc-art::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 0 var(--px) var(--c-ink); pointer-events: none; }
+  .lc-card b { padding: 0 4px; font: 700 var(--fl-1)/1.25 var(--f-label); text-transform: uppercase; color: var(--c-cream); }
+  .lc-card .lc-meta { padding: 0 4px; font: 400 var(--fs-s)/1.3 var(--f-text); color: var(--c-mute); }
+  .lc-card .lc-pals { padding: 0 4px; font: 600 var(--fs-s)/1.3 var(--f-text); color: var(--c-good-hi); }
+  .lc-card .pl-badge { position: absolute; top: 12px; right: 12px; z-index: 2; letter-spacing: 1px; }
+  .lc-search { margin-bottom: 4px; }
+  /* Match Monsters' card: the arena by day, two monsters facing off */
+  .lc-mm { inset: 0; background-color: #5aa6e0; /* the day sky's top row */ background-repeat: repeat-x; background-position: 50% 100%; image-rendering: pixelated; }
+  .lc-mm-f { position: absolute; bottom: calc(var(--u) * 1); width: calc(var(--u) * 48); height: calc(var(--u) * 54); }
+  .lc-mm-f.l { left: 10%; } .lc-mm-f.r { right: 10%; }
+  .lc-mm-f img { position: absolute; left: calc(var(--u) * 4); top: calc(var(--u) * 40); width: calc(var(--u) * 40); height: calc(var(--u) * 14); image-rendering: pixelated; }
+  .lc-mm-spr { position: absolute; left: 0; top: 0; width: calc(var(--u) * 48); height: calc(var(--u) * 48); image-rendering: pixelated;
+    background: 0 0 / calc(var(--u) * 48 * var(--n)) 100% no-repeat; }
+  .lc-mm-f.r .lc-mm-spr { scale: -1 1; }
+  .lc-mm-spr.idle { animation: lcIdle calc(var(--n) * 150ms) steps(var(--n)) infinite; }
+  @keyframes lcIdle { to { background-position-x: calc(var(--u) * -48 * var(--n)); } }
+  /* Hold'em's card: pixel felt, two cards and chips (SVG on a whole-pixel grid) */
+  .lc-art[data-art="holdem"] { background: var(--c-felt-lo); }
+  .lc-art svg { left: 50%; bottom: 0; transform: translateX(-50%); shape-rendering: crispEdges; }
+  .lc-he .ft { fill: var(--c-felt-lo); } .lc-he .fm { fill: var(--c-felt); } .lc-he .fh { fill: var(--c-felt-hi); }
+  .lc-he .rl { fill: var(--c-rail); } .lc-he .rh { fill: var(--c-rail-hi); } .lc-he .ik { fill: var(--c-ink); } .lc-he .cr { fill: var(--c-cream); }
+  .lc-he .rd { fill: var(--c-bad); } .lc-he .gd { fill: var(--c-gold); } .lc-he .gl { fill: var(--c-gold-lo); } .lc-he .ac { fill: var(--c-accent); } .lc-he .al { fill: var(--c-accent-lo); }
+  .lc-he .sh { fill: var(--c-ink); opacity: 0.14; }
+  .lc-art .lc-init { inset: 0; display: grid; place-items: center; font: 700 var(--fl-3)/1 var(--f-label); color: var(--c-cream); }
+  .pl-ic svg, .pl-ic img { display: block; }
+
+  /* ---- rows: invites, requests, friends ---- */
+  .lc-list { display: grid; gap: 8px; }
+  .lc-irow { display: flex; align-items: center; gap: 8px; padding: 8px 8px 10px 12px; min-height: 64px; }
+  .lc-irow.hot { background: color-mix(in srgb, var(--c-accent) 22%, var(--c-panel)); border-color: var(--c-ink); box-shadow: inset 0 0 0 var(--px) var(--c-accent-hi), inset 0 calc(var(--px) * -3) 0 rgba(10, 12, 20, 0.45); }
+  .lc-irow .lc-itext { flex: 1; min-width: 0; font: 400 var(--fs-m)/1.3 var(--f-text); overflow-wrap: anywhere; }
+  .lc-irow .lc-itext b { font-weight: 700; color: var(--c-cream); }
+  .lc-irow .lc-itext .muted { font-size: var(--fs-s); }
+  .lc-irow button { flex: none; }
+  .lc-frow { display: flex; align-items: center; gap: 8px; padding: 6px 8px 8px 6px; min-height: 64px; }
+  .lc-fmain { --b: transparent; --b-hi: transparent; --b-lo: transparent; border-color: transparent; box-shadow: none; text-shadow: none;
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 4px 6px; text-align: left; text-transform: none; white-space: normal; color: var(--c-text); font: 400 var(--fs-m)/1.25 var(--f-text); }
+  .lc-fmain:active { transform: none; background: rgba(10, 12, 20, 0.25); }
+  .lc-av { position: relative; flex: none; width: 40px; height: 40px; display: grid; place-items: center; background: var(--c-raise); box-shadow: inset 0 var(--px) 0 var(--c-edge), inset 0 calc(var(--px) * -2) 0 var(--c-well); font: 700 var(--fl-2)/1 var(--f-label); color: var(--c-cream); text-transform: uppercase; }
+  .lc-av .pl-dot { position: absolute; right: -2px; bottom: -2px; width: 12px; height: 12px; }
+  .lc-av.big { width: 64px; height: 64px; font-size: var(--fl-3); }
+  .lc-fbody { flex: 1; min-width: 0; display: grid; gap: 3px; }
+  .lc-fbody b { font: 700 var(--fs-m)/1.2 var(--f-text); color: var(--c-cream); }
+  .lc-fbody small { font: 400 var(--fs-s)/1.25 var(--f-text); color: var(--c-mute); }
+  .lc-fbody small.on { color: var(--c-good-hi); }
+  .lc-fmain .pl-badge { flex: none; }
+  .lc-frow > button.small { flex: none; min-width: 84px; }
+  .lc-x { width: 44px; min-width: 44px; padding: 0 0 2px; display: inline-grid; place-items: center; }
+  .lc-blank { display: grid; justify-items: center; gap: 12px; text-align: center; padding: 32px 8px 8px; }
+  .lc-blank h2 { margin: 0; font: 700 var(--fl-2)/1.2 var(--f-label); color: var(--c-cream); }
+  .lc-blank p { margin: 0; color: var(--c-mute); max-width: 30ch; }
+  .lc-blank .lc-blank-art { width: 96px; height: 72px; display: grid; place-items: center; background: var(--c-well); box-shadow: inset 0 var(--px) 0 var(--c-ink); color: var(--c-accent-hi); }
+  .lc-blank button { min-width: 220px; }
+
+  /* ---- Profile ---- */
+  .lc-me { display: flex; align-items: center; gap: 14px; padding: 12px 12px 14px; }
+  .lc-me-body { flex: 1; min-width: 0; display: grid; gap: 2px; justify-items: start; }
+  .lc-me-name { display: flex; align-items: baseline; gap: 8px; max-width: 100%; }
+  .lc-me-name b { min-width: 0; font: 700 var(--fl-2)/1.2 var(--f-label); color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lc-me-sub { font-size: var(--fs-s); color: var(--c-mute); }
+  .lc-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .lc-tiles.wide { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .lc-tile { padding: 10px 10px 12px; display: grid; gap: 6px; align-content: start; }
+  .lc-tile span { font: 700 var(--fs-xs)/1.2 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-mute); }
+  .lc-tile b { font: 700 var(--fl-2)/1.2 var(--f-label); color: var(--c-cream); overflow-wrap: anywhere; }
+  .lc-chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 4px; scrollbar-width: none; }
+  .lc-chips::-webkit-scrollbar { display: none; }
+  .lc-chips button { flex: none; }
+  .lc-chips button[aria-selected="true"] { --b: var(--c-accent); --b-hi: var(--c-accent-hi); --b-lo: var(--c-accent-lo); color: #fff; }
+  .lc-recent { display: grid; }
+  .lc-recent div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 2px; border-bottom: var(--px) solid var(--c-panel); font-size: var(--fs-s); }
+  .lc-recent div:last-child { border-bottom: 0; }
+  .lc-recent time { flex: none; color: var(--c-mute); }
+  .lc-note { margin: 0; font-size: var(--fs-s); color: var(--c-mute); }
+  .lc-acct { display: grid; gap: 10px; padding: 12px 12px 14px; }
+  input.lc-key { font-family: ui-monospace, monospace; font-size: var(--fs-s); }
+
+  /* ---- Chat ---- */
+  .lc-chat { height: 100vh; height: 100dvh; min-height: 0; }
+  .lc-who { flex: 1; min-width: 0; display: grid; gap: 4px; }
+  .lc-who .pl-title { flex: none; }
+  .lc-who .pl-sub { display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; }
+  .lc-who .pl-sub.on { color: var(--c-good-hi); }
+  .lc-log { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 6px;
+    padding: 12px max(16px, calc((100% - var(--pl-max)) / 2), env(safe-area-inset-right)) 12px max(16px, calc((100% - var(--pl-max)) / 2), env(safe-area-inset-left)); }
+  .lc-log > :first-child { margin-top: auto; }
+  .lc-msg { max-width: 80%; align-self: flex-start; padding: 7px 10px 9px; font: 400 var(--fs-m)/1.35 var(--f-text); overflow-wrap: anywhere; white-space: pre-wrap; }
+  .lc-msg.mine { align-self: flex-end; background: var(--c-accent); box-shadow: inset 0 var(--px) 0 var(--c-accent-hi), inset 0 calc(var(--px) * -2) 0 var(--c-accent-lo); color: #fff; }
+  .lc-msg time { display: block; margin-top: 2px; font-size: var(--fs-xs); color: var(--c-mute); text-align: right; }
+  .lc-msg.mine time { color: #d9d2ff; }
+  .lc-day { align-self: center; margin: 8px 0 2px; font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-mute); }
+  .lc-start { align-self: center; display: grid; justify-items: center; gap: 4px; padding: 8px 0 12px; text-align: center; color: var(--c-mute); font-size: var(--fs-s); }
+  .lc-start .lc-av { margin-bottom: 4px; }
+  .lc-start .flat { min-height: 36px; padding: 6px 10px; font-size: var(--fl-1); }
+  .lc-more { align-self: center; }
+  .lc-compose { flex: none; background: var(--c-panel); border-top: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 rgba(74, 84, 134, 0.5);
+    padding: 10px max(16px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  .lc-compose form { max-width: var(--pl-max); margin: 0 auto; }
+
+  /* ---- Add friend ---- */
+  .lc-field { display: grid; gap: 8px; }
+  .lc-share { display: flex; align-items: center; gap: 12px; padding: 10px 10px 12px 12px; }
+  .lc-share span { flex: 1; min-width: 0; color: var(--c-mute); overflow-wrap: anywhere; }
+  .lc-share b { color: var(--c-cream); }
+</style>
 </head>
 <body>
-<main class="pl-view"><h1 class="pl-title">Ploto</h1><p><a href="/play/match-monsters">Match Monsters</a></p></main>
+<!-- ============================================================ GAMES -->
+<section id="sGames" class="lc-screen lc-tabbed" data-screen="games" aria-label="Games" hidden>
+  <header class="pl-bar"><div class="pl-bar-in">
+    <h1 class="lc-logo" tabindex="-1">Ploto</h1>
+    <button id="settingsBtn" class="ghost small icon" aria-label="Settings" title="Settings"><svg class="lc-px" viewBox="0 0 9 7" width="18" height="14" aria-hidden="true"><rect x="0" y="1" width="9" height="1"/><rect x="2" y="0" width="2" height="3"/><rect x="0" y="5" width="9" height="1"/><rect x="5" y="4" width="2" height="3"/></svg></button>
+  </div></header>
+  <main class="pl-view" id="gamesView">
+    <div id="continueBox" hidden></div>
+    <div class="pl-label" id="gamesLabel">Games</div>
+    <div id="searchBox" class="lc-search" hidden><label class="sr-only" for="gameSearch">Search games</label><input id="gameSearch" type="search" autocomplete="off" spellcheck="false"></div>
+    <div id="gameGrid" class="lc-grid"></div>
+  </main>
+</section>
+
+<!-- ============================================================ FRIENDS -->
+<section id="sFriends" class="lc-screen lc-tabbed" data-screen="friends" aria-label="Friends" hidden>
+  <header class="pl-bar"><div class="pl-bar-in">
+    <h1 class="pl-title" tabindex="-1">Friends</h1>
+    <button id="addFriendBtn" class="ghost small lc-act" hidden>Add friend</button>
+  </div></header>
+  <main class="pl-view" id="friendsView"></main>
+</section>
+
+<!-- ============================================================ PROFILE -->
+<section id="sProfile" class="lc-screen lc-tabbed" data-screen="profile" aria-label="Profile" hidden>
+  <header class="pl-bar"><div class="pl-bar-in"><h1 class="pl-title" tabindex="-1">Profile</h1></div></header>
+  <main class="pl-view" id="profileView"></main>
+</section>
+
+<!-- ============================================================ CHAT -->
+<section id="sChat" class="lc-screen lc-chat" data-screen="chat" aria-label="Chat" hidden>
+  <header class="pl-bar"><div class="pl-bar-in">
+    <button class="ghost small icon" data-back aria-label="Back" title="Back"></button>
+    <div class="lc-who"><h1 class="pl-title" id="chatName" tabindex="-1"></h1><span class="pl-sub" id="chatSub"></span></div>
+    <button id="chatInvite" class="small lc-act" hidden>Invite</button>
+  </div></header>
+  <div id="chatLog" class="lc-log" role="log" aria-label="Messages"></div>
+  <div class="lc-compose">
+    <form id="chatForm" class="pl-form"><label class="sr-only" for="chatInput">Message</label><input id="chatInput" type="text" placeholder="Message" maxlength="500" autocomplete="off" enterkeyhint="send"><button id="chatSend" type="submit">Send</button></form>
+  </div>
+</section>
+
+<!-- ============================================================ ADD FRIEND -->
+<section id="sAdd" class="lc-screen" data-screen="add" aria-label="Add friend" hidden>
+  <header class="pl-bar"><div class="pl-bar-in">
+    <button class="ghost small icon" data-back aria-label="Back" title="Back"></button>
+    <h1 class="pl-title" tabindex="-1">Add friend</h1>
+  </div></header>
+  <main class="pl-view">
+    <form id="addForm" class="lc-field">
+      <label class="pl-label" for="addInput">Their username</label>
+      <div class="pl-form"><input id="addInput" type="text" placeholder="Username" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send"><button type="submit">Add</button></div>
+      <p class="lc-note">They'll see your request in their Friends tab.</p>
+    </form>
+    <div class="pl-label">Or share yours</div>
+    <div class="lc-share pl-frame"><span>You're <b id="meHandle"></b></span><button id="shareBtn" class="ghost small">Share</button></div>
+  </main>
+</section>
+
+<nav class="lc-tabs" id="tabBar" aria-label="Main">
+  <div class="lc-tabs-in">
+    <button class="lc-tab" data-tab="games"><span data-icon="games"></span>Games</button>
+    <button class="lc-tab" data-tab="friends"><span data-icon="friends"></span>Friends<span id="friendsBadge" class="pl-badge" hidden></span></button>
+    <button class="lc-tab" data-tab="profile"><span data-icon="person"></span>Profile</button>
+  </div>
+</nav>
+<div id="plScrim" class="pl-scrim hidden"></div>
+
+<script src="/play/riffwave.js"></script>
+<script src="/play/sfxr.js"></script>
+<script src="/play/sounds.js"></script>
+<script src="/play/feedback.js"></script>
+<script src="/play/icons.js"></script>
 <script src="/play/platform.js"></script>
+<script>
+(() => {
+  "use strict";
+  const P = window.Ploto;
+  const { $, esc } = P;
+  const ic = (name, scale = 2) => window.MM_ICONS?.icon(name, scale) ?? "";
+  const TABS = ["games", "friends", "profile"];
+  const BACK = `<svg class="lc-px" viewBox="0 0 4 7" width="8" height="14" aria-hidden="true"><rect x="3" y="0" width="1" height="7"/><rect x="2" y="1" width="1" height="5"/><rect x="1" y="2" width="1" height="3"/><rect x="0" y="3" width="1" height="1"/></svg>`;
+  const CHEV = `<svg class="lc-px" viewBox="0 0 5 7" width="10" height="14" aria-hidden="true"><rect x="0" y="0" width="2" height="1"/><rect x="1" y="1" width="2" height="1"/><rect x="2" y="2" width="2" height="1"/><rect x="3" y="3" width="2" height="1"/><rect x="2" y="4" width="2" height="1"/><rect x="1" y="5" width="2" height="1"/><rect x="0" y="6" width="2" height="1"/></svg>`;
+  const CROSS = `<svg class="lc-px" viewBox="0 0 5 5" width="10" height="10" aria-hidden="true"><rect x="0" y="0" width="1" height="1"/><rect x="4" y="0" width="1" height="1"/><rect x="1" y="1" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="0" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/></svg>`;
+
+  const S = {
+    tab: "games",
+    screen: "games", // games | friends | profile | chat | add
+    chatWith: null,
+    games: [],
+    gamesFailed: false,
+    friends: [], incoming: [], outgoing: [], friendsLoaded: false,
+    invites: new Map(),
+    stats: null, statsFailed: false,
+    statsGame: P.store.get("lc.statsGame"),
+    query: "",
+    scroll: {},
+  };
+  const friendById = (id) => S.friends.find((f) => f.id === id);
+  const gameById = (id) => S.games.find((g) => g.id === id);
+  const unreadTotal = () => S.friends.reduce((n, f) => n + (f.unread || 0), 0);
+  const initial = (name) => esc((String(name || "?").trim()[0] || "?").toUpperCase());
+
+  /* ------------------------------------------------------------ art */
+  // Pixel title cards drawn in code: whole device pixels per art pixel, never stretched.
+  const dpr = () => window.devicePixelRatio || 1;
+  const snapDown = (k) => Math.max(1, Math.floor(k * dpr())) / dpr();
+  function mmArt(W, H) {
+    const PX = window.PIXELART;
+    if (!PX) return "";
+    const theme = PX.themes?.day || { arena: PX.arena, platform: PX.platform };
+    // Whole CSS px per art pixel, the nearest that fits; any gap at the sides repeats, the sky fills the top.
+    const k = Math.max(1, Math.round(Math.max(W / 160, H / 100)));
+    const u = snapDown((H * 0.56) / 48);
+    const still = P.reduceMotion();
+    const fighter = (id, side) => {
+      const s = PX.monsters[id]?.stages[1];
+      if (!s) return "";
+      const idle = s.idle && !still;
+      return `<div class="lc-mm-f ${side}" style="--u:${u}px"><img src="${theme.platform}" alt="">` +
+        `<div class="lc-mm-spr${idle ? " idle" : ""}" style="background-image:url(${idle ? s.idle : s.flat});--n:${idle ? s.n : 1}"></div></div>`;
+    };
+    return `<div class="lc-mm" style="background-image:url(${theme.arena});background-size:${160 * k}px ${100 * k}px">${fighter("ember_pup", "l")}${fighter("tide_serpent", "r")}</div>`;
+  }
+  /** Pixel rects from ASCII rows ("X" = filled) at (x, y), `s` art pixels per cell. */
+  const grid = (rows, x, y, cls, s = 1) => rows.map((row, j) => [...row].map((c, i) => c === "X" ? `<rect class="${cls}" x="${x + i * s}" y="${y + j * s}" width="${s}" height="${s}"/>` : "").join("")).join("");
+  const GLYPH = {
+    A: [".X.", "X.X", "XXX", "X.X", "X.X"],
+    K: ["X.X", "X.X", "XX.", "X.X", "X.X"],
+    spade: ["..X..", ".XXX.", "XXXXX", "XXXXX", "..X.."],
+    heart: [".X.X.", "XXXXX", "XXXXX", ".XXX.", "..X.."],
+  };
+  const r = (x, y, w, h, cls) => `<rect class="${cls}" x="${x}" y="${y}" width="${w}" height="${h}"/>`;
+  function card(x, y, rank, suit) {
+    const ink = suit === "heart" ? "rd" : "ik";
+    return r(x + 1, y + 1, 16, 22, "sh") + // hard shadow
+      r(x + 1, y, 14, 22, "ik") + r(x, y + 1, 16, 20, "ik") + r(x + 1, y + 1, 14, 20, "cr") + r(x + 1, y + 19, 14, 2, "sh") +
+      grid(GLYPH[rank], x + 2, y + 2, ink) + grid(GLYPH[suit], x + 3, y + 8, ink, 2);
+  }
+  function chips(x, y, n, cls, hi) {
+    let out = "";
+    for (let i = 0; i < n; i++) {
+      const cy = y - i * 3;
+      out += r(x, cy, 10, 3, "ik") + r(x + 1, cy, 8, 2, cls) + r(x + 2, cy, 2, 2, "cr") + r(x + 6, cy, 2, 2, "cr");
+    }
+    return out + r(x + 1, y - (n - 1) * 3 - 1, 8, 1, hi);
+  }
+  function holdemSvg(k, view = "0 0 80 50") {
+    const [, , w, h] = view.split(" ").map(Number);
+    return `<svg class="lc-he" viewBox="${view}" width="${w * k}" height="${h * k}" aria-hidden="true">` +
+      r(0, 0, 80, 50, "ft") +
+      r(6, 6, 68, 44, "rl") + r(4, 8, 72, 42, "rl") + r(6, 6, 68, 1, "rh") + r(4, 8, 2, 1, "rh") + r(74, 8, 2, 1, "rh") +
+      r(8, 9, 64, 41, "fm") + r(7, 10, 66, 40, "fm") + r(9, 10, 62, 1, "fh") +
+      card(25, 15, "A", "spade") + card(37, 18, "K", "heart") +
+      chips(57, 38, 4, "gd", "cr") + chips(13, 40, 2, "ac", "cr") + chips(14, 37, 1, "rd", "cr") +
+      `</svg>`;
+  }
+  function holdemArt(W, H) { return holdemSvg(Math.max(1, Math.round(Math.max(W / 80, H / 50)))); }
+  /** The art box on a game card, sized to the box it fills. */
+  function artFor(id, W, H) {
+    if (id === "match_monsters") return mmArt(W, H);
+    if (id === "holdem") return holdemArt(W, H);
+    const g = gameById(id);
+    return `<div class="lc-init">${esc((g?.title || "?").slice(0, 2))}</div>`;
+  }
+  /** A 48 px icon for lists (the invite sheet). */
+  function iconFor(id) {
+    if (id === "match_monsters" && window.PIXELART?.monsters.ember_pup) return `<img class="px" src="${PIXELART.monsters.ember_pup.icon}" width="48" height="48" alt="">`;
+    if (id === "holdem") return holdemSvg(2, "24 14 24 24");
+    return esc((gameById(id)?.title || "?").slice(0, 2));
+  }
+  function paintArt() {
+    for (const box of document.querySelectorAll("[data-art]")) {
+      const W = box.clientWidth, H = box.clientHeight;
+      if (!W || !H) continue;
+      const key = `${W}x${H}:${!!window.PIXELART}:${P.reduceMotion()}`;
+      if (box.dataset.painted === key) continue;
+      box.dataset.painted = key;
+      box.innerHTML = artFor(box.dataset.art, W, H);
+    }
+  }
+  // The monster sprites are big: load them after the page is up, then paint.
+  const pixelScript = document.createElement("script");
+  pixelScript.src = "/play/pixelart.js";
+  pixelScript.async = true;
+  pixelScript.onload = () => renderGames();
+  document.body.appendChild(pixelScript);
+  if (window.ResizeObserver) new ResizeObserver(() => paintArt()).observe($("gameGrid"));
+  P.onSettings(() => paintArt());
+
+  /* ------------------------------------------------------------ GAMES tab */
+  async function loadGames(fresh = false) {
+    try {
+      S.games = fresh ? await (await fetch("/play/games")).json() : await P.games();
+      S.gamesFailed = !Array.isArray(S.games) || !S.games.length;
+      if (S.gamesFailed) S.games = [];
+    } catch { if (!S.games.length) S.gamesFailed = true; }
+    renderGames();
+  }
+  /** "Kai is playing", "Kai and Sam are playing", "Kai and 2 more are playing". */
+  function palsLine(gameId) {
+    const pals = S.friends.filter((f) => f.online && f.activity?.gameId === gameId).map((f) => f.username);
+    if (!pals.length) return "";
+    if (pals.length === 1) return `${pals[0]} is playing`;
+    if (pals.length === 2) return `${pals[0]} and ${pals[1]} are playing`;
+    return `${pals[0]} and ${pals.length - 1} more are playing`;
+  }
+  function renderGames() {
+    // Continue: only when this tab left a Match Monsters match in progress.
+    const saved = P.store.get("mm.room");
+    const box = $("continueBox");
+    box.hidden = !saved;
+    box.innerHTML = saved
+      ? `<div class="pl-label">Continue</div><a class="pl-row pl-frame" href="/play/match-monsters" style="text-decoration:none"><span class="pl-ic">${iconFor("match_monsters")}</span><span><b>Match Monsters</b><small>Back to your match</small></span><span class="pl-go">${CHEV}</span></a>`
+      : "";
+    const many = S.games.length > 6;
+    $("searchBox").hidden = !many;
+    $("gameSearch").placeholder = `Search ${S.games.length} games`;
+    const q = many ? S.query.trim().toLowerCase() : "";
+    const list = S.games.filter((g) => !q || g.title.toLowerCase().includes(q));
+    const gridEl = $("gameGrid");
+    if (S.gamesFailed) {
+      gridEl.innerHTML = `<div class="pl-empty" style="grid-column:1/-1">Couldn't load the games.<div style="margin-top:12px"><button class="ghost small" id="gamesRetry">Try again</button></div></div>`;
+      $("gamesRetry").onclick = () => loadGames(true);
+      return;
+    }
+    if (!S.games.length) { gridEl.innerHTML = ""; return; }
+    if (!list.length) { gridEl.innerHTML = `<div class="pl-empty" style="grid-column:1/-1">No games match "${esc(S.query.trim())}"</div>`; return; }
+    // Keep each card's painted art when only the text changes.
+    const old = new Map([...gridEl.querySelectorAll("[data-art]")].map((el) => [el.dataset.art, el]));
+    const focused = gridEl.contains(document.activeElement) ? document.activeElement.dataset.game : null;
+    gridEl.innerHTML = list.map((g) => {
+      const meta = [g.players, g.online ? `${g.online} online` : ""].filter(Boolean).join(" · ");
+      const pals = palsLine(g.id);
+      return `<a class="lc-card pl-frame" href="${esc(g.path)}" data-game="${esc(g.id)}">` +
+        `<div class="lc-art" data-art="${esc(g.id)}"></div>` +
+        (g.badge ? `<span class="pl-badge">${esc(g.badge)}</span>` : "") +
+        `<b>${esc(g.title)}</b><span class="lc-meta">${esc(meta)}</span>` +
+        (pals ? `<span class="lc-pals ell">${esc(pals)}</span>` : "") + `</a>`;
+    }).join("");
+    for (const el of gridEl.querySelectorAll("[data-art]")) {
+      const prev = old.get(el.dataset.art);
+      if (prev) { el.replaceWith(prev); }
+    }
+    if (focused) gridEl.querySelector(`[data-game="${CSS.escape(focused)}"]`)?.focus({ preventScroll: true });
+    paintArt();
+  }
+  $("gameSearch").addEventListener("input", (e) => { S.query = e.target.value; renderGames(); });
+  $("settingsBtn").addEventListener("click", () => P.openSettings());
+
+  /* ------------------------------------------------------------ FRIENDS tab */
+  /** Re-render `el` without losing keyboard focus on the same control. */
+  function keepFocus(el, html) {
+    const a = document.activeElement;
+    const key = el.contains(a) ? a.dataset.k : null;
+    el.innerHTML = html;
+    if (key) el.querySelector(`[data-k="${CSS.escape(key)}"]`)?.focus({ preventScroll: true });
+  }
+  function statusOf(f) {
+    if (f.online && f.activity?.label) return f.activity.label;
+    return f.online ? "Online" : "Offline";
+  }
+  function friendRow(f) {
+    const unread = f.unread || 0;
+    return `<div class="lc-frow pl-frame">` +
+      `<button class="lc-fmain" data-chat="${esc(f.id)}" data-k="chat:${esc(f.id)}" aria-label="${esc(`Chat with ${f.username}. ${statusOf(f)}${unread ? `. ${unread} unread` : ""}`)}">` +
+      `<span class="lc-av" aria-hidden="true">${initial(f.username)}<i class="pl-dot${f.online ? "" : " off"}"></i></span>` +
+      `<span class="lc-fbody" aria-hidden="true"><b class="ell">${esc(f.username)}</b><small class="ell${f.online ? " on" : ""}">${esc(statusOf(f))}</small></span>` +
+      (unread ? `<span class="pl-badge" aria-hidden="true">${unread}</span>` : "") + `</button>` +
+      (f.online ? `<button class="small" data-invite="${esc(f.id)}" data-k="inv:${esc(f.id)}" aria-label="Invite ${esc(f.username)}">Invite</button>` : "") +
+      `</div>`;
+  }
+  function renderFriends() {
+    const view = $("friendsView");
+    $("addFriendBtn").hidden = !P.account;
+    if (!P.account) {
+      view.innerHTML = `<div class="lc-blank"><div class="lc-blank-art">${ic("friends", 6)}</div><h2>Play with friends</h2>` +
+        `<p>Claim a username so friends can find you.</p><button id="claimBtn">Claim a username</button></div>`;
+      $("claimBtn").onclick = () => P.openClaim();
+      return;
+    }
+    if (!S.friendsLoaded) { view.innerHTML = `<div class="pl-empty">Loading…</div>`; return; }
+    const invites = [...S.invites.values()];
+    const online = S.friends.filter((f) => f.online).sort((a, b) => Number(!!b.activity) - Number(!!a.activity) || a.username.localeCompare(b.username));
+    const offline = S.friends.filter((f) => !f.online);
+    let html = "";
+    if (invites.length) {
+      html += `<div class="pl-label">Invites</div><div class="lc-list">` + invites.map((i) =>
+        `<div class="lc-irow pl-frame hot"><span class="lc-itext"><b>${esc(i.from?.username || "A friend")}</b> · ${esc(i.label || gameById(i.gameId)?.title || "a game")}</span>` +
+        `<button class="ghost small lc-x" data-decline="${esc(i.inviteId)}" data-k="dec:${esc(i.inviteId)}" aria-label="Decline ${esc(i.from?.username || "")}'s invite">${CROSS}</button>` +
+        `<button class="small" data-join="${esc(i.inviteId)}" data-k="join:${esc(i.inviteId)}">Join</button></div>`).join("") + `</div>`;
+    }
+    if (S.incoming.length || S.outgoing.length) {
+      html += `<div class="pl-label">Requests</div><div class="lc-list">` +
+        S.incoming.map((a) => `<div class="lc-irow pl-frame"><span class="lc-itext"><b>${esc(a.username)}</b> <span class="muted">wants to be friends</span></span>` +
+          `<button class="ghost small lc-x" data-remove="${esc(a.id)}" data-k="rm:${esc(a.id)}" aria-label="Decline ${esc(a.username)}">${CROSS}</button>` +
+          `<button class="small" data-accept="${esc(a.id)}" data-k="acc:${esc(a.id)}">Accept</button></div>`).join("") +
+        S.outgoing.map((a) => `<div class="lc-irow pl-frame"><span class="lc-itext"><b>${esc(a.username)}</b> <span class="muted">· pending</span></span>` +
+          `<button class="ghost small" data-remove="${esc(a.id)}" data-k="rm:${esc(a.id)}" aria-label="Cancel request to ${esc(a.username)}">Cancel</button></div>`).join("") + `</div>`;
+    }
+    if (!S.friends.length) {
+      html += `<div class="lc-blank"><div class="lc-blank-art">${ic("friends", 6)}</div><h2>No friends yet</h2>` +
+        `<p>Add friends by their username, or share yours.</p><button data-add data-k="add">Add friend</button></div>`;
+    } else {
+      html += `<div class="pl-label">Online · ${online.length}</div>` +
+        (online.length ? `<div class="lc-list">${online.map(friendRow).join("")}</div>` : `<p class="lc-note">Nobody's online right now.</p>`);
+      if (offline.length) html += `<div class="pl-label">Offline · ${offline.length}</div><div class="lc-list">${offline.map(friendRow).join("")}</div>`;
+    }
+    keepFocus(view, html);
+  }
+  $("friendsView").addEventListener("click", async (e) => {
+    const b = e.target.closest("button");
+    if (!b || b.disabled) return;
+    const d = b.dataset;
+    try {
+      if (d.chat) return openChat(d.chat);
+      if (d.invite) return openInviteSheet(d.invite);
+      if (d.add != null) return openAdd();
+      if (d.join) return joinInvite(d.join);
+      if (d.decline) {
+        S.invites.delete(d.decline);
+        renderFriends(); renderBadge();
+        (await P.lobby()).request("platform:declineInvite", { inviteId: d.decline }).catch(() => {});
+        return;
+      }
+      if (d.accept) {
+        b.disabled = true;
+        await P.api("POST", `/api/friends/${encodeURIComponent(d.accept)}/accept`);
+        const who = S.incoming.find((a) => a.id === d.accept)?.username;
+        if (who) P.toast(`You and ${who} are now friends`);
+        return loadFriends(true);
+      }
+      if (d.remove) {
+        b.disabled = true;
+        await P.api("DELETE", `/api/friends/${encodeURIComponent(d.remove)}`);
+        return loadFriends(true);
+      }
+    } catch (err) {
+      b.disabled = false;
+      P.toast(P.errText(err), 2600);
+    }
+  });
+  $("addFriendBtn").addEventListener("click", () => openAdd());
+
+  /** Join on an invite: that game's page runs its own accept flow. */
+  async function joinInvite(inviteId) {
+    const inv = S.invites.get(inviteId);
+    if (!inv) return;
+    if (!S.games.length) await loadGames();
+    const g = gameById(inv.gameId);
+    if (!g) return P.toast("That game isn't available here yet", 2600);
+    go(`${g.path}?invite=${encodeURIComponent(inviteId)}`);
+  }
+
+  /** Invite a friend: pick a game, and that game's page takes it from there. */
+  async function openInviteSheet(friendId) {
+    const f = friendById(friendId);
+    if (!f) return;
+    if (!S.games.length) await loadGames();
+    const el = P.sheet(
+      `<h2>Invite ${esc(f.username)} to</h2><div class="lc-list">` +
+      S.games.map((g) => `<button class="pl-row" data-path="${esc(g.path)}"><span class="pl-ic">${iconFor(g.id)}</span>` +
+        `<span><b>${esc(g.title)}</b><small>${esc(g.players)}</small></span><span class="pl-go">${CHEV}</span></button>`).join("") +
+      `</div><div class="pl-actions"><button class="ghost" data-close>Cancel</button></div>`,
+      { label: `Invite ${f.username}` },
+    );
+    el.onclick = (e) => {
+      const b = e.target.closest("[data-path]");
+      if (b) return go(`${b.dataset.path}?inviteFriend=${encodeURIComponent(friendId)}`);
+      if (e.target.closest("[data-close]")) P.closeSheet();
+    };
+  }
+
+  /* ------------------------------------------------------------ CHAT */
+  const chat = { oldest: null, more: false, loading: false, lastDay: null };
+  const dayKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  function dayLabel(d) {
+    const now = new Date();
+    const y = new Date(now); y.setDate(now.getDate() - 1);
+    if (dayKey(d) === dayKey(now)) return "Today";
+    if (dayKey(d) === dayKey(y)) return "Yesterday";
+    return d.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short", ...(d.getFullYear() !== now.getFullYear() ? { year: "numeric" } : {}) });
+  }
+  const timeOf = (d) => d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  /** Messages as bubbles, with a day line whenever the day changes. */
+  function msgsHtml(list, prevDay) {
+    let html = "", day = prevDay;
+    for (const m of list) {
+      const d = new Date(m.at);
+      if (dayKey(d) !== day) { day = dayKey(d); html += `<div class="lc-day">${esc(dayLabel(d))}</div>`; }
+      html += `<div class="lc-msg pl-frame${m.from === P.account?.id ? " mine" : ""}">${esc(m.body)}<time datetime="${esc(m.at)}">${timeOf(d)}</time></div>`;
+    }
+    return { html, day };
+  }
+  function chatTop() {
+    const f = friendById(S.chatWith);
+    if (chat.more) return `<button class="ghost small lc-more" id="chatMore">Show earlier</button>`;
+    return `<div class="lc-start"><span class="lc-av" aria-hidden="true">${initial(f?.username)}</span>` +
+      `<span>This is the start of your chat with ${esc(f?.username || "your friend")}.</span>` +
+      (f ? `<button class="flat" id="unfriendBtn">Unfriend</button>` : "") + `</div>`;
+  }
+  function renderChatLog(list) {
+    const { html, day } = msgsHtml(list, null);
+    chat.lastDay = day;
+    $("chatLog").innerHTML = chatTop() + html;
+    wireChatTop();
+  }
+  function wireChatTop() {
+    $("chatMore")?.addEventListener("click", loadEarlier);
+    $("unfriendBtn")?.addEventListener("click", unfriend);
+  }
+  function appendMsg(m) {
+    const log = $("chatLog");
+    log.querySelector(".pl-empty")?.remove();
+    const atEnd = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+    const { html, day } = msgsHtml([m], chat.lastDay);
+    chat.lastDay = day;
+    log.insertAdjacentHTML("beforeend", html);
+    if (atEnd || m.from === P.account?.id) log.scrollTop = log.scrollHeight;
+  }
+  function renderChatHead() {
+    if (S.screen !== "chat") return;
+    const f = friendById(S.chatWith);
+    $("chatName").textContent = f?.username || "Chat";
+    const sub = $("chatSub");
+    sub.innerHTML = f ? `<i class="pl-dot${f.online ? "" : " off"}" aria-hidden="true"></i>${esc(statusOf(f))}` : "";
+    sub.classList.toggle("on", !!f?.online);
+    $("chatInvite").hidden = !f?.online;
+    $("chatInvite").setAttribute("aria-label", f ? `Invite ${f.username}` : "Invite");
+  }
+  const drafts = {};
+  async function loadChat(id) {
+    Object.assign(chat, { oldest: null, more: false, lastDay: null });
+    $("chatLog").innerHTML = `<div class="pl-empty">Loading…</div>`;
+    $("chatInput").value = drafts[id] || "";
+    try {
+      const msgs = await P.api("GET", `/api/messages/${encodeURIComponent(id)}`); // reading the chat marks it read
+      if (S.chatWith !== id || S.screen !== "chat") return;
+      chat.oldest = msgs[0]?.id ?? null;
+      chat.more = msgs.length >= 50;
+      renderChatLog(msgs);
+      $("chatLog").scrollTop = $("chatLog").scrollHeight;
+      const f = friendById(id);
+      if (f && f.unread) { f.unread = 0; renderFriends(); renderBadge(); }
+    } catch (e) {
+      if (S.chatWith === id) $("chatLog").innerHTML = `<div class="pl-empty">${esc(P.errText(e))}</div>`;
+    }
+  }
+  async function loadEarlier() {
+    if (chat.loading || !chat.oldest) return;
+    chat.loading = true;
+    const id = S.chatWith;
+    try {
+      const msgs = await P.api("GET", `/api/messages/${encodeURIComponent(id)}?before=${chat.oldest}`);
+      if (S.chatWith !== id) return;
+      const log = $("chatLog");
+      const fromBottom = log.scrollHeight - log.scrollTop;
+      chat.oldest = msgs[0]?.id ?? chat.oldest;
+      chat.more = msgs.length >= 50;
+      // Re-draw the older page above what's shown, then keep the reader where they were.
+      const shown = [...log.querySelectorAll(".lc-msg, .lc-day")];
+      const firstDay = log.querySelector(".lc-day")?.textContent;
+      const { html, day } = msgsHtml(msgs, null);
+      log.querySelector(".lc-more, .lc-start")?.remove();
+      if (shown[0]?.classList.contains("lc-day") && msgs.length && day && dayLabel(new Date(msgs[msgs.length - 1].at)) === firstDay) shown[0].remove();
+      log.insertAdjacentHTML("afterbegin", chatTop() + html);
+      wireChatTop();
+      log.scrollTop = log.scrollHeight - fromBottom;
+    } catch (e) { P.toast(P.errText(e)); }
+    finally { chat.loading = false; }
+  }
+  async function unfriend() {
+    const f = friendById(S.chatWith);
+    if (!f) return;
+    if (!(await P.confirm({ title: `Unfriend ${f.username}?`, body: "You can add each other again later.", yes: "Unfriend", danger: true }))) return;
+    try {
+      await P.api("DELETE", `/api/friends/${encodeURIComponent(f.id)}`);
+      P.toast(`${f.username} is no longer your friend`);
+      await loadFriends(true);
+      back();
+    } catch (e) { P.toast(P.errText(e)); }
+  }
+  $("chatForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const input = $("chatInput");
+    const body = input.value.trim();
+    const id = S.chatWith;
+    if (!body || !id) return;
+    input.value = "";
+    drafts[id] = "";
+    try {
+      const m = await P.api("POST", `/api/messages/${encodeURIComponent(id)}`, { body });
+      if (S.chatWith === id) appendMsg(m);
+    } catch (err) {
+      if (!input.value) input.value = body;
+      P.toast(P.errText(err), 2600);
+    }
+  });
+  $("chatInput").addEventListener("input", (e) => { if (S.chatWith) drafts[S.chatWith] = e.target.value; });
+  // Tapping Send keeps the keyboard up (the box keeps focus).
+  $("chatSend").addEventListener("pointerdown", (e) => { if (document.activeElement === $("chatInput")) e.preventDefault(); });
+  $("chatInvite").addEventListener("click", () => openInviteSheet(S.chatWith));
+
+  /* ------------------------------------------------------------ ADD FRIEND */
+  $("addForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const input = $("addInput");
+    const name = input.value.trim();
+    if (!name) { input.focus(); return P.toast("Type their username"); }
+    const btn = e.target.querySelector("button");
+    btn.disabled = true;
+    try {
+      const res = await P.api("POST", "/api/friends", { username: name });
+      P.toast(res.status === "accepted" ? `You and ${res.friend.username} are now friends` : `Request sent to ${res.friend.username}`, 2600);
+      input.value = "";
+      loadFriends(true);
+    } catch (err) {
+      P.toast(P.errText(err), 2600);
+    } finally { btn.disabled = false; }
+  });
+  $("shareBtn").addEventListener("click", async () => {
+    const name = P.account?.username;
+    if (!name) return;
+    const url = `${location.origin}/play`;
+    const text = `Add me on Ploto. My username is ${name}`;
+    try {
+      if (navigator.share) await navigator.share({ title: "Ploto", text, url });
+      else { await navigator.clipboard.writeText(`${text}: ${url}`); P.toast("Copied. Paste it to a friend"); }
+    } catch (err) {
+      if (err?.name !== "AbortError") P.toast(`Your username is ${name}`, 3000);
+    }
+  });
+
+  /* ------------------------------------------------------------ PROFILE tab */
+  function fmtWhen(raw) {
+    if (!raw) return "";
+    const s = String(raw);
+    const d = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? s : s.replace(" ", "T") + "Z");
+    if (isNaN(d)) return s;
+    const mins = Math.round((Date.now() - d) / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins} min ago`;
+    if (mins < 60 * 24 && dayKey(d) === dayKey(new Date())) return `${Math.round(mins / 60)} h ago`;
+    const label = dayLabel(d);
+    return label === "Today" ? `${Math.round(mins / 60)} h ago` : label;
+  }
+  const tile = (label, value) => `<div class="lc-tile pl-frame"><span>${esc(label)}</span><b>${esc(value)}</b></div>`;
+  function renderProfile() {
+    const view = $("profileView");
+    const a = P.account;
+    const name = P.displayName();
+    let html = `<div class="lc-me pl-frame"><span class="lc-av big" aria-hidden="true">${initial(name)}</span><div class="lc-me-body">` +
+      `<div class="lc-me-name"><b>${esc(name)}</b><button class="flat lc-link" id="editName" aria-label="Edit your name">Edit</button></div>` +
+      (a ? `<span class="lc-me-sub">Friends find you by this name</span>` : `<button class="flat lc-link" id="claimLink">Claim a username to keep your stats</button>`) +
+      `</div></div>`;
+    if (!a) {
+      html += `<div class="pl-label">All games</div><p class="lc-note">Your games, wins and best moments show up here once you have a username.</p>`;
+      view.innerHTML = html;
+    } else {
+      const st = S.stats;
+      html += `<div class="pl-label">All games</div>`;
+      if (!st) {
+        html += S.statsFailed ? `<p class="lc-note">Couldn't load your stats. <button class="flat lc-link" id="statsRetry">Try again</button></p>` : `<div class="pl-empty">Loading…</div>`;
+      } else {
+        html += `<div class="lc-tiles">${tile("Played", st.totals.played)}${tile("Wins", st.totals.wins)}${S.friendsLoaded ? tile("Friends", S.friends.length) : ""}</div>`;
+        if (S.games.length) {
+          const pick = gameById(S.statsGame) ? S.statsGame : (S.games.find((g) => st.games[g.id]?.played) || S.games[0]).id;
+          const g = st.games[pick];
+          html += `<div class="pl-label">Per game</div><div class="lc-chips" role="tablist" aria-label="Game">` +
+            S.games.map((x) => `<button class="ghost small" role="tab" id="tab-${esc(x.id)}" aria-controls="perGame" aria-selected="${x.id === pick}" tabindex="${x.id === pick ? 0 : -1}" data-stats="${esc(x.id)}">${esc(x.title)}</button>`).join("") +
+            `</div><div id="perGame" role="tabpanel" aria-labelledby="tab-${esc(pick)}" style="display:grid;gap:12px">` +
+            (g && g.played
+              ? `<div class="lc-tiles wide">${g.tiles.map((t) => tile(t.label, t.value)).join("")}</div>` +
+                `<div class="pl-label">Last games</div><div class="lc-recent">` +
+                (g.recent.length ? g.recent.map((x) => `<div><span>${esc(x.what)}</span><time>${esc(fmtWhen(x.when))}</time></div>`).join("") : `<p class="lc-note">No games yet</p>`) + `</div>`
+              : `<p class="lc-note">No ${esc(gameById(pick)?.title || "")} games yet. Play one and it shows up here.</p>`) +
+            `</div>`;
+        }
+      }
+      html += `<div class="pl-label">Your key</div><div class="lc-acct pl-frame">` +
+        `<p class="lc-note">This key is your login: use it to sign in on another device. Anyone who has it can play as you, so keep it to yourself.</p>` +
+        `<div class="pl-form"><label class="sr-only" for="keyField">Your key</label><input id="keyField" class="lc-key" type="password" readonly value="${esc(P.local.get("mm.key") || "")}"><button class="small" id="copyKey">Copy</button></div>` +
+        `<button class="ghost" id="signOut">Sign out on this device</button></div>`;
+      view.innerHTML = html;
+      $("statsRetry")?.addEventListener("click", () => loadStats());
+    }
+    $("editName").onclick = () => (a ? openRename() : P.askName({ title: "Your name", body: "Other players see this name.", go: "Save" }));
+    $("claimLink")?.addEventListener("click", () => P.openClaim());
+    const chipsEl = view.querySelector(".lc-chips");
+    if (chipsEl) {
+      chipsEl.onclick = (e) => { const b = e.target.closest("[data-stats]"); if (b) pickStats(b.dataset.stats); };
+      chipsEl.onkeydown = (e) => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+        e.preventDefault();
+        const ids = S.games.map((g) => g.id);
+        const i = ids.indexOf(S.statsGame && ids.includes(S.statsGame) ? S.statsGame : chipsEl.querySelector("[aria-selected=true]")?.dataset.stats);
+        const next = e.key === "Home" ? 0 : e.key === "End" ? ids.length - 1 : (i + (e.key === "ArrowRight" ? 1 : -1) + ids.length) % ids.length;
+        pickStats(ids[next], true);
+      };
+      chipsEl.querySelector("[aria-selected=true]")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+    $("copyKey")?.addEventListener("click", async () => {
+      const key = P.local.get("mm.key") || "";
+      try { await navigator.clipboard.writeText(key); P.toast("Key copied"); }
+      catch { const f = $("keyField"); f.type = "text"; f.select(); P.toast("Select and copy your key"); }
+    });
+    $("signOut")?.addEventListener("click", signOut);
+  }
+  function pickStats(id, focus = false) {
+    S.statsGame = id;
+    P.store.set("lc.statsGame", id);
+    renderProfile();
+    if (focus) $(`tab-${id}`)?.focus();
+  }
+  let statsReq = null;
+  function loadStats() {
+    if (!P.account) return Promise.resolve();
+    return (statsReq ??= (async () => {
+      try { S.stats = await P.api("GET", "/api/me/stats"); S.statsFailed = false; }
+      catch { S.statsFailed = !S.stats; }
+      finally { statsReq = null; }
+      if (S.screen === "profile") renderProfile();
+    })());
+  }
+  function openRename() {
+    const el = P.sheet(
+      `<h2>Your username</h2><p class="muted" style="text-align:center;margin:0">Friends find you by this name.</p>` +
+      `<form class="pl-form" data-f><label class="sr-only" for="lcRename">Username</label><input id="lcRename" type="text" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="small" type="submit">Save</button></form>` +
+      `<div class="pl-actions"><button class="ghost" data-close>Cancel</button></div>`,
+      { label: "Your username" },
+    );
+    const input = el.querySelector("#lcRename");
+    input.value = P.account?.username || "";
+    el.querySelector("[data-close]").onclick = () => P.closeSheet();
+    el.querySelector("[data-f]").onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        const res = await P.api("PATCH", "/api/me", { username: input.value.trim() });
+        P.closeSheet(true);
+        P.setAccount({ id: res.id, username: res.username });
+        P.toast(`You're now ${res.username}`);
+      } catch (err) { P.toast(P.errText(err), 2600); }
+    };
+  }
+  let lobbySock = null;
+  async function signOut() {
+    const ok = await P.confirm({ title: "Sign out?", body: "You'll need your key to get this account back, so copy it first.", yes: "Sign out", no: "Stay signed in", danger: true });
+    if (!ok) return;
+    P.local.del("mm.key");
+    const sock = lobbySock;
+    P.setAccount(null);
+    try { sock?.close(); } catch {}
+    P.toast("Signed out on this device");
+  }
+
+  /* ------------------------------------------------------------ data + live updates */
+  let friendsReq = null;
+  function loadFriends(fresh = false) {
+    if (!P.account) return Promise.resolve();
+    if (friendsReq && !fresh) return friendsReq;
+    const req = friendsReq = (async () => {
+      try {
+        const d = await P.api("GET", "/api/friends");
+        if (req !== friendsReq) return;
+        Object.assign(S, { friends: d.friends, incoming: d.incoming, outgoing: d.outgoing, friendsLoaded: true });
+      } catch { return; }
+      finally { if (req === friendsReq) friendsReq = null; }
+      renderFriends(); renderBadge(); renderGames(); renderChatHead();
+      if (S.screen === "profile") renderProfile();
+    })();
+    return req;
+  }
+  async function loadInvites() {
+    if (!P.account) return;
+    try {
+      const res = await (await P.lobby()).request("platform:invites", {});
+      S.invites = new Map((res.invites || []).map((i) => [i.inviteId, i]));
+    } catch { return; }
+    renderFriends(); renderBadge();
+  }
+  function renderBadge() {
+    const n = P.account ? S.invites.size + S.incoming.length + unreadTotal() : 0;
+    const b = $("friendsBadge");
+    b.textContent = n > 99 ? "99+" : String(n);
+    b.hidden = n === 0;
+    document.querySelector('[data-tab="friends"]').setAttribute("aria-label", n ? `Friends, ${n} new` : "Friends");
+  }
+  P.onLobbyOpen((sock) => {
+    lobbySock = sock;
+    if (!P.account) return;
+    loadInvites();
+    loadFriends(true); // presence may have changed while we were away
+  });
+  P.onLobby("social:invite", (inv) => {
+    S.invites.set(inv.inviteId, inv);
+    renderFriends(); renderBadge();
+    P.cue("ready");
+    P.toast(`${inv.from?.username || "A friend"} invited you to ${inv.label || "a game"}`, 3000);
+  });
+  P.onLobby("social:inviteGone", (d) => {
+    if (S.invites.delete(d.inviteId)) { renderFriends(); renderBadge(); }
+  });
+  P.onLobby("social:presence", (d) => {
+    const f = friendById(d.id);
+    if (!f) return;
+    f.online = !!d.online;
+    f.activity = d.online ? d.activity || null : null;
+    renderFriends(); renderGames(); renderChatHead();
+  });
+  P.onLobby("social:message", (m) => {
+    if (S.screen === "chat" && S.chatWith === m.from && !document.hidden) {
+      appendMsg(m);
+      P.api("GET", `/api/messages/${encodeURIComponent(m.from)}?before=1`).catch(() => {}); // marks it read
+      return;
+    }
+    const f = friendById(m.from);
+    if (f) f.unread = (f.unread || 0) + 1;
+    if (S.screen === "chat" && S.chatWith === m.from) appendMsg(m); // shown, but unread until you look
+    renderFriends(); renderBadge();
+    if (!(S.screen === "chat" && S.chatWith === m.from)) {
+      const body = String(m.body || "");
+      P.toast(`${m.fromUsername}: ${body.length > 48 ? body.slice(0, 47) + "…" : body}`, 3000);
+    }
+  });
+  P.onLobby("social:changed", (d) => {
+    if (d.reason === "request" && d.from) P.toast(`${d.from} wants to be friends`, 2600);
+    if (d.reason === "accepted" && d.from) P.toast(`${d.from} is now your friend`, 2600);
+    loadFriends(true);
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) return;
+    if (S.screen === "chat" && S.chatWith) {
+      const f = friendById(S.chatWith);
+      if (f?.unread) { P.api("GET", `/api/messages/${encodeURIComponent(S.chatWith)}?before=1`).catch(() => {}); f.unread = 0; renderBadge(); renderFriends(); }
+    }
+    if (S.screen === "games") loadGames(true);
+  });
+
+  let accountId = P.account?.id ?? null;
+  P.onAccount((a) => {
+    const changed = (a?.id ?? null) !== accountId;
+    accountId = a?.id ?? null;
+    if (changed) {
+      Object.assign(S, { friends: [], incoming: [], outgoing: [], friendsLoaded: false, invites: new Map(), stats: null, statsFailed: false });
+      if (a) { P.lobby().catch(() => {}); loadFriends(true); loadStats(); }
+      if (!a && (S.screen === "chat" || S.screen === "add")) back();
+    }
+    $("meHandle").textContent = a ? a.username : "";
+    renderFriends(); renderBadge(); renderProfile(); renderGames(); renderChatHead();
+  });
+
+  /* ------------------------------------------------------------ screens + history */
+  // Tabs replace the history entry (the hash says which); Chat, Add friend and sheets
+  // push one, so the phone's back button walks back through them.
+  const screenEl = (name) => document.querySelector(`[data-screen="${name}"]`);
+  function show(name, dir = 0, { focus = false } = {}) {
+    const prev = S.screen;
+    if (prev !== name) S.scroll[prev] = window.scrollY;
+    S.screen = name;
+    if (TABS.includes(name)) { S.tab = name; P.store.set("lc.tab", name); }
+    for (const el of document.querySelectorAll("[data-screen]")) el.hidden = el.dataset.screen !== name;
+    $("tabBar").hidden = !TABS.includes(name);
+    for (const t of document.querySelectorAll("[data-tab]")) {
+      if (t.dataset.tab === S.tab) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current");
+    }
+    if (name === "games") { renderGames(); paintArt(); }
+    if (name === "friends") { renderFriends(); loadFriends(); }
+    if (name === "profile") { renderProfile(); loadStats(); }
+    window.scrollTo(0, dir < 0 ? S.scroll[name] || 0 : 0);
+    const el = screenEl(name);
+    if (dir && prev !== name) {
+      const still = P.reduceMotion();
+      el.animate(still ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: `translateX(${dir * 20}px)` }, { opacity: 1, transform: "none" }],
+        { duration: still ? 120 : 200, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
+    }
+    if (focus) el.querySelector("h1")?.focus({ preventScroll: true });
+  }
+  function urlFor(tab) { return tab === "games" ? location.pathname : `${location.pathname}#${tab}`; }
+  function setTab(tab, { user = false } = {}) {
+    if (!TABS.includes(tab)) tab = "games";
+    const from = TABS.indexOf(S.screen);
+    history.replaceState({ lc: "tab" }, "", urlFor(tab));
+    show(tab, user && from >= 0 ? Math.sign(TABS.indexOf(tab) - from) : 0);
+  }
+  function openChat(id) {
+    if (!P.account) return;
+    history.pushState({ lc: "chat", id }, "");
+    enterChat(id, 1);
+  }
+  function enterChat(id, dir) {
+    S.chatWith = id;
+    show("chat", dir, { focus: dir !== 0 });
+    renderChatHead();
+    loadChat(id);
+  }
+  function openAdd() {
+    if (!P.account) return P.openClaim();
+    history.pushState({ lc: "add" }, "");
+    enterAdd(1);
+  }
+  function enterAdd(dir) {
+    $("meHandle").textContent = P.account?.username || "";
+    show("add", dir);
+    $("addInput").focus({ preventScroll: true }); // the one friends screen that opens the keyboard
+  }
+  /** Draw whatever a history entry says (back, forward, or a reload). */
+  function route(st, dir) {
+    const s = st || {};
+    if (s.lc === "chat" && P.account && s.id) {
+      if (S.screen === "chat" && S.chatWith === s.id) return;
+      S.chatWith = s.id;
+      return enterChat(s.id, dir);
+    }
+    if (s.lc === "add" && P.account) { if (S.screen !== "add") enterAdd(dir); return; }
+    if (S.screen === "chat") { drafts[S.chatWith] = $("chatInput").value; S.chatWith = null; }
+    const tab = tabFromHash() || S.tab;
+    if (S.screen !== tab) show(tab, dir, { focus: dir !== 0 });
+  }
+  const back = () => history.back();
+  for (const b of document.querySelectorAll("[data-back]")) { b.innerHTML = BACK; b.addEventListener("click", back); }
+  function tabFromHash() { const h = location.hash.slice(1); return TABS.includes(h) ? h : null; }
+
+  let ignorePops = 0;
+  let leaving = false;
+  window.addEventListener("popstate", (e) => {
+    if (ignorePops) { ignorePops--; return; }
+    if (P.sheetOpen()) P.closeSheet();
+    route(e.state, -1);
+  });
+  window.addEventListener("hashchange", () => { const t = tabFromHash(); if (t && TABS.includes(S.screen) && t !== S.screen) setTab(t); });
+  // A sheet is one more step back: opening one pushes an entry, closing it in-app pops it.
+  new MutationObserver(() => {
+    if (leaving) return;
+    const open = P.sheetOpen();
+    const has = history.state?.lcSheet === true;
+    if (open && !has) history.pushState({ ...(history.state || {}), lcSheet: true }, "");
+    else if (!open && has) { ignorePops++; history.back(); }
+  }).observe($("plScrim"), { attributes: true, attributeFilter: ["class"] });
+  /** Leave for a game page. From a sheet, its history entry is swapped for the page, so Back comes home to the screen under it. */
+  function go(url) {
+    leaving = true;
+    if (history.state?.lcSheet) location.replace(url); else location.href = url;
+  }
+  window.addEventListener("pageshow", (e) => {
+    if (!e.persisted) return;
+    // Back from a game (restored from the back/forward cache): fresh numbers, no stale sheet.
+    if (P.sheetOpen()) P.closeSheet(true);
+    leaving = false;
+    P.setActivity(null);
+    route(history.state, 0);
+    loadGames(true);
+    if (P.account) { loadInvites(); loadFriends(true); loadStats(); }
+  });
+
+  for (const t of document.querySelectorAll("[data-tab]")) {
+    t.addEventListener("click", () => {
+      if (S.screen === t.dataset.tab) { window.scrollTo({ top: 0, behavior: P.reduceMotion() ? "auto" : "smooth" }); return; }
+      setTab(t.dataset.tab, { user: true });
+    });
+  }
+  for (const el of document.querySelectorAll("[data-icon]")) el.outerHTML = ic(el.dataset.icon);
+  // Registry counts stay fresh while you look at them.
+  setInterval(() => { if (S.screen === "games" && !document.hidden) loadGames(true); }, 30000);
+
+  /* ------------------------------------------------------------ boot */
+  P.setActivity(null); // the launcher isn't a game
+  const st = history.state;
+  if (st?.lcSheet) history.replaceState({ ...st, lcSheet: undefined }, "");
+  if (P.account && (st?.lc === "chat" || st?.lc === "add")) {
+    S.tab = tabFromHash() || (TABS.includes(P.store.get("lc.tab")) ? P.store.get("lc.tab") : "friends");
+    route(history.state, 0);
+  } else {
+    setTab(tabFromHash() || (TABS.includes(P.store.get("lc.tab")) ? P.store.get("lc.tab") : "games"));
+  }
+  $("meHandle").textContent = P.account?.username || "";
+  renderBadge();
+  loadGames();
+  P.restoreAccount().then((a) => {
+    accountId = a?.id ?? null;
+    renderFriends(); renderBadge(); renderProfile(); renderGames();
+    if (a) { loadFriends(); loadStats(); }
+    else if (S.screen === "chat" || S.screen === "add") setTab("friends");
+  });
+})();
+</script>
 </body>
 </html>

@@ -368,6 +368,9 @@
     return () => lobbyHandlers.get(method)?.delete(fn);
   }
   let activity = null;
+  const openHooks = [];
+  /** Run `fn(sock)` each time the lobby is (re)connected and signed in as the current account (or as a guest). */
+  function onLobbyOpen(fn) { openHooks.push(fn); }
   /** The shared lobby connection, signed in when there's an account. */
   async function lobby() {
     if (!lobbySock || lobbySock.readyState > WebSocket.OPEN) {
@@ -388,12 +391,21 @@
       }
       await lobbyOpening;
     }
-    if (account && lobbySock._authed !== account.id) {
-      await lobbySock.request("platform:auth", { key: local.get("mm.key") });
-      lobbySock._authed = account.id;
-      if (activity) lobbySock.request("platform:activity", activity).catch(() => {});
+    const sock = lobbySock;
+    if (account && sock._authed !== account.id) {
+      // One sign-in per socket, however many callers ask at once.
+      const id = account.id;
+      sock._authing ??= sock.request("platform:auth", { key: local.get("mm.key") })
+        .then(() => { sock._authed = id; if (activity) sock.request("platform:activity", activity).catch(() => {}); })
+        .finally(() => { sock._authing = null; });
+      await sock._authing;
     }
-    return lobbySock;
+    const who = account?.id ?? "guest";
+    if (sock._announced !== who && (!account || sock._authed === account.id)) {
+      sock._announced = who;
+      for (const fn of openHooks) { try { fn(sock); } catch {} }
+    }
+    return sock;
   }
   /** Tell friends what you're doing ("At a Hold'em table"); null clears it. */
   function setActivity(gameId, label) {
@@ -416,7 +428,7 @@
     $, esc, sleep, local, store, newId, peerId, WS_BASE, errText,
     settings, saveSettings, applySettings, openSettings, onSettings: (fn) => settingsHooks.push(fn), reduceMotion, cue,
     toast, sheet, closeSheet, sheetOpen, confirm,
-    connect, waitOpen, lobby, onLobby, setActivity,
+    connect, waitOpen, lobby, onLobby, onLobbyOpen, setActivity,
     get account() { return account; }, onAccount: (fn) => accountHooks.push(fn), setAccount, api, restoreAccount, claim, signInWithKey, openClaim,
     guestName, displayName, askName, ensureName,
     games,

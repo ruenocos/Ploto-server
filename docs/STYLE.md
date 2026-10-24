@@ -152,6 +152,40 @@ No rounded corners, no blur, no soft drop shadows. Depth is bevels only.
   no impacts, shakes, hit-stop, drifting clouds, status loops, silhouette
   swaps or wipes; the result of each moment still shows.
 
+## Launcher cards
+
+Each game's card on the launcher's Games tab, and its icon in lists (the invite
+sheet, Continue), is drawn by the game (`web/<game>.card.js`, `Ploto.gameCard`)
+to one rule, so the grid reads as one set while every card looks like its game.
+
+- **Still.** No animation and no idle loops. Motion belongs to the game; the
+  launcher stays calm and quick to scan.
+- **One grid.** 80×50 art pixels (16:10), drawn at a whole-number scale
+  `k = round(max(W / 80, H / 50))` CSS px per art pixel, anchored bottom centre,
+  overflow cropped, `shape-rendering: crispEdges` / `image-rendering: pixelated`.
+  A game's sprites go on 1:1 (a 16 px gem is 16 art pixels), so detail is equally
+  chunky on every card: Hold'em's cards are 16×22, Match Monsters' gems 16×16.
+- **A close-up, not a scene.** The game's signature surface in its frame, edge
+  to edge, with 2–3 hero objects on it, ideally the game's signature moment:
+  Hold'em is the felt in its rail with A♠ K♥; Match Monsters is the board in its
+  frame with three fire gems lined up in a match. No characters, no landscapes.
+- **Composition.** Heroes centred and at least a third of the card's height;
+  1–2 supporting objects smaller, lower and to the sides (Hold'em's chips,
+  Match Monsters' water and nature gems); five objects at most. Keep the top
+  right (about 20×10) free of detail for the NEW badge.
+- **Depth.** The frame is 2 art px with its top row lit; objects get a 1 px ink
+  outline and a hard 1 px shadow down-right at 14% ink. No gradients, glows,
+  blur or dithering.
+- **Colour.** The backdrop is the game's own colour at a deep, muted value
+  (Hold'em's felt, Match Monsters' sky a shade down), so cards differ at a
+  glance but weigh the same. Everything else is Ploto tokens or the game's own
+  sprite colours; about ten colours in all.
+- **No words,** except glyphs that belong to an object (a card's rank).
+- **The icon is a crop.** The list icon is a 24×24 crop of the card at k = 2,
+  centred on a hero object, so the icon and the card are the same picture.
+- **Check it** as a 2-up tile (about 170 px wide) and as a full-width card, at
+  1× and 3×, next to the other cards.
+
 ## Sound and haptics
 
 - One `cue(event)` per game moment (`web/feedback.js`), called where the

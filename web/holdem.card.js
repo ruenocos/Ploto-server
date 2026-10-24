@@ -1,7 +1,8 @@
 /**
- * Hold'em's card in the launcher (and its icon in lists): pixel felt, two cards
- * and chips, an SVG on a whole-pixel grid. A game's own art, registered with
- * Ploto (docs/NEW_GAME.md, "Launcher card").
+ * Hold'em's card in the launcher (and its icon in lists), following the launcher
+ * card rule (docs/STYLE.md, "Launcher cards"): a still close-up on the 80×50 art
+ * grid. The surface is the felt in its rail; the heroes are A♠ K♥, with chip
+ * stacks at the sides.
  */
 (() => {
   "use strict";

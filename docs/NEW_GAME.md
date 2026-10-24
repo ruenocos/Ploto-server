@@ -67,7 +67,9 @@ In this order, each step tested before the next:
    events one after another from what's on screen, end each on its own view,
    catch up when behind or when the tab comes back.
 6. **Feel pass**: the signature moment first, then motion, sound, haptics.
-7. **Art**: the launcher card, the home banner, then in-game art.
+7. **Art**: the launcher card (to the rule in docs/STYLE.md, "Launcher cards":
+   a still close-up on the 80×50 grid, the icon a crop of it), the home banner,
+   then in-game art.
 
 ## 4. Consistency: what every game does the same
 
@@ -95,6 +97,8 @@ In this order, each step tested before the next:
       Monsters' element hues), added as tokens on its page.
 - [ ] **Its own sound set** through `Ploto.cue` (feedback.js), with haptics on
       the same beats.
+- [ ] **A launcher card to the rule** (docs/STYLE.md, "Launcher cards"): still,
+      80×50, the game's surface and its signature moment, its own backdrop colour.
 - [ ] **Art on Ploto's grid**: whole device pixels, `image-rendering: pixelated`,
       sizes snapped per screen; check against the reference images, at 1× and 3×.
 - [ ] **Words in its world**: what a room, a code, a win are called.

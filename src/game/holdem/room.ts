@@ -1,23 +1,21 @@
 /**
- * A Hold'em table: seats, the lobby before the deal, the Sit & Go itself, and
- * the clock. The engine (engine.ts) knows the rules; this room knows people:
- * who sits where, who's connected, whose turn is running out, which seats are
- * bots, and what each viewer is allowed to see.
+ * A Hold'em table: the Sit & Go itself and its clock, on the platform's lobby
+ * room (seats, host, invites, bots, starting and rematches: lobbyRoom.ts). The
+ * engine (engine.ts) knows the rules; this room knows people: whose turn is
+ * running out, who's sitting out, and what each viewer is allowed to see.
  *
- *   lobby   seats fill (players join by code, link or invite; the host adds
- *           bots or changes settings), then the host starts (quick tables
+ *   lobby   seats fill (the platform's lobby), then the host starts (quick tables
  *           start themselves; practice starts as soon as you sit down)
  *   playing hands are dealt one after another until one player has every chip
- *   over    standings, and a rematch that opens a new table
+ *   over    standings, and the platform's rematch
  *
  * Every change goes out as `holdem:update` {view, events} to each connected
  * player, with events redacted per viewer (you never see others' hole cards
  * before showdown). Engine player ids are `s<seat>` and never leave the room:
  * clients see seat numbers.
  */
-import { randomUUID } from "node:crypto";
+import { LobbyRoom, type LobbyRoomOptions, type LobbyRules, type RoomMode, type Seat as LobbySeat } from "../../platform/lobbyRoom.js";
 import type { PeerLike } from "../../platform/peer.js";
-import type { Room } from "../../platform/lobby.js";
 import { chooseAction } from "./bot.js";
 import { cryptoRandom } from "./cards.js";
 import { HoldemGame, redactEvents } from "./engine.js";
@@ -55,16 +53,10 @@ export function parseSettings(raw: unknown, base: TableSettings = DEFAULT_SETTIN
   };
 }
 
-export type TableMode = "quick" | "private" | "practice" | "invite" | "rematch";
+export type TableMode = RoomMode;
 export type TablePhase = "lobby" | "playing" | "over";
 
-interface Seat {
-  kind: "player" | "bot" | "empty" | "invited";
-  peerId: string | null;
-  accountId: string | null;
-  name: string;
-  /** The invite holding this seat (kind "invited"). */
-  inviteId: string | null;
+interface Seat extends LobbySeat {
   /** Sitting out: the server acts for them (check if free, else fold). */
   away: boolean;
   /** Timeouts in a row; two puts a connected player away. */
@@ -109,49 +101,21 @@ export const DEFAULT_TIMING: TableTiming = {
   animScale: 1,
 };
 
-export interface TableOptions {
-  readonly roomId: string;
-  readonly code: string;
-  readonly mode: TableMode;
-  readonly settings: TableSettings;
-  /** Quick tables have no host: they start themselves. */
-  readonly hosted: boolean;
-  /** Practice: start as soon as the first player connects. */
-  readonly autoStart?: boolean;
+export interface TableOptions extends LobbyRoomOptions<TableSettings> {
   readonly timing?: Partial<TableTiming>;
   /** Shuffle and bot randomness (tests pass a seeded source). */
   readonly random?: RandomSource;
-  /** Called once when the game ends, with the standings to record. */
-  readonly onFinished?: (room: TableRoom) => void;
-  /** Called when the game starts: invites still open for seats here should end. */
-  readonly onStarted?: (room: TableRoom) => void;
-  /** Called when the room is disposed. */
-  readonly onDisposed?: (room: TableRoom) => void;
 }
 
-const BOT_NAMES = ["Ace", "Lu", "Dot", "Bix", "Pip", "Rook", "Kit", "Moss"];
+/** Hold'em's lobby: the host starts it, 2 players or more, bots allowed. */
+const RULES: LobbyRules = { start: "host", minPlayers: 2, bots: true };
 
-export class TableRoom implements Room {
+export class TableRoom extends LobbyRoom<TableSettings, Seat> {
   readonly gameId = GAME_ID;
-  readonly roomId: string;
-  readonly code: string;
-  readonly mode: TableMode;
-  readonly hosted: boolean;
-  settings: TableSettings;
-  phase: TablePhase = "lobby";
-  /** The host's seat (hosted tables), or -1. */
-  hostSeat = -1;
-  /** When a quick table will start with bots (epoch ms), once someone sits. */
-  startsAt: number | null = null;
-  /** The rematch table, once someone asked for one, and who has joined it so far. */
-  rematch: { roomId: string; code: string; players: string[] } | null = null;
-  startedAt: Date | null = null;
   game: HoldemGame | null = null;
 
-  private seats: Seat[];
   private readonly timing: TableTiming;
   private readonly random: RandomSource;
-  private readonly peers = new Map<string, PeerLike>();
   private readonly stats = new Map<number, SeatStats>();
   /** Time bank left per seat (ms). */
   private readonly bank = new Map<number, number>();
@@ -162,128 +126,69 @@ export class TableRoom implements Room {
   private bankStartedAt: number | null = null;
   private turnTimer: ReturnType<typeof setTimeout> | null = null;
   private nextTimer: ReturnType<typeof setTimeout> | null = null;
-  private quickTimer: ReturnType<typeof setTimeout> | null = null;
-  private finishedReported = false;
-  private disposed = false;
 
-  constructor(private readonly options: TableOptions) {
-    this.roomId = options.roomId;
-    this.code = options.code;
-    this.mode = options.mode;
-    this.hosted = options.hosted;
-    this.settings = options.settings;
-    this.timing = { ...DEFAULT_TIMING, ...options.timing };
+  constructor(options: TableOptions) {
+    const timing = { ...DEFAULT_TIMING, ...options.timing };
+    // Quick tables wait for players, then deal with bots in the empty seats.
+    const { formingMs: _forming, ...rest } = options;
+    super(options.mode === "quick" ? { ...rest, formingMs: timing.quickStartMs } : rest, RULES);
+    this.timing = timing;
     this.random = options.random ?? cryptoRandom;
-    this.seats = Array.from({ length: this.settings.seats }, () => emptySeat());
   }
 
-  // ------------------------------------------------------------ seats (lobby)
+  // ------------------------------------------------------------ the lobby's hooks
 
-  /** Seat a player (or find their seat). Throws when the table is full or started. */
-  reserve(peerId: string, name: string, accountId: string | null): number {
-    const mine = this.seats.findIndex((s) => s.peerId === peerId);
-    if (mine >= 0) return mine;
-    if (this.phase !== "lobby") throw new Error("this table has already started");
-    // An invited player takes the seat held for them; anyone else the first free seat,
-    // or a bot's seat (people beat bots).
-    let seat = accountId ? this.seats.findIndex((s) => s.kind === "invited" && s.accountId === accountId) : -1;
-    if (seat < 0) seat = this.seats.findIndex((s) => s.kind === "empty");
-    if (seat < 0) seat = this.seats.map((s) => s.kind).lastIndexOf("bot");
-    if (seat < 0) throw new Error("this table is full");
-    this.seats[seat] = { ...emptySeat(), kind: "player", peerId, accountId, name: clean(name) };
-    if (this.hosted && this.hostSeat < 0) this.hostSeat = seat;
-    if (this.mode === "quick" && !this.quickTimer) this.armQuickStart();
-    this.broadcast([]);
-    if (this.mode === "quick" && this.freeSeats() === 0) this.start();
-    return seat;
+  protected capacity(settings: TableSettings): number {
+    return settings.seats;
   }
 
-  /** Hold a free seat for an invited friend. Returns the seat, or throws when there's none. */
-  holdFor(accountId: string, name: string, inviteId: string): number {
-    const seat = this.seatFor(accountId);
-    this.seats[seat] = { ...emptySeat(), kind: "invited", accountId, name: clean(name), inviteId };
-    this.broadcast([]);
-    return seat;
+  protected emptySeat(): Seat {
+    return emptySeat();
   }
 
-  /** The seat an invite for this account would hold; throws a readable reason when there's none. */
-  seatFor(accountId: string): number {
-    if (this.phase !== "lobby") throw new Error("this table has already started");
-    if (this.seats.some((s) => s.accountId === accountId && (s.kind === "player" || s.kind === "invited"))) throw new Error("they already have a seat here");
-    const seat = this.seats.findIndex((s) => s.kind === "empty");
-    if (seat < 0) throw new Error("there's no free seat for them");
-    return seat;
+  protected fillsWithBots(settings: TableSettings): boolean {
+    return settings.bots;
   }
 
-  /** An invite ended without the friend sitting down: free its seat. */
-  release(inviteId: string): void {
-    const seat = this.seats.findIndex((s) => s.kind === "invited" && s.inviteId === inviteId);
-    if (seat < 0 || this.phase !== "lobby") return;
-    this.seats[seat] = emptySeat();
+  protected parseSettings(raw: unknown, base: TableSettings): TableSettings {
+    return parseSettings(raw, base);
+  }
+
+  protected override onChange(): void {
     this.broadcast([]);
   }
 
-  freeSeats(): number {
-    return this.seats.filter((s) => s.kind === "empty").length;
-  }
-
-  hostName(): string {
-    return this.seats[this.hostSeat]?.name ?? "";
-  }
-
-  /** Who's seated, for results and rematches. */
-  seated(): { seat: number; kind: Seat["kind"]; name: string; accountId: string | null; peerId: string | null }[] {
-    return this.seats.map((s, seat) => ({ seat, kind: s.kind, name: s.name, accountId: s.accountId, peerId: s.peerId }));
-  }
-
-  /** Invite ids still holding seats (they end when the game starts). */
-  openInvites(): string[] {
-    return this.seats.filter((s) => s.kind === "invited" && s.inviteId).map((s) => s.inviteId!);
+  /** Leaving mid-game sits you out: the server checks or folds for you. */
+  protected override leaveDuringGame(seat: number): void {
+    this.seats[seat]!.away = true;
+    this.broadcast([]);
+    this.rearmTurn();
   }
 
   // ------------------------------------------------------------ Room
 
-  join(peer: PeerLike): boolean {
-    const seat = this.seats.findIndex((s) => s.peerId === peer.id);
-    if (seat < 0) return false;
-    this.peers.set(peer.id, peer);
-    const s = this.seats[seat]!;
+  override join(peer: PeerLike): boolean {
+    const s = this.seats[this.seatOfPeer(peer.id)];
+    if (!s) return false;
     if (s.away && this.phase === "playing") s.away = false; // back at the table
     s.timeouts = 0;
-    if (this.options.autoStart && this.phase === "lobby") {
-      try {
-        this.start();
-      } catch {
-        this.broadcast([]);
-      }
-    } else this.broadcast([]);
+    super.join(peer);
     this.rearmTurn();
     return true;
   }
 
-  leave(peer: PeerLike): void {
-    if (this.peers.get(peer.id) !== peer) return;
-    this.peers.delete(peer.id);
-    this.broadcast([]);
+  override leave(peer: PeerLike): void {
+    super.leave(peer);
     this.rearmTurn(); // a disconnected player to act gets the short clock
   }
 
-  connectedCount(): number {
-    return this.peers.size;
-  }
-
-  dispose(): void {
-    if (this.disposed) return;
-    this.disposed = true;
+  override dispose(): void {
     this.clearTimers();
-    if (this.quickTimer) clearTimeout(this.quickTimer);
-    this.options.onDisposed?.(this);
+    super.dispose();
   }
 
-  handleRequest(peerId: string, method: string, data: unknown): unknown {
-    const seat = this.seats.findIndex((s) => s.peerId === peerId);
-    if (seat < 0) throw new Error("you don't have a seat at this table");
-    const d = (data ?? {}) as Record<string, unknown>;
+  /** The table's own methods (the lobby's are lobby:*). */
+  protected gameRequest(seat: number, method: string, d: Record<string, unknown>): unknown {
     switch (method) {
       case "holdem:getState":
         return this.viewFor(seat);
@@ -301,39 +206,6 @@ export class TableRoom implements Room {
         return { ok: true };
       }
 
-      case "holdem:start":
-        this.requireHost(seat);
-        this.start();
-        return { ok: true };
-
-      case "holdem:addBot": {
-        this.requireHost(seat);
-        const target = typeof d["seat"] === "number" ? d["seat"] : this.seats.findIndex((s) => s.kind === "empty");
-        if (this.seats[target]?.kind !== "empty") throw new Error("that seat isn't free");
-        this.seats[target] = { ...emptySeat(), kind: "bot", name: this.botName() };
-        this.broadcast([]);
-        return { ok: true };
-      }
-
-      case "holdem:removeBot": {
-        this.requireHost(seat);
-        const target = Number(d["seat"]);
-        if (this.seats[target]?.kind !== "bot") throw new Error("that seat isn't a bot");
-        this.seats[target] = emptySeat();
-        this.broadcast([]);
-        return { ok: true };
-      }
-
-      case "holdem:settings": {
-        this.requireHost(seat);
-        this.applySettings(parseSettings(d["settings"], this.settings));
-        return { ok: true };
-      }
-
-      case "holdem:leave":
-        this.leaveSeat(seat);
-        return { ok: true };
-
       default:
         throw new Error(`unknown table method: ${method}`);
     }
@@ -341,18 +213,9 @@ export class TableRoom implements Room {
 
   // ------------------------------------------------------------ the game
 
-  /** Deal the first hand: empty seats get bots (if on), then hands run until one player is left. */
-  start(): void {
-    if (this.phase !== "lobby") throw new Error("this table has already started");
-    if (this.quickTimer) clearTimeout(this.quickTimer);
-    this.quickTimer = null;
-    this.startsAt = null;
-    for (const [i, s] of this.seats.entries()) {
-      // Seats still held by invites, and empty ones, get bots, or stay empty.
-      if (s.kind === "empty" || s.kind === "invited") this.seats[i] = this.settings.bots ? { ...emptySeat(), kind: "bot", name: this.botName() } : emptySeat();
-    }
+  /** Deal the first hand (the platform has filled the seats); hands run until one player is left. */
+  protected startGame(): void {
     const playing = this.seats.map((s, seat) => ({ s, seat })).filter(({ s }) => s.kind === "player" || s.kind === "bot");
-    if (playing.length < 2) throw new Error("you need at least 2 players: invite someone or add a bot");
     this.game = new HoldemGame({
       players: playing.map(({ s, seat }) => ({ id: idOf(seat), name: s.name, bot: s.kind === "bot" })),
       startingChips: this.settings.chips,
@@ -363,9 +226,6 @@ export class TableRoom implements Room {
       this.bank.set(seat, this.timing.bankMs);
       this.stats.set(seat, { handsWon: 0, biggestPot: 0, bestScore: -1, bestHand: null });
     }
-    this.phase = "playing";
-    this.startedAt = new Date();
-    this.options.onStarted?.(this);
     this.dealNext();
   }
 
@@ -501,15 +361,10 @@ export class TableRoom implements Room {
     if (r.ok) this.afterEvents(r.events);
   }
 
-  private finish(): void {
+  protected override finish(): void {
     if (this.phase === "over") return;
-    this.phase = "over";
     this.clearTimers();
-    this.broadcast([]);
-    if (!this.finishedReported) {
-      this.finishedReported = true;
-      this.options.onFinished?.(this);
-    }
+    super.finish();
   }
 
   /** Final places and per-seat stats (once the game is over). */
@@ -648,78 +503,6 @@ export class TableRoom implements Room {
     return this.game;
   }
 
-  private requireHost(seat: number): void {
-    if (!this.hosted || seat !== this.hostSeat) throw new Error("only the host can do that");
-    if (this.phase !== "lobby") throw new Error("the game has already started");
-  }
-
-  private applySettings(next: TableSettings): void {
-    const occupied = this.seats.filter((s) => s.kind !== "empty");
-    if (occupied.length > next.seats) throw new Error("free up some seats first");
-    // Keep everyone seated, in order; the host keeps their seat number if it still exists.
-    const seats: Seat[] = Array.from({ length: next.seats }, () => emptySeat());
-    const host = this.seats[this.hostSeat];
-    let i = 0;
-    for (const s of this.seats) {
-      if (s.kind === "empty") continue;
-      while (seats[i]!.kind !== "empty") i++;
-      seats[i] = s;
-    }
-    this.seats = seats;
-    this.hostSeat = host ? seats.indexOf(host) : -1;
-    this.settings = next;
-    this.broadcast([]);
-  }
-
-  private leaveSeat(seat: number): void {
-    const s = this.seats[seat]!;
-    if (this.phase === "lobby") {
-      this.seats[seat] = emptySeat();
-      if (seat === this.hostSeat) {
-        // The next player hosts; a table with no players left is cleaned up when empty.
-        this.hostSeat = this.seats.findIndex((x) => x.kind === "player");
-      }
-      if (s.peerId) this.peers.delete(s.peerId);
-      if (this.mode === "quick" && !this.seats.some((x) => x.kind === "player")) {
-        if (this.quickTimer) clearTimeout(this.quickTimer);
-        this.quickTimer = null;
-        this.startsAt = null;
-      }
-      this.broadcast([]);
-      return;
-    }
-    if (this.phase === "playing") {
-      s.away = true;
-      this.broadcast([]);
-      this.rearmTurn();
-    }
-  }
-
-  private armQuickStart(): void {
-    this.startsAt = Date.now() + this.timing.quickStartMs;
-    this.quickTimer = setTimeout(() => {
-      this.quickTimer = null;
-      if (this.phase !== "lobby") return;
-      if (!this.seats.some((s) => s.kind === "player")) {
-        // Everyone left before the deal: the next player to sit starts a fresh countdown.
-        this.startsAt = null;
-        return;
-      }
-      try {
-        this.start();
-      } catch {
-        this.startsAt = null;
-      }
-    }, this.timing.quickStartMs);
-    this.quickTimer.unref?.();
-  }
-
-  private botName(): string {
-    const taken = new Set(this.seats.map((s) => s.name));
-    const name = BOT_NAMES.find((n) => !taken.has(`Bot ${n}`)) ?? randomUUID().slice(0, 4);
-    return `Bot ${name}`;
-  }
-
   private clearTurn(): void {
     if (this.turnTimer) clearTimeout(this.turnTimer);
     this.turnTimer = null;
@@ -734,10 +517,9 @@ export class TableRoom implements Room {
 }
 
 function emptySeat(): Seat {
-  return { kind: "empty", peerId: null, accountId: null, name: "", inviteId: null, away: false, timeouts: 0 };
+  return { kind: "empty", peerId: null, accountId: null, name: "", inviteId: null, data: null, away: false, timeouts: 0 };
 }
 
-const clean = (name: string) => (String(name || "").trim().slice(0, 16) || "Player");
 const idOf = (seat: number) => `s${seat}`;
 const seatOf = (id: string) => Number(id.slice(1));
 /** The engine id at an engine seat index. */

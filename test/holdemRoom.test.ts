@@ -40,41 +40,58 @@ describe("hold'em table lobby", () => {
   it("seats players, keeps the host's controls to the host, and starts with bots in empty seats", () => {
     const t = table();
     const a = peer("a"), b = peer("b");
-    expect(t.reserve("a", "Ann", null)).toBe(0);
-    expect(t.reserve("b", "Ben", null)).toBe(1);
-    expect(t.reserve("a", "Ann", null)).toBe(0); // same seat again
+    expect(t.reserve({ peerId: "a", name: "Ann", accountId: null })).toBe(0);
+    expect(t.reserve({ peerId: "b", name: "Ben", accountId: null })).toBe(1);
+    expect(t.reserve({ peerId: "a", name: "Ann", accountId: null })).toBe(0); // same seat again
     t.join(a);
     t.join(b);
-    expect(() => t.handleRequest("b", "holdem:start", {})).toThrow(/only the host/);
-    t.handleRequest("a", "holdem:addBot", { seat: 3 });
+    expect(() => t.handleRequest("b", "lobby:start", {})).toThrow(/only the host/);
+    t.handleRequest("a", "lobby:addBot", { seat: 3 });
     expect(t.handleRequest("a", "holdem:getState", {})).toMatchObject({ phase: "lobby", host: 0, seats: [{ kind: "player" }, { kind: "player" }, { kind: "empty" }, { kind: "bot" }] });
-    expect(() => t.handleRequest("a", "holdem:settings", { settings: { seats: 2 } })).toThrow(/free up/);
-    t.handleRequest("a", "holdem:removeBot", { seat: 3 });
-    t.handleRequest("a", "holdem:settings", { settings: { seats: 3, chips: 500 } });
+    expect(() => t.handleRequest("a", "lobby:settings", { settings: { seats: 2 } })).toThrow(/free up/);
+    t.handleRequest("a", "lobby:removeBot", { seat: 3 });
+    t.handleRequest("a", "lobby:settings", { settings: { seats: 3, chips: 500 } });
     expect(t.settings).toMatchObject({ seats: 3, chips: 500 });
-    t.handleRequest("a", "holdem:start", {});
+    t.handleRequest("a", "lobby:start", {});
     const v = t.handleRequest("a", "holdem:getState", {}) as any;
     expect(v.phase).toBe("playing");
     expect(v.seats.map((s: any) => s.kind)).toEqual(["player", "player", "bot"]);
-    expect(() => t.reserve("c", "Cat", null)).toThrow(/already started/);
+    expect(() => t.reserve({ peerId: "c", name: "Cat", accountId: null })).toThrow(/already started/);
+    t.dispose();
+  });
+
+  it("sends the platform's lobby view to every seat on each change", () => {
+    const t = table({ settings: { ...DEFAULT_SETTINGS, seats: 3 } });
+    const a = peer("a"), b = peer("b");
+    t.reserve({ peerId: "a", name: "Ann", accountId: null });
+    t.reserve({ peerId: "b", name: "Ben", accountId: null });
+    t.join(a);
+    t.join(b);
+    t.handleRequest("a", "lobby:addBot", {});
+    const lobbyOf = (p: ReturnType<typeof peer>) => p.notes.filter((n) => n.method === "lobby:update").at(-1)!.data.view;
+    expect(lobbyOf(b)).toMatchObject({ code: "ABCD", gameId: "holdem", mode: "private", phase: "lobby", you: 1, host: 0, minPlayers: 2, fillsWithBots: true, startRule: "host" });
+    expect(lobbyOf(b).seats.map((s: any) => [s.kind, s.connected])).toEqual([["player", true], ["player", true], ["bot", true]]);
+    expect(t.handleRequest("a", "lobby:getView", {})).toMatchObject({ you: 0 });
+    t.handleRequest("a", "lobby:start", {});
+    expect(lobbyOf(a).phase).toBe("playing");
     t.dispose();
   });
 
   it("holds a seat for an invited friend and frees it if the invite ends", () => {
     const t = table({ settings: { ...DEFAULT_SETTINGS, seats: 2 } });
-    t.reserve("a", "Ann", "acct-a");
+    t.reserve({ peerId: "a", name: "Ann", accountId: "acct-a" });
     expect(t.holdFor("acct-b", "Ben", "inv1")).toBe(1);
-    expect(() => t.reserve("c", "Cat", null)).toThrow(/full/);
+    expect(() => t.reserve({ peerId: "c", name: "Cat", accountId: null })).toThrow(/full/);
     t.release("inv1");
     expect(t.freeSeats()).toBe(1);
     t.holdFor("acct-b", "Ben", "inv2");
-    expect(t.reserve("b", "Ben", "acct-b")).toBe(1); // the invited account takes its held seat
+    expect(t.reserve({ peerId: "b", name: "Ben", accountId: "acct-b" })).toBe(1); // the invited account takes its held seat
     t.dispose();
   });
 
   it("needs two players without bots", () => {
     const t = table({ settings: { ...DEFAULT_SETTINGS, seats: 3, bots: false } });
-    t.reserve("a", "Ann", null);
+    t.reserve({ peerId: "a", name: "Ann", accountId: null });
     expect(() => t.start()).toThrow(/at least 2/);
     t.dispose();
   });
@@ -85,7 +102,7 @@ describe("hold'em table play", () => {
     let finished = false;
     const t = table({ settings: { ...DEFAULT_SETTINGS, seats: 3, chips: 500, blindsEvery: 5 }, onFinished: () => { finished = true; } });
     const a = peer("a");
-    t.reserve("a", "Ann", null);
+    t.reserve({ peerId: "a", name: "Ann", accountId: null });
     t.join(a);
     t.start();
     // Ann never acts: the timer and her time bank run out, then she's put away and auto-acted quickly.
@@ -94,7 +111,8 @@ describe("hold'em table play", () => {
     expect(v.phase).toBe("over");
     expect(v.results.map((r: any) => r.place).sort()).toEqual([1, 2, 3]);
     // Redaction: before a showdown, Ann's updates never contain another seat's hole cards.
-    for (const n of a.notes) {
+    const updates = a.notes.filter((n) => n.method === "holdem:update");
+    for (const n of updates) {
       for (const e of n.data.events) {
         if (e.type === "deal") for (const h of e.hands) if (h.seat !== 0) expect(h.cards).toBeNull();
       }
@@ -105,15 +123,15 @@ describe("hold'em table play", () => {
         }
       }
     }
-    expect(a.notes.some((n) => n.data.events.some((e: any) => e.type === "timeout" && e.seat === 0))).toBe(true);
+    expect(updates.some((n) => n.data.events.some((e: any) => e.type === "timeout" && e.seat === 0))).toBe(true);
     t.dispose();
   }, 30000);
 
   it("keeps a turn's clock running across a reconnect instead of restarting it", async () => {
     const t = table({ settings: { ...DEFAULT_SETTINGS, seats: 2 }, timing: { ...FAST, turnMs: 5_000, awayMs: 3_000, botMs: [60_000, 60_001] } });
     const a = peer("a"), b = peer("b");
-    t.reserve("a", "Ann", null);
-    t.reserve("b", "Ben", null);
+    t.reserve({ peerId: "a", name: "Ann", accountId: null });
+    t.reserve({ peerId: "b", name: "Ben", accountId: null });
     t.join(a);
     t.join(b);
     t.start();
@@ -132,8 +150,8 @@ describe("hold'em table play", () => {
   it("rejects out-of-turn and illegal actions with readable reasons", async () => {
     const t = table({ settings: { ...DEFAULT_SETTINGS, seats: 2 }, timing: { ...FAST, turnMs: 60_000, botMs: [60_000, 60_001] } });
     const a = peer("a"), b = peer("b");
-    t.reserve("a", "Ann", null);
-    t.reserve("b", "Ben", null);
+    t.reserve({ peerId: "a", name: "Ann", accountId: null });
+    t.reserve({ peerId: "b", name: "Ben", accountId: null });
     t.join(a);
     t.join(b);
     t.start();
@@ -188,7 +206,7 @@ describe("hold'em over the wire", () => {
     await Promise.all([hostLobby.open(), guestLobby.open()]);
     const hosted = await hostLobby.req("holdem:host", { displayName: "Hana", settings: { seats: 3, timer: false } });
     expect(hosted.code).toMatch(/^[A-Z2-9]{4}$/);
-    const info = await guestLobby.req("holdem:tableInfo", { code: hosted.code.toLowerCase() });
+    const info = await guestLobby.req("holdem:info", { code: hosted.code.toLowerCase() });
     expect(info).toMatchObject({ host: "Hana", seatsFree: 2, started: false, settings: { seats: 3, timer: false } });
     const joined = await guestLobby.req("holdem:join", { code: hosted.code, displayName: "Gus" });
     expect(joined.roomId).toBe(hosted.roomId);
@@ -199,8 +217,8 @@ describe("hold'em over the wire", () => {
     const before = await guest.req("holdem:getState");
     expect(before).toMatchObject({ phase: "lobby", you: 1, host: 0 });
     expect(before.seats.map((s: any) => s.name)).toEqual(["Hana", "Gus", ""]);
-    await expect(guest.req("holdem:start")).rejects.toThrow(/only the host/);
-    await host.req("holdem:start");
+    await expect(guest.req("lobby:start")).rejects.toThrow(/only the host/);
+    await host.req("lobby:start");
     await until(() => guest.notes.some((n) => n.method === "holdem:update" && n.data.view.phase === "playing"));
     const live = await guest.req("holdem:getState");
     expect(live.seats[2].kind).toBe("bot");
@@ -295,6 +313,8 @@ describe("hold'em rematch and results", () => {
       getRoom: (id: string) => rooms.get(id),
       removeRoom: (id: string) => rooms.delete(id),
       scheduleCleanup: () => {},
+      claimCode: () => `C${rooms.size}`,
+      releaseCode: () => {},
     };
     const { HoldemLobby } = await import("../src/game/holdem/lobby.js");
     const r = new Rng(11);
@@ -303,19 +323,19 @@ describe("hold'em rematch and results", () => {
     const t = (await lobby.handle(me, "holdem:practice", { displayName: "Mia", settings: { seats: 3, chips: 500 } })) as any;
     const room = rooms.get(t.roomId);
     room.join(me); // practice deals right away (no clock)
-    room.handleRequest("me", "holdem:leave", {}); // Mia sits out, so the server plays for her
+    room.handleRequest("me", "lobby:leave", {}); // Mia sits out, so the server plays for her
     await until(() => room.phase === "over", 20000);
     expect(recorded).toHaveLength(1);
     expect(recorded[0]).toMatchObject({ gameId: "holdem", mode: "practice" });
     expect(recorded[0].players.map((p: any) => p.place).sort()).toEqual([1, 2, 3]);
-    await expect(Promise.resolve().then(() => lobby.roomRequest(t.roomId, room, peer("stranger"), "holdem:rematch"))).rejects.toThrow(/seat/);
-    const next = lobby.roomRequest(t.roomId, room, me, "holdem:rematch") as any;
+    expect(() => room.handleRequest("stranger", "lobby:rematch", {})).toThrow(/seat/);
+    const next = room.handleRequest("me", "lobby:rematch", {}) as any;
     expect(next.roomId).not.toBe(t.roomId);
     expect(room.rematch).toEqual({ roomId: next.roomId, code: next.code, players: ["Mia"] });
     const fresh = rooms.get(next.roomId);
     expect(fresh.phase).toBe("lobby");
     expect(fresh.seated()[0]).toMatchObject({ kind: "player", name: "Mia" });
-    expect(lobby.roomRequest(t.roomId, room, me, "holdem:rematch")).toEqual(next); // asking again lands at the same table
+    expect(room.handleRequest("me", "lobby:rematch", {})).toEqual(next); // asking again lands at the same table
     expect(fresh.hosted).toBe(true);
     for (const x of rooms.values()) x.dispose();
   }, 30000);
@@ -324,12 +344,12 @@ describe("hold'em rematch and results", () => {
 describe("hold'em review fixes", () => {
   it("a quick table everyone left counts down again for the next player", async () => {
     const t = table({ mode: "quick", hosted: false, settings: { ...DEFAULT_SETTINGS, seats: 6 }, timing: { ...FAST, quickStartMs: 40 } });
-    t.reserve("a", "Ann", null);
+    t.reserve({ peerId: "a", name: "Ann", accountId: null });
     expect(t.startsAt).not.toBeNull();
-    t.handleRequest("a", "holdem:leave", {});
+    t.handleRequest("a", "lobby:leave", {});
     expect(t.startsAt).toBeNull(); // nobody left: the countdown stops
     await new Promise((r) => setTimeout(r, 60));
-    t.reserve("b", "Ben", null);
+    t.reserve({ peerId: "b", name: "Ben", accountId: null });
     expect(t.startsAt).toBeGreaterThan(Date.now());
     await until(() => t.phase === "playing", 2000); // and it does deal, with bots
     t.dispose();
@@ -338,8 +358,8 @@ describe("hold'em review fixes", () => {
   it("a rejected action doesn't refund the time bank", async () => {
     const t = table({ settings: { ...DEFAULT_SETTINGS, seats: 2 }, timing: { ...FAST, turnMs: 10, bankMs: 400, botMs: [60_000, 60_001] } });
     const a = peer("a"), b = peer("b");
-    t.reserve("a", "Ann", null);
-    t.reserve("b", "Ben", null);
+    t.reserve({ peerId: "a", name: "Ann", accountId: null });
+    t.reserve({ peerId: "b", name: "Ben", accountId: null });
     t.join(a);
     t.join(b);
     t.start();

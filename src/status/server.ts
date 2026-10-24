@@ -58,6 +58,10 @@ export function buildStatusServer(config: ServerConfig): FastifyInstance {
     reply.header("content-type", "application/javascript; charset=utf-8");
     return loadWebFile("platform.js");
   });
+  app.get("/play/lobbykit.js", async (_req, reply) => {
+    reply.header("content-type", "application/javascript; charset=utf-8");
+    return loadWebFile("lobbykit.js");
+  });
   app.get("/play/platform.css", async (_req, reply) => {
     reply.header("content-type", "text/css; charset=utf-8");
     return loadWebFile("platform.css");

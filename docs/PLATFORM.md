@@ -25,12 +25,15 @@ Shared base       accounts · friends · chat · invites · presence · rooms
 | `/play/games` | — | The game registry (JSON), see below. |
 
 Every page loads, in order: `platform.css`, `feedback.js` deps (`riffwave.js`,
-`sfxr.js`, `sounds.js`, `feedback.js`), `icons.js`, `platform.js`, then its own code.
+`sfxr.js`, `sounds.js`, `feedback.js`), `icons.js`, `platform.js`, `lobbykit.js`
+(the lobby screens), then its own code.
 
 ### Query parameters every game page understands
 
 - `?invite=<inviteId>`: the launcher's Join on an invite. The game page runs its
   own accept flow (Match Monsters may need a team first; Hold'em takes a seat).
+- `?code=<code>`: a shared invite link; the page joins that room (Hold'em still
+  reads the older `?table=`).
 - `?inviteFriend=<accountId>`: the launcher's Invite on a friend, after choosing
   this game. The game page runs its own host flow (Match Monsters: choose teams;
   Hold'em: host settings) and the invite goes out at the end.
@@ -50,6 +53,59 @@ Once a match starts, nothing is shared: each game draws its own table or board.
 Invite on an open seat lists your online friends (with what they're doing),
 or shares the code instead. In Match Monsters the code and an invite are open
 side by side; whichever lands first starts the match and the other is withdrawn.
+
+## The game kit: lobby methods and room lobbies shared by every game
+
+The platform owns everything up to the deal: codes, seats, the host, invites,
+bots in open seats, quick-room countdowns, starting and rematches. A game owns
+its rules, its settings and everything after the start.
+
+**Server.** A game's lobby is a `GameKit` (`src/platform/kit.ts`) given a
+`GameDef` (which settings each kind of room gets, how to build a room, how to
+record a result). Its rooms extend `LobbyRoom` (`src/platform/lobbyRoom.ts`) with
+`LobbyRules` (`start: "host"|"full"`, `minPlayers`, `bots`) and a few hooks:
+`capacity`, `emptySeat`, `fillsWithBots`, `parseSettings`, `startGame`,
+`gameRequest`, and optionally `onChange` and `leaveDuringGame`. Codes are unique
+across games; `platform:findCode {code}` → `{code, gameId, path}`.
+
+Lobby methods, the same in every game (`<p>` is the game's prefix):
+
+| Method | Data | Returns |
+|---|---|---|
+| `<p>quick` | `{displayName, settings?, data?}` | `{roomId, code, seat}`: a seat in the quick room filling up, or a new one |
+| `<p>host` | `{displayName, settings, data?}` | `{roomId, code, seat}`: a room you host |
+| `<p>practice` | `{displayName, settings?, data?}` | `{roomId, code, seat}`: you and bots, started the moment you connect |
+| `<p>info` | `{code}` | `{roomId, code, host, settings, seatsFree, started, …game fields}` |
+| `<p>join` | `{code, displayName, data?}` | `{roomId, code, seat}` |
+| `<p>invite` | `{friendId, roomId}` | `{inviteId}`: holds an open seat for an online friend |
+| `<p>acceptInvite` | `{inviteId, displayName, data?}` | `{roomId, code, seat}` |
+
+Room methods, the same in every game (on the room socket):
+
+| Method | Data | Returns |
+|---|---|---|
+| `lobby:getView` | — | `LobbyView` |
+| `lobby:start` | — (host) | `{ok}`: open seats become bots when the settings allow |
+| `lobby:addBot` / `lobby:removeBot` | `{seat}` (host, before the start) | `{ok}` |
+| `lobby:settings` | `{settings}` (host, before the start) | `{ok}` |
+| `lobby:leave` | — | `{ok}`: before the start frees the seat; during the game the game decides (Hold'em sits you out) |
+| `lobby:rematch` | — (after the game) | `{roomId, code}`: the first caller hosts a new room with the same settings; others join it |
+
+Notification `lobby:update` = `{view: LobbyView}` after every lobby change.
+`LobbyView` = `{roomId, code, gameId, mode: 'quick'|'private'|'practice'|'rematch',
+phase: 'lobby'|'playing'|'over', you, host (-1: no host), settings, startsAt
+(quick rooms, epoch ms), minPlayers, bots, fillsWithBots, startRule,
+seats: [{seat, kind: 'player'|'bot'|'empty'|'invited', name, connected, inviteId?}],
+rematch: {roomId, code, players} | null}`.
+
+**Client.** `Ploto.lobbyKit(def)` (web/lobbykit.js) draws the lobby screens from
+those: the game home (`[data-mode]` rows, `[data-code-form]`, `[data-who]`), seat
+taking that gives the seat back if you back out (`kit.seat`, `kit.cancelSeat`),
+joining by code (`kit.info`, `kit.join`), the room lobby from a `LobbyView`
+(`kit.renderRoom(view, {main, foot, req})`), the invite picker, sharing,
+the settings sheet from the game's settings schema, and `Ploto.backGuard` for
+the phone's back button. The game passes its nouns ("Table code"), settings
+schema and summary line, share text and pixel art.
 
 ## Game registry: `GET /play/games`
 
@@ -121,17 +177,14 @@ its lobby module (`src/game/<game>/lobby.ts`).
 
 ## Hold'em
 
-### Lobby methods (`holdem:*` on the lobby socket)
+### Lobby
 
-| Method | Data | Returns |
-|---|---|---|
-| `holdem:quick` | `{displayName}` | `{roomId, code}` — a quick table (6 seats, 1,000 chips, timer on, blinds every 10). Starts when full, or 20 s after you sit down with bots in the empty seats. |
-| `holdem:host` | `{displayName, settings}` | `{roomId, code}` — a table you host (lobby state) |
-| `holdem:practice` | `{displayName, settings?}` | `{roomId, code}` — you + 3 bots, timer off, dealt the moment you connect (the first `holdem:update` can arrive before your `holdem:getState` answer) |
-| `holdem:tableInfo` | `{code}` | `{roomId, code, host, settings, seatsFree, started}` |
-| `holdem:join` | `{code, displayName}` | `{roomId, code}` — reserves a seat |
-| `holdem:invite` | `{friendId, roomId}` | `{inviteId}` — invite a friend to your table |
-| `holdem:acceptInvite` | `{inviteId, displayName}` | `{roomId, code}` |
+The game kit's methods with the `holdem:` prefix. Quick tables: 6 seats, 1,000
+chips, timer on, blinds every 10; they start when full, or 20 s after the first
+player sits down, with bots in the empty seats. Practice: you and 3 bots, timer
+off, dealt the moment you connect (the first `holdem:update` can arrive before
+your `holdem:getState` answer). Rooms follow the platform's lobby (`lobby:*`):
+the host starts, 2 players or more.
 
 `settings` = `{seats: 2–6, bots: bool, chips: 500|1000|2000|5000, timer: bool, blindsEvery: 10|5|0}`.
 
@@ -141,11 +194,7 @@ its lobby module (`src/game/<game>/lobby.ts`).
 |---|---|---|
 | `holdem:getState` | — | `TableView` |
 | `holdem:act` | `{action}` (`{type:'fold'|'check'|'call'|'allIn'}` or `{type:'raise', to}`) | `{ok}` |
-| `holdem:start` | — (host) | `{ok}` — empty seats get bots if `settings.bots` |
-| `holdem:addBot` / `holdem:removeBot` | `{seat}` (host, before start) | `{ok}` |
-| `holdem:settings` | `{settings}` (host, before start) | `{ok}` |
-| `holdem:leave` | — | `{ok}` — before start frees the seat; during play you sit out (auto check/fold) |
-| `holdem:rematch` | — (after game over) | `{roomId, code}` — first caller hosts a new table with the same settings; others who call join it |
+| `lobby:*` | | the platform's room methods above; `lobby:leave` during play sits you out (auto check/fold) |
 
 Notification `holdem:update` = `{view: TableView, events: Event[]}` after every
 change; events are filtered per viewer (you only ever see your own hole cards

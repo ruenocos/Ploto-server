@@ -44,6 +44,9 @@ export interface LobbyContext {
    * return both accounts; throws the player-facing reason otherwise.
    */
   inviteTarget(peer: PeerLike, friendId: unknown): Promise<{ me: Account; friend: Account }>;
+  /** A room code unique across every game, for this room (released with `releaseCode`). */
+  claimCode(gameId: string, roomId: string): string;
+  releaseCode(code: string): void;
 }
 
 /** One game's lobby methods. */

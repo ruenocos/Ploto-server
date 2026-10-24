@@ -25,7 +25,8 @@ import type { Server as HttpServer } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 import type { Account } from "../accounts/accounts.js";
 import type { Services } from "../services.js";
-import { setOnlineCounter } from "../platform/games.js";
+import { makeCode, normalizeCode } from "../platform/codes.js";
+import { GAMES, setOnlineCounter } from "../platform/games.js";
 import { InviteBook } from "../platform/invites.js";
 import type { GameLobby, LobbyContext, Room } from "../platform/lobby.js";
 import { MatchMonstersLobby } from "../game/matchmonsters/lobby.js";
@@ -50,6 +51,8 @@ export class SignalingServer {
   private readonly lobbyAccounts = new Map<Peer, Account>();
   private readonly invites: InviteBook;
   private readonly lobbies: GameLobby[];
+  /** Room codes in use, across every game: code -> its game and room. */
+  private readonly codes = new Map<string, { gameId: string; roomId: string }>();
   /** Rooms nobody is connected to, scheduled for cleanup. */
   private readonly roomTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
@@ -82,6 +85,12 @@ export class SignalingServer {
         if (!friend) throw new Error("you can only invite friends");
         return { me, friend };
       },
+      claimCode: (gameId, roomId) => {
+        const code = makeCode((c) => this.codes.has(c));
+        this.codes.set(code, { gameId, roomId });
+        return code;
+      },
+      releaseCode: (code) => { this.codes.delete(code); },
     };
     this.lobbies = LOBBY_FACTORIES.map((make) => make(ctx));
     setOnlineCounter(() => this.onlineCounts());
@@ -246,6 +255,15 @@ export class SignalingServer {
         const label = typeof d["label"] === "string" ? d["label"].slice(0, 60) : "";
         if (this.services.presence.setActivity(me.id, gameId ? { gameId, label } : null)) void this.announcePresence(me.id, true);
         return { ok: true };
+      }
+
+      // --- Where a room code leads, in any game (the launcher's "Have a code?") ---
+      case "platform:findCode": {
+        const code = normalizeCode((data as Record<string, unknown> | null)?.["code"]);
+        const hit = this.codes.get(code);
+        if (!hit || !this.rooms.has(hit.roomId)) throw new Error("that code doesn't lead anywhere any more");
+        const game = GAMES.find((g) => g.id === hit.gameId);
+        return { code, gameId: hit.gameId, path: game?.path ?? null };
       }
 
       // --- Invites waiting for me (the launcher lists them; any game) ---

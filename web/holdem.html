@@ -292,12 +292,12 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     <button class="pl-row" data-mode="host"><span class="pl-ic" data-ic="host"></span><span><b>Host a table</b><small>Your rules, your friends</small></span><span class="pl-go" data-chev></span></button>
     <button class="pl-row" data-mode="practice"><span class="pl-ic" data-ic="practice"></span><span><b>Practice</b><small>You vs bots</small></span><span class="pl-go" data-chev></span></button>
     <p class="pl-label">Have a code?</p>
-    <form class="pl-form" id="codeForm" autocomplete="off">
+    <form class="pl-form" id="codeForm" data-code-form autocomplete="off">
       <label class="sr-only" for="codeIn">Table code</label>
       <input id="codeIn" class="pl-code" type="text" placeholder="Table code" maxlength="8" autocapitalize="characters" spellcheck="false" />
       <button class="ghost small" type="submit">Join</button>
     </form>
-    <div class="pl-who pl-frame"><span class="muted">Playing as</span><b class="ell" id="whoName">Player</b><span class="grow"></span><button class="pl-link" id="whoChange" type="button">Change</button></div>
+    <div class="pl-who pl-frame"><span class="muted">Playing as</span><b class="ell" id="whoName" data-who>Player</b><span class="grow"></span><button class="pl-link" id="whoChange" data-who-change type="button">Change</button></div>
   </main>
 </section>
 
@@ -366,6 +366,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
 <script src="/play/icons.js"></script>
 <script src="/play/cards.js"></script>
 <script src="/play/platform.js"></script>
+<script src="/play/lobbykit.js"></script>
 <script>
 (() => {
   "use strict";
@@ -656,12 +657,10 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     raiseOpen: false,
     elimShown: false,
     resultReady: false,
-    invites: {},         // invited name -> inviteId (sent from this tab)
+    lobby: null,         // the last LobbyView (the platform's room lobby)
     inviteFriend: null,  // ?inviteFriend=ID: invite them once the table exists
-    seatToken: 0,        // bumps when the player backs out of a pending seat request
     out: {},             // seat -> hand number they went out on
   };
-  const isHost = (v = S.view) => !!v && v.host >= 0 && v.host === v.you;
   const meSeat = (M = S.view) => (M && M.you != null ? M.seats[M.you] : null);
 
   /* ================================================================ screens + back */
@@ -703,14 +702,14 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   function goHome() { nav.stack = ["home"]; show(-1); }
   /** Back from the top bar, Escape, or the phone's back button. */
   function back() {
-    if (cur() === "room" && !S.room) { S.seatToken++; return goHome(); } // still waiting for a seat: give it up
+    if (cur() === "room" && !S.room) { kit.cancelSeat(); return goHome(); } // still waiting for a seat: give it up
     if (cur() === "room") return leaveFlow();
     if (nav.stack.length > 1) { nav.stack.pop(); show(-1); }
   }
   function renderBar(name) {
     const v = S.view;
     const titles = { home: "Hold'em", host: "Host a table", wait: "Hold'em",
-      lobby: !v ? "Table" : v.mode === "quick" ? "Quick table" : isHost() ? "Your table" : "Table" };
+      lobby: kit.title(S.lobby || v) };
     $("barTitle").textContent = titles[name];
     const b = $("barBack");
     b.innerHTML = px("back", 2);
@@ -731,7 +730,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     const ok = await P.confirm({ title: `${inv.from.username} invited you`, body: inv.label, yes: "Join", no: "Not now" });
     if (!ok) return P.lobby().then((s) => s.request("platform:declineInvite", { inviteId: inv.inviteId })).catch(() => {});
     if (inv.gameId === "holdem") {
-      if (S.room) { req("holdem:leave").catch(() => {}); dropRoom(); }
+      if (S.room) { req("lobby:leave").catch(() => {}); dropRoom(); }
       return acceptInvite(inv.inviteId);
     }
     const game = (await P.games()).find((g) => g.id === inv.gameId);
@@ -743,30 +742,36 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     if (cur() !== "home") back();
   });
 
-  // The phone's back button walks the same stack (one extra history entry while there's somewhere to go back to).
-  let backIgnore = 0;
-  const canGoBack = () => P.sheetOpen() || nav.stack.length > 1;
-  function syncBackGuard() {
-    if (backIgnore) return;
-    const has = history.state?.hdBack === true;
-    if (canGoBack() && !has) history.pushState({ hdBack: true }, "");
-    else if (!canGoBack() && has) { backIgnore++; history.back(); }
-  }
-  window.addEventListener("popstate", () => {
-    if (backIgnore) { backIgnore--; return syncBackGuard(); }
-    if (P.sheetOpen()) P.closeSheet();
-    else if (screenNow() === "table") openMenu();
-    else back();
-    syncBackGuard();
+  // The phone's back button walks the same stack (the platform keeps one extra history entry while there's somewhere to go).
+  const syncBackGuard = P.backGuard({
+    canGoBack: () => nav.stack.length > 1,
+    onBack: () => { if (screenNow() === "table") openMenu(); else back(); },
   });
-  new MutationObserver(() => { const s = $("plScrim"); if (s && !s._watched) { s._watched = true; new MutationObserver(syncBackGuard).observe(s, { attributes: true, attributeFilter: ["class"] }); } syncBackGuard(); })
-    .observe(document.body, { childList: true });
+
+  /* ================================================================ the platform lobby */
+  const DEFAULTS = { seats: 6, bots: true, chips: 1000, timer: true, blindsEvery: 10 };
+  // The game declares its table settings; screens just render this list.
+  const SCHEMA = [
+    { key: "seats", label: "Seats", kind: "choice", options: [[2, "2"], [3, "3"], [4, "4"], [5, "5"], [6, "6"]] },
+    { key: "bots", label: "Fill empty seats with bots", kind: "toggle" },
+    { key: "chips", label: "Starting chips", kind: "choice", options: [[500, "500"], [1000, "1,000"], [2000, "2,000"], [5000, "5,000"]] },
+    { key: "timer", label: "Turn timer", kind: "choice", options: [[true, "On"], [false, "Off"]], hint: "25 s per move, plus a 60 s time bank" },
+    { key: "blindsEvery", label: "Blinds go up every", kind: "choice", options: [[10, "10 hands"], [5, "5 hands"], [0, "Never"]] },
+  ];
+  // The platform's lobby screens, told about Hold'em once.
+  const kit = P.lobbyKit({
+    gameId: "holdem", prefix: "holdem:", path: "/play/holdem", title: "Hold'em",
+    nouns: { code: "Table code", room: "table", quick: "Quick table", yours: "Your table" },
+    schema: SCHEMA, defaults: DEFAULTS, summary,
+    shareText: (code) => `Join my Hold'em table on Ploto. Code ${code}`,
+    quickNote: "Bots fill the empty seats",
+    art: { bot: () => px("bot", 2), remove: () => px("x", 2), chev: () => px("chev", 2) },
+  });
 
   /* ================================================================ 1. home */
   let heroDone = false;
   function renderHome() {
-    $("whoName").textContent = P.displayName();
-    $("whoChange").hidden = !!P.account; // a claimed username stays put
+    kit.renderWho($("scrHome"));
     for (const s of document.querySelectorAll("[data-chev]")) s.innerHTML = px("chev", 2);
     for (const s of document.querySelectorAll("[data-ic]")) if (!s.firstChild) s.innerHTML = ICON_ART[s.dataset.ic]();
     drawHero();
@@ -801,83 +806,35 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       }, 200 + i * 90);
     });
   }
-  for (const b of document.querySelectorAll("[data-mode]")) {
-    b.addEventListener("click", () => {
-      const m = b.dataset.mode;
-      cue("select");
+  kit.home($("scrHome"), {
+    onMode: (m) => {
       if (m === "host") return go("host");
       if (m === "quick") return quickTable();
       if (m === "practice") return practice();
-    });
-  }
-  $("codeForm").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const code = $("codeIn").value.trim().toUpperCase();
-    if (!code) return $("codeIn").focus();
-    joinCode(code);
-  });
-  $("whoChange").addEventListener("click", async () => {
-    await P.askName({ title: "Change your name", go: "Save" });
-    renderHome();
+    },
+    onCode: joinCode,
   });
   P.onAccount(() => { if (screenNow() === "home") renderHome(); });
 
   /* ================================================================ 2. host settings */
-  const SETTINGS_KEY = "holdem.settings";
-  const DEFAULTS = { seats: 6, bots: true, chips: 1000, timer: true, blindsEvery: 10 };
-  // The game declares its table settings; screens just render this list.
-  const SCHEMA = [
-    { key: "seats", label: "Seats", kind: "choice", options: [[2, "2"], [3, "3"], [4, "4"], [5, "5"], [6, "6"]] },
-    { key: "bots", label: "Fill empty seats with bots", kind: "toggle" },
-    { key: "chips", label: "Starting chips", kind: "choice", options: [[500, "500"], [1000, "1,000"], [2000, "2,000"], [5000, "5,000"]] },
-    { key: "timer", label: "Turn timer", kind: "choice", options: [[true, "On"], [false, "Off"]], hint: "25 s per move, plus a 60 s time bank" },
-    { key: "blindsEvery", label: "Blinds go up every", kind: "choice", options: [[10, "10 hands"], [5, "5 hands"], [0, "Never"]] },
-  ];
-  const hostSettings = Object.assign({}, DEFAULTS, local.get(SETTINGS_KEY) || {});
-  function fieldsHTML(values, { minSeats = 2 } = {}) {
-    return SCHEMA.map((f) => {
-      if (f.kind === "toggle") {
-        return `<button class="pl-switch" role="switch" data-key="${f.key}" aria-checked="${!!values[f.key]}">${esc(f.label)}<span class="pl-knob"></span></button>`;
-      }
-      const opts = f.options.map(([v, l]) => `<button type="button" data-key="${f.key}" data-val='${JSON.stringify(v)}' aria-pressed="${values[f.key] === v}"${f.key === "seats" && v < minSeats ? " disabled" : ""}>${esc(l)}</button>`).join("");
-      const hint = f.hint ? `<p class="hint">${esc(f.hint)}</p>` : "";
-      return `<div class="field"><span class="pl-label">${esc(f.label)}</span><div class="pl-seg" role="group" aria-label="${esc(f.label)}">${opts}</div>${hint}</div>`;
-    }).join("");
-  }
-  function wireFields(root, values, onChange) {
-    root.onclick = (e) => {
-      const b = e.target.closest("[data-key]");
-      if (!b || b.disabled) return;
-      const k = b.dataset.key;
-      if (b.getAttribute("role") === "switch") {
-        values[k] = !values[k];
-        b.setAttribute("aria-checked", String(values[k]));
-      } else {
-        values[k] = JSON.parse(b.dataset.val);
-        for (const x of root.querySelectorAll(`[data-key="${k}"]`)) x.setAttribute("aria-pressed", String(x === b));
-      }
-      cue("select", { vol: 0.6 });
-      onChange?.();
-    };
-  }
   function renderHost() {
     const root = $("hostFields");
-    root.innerHTML = fieldsHTML(hostSettings);
-    wireFields(root, hostSettings, () => local.set(SETTINGS_KEY, hostSettings));
+    root.innerHTML = kit.fieldsHTML(kit.settings);
+    kit.wireFields(root, kit.settings, kit.saveSettings);
   }
   $("createBtn").addEventListener("click", async () => {
     if (!(await P.ensureName())) return;
     const btn = $("createBtn");
     btn.disabled = true;
     try {
-      const lob = await P.lobby();
-      const r = await lob.request("holdem:host", { displayName: P.displayName(), settings: { ...hostSettings } });
+      const r = await kit.seat("host", { settings: { ...kit.settings } });
+      if (!r) return;
       cue("ready");
       await enterRoom(r);
       if (S.inviteFriend) {
         const id = S.inviteFriend;
         S.inviteFriend = null;
-        sendInvite(id).catch((e) => toast(P.errText(e), 2600));
+        kit.invite(id, r.roomId).catch((e) => toast(P.errText(e), 2600));
       }
     } catch (e) { toast(P.errText(e), 2600); }
     finally { btn.disabled = false; }
@@ -890,50 +847,36 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     S.view = null;
     show(1);
   }
-  /**
-   * Ask the lobby for a seat while the wait screen shows. If the player backs out
-   * before the answer comes, the seat is given straight back instead of pulling
-   * them into the table.
-   */
+  /** Ask the lobby for a seat while the wait screen shows (backing out gives it straight back). */
   async function takeSeat(label, method, data) {
-    const token = ++S.seatToken;
     waitFor(label);
-    const lob = await P.lobby();
-    const r = await lob.request(method, data);
-    if (token !== S.seatToken || cur() !== "room") return abandonSeat(r);
+    const r = await kit.seat(method, data);
+    if (!r) return;
+    if (cur() !== "room") return kit.abandon(r);
     await enterRoom(r);
-  }
-  async function abandonSeat({ roomId }) {
-    try {
-      const s = P.connect(roomId);
-      await P.waitOpen(s);
-      await s.request("holdem:leave", {});
-      s.close();
-    } catch {}
   }
   async function quickTable() {
     if (!(await P.ensureName())) return;
-    try { await takeSeat("Finding a seat", "holdem:quick", { displayName: P.displayName() }); }
+    try { await takeSeat("Finding a seat", "quick"); }
     catch (e) { toast(P.errText(e), 2600); dropRoom(); goHome(); }
   }
   async function practice() {
     if (!(await P.ensureName())) return;
-    try { await takeSeat("Shuffling", "holdem:practice", { displayName: P.displayName() }); }
+    try { await takeSeat("Shuffling", "practice"); }
     catch (e) { toast(P.errText(e), 2600); dropRoom(); goHome(); }
   }
   async function joinCode(code) {
     if (S.room && S.room.code === code && S.sock) { nav.stack = ["home", "room"]; return show(1); }
     try {
-      const lob = await P.lobby();
-      const info = await lob.request("holdem:tableInfo", { code });
+      const info = await kit.info(code);
       if (!(await P.ensureName({ title: "Take a seat", body: `${info.host ? `${info.host} is hosting. ` : ""}Other players see this name.`, go: "Take a seat" }))) return;
-      await takeSeat(`Joining table ${code}`, "holdem:join", { code, displayName: P.displayName() });
+      await takeSeat(`Joining table ${code}`, "join", { code });
     } catch (e) { toast(P.errText(e), 2800); dropRoom(); goHome(); }
   }
   async function acceptInvite(inviteId) {
     try {
       if (!(await P.ensureName())) return;
-      await takeSeat("Taking your seat", "holdem:acceptInvite", { inviteId, displayName: P.displayName() });
+      await takeSeat("Taking your seat", "acceptInvite", { inviteId });
     } catch (e) { toast(P.errText(e), 2800); dropRoom(); goHome(); }
   }
 
@@ -942,7 +885,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     closeSock();
     S.room = { roomId, code };
     store.set("holdem.room", S.room);
-    Object.assign(S, { view: null, M: null, queue: [], tags: {}, handNames: {}, lift: null, banner: null, pre: null, resultReady: false, elimShown: false, turnKey: "", clock: null, leaving: false, retry: 0 });
+    Object.assign(S, { view: null, lobby: null, M: null, queue: [], tags: {}, handNames: {}, lift: null, banner: null, pre: null, resultReady: false, elimShown: false, turnKey: "", clock: null, leaving: false, retry: 0 });
     S.out = store.get(`holdem.out.${roomId}`) || {};
     if (cur() !== "room") nav.stack = ["home", "room"];
     show(1);
@@ -960,6 +903,11 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       if (!S.ready) return early.push(d); // older than the state we're about to fetch
       enqueue(d);
     });
+    sock.on("lobby:update", (d) => {
+      if (S.sock !== sock) return;
+      S.lobby = d.view;
+      if (screenNow() === "lobby") renderLobby();
+    });
     sock.addEventListener("close", () => {
       if (S.sock !== sock) return;
       S.sock = null;
@@ -970,7 +918,8 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     });
     await P.waitOpen(sock);
     try {
-      const view = await sock.request("holdem:getState");
+      const [view, lob] = await Promise.all([sock.request("holdem:getState"), sock.request("lobby:getView")]);
+      S.lobby = lob;
       S.gen++;
       S.retry = 0;
       S.ready = true;
@@ -1006,6 +955,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     if (S.room) store.del(`holdem.out.${S.room.roomId}`);
     S.room = null;
     S.view = null;
+    S.lobby = null;
     S.M = null;
     S.queue = [];
     store.del("holdem.room");
@@ -1102,172 +1052,13 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   function summary(st) {
     return [`${fmt(st.chips)} chips`, st.timer ? "timer on" : "no timer", st.blindsEvery ? `blinds up every ${st.blindsEvery}` : "blinds stay the same"].join(" · ");
   }
-  const AV_COLORS = ["#6a4fe0", "#36b65b", "#d8364b", "#a8740e", "#4a5486", "#33267d"];
-  function avatar(s, cls = "") {
-    if (s.kind === "bot") return `<span class="pl-av bot ${cls}" style="--av:#2f375c">${px("bot", 2)}</span>`;
-    const init = (String(s.name || "?").trim()[0] || "?").toUpperCase();
-    return `<span class="pl-av ${cls}" style="--av:${AV_COLORS[s.seat % AV_COLORS.length]}">${esc(init)}</span>`;
-  }
+  const avatar = (s, cls = "") => kit.avatar(s, cls);
+  /** The room lobby is the platform's; Hold'em only says what its settings mean (summary). */
   function renderLobby() {
-    const v = S.view;
+    const v = S.lobby;
     if (!v) return;
-    const host = isHost(v);
-    const quick = v.mode === "quick";
-    const seats = v.seats;
-    const filled = seats.filter((s) => s.kind === "player" || s.kind === "bot").length;
-    const empties = seats.filter((s) => s.kind === "empty").length;
-    let top;
-    if (quick) {
-      top = `<div class="quickcard pl-frame"><b id="qCount">${quickText(v)}</b><small>Bots fill the empty seats</small></div>`;
-    } else {
-      top = `<div class="pl-codecard pl-frame"><div class="code"><small>Table code</small><b aria-label="Table code ${esc(v.code.split("").join(" "))}">${esc(v.code)}</b></div><button id="shareBtn">Share invite</button></div>` +
-        (host ? `<button class="pl-sumline" id="sumBtn"><span style="flex:1">${esc(summary(v.settings))}</span><span class="edit">Edit</span></button>` : `<p class="pl-sumline">${esc(summary(v.settings))}</p>`);
-    }
-    const firstEmpty = seats.find((s) => s.kind === "empty")?.seat;
-    const rows = seats.map((s) => seatRow(s, v, host, s.seat === firstEmpty)).join("");
-    $("lobbyMain").innerHTML = top + `<p class="pl-label">Seats · ${filled}/${seats.length}</p><div class="pl-seats">${rows}</div>`;
-    // footer
-    let foot;
-    if (quick) foot = "";
-    else if (host) {
-      const bots = v.settings.bots ? empties + seats.filter((s) => s.kind === "invited").length : 0;
-      const can = filled + bots >= 2;
-      const label = !can ? "Need one more player" : bots > 0 ? `Start · ${bots} bot${bots > 1 ? "s" : ""} join` : "Start";
-      foot = `<button class="big" id="startBtn"${can ? "" : " disabled"}>${label}</button>`;
-    } else {
-      const hn = v.seats[v.host]?.name || "the host";
-      foot = `<div class="pl-waitline"><span class="pl-dots"><i></i><i></i><i></i></span>Waiting for ${esc(hn)} to start</div>`;
-    }
-    $("lobbyFoot").innerHTML = foot;
-    $("lobbyFoot").parentElement.hidden = !foot;
+    kit.renderRoom(v, { main: $("lobbyMain"), foot: $("lobbyFoot"), req });
     renderBar("lobby");
-    // wiring
-    $("shareBtn")?.addEventListener("click", shareInvite);
-    $("sumBtn")?.addEventListener("click", () => { if (host) editSettings(); });
-    $("startBtn")?.addEventListener("click", async (e) => {
-      e.currentTarget.disabled = true;
-      try { await req("holdem:start"); cue("ready"); } catch (err) { toast(P.errText(err), 2600); e.currentTarget.disabled = false; }
-    });
-    $("lobbyMain").querySelector(".pl-seats").onclick = async (e) => {
-      const b = e.target.closest("[data-do]");
-      if (!b) return;
-      const seat = Number(b.dataset.seat);
-      b.disabled = true;
-      try {
-        if (b.dataset.do === "bot") { await req("holdem:addBot", { seat }); cue("select"); }
-        if (b.dataset.do === "unbot") { await req("holdem:removeBot", { seat }); cue("select", { pitch: 0.8 }); }
-        if (b.dataset.do === "invite") openInvitePicker();
-        if (b.dataset.do === "cancel") {
-          const id = S.invites[b.dataset.name];
-          const lob = await P.lobby();
-          await lob.request("platform:cancelInvite", { inviteId: id });
-          delete S.invites[b.dataset.name];
-        }
-      } catch (err) { toast(P.errText(err), 2600); }
-      finally { b.disabled = false; }
-    };
-  }
-  function seatRow(s, v, host, first) {
-    const you = s.seat === v.you;
-    if (s.kind === "empty") {
-      // Only the first open seat carries the buttons: the rest read as plain empty seats.
-      const btns = host && first ? `<button class="ghost small" data-do="invite" data-seat="${s.seat}">Invite</button><button class="ghost small" data-do="bot" data-seat="${s.seat}">Add bot</button>` : "";
-      return `<div class="pl-seat open"><div class="pl-seat-t"><span class="nm">Empty seat</span></div>${btns}</div>`;
-    }
-    if (s.kind === "invited") {
-      const id = S.invites[s.name];
-      const btn = host && id ? `<button class="ghost small" data-do="cancel" data-seat="${s.seat}" data-name="${esc(s.name)}">Cancel</button>` : "";
-      return `<div class="pl-seat open"><div class="pl-seat-t"><span class="nm ell">${esc(s.name)}</span><span class="note">Invite sent</span></div>${btn}</div>`;
-    }
-    const isH = s.seat === v.host;
-    let note, ok = false;
-    if (s.kind === "bot") note = "Bot";
-    else if (!s.connected || s.away) note = "Away";
-    else { note = isH ? "Host · ready" : "Ready"; ok = true; }
-    if (you) { note = isH ? "Host" : "Ready"; ok = !isH; }
-    const tag = you ? `<span class="pl-you">You</span>` : "";
-    const rm = host && s.kind === "bot" ? `<button class="ghost small icon" data-do="unbot" data-seat="${s.seat}" aria-label="Remove ${esc(s.name)}" title="Remove bot">${px("x", 2)}</button>` : "";
-    return `<div class="pl-seat pl-frame">${avatar(s)}<div class="pl-seat-t"><span class="nm"><span class="ell">${esc(s.name)}</span>${tag}</span><span class="note${ok ? " ok" : ""}">${note}</span></div>${rm}</div>`;
-  }
-  function quickText(v) {
-    if (!v.startsAt) return "Waiting for players";
-    const s = Math.ceil((v.startsAt - Date.now()) / 1000);
-    return s > 0 ? `Starting in ${s} s` : "Starting now";
-  }
-  async function shareInvite() {
-    const v = S.view;
-    if (!v) return;
-    const url = `${location.origin}/play/holdem?table=${encodeURIComponent(v.code)}`;
-    const text = `Join my Hold'em table on Ploto. Code ${v.code}`;
-    if (navigator.share && matchMedia("(pointer: coarse)").matches) {
-      try { await navigator.share({ title: "Hold'em", text, url }); return; } catch (e) { if (e?.name === "AbortError") return; }
-    }
-    try { await navigator.clipboard.writeText(url); toast("Invite link copied"); }
-    catch { toast(url, 4000); }
-  }
-  function editSettings() {
-    const v = S.view;
-    const values = { ...v.settings };
-    const occupied = v.seats.filter((s) => s.kind !== "empty").length;
-    const el = P.sheet(`<h2>Table settings</h2><div class="fields" id="esFields">${fieldsHTML(values, { minSeats: Math.max(2, occupied) })}</div>` +
-      `<div class="pl-actions"><button id="esSave">Save</button><button class="ghost" data-close>Cancel</button></div>`, { label: "Table settings" });
-    wireFields(el.querySelector("#esFields"), values);
-    el.querySelector("[data-close]").onclick = () => P.closeSheet();
-    el.querySelector("#esSave").onclick = async () => {
-      try {
-        await req("holdem:settings", { settings: values });
-        Object.assign(hostSettings, values);
-        local.set(SETTINGS_KEY, hostSettings);
-        P.closeSheet();
-      } catch (e) { toast(P.errText(e), 2600); }
-    };
-  }
-  async function sendInvite(friendId, name) {
-    const lob = await P.lobby();
-    const r = await lob.request("holdem:invite", { friendId, roomId: S.room.roomId });
-    if (name) S.invites[name] = r.inviteId;
-    else {
-      // The name shows up on the seat it holds.
-      const v = S.view;
-      const s = v?.seats.find((x) => x.kind === "invited" && !Object.keys(S.invites).includes(x.name));
-      if (s) S.invites[s.name] = r.inviteId;
-    }
-    toast(name ? `Invite sent to ${name}` : "Invite sent");
-    cue("ready");
-    return r;
-  }
-  async function openInvitePicker() {
-    if (!P.account) {
-      const el = P.sheet(`<h2>Invite a friend</h2><p class="muted" style="text-align:center;margin:0">Claim a username to add friends and invite them. Or share the table link.</p>` +
-        `<div class="pl-actions"><button id="ipClaim">Claim a username</button><button class="ghost" id="ipShare">Share invite</button></div>`, { label: "Invite a friend" });
-      el.querySelector("#ipClaim").onclick = async () => { P.closeSheet(true); const a = await P.openClaim(); if (a) openInvitePicker(); };
-      el.querySelector("#ipShare").onclick = () => { P.closeSheet(); shareInvite(); };
-      return;
-    }
-    const el = P.sheet(`<h2>Invite a friend</h2><div class="pl-seats" id="ipList"><div class="pl-empty">Loading friends</div></div><div class="pl-actions"><button class="ghost" id="ipShare">Share invite instead</button></div>`, { label: "Invite a friend" });
-    el.querySelector("#ipShare").onclick = () => { P.closeSheet(); shareInvite(); };
-    let friends = [];
-    try { friends = (await P.api("GET", "/api/friends")).friends || []; } catch { friends = []; }
-    const list = el.querySelector("#ipList");
-    if (!list) return;
-    const seated = new Set((S.view?.seats || []).map((s) => s.name));
-    const online = friends.filter((f) => f.online);
-    if (!online.length) {
-      list.innerHTML = `<div class="pl-empty">${friends.length ? "None of your friends are online right now" : "No friends yet. Add them from the Ploto launcher"}</div>`;
-      return;
-    }
-    list.innerHTML = online.map((f) => {
-      const here = seated.has(f.username);
-      return `<div class="pl-seat pl-frame">${avatar({ seat: f.username.length, name: f.username, kind: "player" })}<div class="pl-seat-t"><span class="nm ell">${esc(f.username)}</span><span class="note">${esc(f.activity?.label || "Online")}</span></div>` +
-        `<button class="small" data-fid="${esc(f.id)}" data-fn="${esc(f.username)}"${here ? " disabled" : ""}>${here ? "Here" : "Invite"}</button></div>`;
-    }).join("");
-    list.onclick = async (e) => {
-      const b = e.target.closest("[data-fid]");
-      if (!b) return;
-      b.disabled = true;
-      try { await sendInvite(b.dataset.fid, b.dataset.fn); b.textContent = "Sent"; }
-      catch (err) { toast(P.errText(err), 2600); b.disabled = false; }
-    };
   }
 
   /* ================================================================ 4. the table */
@@ -1618,7 +1409,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
   function tick() {
     const v = S.view;
     if (!v) return;
-    if (screenNow() === "lobby" && v.mode === "quick") { const q = $("qCount"); if (q) q.textContent = quickText(v); }
+    if (screenNow() === "lobby" && S.lobby?.mode === "quick") kit.tickRoom(S.lobby, $("lobbyMain"));
     if (screenNow() !== "table") return;
     const M = S.M;
     const live = !S.anim && M.toAct != null && M.deadline;
@@ -2095,7 +1886,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       const m = b.dataset.m;
       if (m === "close") return P.closeSheet();
       P.closeSheet(true);
-      if (m === "share") shareInvite();
+      if (m === "share") kit.share(S.view.code);
       if (m === "rules") openRules();
       if (m === "settings") P.openSettings();
       if (m === "leave") leaveFlow();
@@ -2131,7 +1922,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       if (!ok) return;
     }
     S.leaving = true;
-    req("holdem:leave").catch(() => {});
+    req("lobby:leave").catch(() => {});
     await sleep(60);
     dropRoom();
     goHome();
@@ -2145,7 +1936,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
       const b = e.target.closest("[data-o]");
       if (!b) return;
       P.closeSheet(true);
-      if (b.dataset.o === "leave") { S.leaving = true; req("holdem:leave").catch(() => {}); dropRoom(); goHome(); }
+      if (b.dataset.o === "leave") { S.leaving = true; req("lobby:leave").catch(() => {}); dropRoom(); goHome(); }
     };
   }
 
@@ -2179,7 +1970,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
     const b = $("rematchBtn");
     b.disabled = true;
     try {
-      const r = await req("holdem:rematch");
+      const r = await req("lobby:rematch");
       cue("ready");
       await enterRoom(r);
     } catch (e) { toast(P.errText(e), 2600); }
@@ -2205,7 +1996,7 @@ input[type="range"].px-range { flex: 1; min-width: 0; -webkit-appearance: none; 
 
   P.restoreAccount();
   const q = new URLSearchParams(location.search);
-  const qTable = q.get("table"), qInvite = q.get("invite"), qFriend = q.get("inviteFriend");
+  const qTable = q.get("code") || q.get("table"), qInvite = q.get("invite"), qFriend = q.get("inviteFriend");
   if (qTable || qInvite || qFriend) history.replaceState(null, "", location.pathname);
   show(0);
   const saved = store.get("holdem.room");

@@ -89,6 +89,6 @@ Salvo mode, special weapons, other fleet layouts, 3+ players, in-game chat.
 10. **In a rematch, the loser fires first** (the coin says so), instead of a new
     coin flip.
 11. **Hard beats a good player about 3 games in 4; a good player beats Medium
-    about 3 in 5** (simulated against a good-human stand-in; test/seaBattleEngine.test.ts
+    about 2 in 3, a casual player about 1 in 3** (simulated against a good-human stand-in; test/seaBattleEngine.test.ts
     keeps them in those bands).
 12. **A hit fires again**, as in the original rules, kept from the questionnaire.

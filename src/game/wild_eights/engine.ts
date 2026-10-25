@@ -157,8 +157,12 @@ export class EightsGame {
     if (this.drawn) return { ok: false, reason: "you've already drawn: play it or pass" };
     const owed = this.owed;
     const n = owed || 1;
-    if (!owed && !this.hands[seat]!.some((c) => this.canPlay(c))) this.voids[seat]!.add(this.suit); // they had nothing to follow it with (a draw by choice tells nothing)
+    const stuck = !owed && !this.hands[seat]!.some((c) => this.canPlay(c)); // a draw by choice tells nothing
     const { cards, reshuffled } = this.take(n);
+    // New cards nobody else saw may hold any suit, so the old marks no longer hold. A stuck draw
+    // that still doesn't fit proves the void again: the hand had none and the new card isn't one.
+    this.voids[seat]!.clear();
+    if (stuck && !(cards[0] && (rankOf(cards[0]) === "8" || suitOf(cards[0]) === this.suit || rankOf(cards[0]) === rankOf(this.top)))) this.voids[seat]!.add(this.suit);
     this.hands[seat]!.push(...cards);
     this.stats[seat]!.drawn += cards.length;
     const events: EightsEvent[] = [{ type: "draw", by: seat, n: cards.length, cards, ...(owed ? { forced: true } : {}), ...(reshuffled ? { reshuffled } : {}) }];
@@ -185,6 +189,8 @@ export class EightsGame {
 
   /** The clock's move: play the first card that fits (an 8 names your strongest suit), else draw. */
   autoMove(seat: number): Result {
+    // A player who left only draws and passes: someone who isn't at the table can't win it.
+    if (this.out.has(seat)) return this.drawn ? this.pass(seat) : this.draw(seat);
     const fits = this.playable(seat);
     if (this.drawn) return fits.length ? this.play(seat, this.drawn, rankOf(this.drawn) === "8" ? this.bestSuit(seat) : undefined, true) : this.pass(seat);
     const nonEight = fits.find((c) => rankOf(c) !== "8");

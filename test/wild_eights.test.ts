@@ -151,6 +151,20 @@ describe("Wild Eights room", () => {
     room.dispose();
   });
 
+  it("a player who left never wins: the clock only draws and passes for them", async () => {
+    const { room } = await hostedTable(3);
+    room.handleRequest("cy", "lobby:leave", {});
+    const g = room.game;
+    g.hands[2] = [g.top.slice(0, -1) === "K" ? "QS" : "KS"].filter((c: string) => !g.hands.flat().includes(c));
+    for (let i = 0; i < 4000 && room.phase === "playing"; i++) {
+      if (g.turn === 2) await until(() => g.turn !== 2 || room.phase !== "playing");
+      else step(room);
+    }
+    expect(room.phase).toBe("over");
+    expect(g.winner).not.toBe(2);
+    room.dispose();
+  });
+
   it("with the timer on, the clock plays for a silent player, so the game still ends", async () => {
     const { room, peers } = await hostedTable(2, { timer: true, bots: false }, 8);
     expect(peers[1]!.last().view.clock).toMatchObject({ seat: room.order[room.game.turn] });

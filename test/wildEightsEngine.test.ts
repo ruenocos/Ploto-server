@@ -99,10 +99,11 @@ describe("Wild Eights rules", () => {
     expect(g.draw(0)).toMatchObject({ ok: false });
     expect(g.pass(0).ok).toBe(true);
     expect(g.turn).toBe(1);
-    expect(g.voids[0]).toContain("H"); // everyone saw them unable to follow hearts
+    expect(g.voids[0]).toEqual(new Set()); // they kept the heart they drew: no "no hearts" mark
     g.deck = ["3S", ...g.deck.filter((c) => c !== "3S")];
     const miss = g.draw(1);
     expect(miss.ok && miss.events.map((e) => e.type)).toEqual(["draw", "pass", "turn"]);
+    expect(g.voids[1]).toContain("H"); // stuck, and the new card didn't fit either: everyone knows
   });
 
   it("the pile is shuffled back in when the deck runs out", () => {

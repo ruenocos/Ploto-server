@@ -30,7 +30,7 @@
   box-shadow: inset 0 calc(var(--px) * -2) 0 var(--card-lo); --n: var(--px);
   clip-path: polygon(0 var(--n), var(--n) var(--n), var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n), 100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%, var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n))); }
 .card.red { color: var(--card-red); }
-.card.back { background: repeating-conic-gradient(#221c44 0 25%, #28214f 0 50%) 0 0 / 8px 8px; box-shadow: inset 0 0 0 var(--px) var(--c-accent-lo) !important; /* the deck's checker (as the banner's), low contrast: the pile stays the bright thing */ box-shadow: inset 0 0 0 var(--px) var(--c-accent-hi), inset 0 0 0 calc(var(--px) * 2) var(--c-accent-lo); }
+.card.back { background: repeating-conic-gradient(#221c44 0 25%, #28214f 0 50%) 0 0 / 8px 8px; box-shadow: inset 0 0 0 var(--px) var(--c-accent-lo); /* the deck's checker (as the banner's), low contrast: the pile stays the bright thing */ box-shadow: inset 0 0 0 var(--px) var(--c-accent-hi), inset 0 0 0 calc(var(--px) * 2) var(--c-accent-lo); }
 .card.back > * { display: none; }
 .card.xs { --w: 16px; --h: 22px; } .card.xs > * { display: none; }
 .card.md { --w: var(--bw, 48px); --h: var(--bh, 68px); }
@@ -99,7 +99,7 @@
 .deck { position: relative; padding: 0; border: 0; background: none; box-shadow: none; clip-path: none; min-height: 0; cursor: default; }
 .deck:active { transform: none; }
 .deck.can { cursor: pointer; }
-.deck.can .card { box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-accent-hi); }
+.deck.can .card.back { box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-accent-hi); } /* you can draw: the deck looks like the button it is */
 .deck .card + .card { position: absolute; left: 0; top: 0; }
 .deck .card.lg { --w: calc(var(--hw, 64px) * 0.7); --h: calc(var(--hh, 90px) * 0.7); } /* the deck a size down: the pile leads */
 .deck .left { position: absolute; left: 50%; bottom: -24px; translate: -50% 0; padding: 3px 6px; background: var(--c-ink); font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-cream); white-space: nowrap; } /* the grid font on ink: a pixel 5 never reads as an S */
@@ -138,7 +138,7 @@
 .hand .card.can { translate: 0 -10px; cursor: pointer; box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-accent-hi), inset 0 calc(var(--px) * -3) 0 var(--card-lo); } /* gold has one job (the eight); what you can play is the accent (inset: the card's clipped corners would cut an outline) */
 .hand .card.can.new { translate: 0 -16px; } /* the card you just drew stands highest */
 .hand.mine .card:not(.can) { translate: 0 8px; } /* on your turn: what can't go sits back (a duller face, a little lower), its index still full strength */
-.hand .card:focus-visible { outline: var(--px) solid var(--c-cream); outline-offset: 2px; } /* the focus ring sits outside: the "can play" edge stays */
+.hand .card:focus-visible { outline: var(--px) solid var(--c-cream); outline-offset: 2px; z-index: 100 !important; /* above the next card, which overlaps it */ } /* the focus ring sits outside: the "can play" edge stays */
 .dock { display: flex; align-items: center; gap: 10px; min-height: 48px; }
 .dock .me { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
 .dock .me .nm { min-width: 0; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -855,6 +855,7 @@
   /** A plain plate over a seat or your hand for `ms` ("Skipped", "+4", a named suit), removed by its own timer (a settle never strands it). */
   function plate(node, text, ms, edge = null) {
     const st = el("div", "stampl");
+    if (node === $("hand")) Object.assign(st.style, { top: "auto", bottom: "calc(100% + 6px)", translate: "-50% 0" }); // above your cards, never on them
     st.textContent = text; st.style.zIndex = "40";
     if (edge) st.style.boxShadow = `inset 0 0 0 calc(var(--px) * 2) ${edge}, var(--px) var(--px) 0 var(--c-ink)`;
     node.appendChild(st);
@@ -892,7 +893,17 @@
     document.body.appendChild(f);
     const c = f.firstElementChild, r = c.getBoundingClientRect(), w = r.width, h = r.height;
     const at = (p) => `translate(${Math.round(p.x - w / 2)}px, ${Math.round(p.y - h / 2)}px)`;
-    const frames = [{ transform: at(a) + (flip ? " scaleX(1)" : "") }, ...(flip ? [{ transform: at({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 - 12 }) + " scaleX(0.1)" }] : []), { transform: at(b) + (flip ? " scaleX(1)" : "") + (endScale !== 1 ? ` scale(${endScale})` : "") }];
+    if (flip) {
+      // It leaves the deck face down and turns over halfway: the back, then the face.
+      const face = html, mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 - 12 };
+      f.innerHTML = cardHTML(null, f.firstElementChild.classList.contains("lg") ? "lg" : "md");
+      await f.animate([{ transform: at(a) + " scaleX(1)" }, { transform: at(mid) + " scaleX(0.1)" }], { duration: (ms * speed()) / 2, easing: "steps(3)", fill: "forwards" }).finished.catch(() => {});
+      f.innerHTML = face;
+      await f.animate([{ transform: at(mid) + " scaleX(0.1)" }, { transform: at(b) + " scaleX(1)" }], { duration: (ms * speed()) / 2, easing: "steps(3)", fill: "forwards" }).finished.catch(() => {});
+      f.remove();
+      return;
+    }
+    const frames = [{ transform: at(a) }, { transform: at(b) + (endScale !== 1 ? ` scale(${endScale})` : "") }];
     await f.animate(frames, { duration: ms * speed(), easing: "steps(6)", fill: "forwards" }).finished.catch(() => {});
     f.remove();
   }
@@ -1061,7 +1072,7 @@
           pose($("owed"), "pop");
           const tgt = e.seat === me() ? $("hand") : document.querySelector(`.seat[data-p="${e.seat}"]`);
           $("deck").animate([{ transform: "translateY(0)" }, { transform: "translateY(-6px)" }, { transform: "translateY(0)" }], { duration: 320, easing: "steps(2)" }); // the deck lifts: what's coming (the cards travel when they're drawn)
-          if (tgt) setTimeout(() => { pose(tgt, "owe"); plate(tgt, `+${e.owed}`, 900); }, 200);
+          if (tgt) setTimeout(() => { if (tgt === $("hand")) handCards().forEach((c, i) => c.animate([{ transform: "translateY(0)" }, { transform: "translateY(6px)" }, { transform: "translateY(0)" }], { duration: 200, easing: "steps(2)", delay: 20 * i })); else pose(tgt, "owe"); plate(tgt, `+${e.owed}`, 900); }, 200); // your cards jolt in place (a shake would slide the fan off the screen)
         }
       }
       if (e.seat === me()) {

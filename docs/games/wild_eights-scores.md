@@ -254,3 +254,70 @@ pip for a missing suit, bigger, with "no" before it; "Eights out N of 4" under
 the deck; a small stack per rival on the felt; louder owe and skip (skip louder
 when it's you), a fuller play, a keep blip, darker draw and deal ticks, a louder
 win.
+
+## Round 6
+
+| Category | A | B | Round score |
+|---|---|---|---|
+| Game design | 8 | 8 | **8** |
+| Signature moment | 8 | 8 | **8** |
+| Animation | 8 | 8 | **8** |
+| Sound and haptics | 8 | 8 | **8** |
+| Visual design | 7 | 7 | **7** |
+| UX and clarity | 8 | 8 | **8** |
+| Platform consistency | 9 | 8 | **8** |
+| Bots | 7 | 7 | **7** |
+| Implementation | 8 | 8 | **8** |
+| Accessibility | 8 | 8 | **8** |
+
+Clutter (both): no longer cluttered, if anything under-filled: a tall felt that
+holds only a deck, a pile and small rival stacks, while small labels compete
+(the gold count chip, "Eights out", the "no ♥" marks, "points in hand"). The
+strain left came from plates and a shake landing on your hand just when you
+have to read it.
+
+What both saw: the deck's "you can draw" outline never showed (an `!important`
+on the card back's own shadow beat it); your drawn card was face up before its
+flip; "+2" and the named suit sat on top of your cards for most of a second;
+the whole hand shook sideways when a 2 landed on you, sliding the fan off the
+edge at 430. Reviewer A also found that a player who left a 3–4 player game
+could still win if the clock emptied their hand; reviewer B that a "no ♥" mark
+stayed after later draws that may have brought a heart, and that the focused
+card's ring was hidden under the next card.
+
+Fixes built after round 6 (not re-scored): the deck shows its outline when you
+can draw; a drawn card leaves the deck face down and turns over halfway; plates
+for your hand sit above it, never on it; when a 2 lands on you your cards jolt
+in place one after another instead of the hand shaking; the clock only draws
+and passes for a player who left, so they can't win (with a room test); a draw
+clears the old void marks, and a stuck draw that still doesn't fit marks the
+suit again (the engine test that expected the stale mark now expects it gone);
+the focused card rises above its neighbour.
+
+## Where it stands
+
+Six rounds, stopped at the limit. Lowest per category after round 6: visual
+design 7, bots 7, everything else 8. From round 1 to round 6 the lowest scores
+rose from 6–8 to 7–8 (the signature moment, sound, accessibility and platform
+reached 8 by round 3); UX reached 8 in the last round, once the call bar always
+said what was happening.
+
+What's still under 9, and why:
+
+- **Bots (7): luck caps the gap.** Hard beats Medium about 54% in 2-player games
+  and 36% for a 33% share at three players; Medium beats a casual player about
+  59%. One round of a draw-one game is mostly the deal (decision 6). The levers
+  left: Hard counting unseen cards per suit and keeping an eight as its last
+  card, and Medium making costlier mistakes (ignoring a rival on one card) so
+  the steps feel bigger. Rollouts (Hard simulating a few hands ahead) are the
+  bigger option.
+- **Visual design (7): the felt is big and empty.** The reviewers want the
+  rivals' fans bigger and placed at the felt's edges by seat, the table capped in
+  height, the deck's two labels merged into one chip, and the gold "Last card
+  down" stamp moved to the kit's win plate (gold belongs to the eight).
+- **The rest (8):** the wild eight's sound, chip and burst spread over about
+  300 ms instead of landing on one frame (A and B both want one impact frame and
+  a shorter hover); the suit swirl ends before the rim flood does; a rival's
+  "last card" quieter than the turn chime; many forced turns at 3–4 players with
+  five cards (deal six, or play a drawn card that fits without a Keep step); a
+  live region that cuts itself off with back-to-back bot moves.

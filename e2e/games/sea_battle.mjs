@@ -92,6 +92,52 @@ adapter.checks = [
     assert(stampsChecked > 0, "saw no SUNK stamp");
     await a.close2(); await b.close2();
   }],
+  ["no screen scrolls sideways at 360, 390 or 430 wide (home, host, placing, battle)", async ({ B, home, assert }) => {
+    const wide = (p) => p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    for (const width of [360, 390, 430]) {
+      const p = await B.player({ width, height: 780 });
+      await home(p);
+      assert(await wide(p) <= 0, `home scrolls sideways at ${width}`);
+      await p.click('[data-mode="host"]');
+      assert(await wide(p) <= 0, `host scrolls sideways at ${width}`);
+      await p.goto(p.url().split("?")[0]); await home(p);
+      await p.click('[data-mode="practice"]'); await p.click("#practiceBtn"); await playing(p); await p.waitForSelector("#readyBtn");
+      assert(await wide(p) <= 0, `placing scrolls sideways at ${width}`);
+      await p.click("#huntBtn");
+      assert(await wide(p) <= 0, `placing with the hunter view scrolls sideways at ${width}`);
+      const clipped = await p.evaluate(() => { const t = document.getElementById("callText"); return t.scrollHeight > t.clientHeight + 1 || t.scrollWidth > t.clientWidth + 1; });
+      assert(!clipped, `the placing call is clipped at ${width}`);
+      await p.click("#readyBtn");
+      await p.waitForSelector("#call.mine", { timeout: 15000 }).catch(() => {});
+      assert(await wide(p) <= 0, `battle scrolls sideways at ${width}`);
+      await p.close2();
+    }
+  }],
+  ["keyboard only, reduced motion: place, ready, fire; the copy never says \"1 shots\"", async ({ B, home, assert, sleep }) => {
+    const p = await B.player({ reducedMotion: "reduce" });
+    await home(p);
+    await p.click('[data-mode="practice"]'); await p.click("#practiceBtn"); await playing(p); await p.waitForSelector("#readyBtn");
+    await p.keyboard.press("s"); // shuffle
+    await p.keyboard.press("Enter"); // ready
+    let fired = 0;
+    const t0 = Date.now();
+    while (fired < 6 && Date.now() - t0 < 60000) {
+      if (await myTurn(p) && (await p.locator("#sea.aiming").count())) {
+        // Walk to an unexplored cell with the arrows, then Enter.
+        await p.locator("#sea .cells button[tabindex='0']").focus();
+        if (fired) await p.keyboard.press("ArrowRight");
+        const before = await p.locator("#sea .layer-marks .mark").count();
+        await p.keyboard.press("Enter");
+        const landed = await p.waitForFunction((b) => document.querySelectorAll("#sea .layer-marks .mark").length > b || !document.querySelector("#call.mine"), before, { timeout: 5000 }).then(() => true, () => false);
+        if (landed) fired++;
+      }
+      await sleep(150);
+    }
+    assert(fired >= 3, `fired only ${fired} shots from the keyboard`);
+    const body = await p.evaluate(() => document.body.innerText);
+    assert(!/\b1 shots\b|\b1 hits\b/.test(body), "copy says \"1 shots\" or \"1 hits\"");
+    await p.close2();
+  }],
 ];
 
 export default adapter;

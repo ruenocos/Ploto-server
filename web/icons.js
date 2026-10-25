@@ -12,6 +12,10 @@
 (() => {
 /** @type {Record<string, string[]>} */
 const GRIDS = {
+  // Navigation (Sea Battle's bar and menu button; any page can use them).
+  back: ["...X", "..XX", ".XXX", "XXXX", ".XXX", "..XX", "...X"],
+  chev: ["X...", "XX..", "XXX.", "XXXX", "XXX.", "XX..", "X..."],
+  menu: ["XXXXXXXX", "........", "........", "XXXXXXXX", "........", "........", "XXXXXXXX"],
   shield: [
     "XXXXXXX",
     "XoXXXXX",

@@ -4,14 +4,15 @@
  * still afloat.
  *
  *   hard    counts every way each remaining ship could still lie and fires
- *           where ships fit most often (now and then its second or third
- *           choice, so a good player can win); once it has a hit it only
+ *           where ships fit most often (some shots are one of its top few
+ *           rather than the very best, so a good player can win); once it has a hit it only
  *           counts the ways that pass through it, so it finishes ships fast.
  *           It knows the corners around a hit are water (ships can't touch),
  *           and hides its own fleet where ships are least likely to be.
  *   medium  hunts a quarter of the time like Hard and otherwise on a checkerboard,
  *           follows up a hit around it (and along the line once it has two),
- *           but now and then wanders off or tries a corner, so it can be beaten.
+ *           with human slips: now and then a shot just off the line, or a
+ *           hunting shot before finishing a ship, so it can be beaten.
  */
 import { BOARDS, Mark, SHIPS, randomFleet, type BoardSpec, type Fleet, type RandomSource, type SeaView, cellsOf } from "./engine.js";
 
@@ -128,7 +129,8 @@ function hardShot(view: SeaView, random: RandomSource): [number, number] {
   }
   const open = (k: number) => marks[k] === Mark.Unknown;
   // Hunting, it sometimes takes its second or third choice (finishing a ship, never).
-  const c = !hits.length && random() < 0.1 ? pickTop(scores, open, 3, random) : pickMax(scores, open, random);
+  // Hunting it sometimes takes one of its top few cells; finishing a ship, sometimes its second best.
+  const c = !hits.length ? (random() < 0.3 ? pickTop(scores, open, 4, random) : pickMax(scores, open, random)) : random() < 0.3 ? pickTop(scores, open, 2, random) : pickMax(scores, open, random);
   if (c === undefined) return anyOpen(view, random);
   return [c % n, Math.floor(c / n)];
 }
@@ -138,11 +140,11 @@ function mediumShot(view: SeaView, random: RandomSource): [number, number] {
   const open = (x: number, y: number) => x >= 0 && y >= 0 && x < n && y < n && view.outgoing[y * n + x] === Mark.Unknown;
   const hits = openHits(view);
   if (!hits.length && random() < 0.25) return hardShot(view, random); // a quarter of its hunting is as sharp as Hard's
-  if (hits.length && random() < 0.92) {
+  if (hits.length && random() < 0.9) { // the other 10%: a hunting shot before finishing (a slip)
     const pts = hits.map((c) => [c % n, Math.floor(c / n)] as const);
     const candidates: [number, number][] = [];
-    if (pts.length >= 2 && (pts.every((p) => p[1] === pts[0]![1]) || pts.every((p) => p[0] === pts[0]![0]))) {
-      // Two or more in a line: try the ends.
+    if (pts.length >= 2 && (pts.every((p) => p[1] === pts[0]![1]) || pts.every((p) => p[0] === pts[0]![0])) && random() < 0.75) {
+      // Two or more in a line: try the ends (the other 25%: a cell beside the line, a human slip).
       const horizontal = pts.every((p) => p[1] === pts[0]![1]);
       const along = pts.map((p) => (horizontal ? p[0] : p[1]));
       const lo = Math.min(...along) - 1, hi = Math.max(...along) + 1;
@@ -154,8 +156,6 @@ function mediumShot(view: SeaView, random: RandomSource): [number, number] {
     if (!candidates.length) {
       for (const [x, y] of pts) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) if (open(x + dx, y + dy)) candidates.push([x + dx, y + dy]);
     }
-    // Now and then it tries a corner by a hit (a real player's mistake: ships can't touch).
-    if (random() < 0.18) for (const [x, y] of pts) for (const [dx, dy] of [[1, 1], [-1, -1], [1, -1], [-1, 1]] as const) if (open(x + dx, y + dy)) candidates.push([x + dx, y + dy]);
     if (candidates.length) return candidates[Math.floor(random() * candidates.length)]!;
   }
   // Hunting: mostly a checkerboard (every ship covers one), sometimes anywhere.

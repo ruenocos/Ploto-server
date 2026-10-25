@@ -140,7 +140,10 @@
       const L = LEN[kind];
       const p = pen(L * C, C);
       drawShip(p, kind, 0, 0, sunk);
-      if (sunk) { p.px(1, 4, P.red, L * C - 2, 2); p.px(1, 4, P.redHi, L * C - 2, 1); }
+      if (sunk) { // struck through on a diagonal: reads without the colour
+        const W = L * C;
+        for (let x = 0; x < W; x++) { const y = 8 - Math.floor((x / (W - 1)) * 7); p.px(x, y, P.redHi, 1, 1); p.px(x, y + 1, P.ink, 1, 1); }
+      }
       return p.c.toDataURL();
     });
   }
@@ -175,11 +178,16 @@
   const WATER_MARK = [
     "..........", "..........", "..........", "....f.....", "...fff....", "....f.....", "....k.....", "..........", "..........", "..........",
   ];
-  /** The foam ring that ripples out before a "nothing here" mark settles. */
+  /** A sparkle of foam before a "nothing here" mark settles (dots, not a ring: a ring is a miss). */
   const RIPPLE = [
-    ["..........", "..........", "..........", "....ff....", "...f..f...", "...f..f...", "....ff....", "..........", "..........", ".........."],
-    ["..........", "..........", "...ffff...", "..f....f..", "..f....f..", "..f....f..", "..f....f..", "...ffff...", "..........", ".........."],
-    ["..........", ".f......f.", "f........f", "..........", "..........", "..........", "..........", "f........f", ".f......f.", ".........."],
+    ["..........", "..........", "..........", "..........", "....c.....", "..........", "..........", "..........", "..........", ".........."],
+    ["..........", "..........", "..f...f...", "..........", "....c.....", "..........", "..f...f...", "..........", "..........", ".........."],
+    ["..........", "f.......f.", "..........", "....f.....", "...fff....", "....f.....", "..........", "f.......f.", "..........", ".........."],
+  ];
+  /** The hit-stop: a white-hot star on the struck cell, two frames. */
+  const STAR = [
+    ["..........", "....c.....", "....c.....", "...ccc....", ".ccwwwcc..", "...ccc....", "....c.....", "....c.....", "..........", ".........."],
+    ["....y.....", ".y..c..y..", "...cwc....", "..cwwwc...", "ycwwwwwcy.", "..cwwwc...", "...cwc....", ".y..c..y..", "....y.....", ".........."],
   ];
   /** A splash, still: the ring on the water and droplets around it (the card's). */
   const SPLASH_STILL = [
@@ -250,17 +258,20 @@
   /** A tall column of smoke over a sinking ship: 12×24, 6 frames, puffs rising and spreading. */
   function smokeColumn() {
     return memo("sheet.column", () => {
-      const W = 12, H = 24, N = 6;
+      const W = 14, H = 30, N = 6;
       const p = pen(W * N, H);
+      const puff = (x, y, r) => { // an ink-outlined puff, lit on top
+        p.px(x - r, y - r + 1, P.ink, r * 2 + 2, r * 2);
+        p.px(x - r + 1, y - r, P.ink, r * 2, r * 2 + 2);
+        p.px(x - r + 1, y - r + 1, P.smoke, r * 2, r * 2);
+        p.px(x - r + 1, y - r + 1, P.smokeHi, Math.max(1, r), Math.max(1, r - 1));
+      };
       for (let f = 0; f < N; f++) {
-        for (let i = 0; i < 4; i++) {
-          const y = H - 4 - (f * 3 + i * 6);
-          if (y < 0 || y > H - 3) continue;
-          const r = 1 + Math.min(3, Math.floor((H - y) / 7));
-          const x = f * W + 6 + ((i % 2) ? 1 : -1) * Math.floor(f / 2);
-          p.px(x - r, y - r + 1, P.smoke, r * 2, r * 2 - 1);
-          p.px(x - r + 1, y - r, P.smoke, r * 2 - 2, r * 2 + 1);
-          p.px(x - r + 1, y - r + 1, P.smokeHi, Math.max(1, r - 1), Math.max(1, r - 1));
+        for (let i = 0; i < 3; i++) {
+          const y = H - 5 - (f * 4 + i * 8);
+          if (y < 2 || y > H - 4) continue;
+          const r = 1 + Math.min(3, Math.floor((H - y) / 9));
+          puff(f * W + 6 + ((i % 2) ? 1 : -1) * Math.floor(f / 2), y, r);
         }
       }
       return { url: p.c.toDataURL(), n: N, w: W, h: H };
@@ -296,6 +307,7 @@
     column: () => smokeColumn(),
     trail: () => sheet("trail", TRAIL),
     ripple: () => sheet("ripple", RIPPLE),
+    star: () => sheet("star", STAR),
     fire: () => sheet("fire", FIRE),
     splash: () => sheet("splash", SPLASH),
     boom: () => sheet("boom", BOOM),
@@ -332,7 +344,7 @@
       const p = pen(80, 50);
       p.px(0, 0, P.back, 80, 50);
       // The sea: 6×3 cells framed on the right (cropped by the card's edge), below the NEW badge (top right 20×10).
-      const gx = 24, gy = 12, cols = 6, rows = 3, gw = cols * C + 1, gh = rows * C + 1;
+      const gx = 22, gy = 16, cols = 6, rows = 3, gw = cols * C + 1, gh = rows * C + 1;
       p.px(gx - 2, gy - 2, P.ink, gw + 4, gh + 4);
       p.px(gx - 1, gy - 1, P.lite, gw + 2, 1); // the frame's lit top row
       p.px(gx, gy, P.sea, gw, gh);
@@ -343,16 +355,16 @@
       for (let i = 0; i <= cols; i++) p.px(gx + i * C, gy, P.deep, 1, gh);
       for (let i = 0; i <= rows; i++) p.px(gx, gy + i * C, P.deep, gw, 1);
       // What you play with: a splash and a miss on the sea.
-      ascii(p, SPLASH_STILL, gx + C - 3, gy + C - 3);
-      ascii(p, MISS, gx + 4 * C, gy + C);
-      // The interface only it has: the crosshair locked on a cell, inside the sea.
-      ascii(p, CROSS, gx + 3 * C - 2, gy - 2);
+      ascii(p, SPLASH_STILL, gx + 4 * C - 3, gy + C - 2);
+      ascii(p, MISS, gx + C, gy);
+      // The interface only it has: the crosshair locked on a cell, inside the sea (clear of the NEW badge).
+      ascii(p, CROSS, gx + 2 * C - 2, gy + C - 2);
       // The star: the carrier (the biggest ship) crossing the sea's bottom-left corner, with its hard shadow, burning at the stern.
       const shadow = pen(50, 10);
       drawShip(shadow, "carrier");
-      p.g.globalAlpha = 0.14; p.g.filter = "brightness(0)"; p.g.drawImage(shadow.c, 3, 37); p.g.filter = "none"; p.g.globalAlpha = 1;
-      drawShip(p, "carrier", 2, 36);
-      ascii(p, FIRE[2], 8, 34);
+      p.g.globalAlpha = 0.14; p.g.filter = "brightness(0)"; p.g.drawImage(shadow.c, 3, 39); p.g.filter = "none"; p.g.globalAlpha = 1;
+      drawShip(p, "carrier", 2, 38);
+      ascii(p, FIRE[2], 8, 36);
       return p.c;
     });
   }
@@ -427,6 +439,6 @@
   document.head.appendChild(style);
   window.Ploto?.gameCard?.("sea_battle", {
     art: (W, H) => imgOf(cardCanvas(), Math.max(1, Math.round(Math.max(W / 80, H / 50)))),
-    icon: () => imgOf(cardCanvas(), 2, [2, 26, 24, 24]), // a crop on the star
+    icon: () => imgOf(cardCanvas(), 2, [2, 26, 24, 24]), // a crop on the star (the carrier's stern, burning)
   });
 })();

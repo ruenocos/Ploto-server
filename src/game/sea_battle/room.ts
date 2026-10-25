@@ -33,6 +33,8 @@ export interface SeaSettings {
   readonly botStyle: BotStyle;
   /** An open seat becomes a bot at the start (quick and practice rooms; a host adds one by hand). */
   readonly bots: boolean;
+  /** Set by the server when a game ends: the loser's name, who fires first in the rematch. */
+  readonly opener?: string;
 }
 
 export const DEFAULT_SETTINGS: SeaSettings = { board: "classic", timer: true, botStyle: "relaxed", bots: false };
@@ -45,6 +47,7 @@ export function parseSettings(raw: unknown, base: SeaSettings = DEFAULT_SETTINGS
     timer: typeof d["timer"] === "boolean" ? d["timer"] : base.timer,
     botStyle: d["botStyle"] === "relaxed" || d["botStyle"] === "sharp" ? d["botStyle"] : base.botStyle,
     bots: base.bots, // decided by the kind of room, not by the client
+    ...(base.opener ? { opener: base.opener } : {}), // set by the server only
   };
 }
 
@@ -118,6 +121,8 @@ export class SeaBattleRoom extends LobbyRoom<SeaSettings> {
   private placeEnds = 0;
   /** The current shooter's last result this turn (bots pace themselves by it). */
   private lastShot: "miss" | "hit" | "sunk" | null = null;
+  /** Misses in a row per seat. */
+  private readonly missRun = [0, 0];
 
   constructor(options: SeaRoomOptions) {
     const timing = { ...DEFAULT_TIMING, ...options.timing };
@@ -174,7 +179,9 @@ export class SeaBattleRoom extends LobbyRoom<SeaSettings> {
 
   /** The platform filled the seats: deal out random fleets, start placing. */
   protected startGame(): void {
-    const game = (this.game = new SeaBattleGame({ board: this.settings.board, random: this.random }));
+    // A rematch: the last game's loser fires first.
+    const opener = this.settings.opener ? this.seats.findIndex((s) => s.name === this.settings.opener) : -1;
+    const game = (this.game = new SeaBattleGame({ board: this.settings.board, random: this.random, ...(opener >= 0 ? { first: opener } : {}) }));
     this.placeEnds = Date.now() + this.timing.placeMs;
     for (const seat of [0, 1]) {
       this.drafts[seat] = this.seats[seat]!.kind === "bot" ? botFleet(this.settings.board, BOT_LEVEL[this.settings.botStyle], this.random) : randomFleet(game.spec, this.random);
@@ -243,10 +250,15 @@ export class SeaBattleRoom extends LobbyRoom<SeaSettings> {
   /** Send what happened, then line up what comes next (a clock, a bot's move, or the end). */
   private after(events: readonly SeaEvent[]): void {
     this.animUntil = Date.now() + this.animMs(events);
-    for (const e of events) if (e.type === "shot") this.lastShot = e.result;
+    for (const e of events) if (e.type === "shot") { this.lastShot = e.result; this.missRun[e.by] = e.result === "miss" ? this.missRun[e.by]! + 1 : 0; }
     if (events.some((e) => e.type === "turn")) this.lastShot = null;
     this.clearClock();
     if (this.game?.phase !== "over") this.arm(); // first, so the update carries the new clock
+    if (this.game?.phase === "over" && this.game.winner !== null) {
+      // The loser opens the rematch (the platform copies these settings into it).
+      const loser = this.seats[1 - this.game.winner]?.name;
+      if (loser) this.settings = { ...this.settings, opener: loser };
+    }
     this.broadcast(events);
     if (this.game?.phase === "over") this.finish();
   }
@@ -274,6 +286,10 @@ export class SeaBattleRoom extends LobbyRoom<SeaSettings> {
       // A human rhythm: quick when finishing a ship, slower hunting blind, a breath after a sink.
       let [lo, hi] = this.lastShot === "hit" ? this.timing.botFollowMs : this.lastShot === "sunk" ? this.timing.botAfterSinkMs : this.timing.botMs;
       if (this.lastShot === "hit" && this.random() < 0.2) [lo, hi] = [hi, hi * 1.35]; // now and then it stops to think
+      // Early on (little known yet) it takes longer to pick a cell; after three misses in a row it hesitates.
+      const known = game.viewFor(seat).outgoing.filter((m) => m !== 0).length / game.spec.size ** 2;
+      if (!this.lastShot && known < 0.15) [lo, hi] = [lo * 1.6, hi * 1.5];
+      if (this.missRun[seat]! >= 3) [lo, hi] = [lo + this.timing.botMs[0] / 2, hi + this.timing.botMs[0] / 2];
       this.setClock(seat, wait + lo + this.random() * (hi - lo), () => this.botFire(seat), false);
       return;
     }

@@ -55,7 +55,7 @@ export type ShotResult = "miss" | "hit" | "sunk";
 
 export type SeaEvent =
   | { readonly type: "ready"; readonly seat: number }
-  | { readonly type: "start"; readonly first: number }
+  | { readonly type: "start"; readonly first: number; /** Set when the loser of the last game opens (a rematch). */ readonly loser?: boolean }
   | {
       readonly type: "shot";
       readonly by: number;
@@ -204,6 +204,8 @@ interface SeaSide {
 export interface GameOptions {
   readonly board: BoardKind;
   readonly random: RandomSource;
+  /** Who fires first (a rematch: the last game's loser); a coin flip when unset. */
+  readonly first?: number;
 }
 
 export class SeaBattleGame {
@@ -215,10 +217,12 @@ export class SeaBattleGame {
   forfeit = false;
   readonly sides: [SeaSide, SeaSide];
   private readonly random: RandomSource;
+  private readonly opener: number | undefined;
 
   constructor(opts: GameOptions) {
     this.spec = BOARDS[opts.board];
     this.random = opts.random;
+    this.opener = opts.first;
     const side = (): SeaSide => ({ fleet: null, ready: false, marks: new Array<Mark>(this.spec.size ** 2).fill(Mark.Unknown), hits: this.spec.fleet.map(() => 0), stats: { shots: 0, hits: 0, sunk: 0, streak: 0, bestStreak: 0 } });
     this.sides = [side(), side()];
   }
@@ -240,9 +244,9 @@ export class SeaBattleGame {
     const events: SeaEvent[] = [{ type: "ready", seat }];
     if (this.sides.every((s) => s.ready)) {
       this.phase = "firing";
-      this.first = this.random() < 0.5 ? 0 : 1;
+      this.first = this.opener ?? (this.random() < 0.5 ? 0 : 1);
       this.turn = this.first;
-      events.push({ type: "start", first: this.first });
+      events.push({ type: "start", first: this.first, ...(this.opener !== undefined ? { loser: true } : {}) });
     }
     return { ok: true, events };
   }

@@ -69,4 +69,51 @@ disabled on the rival's turn lose keyboard focus; every event announced
 assertively; animation budgets duplicated between client and server, the page
 copies the engine's geometry.
 
-Fixes built after round 2: see round 3.
+Fixes built after round 2: the stamp centred beside the ship and landing at the
+crack, whole-pixel tilted halves, the banner playing the game's own sink, the
+fleet kept through the coin flip, no blank swap frame, a visible shell with a
+trail; sounds rebalanced (the win loudest, shorter sinks); coordinates clear of
+the aiming ring, labelled overview, a Fire bar, seconds on the clock, a hunters'
+view while placing, both seas on the result; shared rules and timings tested
+against the engine and server, a real game to its last sink in the e2e;
+focusable cells, polite / assertive announcements, a one-tap firing setting.
+
+## Round 3
+
+| Category | A | B | Score |
+|---|---|---|---|
+| Game design | 8 | 8 | **8** |
+| Signature moment | 8 | 8 | **8** |
+| Animation | 8 | 8 | **8** |
+| Sound and haptics | 8 | 7 | **7** |
+| Visual design | 7 | 7 | **7** |
+| UX and clarity | 7 | 6 | **6** |
+| Platform consistency | 9 | 9 | **9** |
+| Bots | 8 | 8 | **8** |
+| Implementation | 8 | 8 | **8** |
+| Accessibility | 8 | 8 | **8** |
+
+What both saw: a regression from round 2, the placing screen scrolls sideways
+(the hunters' view button) and the placing call is clipped; the "fire again" lines
+are overwritten when the update settles; "You fired 1 shots"; the hit-stop flash
+reads grey; the final sink plays like any other; the ripple looks like a miss
+ring; a destroyer's sink shakes like a hit; the last hit before a sink is silent;
+the turn chime is as loud as a hit and the splash is bright; Hard beats a good
+player 77%; Medium's corner shots look broken; the e2e has no layout or copy
+assertions.
+
+Fixes built after round 3: the placing dock wraps (no sideways scroll at any
+width; the e2e now asserts it at 360/390/430, with the hunter view open too) and
+the call is never clipped; "fire again" lines stay up until the turn changes;
+plural copy everywhere; a white-hot star for the hit-stop while the fires hold
+still, a one-pixel jolt on a hit, a bigger pop on a streak; the final sink is its
+own moment (FLEET SUNK, slower halves, the board wobbles, every wreck lights up in
+turn); deeper whole-pixel dips for the halves, every sink shakes, SUNK placed on
+the first side clear of the hull and drawn above the smoke; the rival's crosshair
+walks from their last shot, quicker on a streak; a tossed, landing coin and "you
+lost last time: you fire first" for rematches (the loser opens); a dashed no-go
+halo around the picked ship, dots in the hunter view; sounds: the hit before a
+sink, the groan, bubbles under the rings, the incoming whistle, a quieter turn
+chime, no aim cue on the clock's shots; Hard eased (a good player wins ~26%),
+Medium's broken-looking corner shots removed; a keyboard-only, reduced-motion e2e
+game; a bot band test against a good-human stand-in.

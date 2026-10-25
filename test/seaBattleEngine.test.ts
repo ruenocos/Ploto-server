@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { BOARDS, Mark, SHIPS, SeaBattleGame, cellsOf, fleetProblem, randomFleet, type Fleet } from "../src/game/sea_battle/engine.js";
-import { chooseShot, type BotLevel } from "../src/game/sea_battle/bot.js";
+import { BOARDS, Mark, SHIPS, SeaBattleGame, cellsOf, fleetProblem, randomFleet, type Fleet, type SeaView } from "../src/game/sea_battle/engine.js";
+import { botFleet, chooseShot, type BotLevel } from "../src/game/sea_battle/bot.js";
 import { Rng } from "../src/game/matchmonsters/rng.js";
 
 const rand = (seed: number) => { const r = new Rng(seed); return () => r.next(); };
@@ -145,5 +145,55 @@ describe("sea battle simulation (bots)", () => {
     expect(hardWins / games).toBeLessThan(0.95); // Medium still wins some
     expect(avg(shotsBy.hard)).toBeLessThan(avg(shotsBy.medium));
     expect(avg(shotsBy.hard)).toBeLessThan(55); // a classic game takes ~45 shots a side for Hard
+  });
+});
+
+/**
+ * A "good human" stand-in: hunts on a checkerboard, follows a line of hits to its ends,
+ * otherwise tries the cells beside a hit. What a practised player does without counting.
+ */
+function goodHuman(v: SeaView, r: () => number): [number, number] {
+  const n = v.size, open = (x: number, y: number) => x >= 0 && y >= 0 && x < n && y < n && v.outgoing[y * n + x] === Mark.Unknown;
+  const sunk = new Set(v.rivalShips.flatMap((p) => cellsOf(p).map(([x, y]) => y * n + x)));
+  const hits = v.outgoing.flatMap((m, c) => (m === Mark.Hit && !sunk.has(c) ? [[c % n, Math.floor(c / n)] as [number, number]] : []));
+  const cand: [number, number][] = [];
+  if (hits.length >= 2) {
+    const across = hits.every((h) => h[1] === hits[0]![1]);
+    const along = hits.map((h) => (across ? h[0] : h[1]));
+    for (const q of [Math.min(...along) - 1, Math.max(...along) + 1]) { const [x, y] = across ? [q, hits[0]![1]] : [hits[0]![0], q]; if (open(x, y)) cand.push([x, y]); }
+  }
+  if (!cand.length) for (const [x, y] of hits) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (open(x + dx, y + dy)) cand.push([x + dx, y + dy]);
+  if (cand.length) return cand[Math.floor(r() * cand.length)]!;
+  const pool: [number, number][] = [];
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (open(x, y) && (x + y) % 2 === 0) pool.push([x, y]);
+  if (!pool.length) for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (open(x, y)) pool.push([x, y]);
+  return pool[Math.floor(r() * pool.length)]!;
+}
+
+describe("sea battle bot difficulty bands (against a good human stand-in)", () => {
+  const rate = (level: BotLevel, board: "classic" | "quick", N: number) => {
+    let humanWins = 0;
+    for (let i = 0; i < N; i++) {
+      const rng = new Rng(5000 + i), random = () => rng.next();
+      const human = i % 2; // seats alternate
+      const g = new SeaBattleGame({ board, random });
+      for (const s of [0, 1]) g.ready(s, s === human ? randomFleet(BOARDS[board], random) : botFleet(board, level, random));
+      while (g.phase === "firing") {
+        const s = g.turn!, v = g.viewFor(s);
+        const [x, y] = s === human ? goodHuman(v, random) : chooseShot(v, level, random);
+        g.fire(s, x, y);
+      }
+      if (g.winner === human) humanWins++;
+    }
+    return humanWins / N;
+  };
+  it("a good player beats Medium more often than not, and Hard beats a good player most of the time", () => {
+    for (const board of ["classic", "quick"] as const) {
+      const vsMedium = rate("medium", board, 600), vsHard = rate("hard", board, 600);
+      expect(vsMedium).toBeGreaterThan(0.5);
+      expect(vsMedium).toBeLessThan(0.75);
+      expect(vsHard).toBeGreaterThan(0.15);
+      expect(vsHard).toBeLessThan(0.4);
+    }
   });
 });

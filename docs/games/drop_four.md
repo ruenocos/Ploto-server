@@ -66,11 +66,14 @@ Other grid sizes, pop-out rules, more than one bomb, 3+ players.
 6. **Bot bands** (simulated against stand-ins built on the same search: a good
    player reads 4 moves ahead and rarely slips, a casual one reads 1 and misses
    one threat in five): bands.txt in each score round has the current numbers.
-   Medium misses one threat in five and some setups, and now and then bombs to
-   clear two of your discs; Hard reads up to 8 moves (40,000 positions, about
-   40 ms, the same on every machine), never leaves a move your bomb can win
-   from, and bombs to win, to save a lost position, or when a blast clearly
-   helps. The room adds 0.7–1.5 s of human think time.
+   Medium reads two moves, misses one threat in four and some setups, sees a
+   bomb win about a third of the time and now and then bombs to clear two of
+   your discs (a good player wins about 58%, a casual one about 34%); Hard reads
+   up to 7 moves (25,000 positions, about 21 ms, the same on every machine),
+   never leaves a move your bomb can win from, plays a near-best move one time
+   in eight, and bombs to win, to save a lost position, or when a blast clearly
+   helps (a good player wins about 17%). The room adds 0.7–1.5 s of human think
+   time.
 7. **No column confirm:** a tap drops (columns are 35–50 px wide on phones, the
    full height of the grid), as in every Drop Four game people know.
 8. **Profile tile:** Games, and Longest line.

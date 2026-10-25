@@ -153,3 +153,53 @@ line and Bomb, the line's direction in the subtitle; the How to play diagrams
 cut at cell edges; "Forfeit match"; the rival's disc falls without ticks, the
 land clack softer, a sine win (still the loudest) and a falling lose, a shorter
 haptic for a loss; a timeout is announced as one.
+
+## Round 4
+
+| Category | A | B | Round score |
+|---|---|---|---|
+| Game design | 8 | 8 | **8** |
+| Signature moment | 8 | 8 | **8** |
+| Animation | 8 | 8 | **8** |
+| Sound and haptics | 8 | 8 | **8** |
+| Visual design | 8 | 8 | **8** |
+| UX and clarity | 8 | 8 | **8** |
+| Platform consistency | 9 | 9 | **9** |
+| Bots | 8 | 8 | **8** |
+| Implementation | 9 | 9 | **9** |
+| Accessibility | 8 | 9 | **8** |
+
+Clutter (both): not cluttered, sparse; the strain is the empty band of about
+250 px between the call and the board (the eye crosses it every turn), and the
+bomb countdown shown twice.
+
+What both saw: the call sat far from the board; the result showed only the line
+on an empty grid; the win's peak was short (the loose discs gone in two frames,
+the call still saying "Your turn" during the light-up, the stamp tilted off the
+pixel grid by tada); the lose cue was a 50 Hz sine phones can't play, four
+sounds a move, the fuse longer than its moment; Medium-to-Hard was a cliff
+(casual players 46% then 9%) and a bomb's fall decided up to 44% of games;
+the How to play didn't mention the bomb's second tap on touch.
+
+Fixes built after round 4: the call sits right above the board (call, disc in
+hand and grid read as one group by the thumb); the result shows the whole game,
+the rest spent, the line lit; the call turns to Victory/Defeat as the winning
+disc lands, the loose discs fall over 720 ms column by column, each lit disc
+hops as the bar joins them, the stamp bounces (no tilt), the line's notes fall
+when you lose; a square lose cue around 200 Hz, ticks only on falls of five rows
+or more, a shorter fuse, the unused theirTurn cue gone; the bomb leaves a dashed
+mark where it cleared until the next drop; the call pulses only after a bomb or
+a timeout; the closed middle column also gets an ×; the rival's countdown chip
+is text only (the icon when it's live); the last-move pip fades out after 4 s;
+gold's groove ring is darker and coral's centre a solid ink pip; bots: Medium
+reads two moves and misses one threat in four (a good player wins 58%, a casual
+one 34%), sees a bomb win about a third of the time; Hard reads 7 moves on
+25,000 positions (about 21 ms), plays a near-best move one time in eight, and
+bombs to attack only when clearly better (a good player wins 17%, a casual one
+6%); stand-ins now miss bomb wins as people do (good 70%, casual 30%).
+
+Open (logged, not changed): a bomb's fall still ends 24–45% of games between a
+human stand-in and Medium, nearly always as a win for the bomber. The bomb is
+the game's comeback twist, and search-based stand-ins spot bomb wins far more
+often than people will; if play data shows it deciding too much, the first lever
+is BOMB_AFTER (4).

@@ -147,12 +147,13 @@ function bombResult(view: DropView, col: number, seat: number): { grid: Grid; wi
  * (`win`) or blocks one (`block`), how often it plays a safe move that isn't the best (`slip`), and
  * whether it weighs its bomb when losing (`bombSave`: the chance it does).
  */
-export interface Style { readonly depth: number; readonly budget: number; readonly win: number; readonly block: number; readonly slip: number; readonly bombSave: number; readonly bombSee?: number; readonly rivalBomb?: boolean; readonly bombAttack?: number }
+export interface Style { readonly depth: number; readonly budget: number; readonly win: number; readonly block: number; readonly slip: number; readonly bombSave: number; readonly bombSee?: number; readonly rivalBomb?: boolean; readonly bombAttack?: number; readonly nearSlip?: number }
 export const LEVELS: Record<BotLevel, Style> = {
   // Hard also never leaves a move the rival's bomb can win from.
-  hard: { depth: 8, budget: 40_000, win: 1, block: 1, slip: 0, bombSave: 1, bombSee: 1, rivalBomb: true, bombAttack: 1 },
+  // Hard now and then plays a near-best move instead of the best (nearSlip): a wall would be no fun.
+  hard: { depth: 7, budget: 25_000, win: 1, block: 1, slip: 0, bombSave: 1, bombSee: 1, rivalBomb: true, bombAttack: 1, nearSlip: 0.12 },
   // Medium sees a bomb win half the time (people miss them), blocks most threats, misses setups.
-  medium: { depth: 1, budget: 2_000, win: 1, block: 0.8, slip: 0.45, bombSave: 0.5, bombSee: 0.5, bombAttack: 0.3 },
+  medium: { depth: 2, budget: 2_000, win: 1, block: 0.75, slip: 0.4, bombSave: 0.5, bombSee: 0.35, bombAttack: 0.3 },
 };
 
 /**
@@ -176,7 +177,7 @@ function bombAttack(view: DropView, seat: number, st: Style, best: number, rando
     if (!pick || v > pick.v) pick = { col: c, v };
   }
   if (!pick) return null;
-  if (st.slip === 0) return pick.v > best + 20 ? pick.col : null; // Hard: only when it's clearly better
+  if (st.rivalBomb) return pick.v > best + 60 ? pick.col : null; // Hard: only when it's clearly better
   return random() < (st.bombAttack ?? 0) ? pick.col : null;
 }
 
@@ -228,6 +229,11 @@ export function chooseMove(view: DropView, level: BotLevel | Style, random: Rand
     if (ok.length) { const w = [0.6, 0.3, 0.1].slice(0, ok.length), t = random() * w.reduce((a, b) => a + b, 0); let acc = 0; for (let i = 0; i < ok.length; i++) { acc += w[i]!; if (t <= acc) return { col: ok[i]!.col, bomb: false }; } }
   }
   let top = scored.filter((s) => s.v === scored[0]!.v);
+  if (st.nearSlip && random() < st.nearSlip) {
+    // A near-best move: within a small margin of the best, never one that loses or misses a win.
+    const near = scored.filter((s) => s.v !== scored[0]!.v && s.v > -WIN && scored[0]!.v < WIN && scored[0]!.v - s.v <= 15);
+    if (near.length) top = [near[Math.floor(random() * near.length)]!];
+  }
   if (st.rivalBomb && view.bombs[1 - seat] && view.moves[1 - seat]! >= BOMB_AFTER) {
     // Don't hand the rival a bomb win: of the best moves (then the rest, best first), take one their bomb can't win from.
     const safe = (col: number) => {

@@ -78,8 +78,8 @@
         p.px(x + o, y + o, col);
       }
       if (!flash) {
-        if (seat === 0) for (const [x, y] of [[3, 2], [4, 2], [2, 3], [5, 3], [2, 4], [5, 4], [3, 5], [4, 5]]) p.px(x + o, y + o, spent ? P.spentMark : x + y >= 8 ? d.lo : P.goldLo); // gold: a groove ring
-        else { p.px(3 + o, 3 + o, spent ? P.spentMark : d.rim, 2, 2); p.px(3 + o, 3 + o, spent ? P.spentMark : lit ? P.cream : d.lo, 1, 1); } // coral: a centre pip
+        if (seat === 0) for (const [x, y] of [[3, 2], [4, 2], [2, 3], [5, 3], [2, 4], [5, 4], [3, 5], [4, 5]]) p.px(x + o, y + o, spent ? P.spentMark : d.rim); // gold: a dark groove ring
+        else p.px(3 + o, 3 + o, spent ? P.spentMark : lit ? P.cream : P.ink, 2, 2); // coral: a solid centre pip (shape tells them apart, not only colour)
       }
       return p.c;
     });
@@ -250,7 +250,7 @@
     }
     return p.c;
   }
-  /** A grid drawn whole: the back, the discs where they are, the frame over them. `lit`: the winning line (the bar joins it; the rest are gone, as they fell out of the frame in the game). */
+  /** A grid drawn whole: the back, the discs where they are, the frame over them. `lit`: the winning line (the bar joins it; the rest are drawn spent, a record of the game). */
   function gridCanvas(grid, lit = []) {
     const W = COLS * C + 2 * F, H = ROWS * C + 2 * F, p = pen(W, H);
     p.g.drawImage(backCanvas(), 0, 0);
@@ -259,8 +259,7 @@
       const v = grid[c]?.[r];
       if (!v) continue;
       const on = litSet.has(`${c},${r}`);
-      if (lit.length && !on) continue; // only the line stays
-      p.g.drawImage(discCanvas(v - 1, { lit: on }), F + c * C + 1, F + (ROWS - 1 - r) * C + 1);
+      p.g.drawImage(discCanvas(v - 1, { lit: on, spent: lit.length > 0 && !on }), F + c * C + 1, F + (ROWS - 1 - r) * C + 1); // the rest of the game, spent: the line stands out
     }
     p.g.drawImage(frameCanvas(), 0, 0);
     if (lit.length) p.g.drawImage(lineCanvas(lit), 0, 0);

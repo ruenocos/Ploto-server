@@ -41,11 +41,11 @@ function playOut(players: Who[], seed: number): EightsGame {
 }
 
 describe("Wild Eights rules", () => {
-  it("deals 7 each to two players, 5 to three or four; the first card up is never an 8, 2 or Jack", () => {
+  it("deals 7 each to two players, 6 to three or four; the first card up is never an 8, 2 or Jack", () => {
     for (let seed = 1; seed < 300; seed++) {
       for (const players of [2, 3, 4]) {
         const g = new EightsGame({ players, random: seeded(seed) });
-        expect(g.hands.every((h) => h.length === (players === 2 ? 7 : 5))).toBe(true);
+        expect(g.hands.every((h) => h.length === (players === 2 ? 7 : 6))).toBe(true);
         expect(["8", "2", "J"]).not.toContain(rankOf(g.top));
         expect(total(g)).toBe(52);
       }

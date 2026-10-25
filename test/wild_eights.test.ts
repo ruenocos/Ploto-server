@@ -72,7 +72,7 @@ describe("Wild Eights room", () => {
     const { room, peers } = await hostedTable(3);
     expect(room.phase).toBe("playing");
     const dealt = peers[0]!.notes.find((x) => x.data?.events?.[0]?.type === "deal");
-    expect(dealt?.data.events[0]).toMatchObject({ type: "deal", counts: [5, 5, 5] });
+    expect(dealt?.data.events[0]).toMatchObject({ type: "deal", counts: [6, 6, 6] });
     const notUp = peers.find((x) => x.id !== mover(room))!;
     expect(() => room.handleRequest(notUp.id, "wildeights:draw", {})).toThrow(/turn/);
     const g = room.game, p = g.turn;

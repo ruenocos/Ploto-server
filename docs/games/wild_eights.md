@@ -11,7 +11,7 @@ pile; the next player feels it.
 
 ## Rules in plain words
 
-1. Each player gets 7 cards (2 players) or 5 (3–4). One card starts the pile.
+1. Each player gets 7 cards (2 players) or 6 (3–4). One card starts the pile.
 2. On your turn, play a card that matches the top card's suit or number.
 3. **8s are wild:** play one on anything and name the next suit.
 4. **2s:** the next player draws two, unless they answer with a 2 of their own:
@@ -89,3 +89,8 @@ Reverse cards, multi-round scoring to a target, 5–6 players, house-rule toggle
 10. **A draw by choice marks nothing:** only a draw with nothing to play shows
     the table you're out of a suit (bots use it; so can people).
 11. **Profile tile:** Games, and Most eights in a game.
+
+12. **Six cards at 3–4 players** (was five; changed after round 6, your call,
+    25 October): turns where nothing fits drop from about 28–30% to 25–27%, and
+    a game runs about four turns longer (37–42 turns). To go back, revert the
+    commit "Wild Eights: six cards at 3-4 players".

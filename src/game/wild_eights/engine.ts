@@ -2,7 +2,7 @@
  * Wild Eights' rules: pure and deterministic (randomness is injected), no timers
  * or sockets. docs/games/wild_eights.md has the rules in plain words.
  *
- * A 52-card deck; 2 players get 7 cards each, 3–4 get 5. On your turn play a card
+ * A 52-card deck; 2 players get 7 cards each, 3–4 get 6. On your turn play a card
  * that matches the top of the pile by suit or rank. An 8 is wild: play it on
  * anything and name the next suit. A 2 makes the next player draw two, unless they
  * answer with a 2 of their own (the draws stack). A Jack skips the next player.
@@ -90,7 +90,7 @@ export class EightsGame {
     this.players = opts.players;
     this.random = opts.random;
     this.deck = this.shuffle(fullDeck());
-    const n = this.players === 2 ? 7 : 5;
+    const n = this.players === 2 ? 7 : 6; // six, not five, at 3–4: fewer turns where nothing fits
     this.hands = Array.from({ length: this.players }, () => this.deck.splice(0, n));
     // The first card up is never an 8 (nobody named a suit), a 2 or a Jack: it goes back in.
     let top = this.deck.shift()!;

@@ -92,13 +92,13 @@ adapter.checks = [
     assert(titles.some((t) => /victory/i.test(t)) && titles.some((t) => /2nd/i.test(t)), `one Victory, one 2nd place (${titles.join(", ")})`);
     await a.close2(); await b.close2();
   }],
-  ["practice with three bots: four seats, five cards each, the bots play round to you", async ({ B, home, assert, sleep }) => {
+  ["practice with three bots: four seats, six cards each, the bots play round to you", async ({ B, home, assert, sleep }) => {
     const p = await B.player({ name: "Bo" });
     await home(p);
     await p.click('[data-mode="practice"]'); await p.click('#practiceFields [data-key="seats"][data-val="4"]'); await p.click("#practiceBtn");
     await playing(p);
     await p.waitForFunction(() => document.querySelectorAll("#rivals .seat").length === 3, null, { timeout: 8000 });
-    await p.waitForFunction(() => document.querySelectorAll("#hand .card").length === 5, null, { timeout: 10000 });
+    await p.waitForFunction(() => document.querySelectorAll("#hand .card").length === 6, null, { timeout: 10000 });
     const t0 = Date.now();
     let moved = false;
     while (Date.now() - t0 < 30000 && !moved) { if (await moveIfMine(p)) moved = true; else await sleep(150); }

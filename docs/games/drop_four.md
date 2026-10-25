@@ -11,10 +11,10 @@ by disc and the other discs shake loose.
 ## Rules in plain words
 
 1. The grid has 7 columns and 6 rows. Tap a column to drop your disc: it falls
-   to the lowest free spot.
+   to the lowest free spot. The game's first disc can't go in the middle column.
 2. Four of your discs in a row (across, down or diagonal) wins.
-3. **Your bomb** (one per game, if the host leaves bombs on): drop it instead of
-   a disc. It lands, then blows up: it clears itself and the discs right next to
+3. **Your bomb** (one per game, if the host leaves bombs on, ready after your
+   third disc): drop it instead of a disc. It lands, then blows up: it clears itself and the discs right next to
    it on the left, the right and below. Discs above fall down to fill the gap.
    If the fall makes four in a row for the bomber, the bomber wins; if it makes
    four only for the other player, they win.
@@ -30,7 +30,8 @@ by disc and the other discs shake loose.
 - Host settings: **Bombs** (On / Off), **Turn timer** (On: 15 s a move / Off),
   **Bot difficulty** (Medium / Hard).
 - Practice setup: Bombs, Bot difficulty.
-- A clock that runs out drops in a random column for you.
+- A clock that runs out drops in the most central free column for you (a slow
+  move costs time, not a random blunder).
 
 ## Art (code-drawn pixel art)
 
@@ -63,10 +64,23 @@ Other grid sizes, pop-out rules, more than one bomb, 3+ players.
    player who needs it.
 5. **Medium is the default bot.**
 6. **Bot bands** (simulated against stand-ins built on the same search: a good
-   player reads 4 moves ahead and rarely slips, a casual one reads 1): a good
-   player beats Medium about 58% of the time, a casual player about 45%; Hard
-   beats a good player about 3 games in 4. Hard thinks in about 15 ms (a node
-   budget, so it's the same on every machine); the room adds human think time.
+   player reads 4 moves ahead and rarely slips, a casual one reads 1 and misses
+   one threat in five): bands.txt in each score round has the current numbers.
+   Medium reads two moves, misses one threat in four and some setups, sees a
+   bomb win about a third of the time and now and then bombs to clear two of
+   your discs (a good player wins about 58%, a casual one about 34%); Hard reads
+   up to 7 moves (25,000 positions, about 21 ms, the same on every machine),
+   never leaves a move your bomb can win from, plays a near-best move one time
+   in eight, and bombs to win, to save a lost position, or when a blast clearly
+   helps (a good player wins about 17%). The room adds 0.7–1.5 s of human think
+   time.
 7. **No column confirm:** a tap drops (columns are 35–50 px wide on phones, the
    full height of the grid), as in every Drop Four game people know.
 8. **Profile tile:** Games, and Longest line.
+9. **The bomb is ready after your third disc** (round 2): an early bomb clears
+   nothing worth clearing, and the wait turns it into a threat both players
+   can see coming ("Bomb in 2" on both sides).
+10. **The game's first disc can't go in the middle column** (round 3): in
+    simulation the first player won about three games in four (casual and
+    Medium players alike); closing the middle column to the opening brings it
+    to 55–59%. The loser still starts the rematch.

@@ -6,7 +6,9 @@
  * lowest free spot); four in a row wins. Each player may have one bomb: it lands
  * like a disc, then clears itself and the discs to its left, right and below;
  * discs above fall. After a bomb, the bomber wins with four in a row, otherwise
- * the other player does if they have four. A full grid is a draw.
+ * the other player does if they have four. A full grid is a draw. The game's
+ * first disc can't go in the middle column (it would win the first player three
+ * games in four).
  */
 
 /** A float source in [0, 1). Production uses Math.random, tests a seeded `Rng`. */
@@ -16,6 +18,10 @@ export const COLS = 7;
 /** Discs you drop before your bomb is ready (an early bomb clears nothing worth clearing). */
 export const BOMB_AFTER = 3;
 export const ROWS = 6;
+/** The middle column: closed to the game's first disc. */
+export const MIDDLE = 3;
+/** Whether column c is closed to the next disc (only the middle, only for the game's first disc). */
+export const closedToOpening = (moves: readonly [number, number] | readonly number[], c: number): boolean => c === MIDDLE && moves[0]! + moves[1]! === 0;
 /** 0 empty, 1 the first seat's disc, 2 the second's. Row 0 is the bottom. */
 export type Cell = 0 | 1 | 2;
 export type Grid = Cell[][]; // grid[col][row]
@@ -41,6 +47,8 @@ export interface DropView {
   readonly line: readonly (readonly [number, number])[] | null;
   readonly bombs: readonly [boolean, boolean];
   readonly bombsOn: boolean;
+  /** Discs a player drops before their bomb is ready. */
+  readonly bombAfter: number;
   readonly last: { readonly col: number; readonly row: number } | null;
   readonly moves: readonly [number, number];
 }
@@ -107,6 +115,7 @@ export class DropFourGame {
     if (!Number.isInteger(col) || col < 0 || col >= COLS) return { ok: false, reason: "that column isn't on the grid" };
     const row = height(this.grid, col);
     if (row >= ROWS) return { ok: false, reason: "that column is full" };
+    if (closedToOpening(this.moves, col)) return { ok: false, reason: "the first disc can't go in the middle column" };
     if (bomb && !this.bombs[seat]) return { ok: false, reason: "you've used your bomb" };
     if (bomb && this.moves[seat]! < BOMB_AFTER) return { ok: false, reason: "your bomb is ready after your third disc" };
     this.moves[seat]!++;
@@ -149,7 +158,7 @@ export class DropFourGame {
 
   /** The clock's move: the most central column that isn't full (a slow move costs time, not a random blunder). */
   clockColumn(): number {
-    const open = [3, 2, 4, 1, 5, 0, 6].filter((c) => height(this.grid, c) < ROWS);
+    const open = [3, 2, 4, 1, 5, 0, 6].filter((c) => height(this.grid, c) < ROWS && !closedToOpening(this.moves, c));
     return open[0]!;
   }
 
@@ -181,6 +190,7 @@ export class DropFourGame {
       line: this.line,
       bombs: [this.bombs[0], this.bombs[1]],
       bombsOn: this.bombsOn,
+      bombAfter: BOMB_AFTER,
       last: this.last,
       moves: [this.moves[0], this.moves[1]],
     };

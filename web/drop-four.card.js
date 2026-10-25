@@ -17,8 +17,8 @@
   const COLS = 7, ROWS = 6, F = 2; // the frame's border, in art pixels
 
   const P = {
-    ink: "#0a0c14", back: "#10142e", hole: "#181d31",
-    frame: "#213a86", frameHi: "#3a58b0", frameLo: "#162a63", frameDeep: "#101f4b", // a calm cobalt: the lattice doesn't flicker
+    ink: "#0a0c14", back: "#10142e", hole: "#1c2240",
+    frame: "#213a88", frameHi: "#3d5bb8", frameLo: "#162a63", frameDeep: "#101f4b", // a calm cobalt: the lattice doesn't flicker
     spent: "#2f375c", spentMark: "#4a5486",
     gold: "#ffcc33", goldHi: "#fff0a0", goldLo: "#d99a1a", goldRim: "#8a5a08",
     coral: "#ff6b6b", coralHi: "#ffb3a8", coralLo: "#c8424f", coralRim: "#7c1f2c",
@@ -78,8 +78,8 @@
         p.px(x + o, y + o, col);
       }
       if (!flash) {
-        if (seat === 0) for (const [x, y] of [[3, 2], [4, 2], [2, 3], [5, 3], [2, 4], [5, 4], [3, 5], [4, 5]]) p.px(x + o, y + o, spent ? P.spentMark : x + y >= 8 ? d.lo : P.goldLo); // gold: a groove ring
-        else { p.px(3 + o, 3 + o, spent ? P.spentMark : d.rim, 2, 2); p.px(3 + o, 3 + o, spent ? P.spentMark : lit ? P.cream : d.lo, 1, 1); } // coral: a centre pip
+        if (seat === 0) for (const [x, y] of [[3, 2], [4, 2], [2, 3], [5, 3], [2, 4], [5, 4], [3, 5], [4, 5]]) p.px(x + o, y + o, spent ? P.spentMark : d.rim); // gold: a dark groove ring
+        else p.px(3 + o, 3 + o, spent ? P.spentMark : lit ? P.cream : P.ink, 2, 2); // coral: a solid centre pip (shape tells them apart, not only colour)
       }
       return p.c;
     });
@@ -232,7 +232,8 @@
 
   /**
    * The bar that joins a winning line: 2 art px of cream with an ink edge, stepped from the first
-   * disc's centre to the last (no rotation), on a frame-sized canvas.
+   * disc's centre to the last (no rotation), on a frame-sized canvas. It runs over the frame between
+   * the discs and never over them: the lit discs stay whole.
    */
   function lineCanvas(line) {
     const W = COLS * C + 2 * F, H = ROWS * C + 2 * F, p = pen(W, H);
@@ -243,9 +244,13 @@
     for (let i = 0; i <= n; i++) dots.push([Math.round(a[0] + ((b[0] - a[0]) * i) / n), Math.round(a[1] + ((b[1] - a[1]) * i) / n)]);
     for (const [x, y] of dots) p.px(x - 2, y - 2, P.ink, 4, 4);
     for (const [x, y] of dots) p.px(x - 1, y - 1, P.cream, 2, 2);
+    for (const [c, r] of line) { // cut the discs back out
+      const ox = F + c * C + 1, oy = F + (ROWS - 1 - r) * C + 1;
+      for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (inRound(x, y)) p.g.clearRect(ox + x, oy + y, 1, 1);
+    }
     return p.c;
   }
-  /** A grid drawn whole: the back, the discs where they are, the frame over them. `lit`: the winning line (the rest are spent, the bar joins it). */
+  /** A grid drawn whole: the back, the discs where they are, the frame over them. `lit`: the winning line (the bar joins it; the rest are drawn spent, a record of the game). */
   function gridCanvas(grid, lit = []) {
     const W = COLS * C + 2 * F, H = ROWS * C + 2 * F, p = pen(W, H);
     p.g.drawImage(backCanvas(), 0, 0);
@@ -254,7 +259,7 @@
       const v = grid[c]?.[r];
       if (!v) continue;
       const on = litSet.has(`${c},${r}`);
-      p.g.drawImage(discCanvas(v - 1, { lit: on, spent: lit.length > 0 && !on }), F + c * C + 1, F + (ROWS - 1 - r) * C + 1); // only the line keeps its colour
+      p.g.drawImage(discCanvas(v - 1, { lit: on, spent: lit.length > 0 && !on }), F + c * C + 1, F + (ROWS - 1 - r) * C + 1); // the rest of the game, spent: the line stands out
     }
     p.g.drawImage(frameCanvas(), 0, 0);
     if (lit.length) p.g.drawImage(lineCanvas(lit), 0, 0);
@@ -273,11 +278,12 @@
       [[1, [1, 2, 1, 2]], [2, [2, 1]], [3, [1]]].forEach(([c, col]) => col.forEach((v, r) => { before[c][r] = v; }));
       // It clears C3 (itself), B3 (left) and C2 (below); B4 falls to B3.
       [[1, [1, 2, 2]], [2, [2]], [3, [1]]].forEach(([c, col]) => col.forEach((v, r) => { after[c][r] = v; }));
-      const crop = (cv) => { const q = pen(50, 46); q.g.drawImage(cv, 0, 18, 50, 46, 0, 0, 50, 46); return q; };
+      // Four columns by four rows, cut at cell edges (the frame's left and bottom border kept).
+      const crop = (cv) => { const q = pen(43, 42); q.g.drawImage(cv, 0, 22, 43, 42, 0, 0, 43, 42); q.px(42, 0, P.ink, 1, 42); return q; };
       const a = crop(gridCanvas(before));
-      a.g.drawImage(bombCanvas(1), F + 2 * C, F + 3 * C - 18); // the bomb, landing in C3
+      a.g.drawImage(bombCanvas(1), F + 2 * C, F + 3 * C - 22); // the bomb, landing in C3
       for (const [c, r] of [[2, 2], [1, 2], [2, 1]]) { // its reach, dashed
-        const x = F + c * C, y = F + (ROWS - 1 - r) * C - 18;
+        const x = F + c * C, y = F + (ROWS - 1 - r) * C - 22;
         for (let i = 0; i < 10; i += 2) { a.px(x + i, y, P.red); a.px(x + i, y + 9, P.red); a.px(x, y + i, P.red); a.px(x + 9, y + i, P.red); }
       }
       return [a.c.toDataURL(), crop(gridCanvas(after)).c.toDataURL()];
@@ -321,7 +327,7 @@
    * How long each moment takes on the page, in ms (web/drop-four.html plays them; the room's
    * animBudget in src/game/drop_four/room.ts covers them: test/drop_four.test.ts checks they agree).
    */
-  const ANIM = { coin: 1700, hover: 220, fallPerRow: 45, land: 160, fuse: 360, blast: 420, fallAfter: 300, lineStep: 120, lineHold: 700, turn: 160 };
+  const ANIM = { coin: 1700, hover: 220, fallPerRow: 45, land: 160, fuse: 360, blast: 420, fallAfter: 300, lineStep: 150, lineHold: 700, winHit: 160, turn: 160 };
 
   window.DROP_ART = { P, C, COLS, ROWS, F, DISC, ANIM, disc, discCanvas, bomb, bombCanvas, frame, frameCanvas, back, backCanvas, gridCanvas, lineCanvas, bombDemo, sheet: (name) => SHEETS[name](), card: cardCanvas, pen };
 

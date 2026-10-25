@@ -4,16 +4,18 @@
  * caps the work, so a move never takes long and is the same on every machine
  * (iterative deepening: the deepest search that finished within the budget wins).
  *
- *   hard    searches up to 8 moves ahead (40,000 positions at most: about 40 ms),
+ *   hard    searches up to 7 moves ahead (25,000 positions at most: about 21 ms),
  *           never misses a win or a block, never leaves a move the rival's bomb
- *           can win from, and weighs its own bomb: it bombs to win, or to break
- *           a position it would otherwise lose.
- *   medium  looks one move ahead: it always takes a four it can see and blocks
- *           most threats, but misses setups, and often plays one of its next
- *           few moves instead of the best (never one that hands you a win).
- *           It bombs to win, and sometimes to stop a loss.
+ *           can win from, plays a near-best move one time in eight (a wall is no
+ *           fun), and weighs its bomb: to win, to break a lost position, or when
+ *           a blast that clears two of your discs is clearly better.
+ *   medium  looks two moves ahead: it always takes a four it can see, misses one
+ *           threat in four and many setups, often plays one of its next few
+ *           moves instead of the best (never one that hands you a win), sees a
+ *           bomb win a quarter of the time and now and then bombs to clear two
+ *           of your discs.
  */
-import { COLS, DropFourGame, ROWS, type Cell, type DropView, type Grid, type RandomSource } from "./engine.js";
+import { BOMB_AFTER, COLS, DropFourGame, ROWS, closedToOpening, type Cell, type DropView, type Grid, type RandomSource } from "./engine.js";
 
 export type BotLevel = "medium" | "hard";
 export type BotMove = { col: number; bomb: boolean };
@@ -147,20 +149,46 @@ function bombResult(view: DropView, col: number, seat: number): { grid: Grid; wi
  * (`win`) or blocks one (`block`), how often it plays a safe move that isn't the best (`slip`), and
  * whether it weighs its bomb when losing (`bombSave`: the chance it does).
  */
-export interface Style { readonly depth: number; readonly budget: number; readonly win: number; readonly block: number; readonly slip: number; readonly bombSave: number; readonly bombSee?: number; readonly rivalBomb?: boolean }
+export interface Style { readonly depth: number; readonly budget: number; readonly win: number; readonly block: number; readonly slip: number; readonly bombSave: number; readonly bombSee?: number; readonly rivalBomb?: boolean; readonly bombAttack?: number; readonly nearSlip?: number }
 export const LEVELS: Record<BotLevel, Style> = {
   // Hard also never leaves a move the rival's bomb can win from.
-  hard: { depth: 8, budget: 40_000, win: 1, block: 1, slip: 0, bombSave: 1, bombSee: 1, rivalBomb: true },
+  // Hard now and then plays a near-best move instead of the best (nearSlip): a wall would be no fun.
+  hard: { depth: 7, budget: 25_000, win: 1, block: 1, slip: 0, bombSave: 1, bombSee: 1, rivalBomb: true, bombAttack: 1, nearSlip: 0.12 },
   // Medium sees a bomb win half the time (people miss them), blocks most threats, misses setups.
-  medium: { depth: 1, budget: 2_000, win: 1, block: 0.85, slip: 0.45, bombSave: 0.5, bombSee: 0.5 },
+  medium: { depth: 2, budget: 2_000, win: 1, block: 0.75, slip: 0.4, bombSave: 0.5, bombSee: 0.25, bombAttack: 0.15 },
 };
+
+/**
+ * An attacking bomb: a column whose blast clears two or more of the rival's discs and none of its own,
+ * if what's left is better for it than its best drop (`best`). Hard weighs it with a short search;
+ * Medium takes a good-looking one now and then (`bombAttack` is the chance). Returns the column or null.
+ */
+function bombAttack(view: DropView, seat: number, st: Style, best: number, random: RandomSource): number | null {
+  const me = seat + 1, them = 2 - seat;
+  const count = (g: Grid, v: number) => g.reduce((a, c) => a + c.filter((x) => x === v).length, 0);
+  const mine = count(view.grid as Grid, me), theirs = count(view.grid as Grid, them);
+  let pick: { col: number; v: number } | null = null;
+  for (const c of ORDER) {
+    const b = bombResult(view, c, seat);
+    if (!b || b.winner === 1 - seat) continue;
+    if (theirs - count(b.grid, them) < 2 || count(b.grid, me) < mine) continue;
+    let v: number;
+    const s = new Search(new Board(b.grid), st.budget / 8);
+    try { v = -s.negamax(them, Math.max(1, Math.min(st.depth, 6) - 1), -Infinity, Infinity); } catch { v = -new Board(b.grid).score(them); }
+    if (v <= -WIN) continue; // it would hand the rival a win
+    if (!pick || v > pick.v) pick = { col: c, v };
+  }
+  if (!pick) return null;
+  if (st.rivalBomb) return pick.v > best + 60 ? pick.col : null; // Hard: only when it's clearly better
+  return random() < (st.bombAttack ?? 0) ? pick.col : null;
+}
 
 export function chooseMove(view: DropView, level: BotLevel | Style, random: RandomSource): BotMove {
   const st = typeof level === "string" ? LEVELS[level] : level;
   const seat = view.you, me = (seat + 1) as Cell, them = (2 - seat) as Cell;
   const grid = view.grid as Grid;
   const depth = st.depth;
-  const scored = scoreColumns(grid, me, depth, st.budget).sort((a, b) => b.v - a.v);
+  const scored = scoreColumns(grid, me, depth, st.budget).filter((s) => !closedToOpening(view.moves, s.col)).sort((a, b) => b.v - a.v);
   const winNow = scored.find((s) => s.v >= WIN * 2);
   const board = new Board(grid);
   const threat = ORDER.find((c) => board.h[c]! < ROWS && board.wins(c, them));
@@ -185,7 +213,17 @@ export function chooseMove(view: DropView, level: BotLevel | Style, random: Rand
     }
   }
   if (winNow && random() < st.win) return { col: winNow.col, bomb: false };
-  if (threat !== undefined && random() < st.block) return { col: threat, bomb: false };
+  if (threat !== undefined) {
+    if (random() < st.block) return { col: threat, bomb: false };
+    // A threat it didn't see (people miss them): the move it likes best on the board as it stands, not the block.
+    const others = ORDER.filter((c) => c !== threat && board.h[c]! < ROWS);
+    if (others.length) {
+      const leaf = (c: number) => { board.play(c, me); const v = board.score(me); board.undo(c); return v; };
+      return { col: others.reduce((a, b) => (leaf(b) > leaf(a) ? b : a)), bomb: false };
+    }
+  }
+  const attack = threat === undefined && view.bombs[seat] && view.moves[seat]! >= BOMB_AFTER && st.bombAttack ? bombAttack(view, seat, st, scored[0]?.v ?? 0, random) : null;
+  if (attack !== null) return { col: attack, bomb: true };
   if (random() < st.slip) {
     // A safe move that isn't the best: one of the next few by its score (weighted to the better ones),
     // never one that hands the rival a win next turn. People miss setups; they don't throw.
@@ -193,7 +231,12 @@ export function chooseMove(view: DropView, level: BotLevel | Style, random: Rand
     if (ok.length) { const w = [0.6, 0.3, 0.1].slice(0, ok.length), t = random() * w.reduce((a, b) => a + b, 0); let acc = 0; for (let i = 0; i < ok.length; i++) { acc += w[i]!; if (t <= acc) return { col: ok[i]!.col, bomb: false }; } }
   }
   let top = scored.filter((s) => s.v === scored[0]!.v);
-  if (st.rivalBomb && view.bombs[1 - seat] && view.moves[1 - seat]! >= 2) {
+  if (st.nearSlip && random() < st.nearSlip) {
+    // A near-best move: within a small margin of the best, never one that loses or misses a win.
+    const near = scored.filter((s) => s.v !== scored[0]!.v && s.v > -WIN && scored[0]!.v < WIN && scored[0]!.v - s.v <= 15);
+    if (near.length) top = [near[Math.floor(random() * near.length)]!];
+  }
+  if (st.rivalBomb && view.bombs[1 - seat] && view.moves[1 - seat]! >= BOMB_AFTER) {
     // Don't hand the rival a bomb win: of the best moves (then the rest, best first), take one their bomb can't win from.
     const safe = (col: number) => {
       const after = view.grid.map((c) => [...c]) as Grid;

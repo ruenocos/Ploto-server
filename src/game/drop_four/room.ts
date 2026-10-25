@@ -64,7 +64,7 @@ export interface DropTiming {
 export const DEFAULT_TIMING: DropTiming = { turnMs: 15_000, awayMs: 30_000, botMs: [700, 1500], quickStartMs: 20_000, animScale: 1 };
 
 /** The page's timings (DROP_ART.ANIM in web/drop-four.card.js); test/drop_four.test.ts checks they agree. */
-export const ANIM = { coin: 1700, hover: 220, fallPerRow: 45, land: 160, fuse: 360, blast: 420, fallAfter: 300, lineStep: 120, lineHold: 700, turn: 160 } as const;
+export const ANIM = { coin: 1700, hover: 220, fallPerRow: 45, land: 160, fuse: 360, blast: 420, fallAfter: 300, lineStep: 150, lineHold: 700, winHit: 160, turn: 160 } as const;
 
 /** How long the page takes to play these events, in ms, with some room to spare. */
 export function animBudget(events: readonly DropEvent[]): number {
@@ -73,7 +73,7 @@ export function animBudget(events: readonly DropEvent[]): number {
     if (e.type === "start") ms += ANIM.coin + 300;
     else if (e.type === "drop") ms += ANIM.hover + ANIM.fallPerRow * (7 - e.row) + ANIM.land + (e.bomb ? ANIM.fuse : 0) + (e.ponder !== undefined ? 2 * ANIM.hover : 0) + 60;
     else if (e.type === "blast") ms += ANIM.blast + (e.falls.length ? ANIM.fallAfter : 0) + 100;
-    else if (e.type === "over") ms += e.line ? 120 + ANIM.lineStep * e.line.length + 480 + ANIM.lineHold + 900 : 1500; // the stillness, the line, the drop-out, the stamp
+    else if (e.type === "over") ms += e.line ? ANIM.winHit + ANIM.lineStep * e.line.length + 480 + ANIM.lineHold + 900 : 1500; // the hit-stop, the line, the drop-out, the stamp
     else if (e.type === "turn") ms += ANIM.turn + 40;
   }
   return ms;
@@ -89,7 +89,7 @@ export class DropFourRoom extends LobbyRoom<DropSettings> {
   game: DropFourGame | null = null;
   private readonly timing: DropTiming;
   private readonly random: RandomSource;
-  private clock: { seat: number; deadline: number; timer: ReturnType<typeof setTimeout> } | null = null;
+  private clock: { seat: number; deadline: number; startsAt: number; timer: ReturnType<typeof setTimeout> } | null = null;
   /** Clock and bots wait this long for the last events' animation. */
   private animUntil = 0;
 
@@ -222,7 +222,7 @@ export class DropFourRoom extends LobbyRoom<DropSettings> {
       return;
     }
     const ms = !this.connected(seat) ? this.timing.awayMs : this.settings.timer ? this.timing.turnMs : 0;
-    if (ms) this.setClock(seat, wait + ms, () => this.autoDrop(seat));
+    if (ms) this.setClock(seat, wait + ms, () => this.autoDrop(seat), true, wait);
   }
 
   /** Re-time the clock after someone connects or disconnects. */
@@ -279,7 +279,7 @@ export class DropFourRoom extends LobbyRoom<DropSettings> {
     return {
       ...this.lobbyView(seat),
       game: game ? game.viewFor(seat) : null,
-      clock: this.clock?.deadline ? { seat: this.clock.seat, deadline: this.clock.deadline } : null,
+      clock: this.clock?.deadline ? { seat: this.clock.seat, deadline: this.clock.deadline, startsAt: this.clock.startsAt } : null, // startsAt: when the page's animation is done and the turn really starts
       results: this.phase === "over" && game ? this.results() : null,
     };
   }
@@ -300,13 +300,13 @@ export class DropFourRoom extends LobbyRoom<DropSettings> {
   }
 
   /** `shown`: a clock players see (a bot's thinking isn't one; its deadline stays 0). */
-  private setClock(seat: number, ms: number, fn: () => void, shown = true): void {
+  private setClock(seat: number, ms: number, fn: () => void, shown = true, wait = 0): void {
     const timer = setTimeout(() => {
       this.clock = null;
       fn();
     }, ms);
     timer.unref?.();
-    this.clock = { seat, deadline: shown ? Date.now() + ms : 0, timer };
+    this.clock = { seat, deadline: shown ? Date.now() + ms : 0, startsAt: Date.now() + wait, timer };
   }
 
   private clearClock(): void {

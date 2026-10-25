@@ -72,7 +72,8 @@ adapter.checks = [
     assert(inside, "no disc should fly out above the grid at the end");
     await first.waitForSelector('[data-res="rematch"]', { timeout: 15000 });
     assert(/victory/i.test(await first.locator(".pl-res-head h2").innerText()), "four in a row: Victory");
-    assert(/defeat/i.test(await second.locator(".pl-res-head h2").innerText().catch(() => "")) || true, "the other side sees Defeat");
+    await second.waitForSelector(".pl-res-head h2", { timeout: 15000 });
+    assert(/defeat/i.test(await second.locator(".pl-res-head h2").innerText()), "the other side sees Defeat");
     await a.close2(); await b.close2();
   }],
   ["practice opens with the coin flip; the bomb waits for your third disc, shows its reach, and clears beside and below", async ({ B, home, assert, sleep }) => {
@@ -92,10 +93,12 @@ adapter.checks = [
     let firstMine = null; const t0 = Date.now();
     while (!firstMine && Date.now() - t0 < 15000) { if (await myTurn(a)) firstMine = a; else if (await myTurn(b)) firstMine = b; else await sleep(80); }
     const annFirst = firstMine === a;
+    assert(/ready in 3 discs/i.test(await a.locator("#rivalBox").getAttribute("aria-label")), "at the start the rival's bomb counts down from 3");
     const plan = annFirst ? [[a, 0], [b, 6], [a, 1], [b, 5], [a, 0], [b, 6]] : [[b, 6], [a, 0], [b, 5], [a, 1], [b, 6], [a, 0]];
-    for (const [pg, col] of plan.slice(0, annFirst ? 6 : 5)) assert(await dropWhenMine(pg, col), `couldn't drop in ${col}`);
+    for (const [pg, col] of plan) assert(await dropWhenMine(pg, col), `couldn't drop in ${col}`);
     if (!annFirst) assert(await dropWhenMine(b, 4), "Ben's last disc");
     const t1 = Date.now(); while (!(await myTurn(a)) && Date.now() - t1 < 15000) await sleep(80);
+    assert(/bomb ready/i.test(await a.locator("#rivalBox").getAttribute("aria-label")), "Ben's bomb reads ready after his third disc");
     assert(!(await a.isDisabled("#bombBtn")), "after three discs the bomb is ready");
     const before = await discs(a);
     await a.click("#bombBtn");
@@ -103,9 +106,10 @@ adapter.checks = [
     await a.hover('#cols button[data-col="5"]');
     assert((await a.locator("#fx .reach").count()) >= 2, "an armed bomb shows what it would clear");
     await a.locator('#cols button[data-col="5"]').click();
-    await a.waitForSelector("#meBox .bombchip", { timeout: 8000 });
+    await a.waitForFunction(() => /used/i.test(document.getElementById("bombBtn").textContent), null, { timeout: 8000 });
     await sleep(1500);
     assert((await discs(a)) < before, `the bomb cleared discs (before ${before}, after ${await discs(a)})`);
+    assert((await a.locator("#fx .scorch").count()) >= 1, "the bomb leaves a mark where it cleared");
     await a.close2(); await b.close2();
   }],
   ["no screen scrolls sideways at 360, 390 or 430 wide; the board fits above the dock", async ({ B, home, assert }) => {
@@ -133,7 +137,7 @@ adapter.checks = [
         // Walk with the arrows to an open column (the labels say which are full).
         const { cur, target } = await p.evaluate((m) => {
           const cols = [...document.querySelectorAll("#cols button")];
-          const open = cols.map((b, i) => (/full/.test(b.getAttribute("aria-label")) ? -1 : i)).filter((i) => i >= 0);
+          const open = cols.map((b, i) => (/full|closed/.test(b.getAttribute("aria-label")) ? -1 : i)).filter((i) => i >= 0);
           return { cur: cols.findIndex((b) => b.tabIndex === 0), target: open[m % open.length] };
         }, moves);
         for (let i = 0; i < Math.abs(target - cur); i++) await p.keyboard.press(target > cur ? "ArrowRight" : "ArrowLeft");

@@ -226,7 +226,7 @@
         "Four of yours in a row wins: across, down or on a slant.",
         "Your bomb: one a game, if bombs are on, ready after your third disc. It clears itself and the discs beside and under it. Discs above fall.",
         "To drop it, tap Bomb, then a column: it shows what it would clear. Tap the column again to drop it.",
-        "If the fall makes four for the bomber, the bomber wins. If it makes four only for the other player, they win.",
+        "A bomb can't win for the bomber: four made by its fall don't count. If the fall makes four for the other player, they win.",
         "A full grid with no four is a draw. In a rematch, the loser goes first.",
       ],
       extra: `<p class="pl-label">The bomb</p><div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">${A.bombDemo().map((u, i) => `<figure style="margin:0;display:grid;gap:4px;justify-items:center"><img src="${u}" alt="${i ? "After: the discs above fall down" : "The bomb lands on C3: it clears C3, B3 beside it and C2 under it"}" width="129" height="126" style="image-rendering:pixelated"><figcaption class="hint">${i ? "Then the discs above fall" : "It clears beside and below"}</figcaption></figure>`).join("")}</div><p class="pl-label">Good to know</p><p class="hint">With the turn timer on you get 15 s a move; when it runs out a disc drops in the most central free column for you. With a mouse, pointing at a column shows the bomb's reach and one click drops it. On a keyboard: arrows pick a column, Enter drops, B arms your bomb, I reads the grid.</p>`,
@@ -992,12 +992,18 @@
       // Where it cleared: a dashed mark on each cleared slot (that's still empty), until the next drop.
       g.lastBlast = e.cleared.filter(([c, r]) => !g.grid[c][r]);
       drawScorch();
+      if (e.dud) {
+        // A four the fall made for the bomber: it blinks, and the call says why it doesn't win.
+        if (!RM()) for (const [c, r] of e.dud) layer.querySelector(`.d[data-c="${c}"][data-r="${r}"]`)?.animate([{ opacity: 1 }, { opacity: 0.35 }, { opacity: 1 }], { duration: 300, iterations: 2, easing: "steps(2)" });
+        S.dudNote = e.by === you() ? "Four from your bomb's fall don't count" : "Four from their bomb's fall don't count";
+        sayNow(S.dudNote);
+      }
       await hold(700);
     },
     async turn(e) {
       const g = G();
       g.turn = e.seat;
-      S.callNote = "";
+      S.callNote = S.dudNote || ""; S.dudNote = null;
       renderGame();
       if (e.seat === you()) {
         S.handIn = true; drawLane(); if (S.pulseNext) pose($("call"), "call"); cue("yourTurn");

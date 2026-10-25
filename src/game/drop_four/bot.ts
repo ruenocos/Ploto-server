@@ -7,10 +7,11 @@
  *   hard    searches up to 7 moves ahead (25,000 positions at most: about 21 ms),
  *           never misses a win or a block, never leaves a move the rival's bomb
  *           can win from, plays a near-best move one time in eight (a wall is no
- *           fun), and weighs its bomb: to win, to break a lost position, or when
- *           a blast that clears two of your discs is clearly better.
- *   medium  looks two moves ahead: it always takes a four it can see, misses one
- *           threat in four and many setups, often plays one of its next few
+ *           fun), and weighs its bomb: to break a lost position, or when a
+ *           blast that clears two of your discs is clearly better (a bomb
+ *           can't win for the bomber).
+ *   medium  looks three moves ahead: it always takes a four it can see, misses
+ *           one threat in five and many setups, often plays one of its next few
  *           moves instead of the best (never one that hands you a win), sees a
  *           bomb win a quarter of the time and now and then bombs to clear two
  *           of your discs.
@@ -154,8 +155,8 @@ export const LEVELS: Record<BotLevel, Style> = {
   // Hard also never leaves a move the rival's bomb can win from.
   // Hard now and then plays a near-best move instead of the best (nearSlip): a wall would be no fun.
   hard: { depth: 7, budget: 25_000, win: 1, block: 1, slip: 0, bombSave: 1, bombSee: 1, rivalBomb: true, bombAttack: 1, nearSlip: 0.12 },
-  // Medium sees a bomb win half the time (people miss them), blocks most threats, misses setups.
-  medium: { depth: 2, budget: 2_000, win: 1, block: 0.75, slip: 0.4, bombSave: 0.5, bombSee: 0.25, bombAttack: 0.15 },
+  // Medium reads three moves (it lost its bomb wins when the bomb stopped winning for the bomber), blocks most threats, misses setups.
+  medium: { depth: 3, budget: 3_000, win: 1, block: 0.8, slip: 0.4, bombSave: 0.5, bombSee: 0.5, bombAttack: 0.15 },
 };
 
 /**

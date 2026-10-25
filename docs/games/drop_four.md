@@ -16,8 +16,8 @@ by disc and the other discs shake loose.
 3. **Your bomb** (one per game, if the host leaves bombs on, ready after your
    third disc): drop it instead of a disc. It lands, then blows up: it clears itself and the discs right next to
    it on the left, the right and below. Discs above fall down to fill the gap.
-   If the fall makes four in a row for the bomber, the bomber wins; if it makes
-   four only for the other player, they win.
+   A bomb can't win for the bomber: four in a row made by its fall don't count
+   (they stay on the grid). If the fall makes four for the other player, they win.
 4. A full grid with no four in a row is a draw.
 5. A coin flip picks who drops first; in a rematch the loser starts (after a
    draw, whoever went second).
@@ -56,8 +56,11 @@ Other grid sizes, pop-out rules, more than one bomb, 3+ players.
 
 1. **One bomb per player per game**, on by default: the twist that makes a
    losing position worth playing on.
-2. **Bomb outcome rule**: after the fall, the bomber wins if they have four;
-   otherwise the other player wins if they have four.
+2. **Bomb outcome rule** (changed after round 6, your call, 25 October): a four
+   the fall makes for the bomber doesn't count; a four it makes for the other
+   player wins for them. Before, the bomber won with four after the fall, and
+   the bomb ended 24–48% of games against Medium. To go back, revert the commit
+   "Drop Four: a bomb can't win for the bomber".
 3. **15 s a move** with the timer on (a move is one tap).
 4. **The loser starts the rematch** (after a draw, whoever went second), as in
    Sea Battle: the first move is worth a lot in this game, so it goes to the
@@ -66,13 +69,13 @@ Other grid sizes, pop-out rules, more than one bomb, 3+ players.
 6. **Bot bands** (simulated against stand-ins built on the same search: a good
    player reads 4 moves ahead and rarely slips, a casual one reads 1 and misses
    one threat in five): bands.txt in each score round has the current numbers.
-   Medium reads two moves, misses one threat in four and some setups, sees a
-   bomb win about a third of the time and now and then bombs to clear two of
-   your discs (a good player wins about 58%, a casual one about 34%); Hard reads
-   up to 7 moves (25,000 positions, about 21 ms, the same on every machine),
-   never leaves a move your bomb can win from, plays a near-best move one time
-   in eight, and bombs to win, to save a lost position, or when a blast clearly
-   helps (a good player wins about 17%). The room adds 0.7–1.5 s of human think
+   Medium reads three moves, misses one threat in five and some setups, and
+   now and then bombs to clear two of your discs (a good player wins about 64%,
+   a casual one about 34%); Hard reads up to 7 moves (25,000 positions, about
+   21 ms, the same on every machine), plays a near-best move one time in eight,
+   and bombs to save a lost position or when a blast clearly helps (a good
+   player wins about 14%, a casual one about 2%). Since the bomb stopped winning
+   for the bomber (decision 2) its fall decides almost no games. The room adds 0.7–1.5 s of human think
    time.
 7. **No column confirm:** a tap drops (columns are 35–50 px wide on phones, the
    full height of the grid), as in every Drop Four game people know.

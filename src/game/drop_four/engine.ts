@@ -5,8 +5,9 @@
  * A 7×6 grid; players take turns dropping a disc into a column (it falls to the
  * lowest free spot); four in a row wins. Each player may have one bomb: it lands
  * like a disc, then clears itself and the discs to its left, right and below;
- * discs above fall. After a bomb, the bomber wins with four in a row, otherwise
- * the other player does if they have four. A full grid is a draw. The game's
+ * discs above fall. A bomb never wins for the bomber: a four its fall makes for
+ * them doesn't count (the bomb breaks threats, it doesn't finish games); a four
+ * it makes for the other player wins for them. A full grid is a draw. The game's
  * first disc can't go in the middle column (it would win the first player three
  * games in four).
  */
@@ -29,7 +30,7 @@ export type Grid = Cell[][]; // grid[col][row]
 export type DropEvent =
   | { readonly type: "start"; readonly first: number; readonly rematch?: boolean } // sent by the room when play begins
   | { readonly type: "drop"; readonly by: number; readonly col: number; readonly row: number; readonly bomb?: boolean; readonly auto?: boolean; readonly ponder?: number } // ponder: a column a bot weighed first (the page shows its hand go there)
-  | { readonly type: "blast"; readonly by: number; readonly col: number; readonly row: number; readonly cleared: readonly (readonly [number, number])[]; readonly falls: readonly { readonly col: number; readonly from: number; readonly to: number }[] }
+  | { readonly type: "blast"; readonly by: number; readonly col: number; readonly row: number; readonly cleared: readonly (readonly [number, number])[]; readonly falls: readonly { readonly col: number; readonly from: number; readonly to: number }[]; readonly dud?: readonly (readonly [number, number])[] } // dud: a four the fall made for the bomber, which doesn't count
   | { readonly type: "turn"; readonly seat: number }
   | { readonly type: "over"; readonly winner: number | null; readonly line?: readonly (readonly [number, number])[]; readonly forfeit?: boolean };
 
@@ -150,8 +151,8 @@ export class DropFourGame {
     const events: DropEvent[] = [{ type: "drop", by: seat, col, row, bomb: true, ...(auto ? { auto } : {}) }, { type: "blast", by: seat, col, row, cleared, falls }];
     if (!this.grid[col]![row]) this.last = null; // the bomb's slot is empty now: no disc to mark
     const mine = findLine(this.grid, me), theirs = findLine(this.grid, them);
-    if (mine) return { ok: true, events: [...events, this.end(seat, mine)] };
     if (theirs) return { ok: true, events: [...events, this.end(1 - seat, theirs)] };
+    if (mine) events[1] = { ...(events[1] as Extract<DropEvent, { type: "blast" }>), dud: mine }; // the bomber's four stands, but doesn't win
     this.turn = 1 - seat;
     return { ok: true, events: [...events, { type: "turn", seat: this.turn }] };
   }

@@ -66,7 +66,7 @@ describe("drop four rules", () => {
     expect(h.drop(0, 0, true).ok).toBe(true); // seat 0 still has its own
     expect(h.drop(1, 0, true)).toMatchObject({ ok: false, reason: "you've used your bomb" });
   });
-  it("a fall that makes four wins it: for the bomber, or else for the rival", () => {
+  it("a fall that makes four wins only for the rival: the bomber's own four stands but doesn't count", () => {
     // Rival's line: seat 1 bombs E2, clearing D2; seat 0's disc on D3 falls into A2–D2.
     const a = game();
     a.grid = empty();
@@ -85,9 +85,10 @@ describe("drop four rules", () => {
     b.grid[3]![0] = 1; b.grid[3]![1] = 1; b.grid[3]![2] = 2;
     b.grid[4]![0] = 1;
     b.turn = 1; b.moves = [3, 3];
-    expect(b.drop(1, 4, true).ok).toBe(true);
-    expect(b).toMatchObject({ phase: "over", winner: 1 });
-    expect(b.line).toHaveLength(4);
+    const r = b.drop(1, 4, true);
+    expect(r.ok).toBe(true);
+    expect(b).toMatchObject({ phase: "playing", winner: null, turn: 0 });
+    expect(r.ok && r.events.find((e) => e.type === "blast")).toMatchObject({ dud: expect.arrayContaining([[0, 1], [3, 1]]) });
   });
   it("the bomb is ready only after your third disc; after a blast the last-move mark goes", () => {
     const g = game();

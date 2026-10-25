@@ -123,7 +123,7 @@
 /* your hand: overlapped like a held fan; the cards you can play stand up */
 .hand { position: relative; height: calc(var(--bh, 68px) + 12px); margin: 0 2px; }
 .hand.two { height: calc(var(--bh, 68px) + 58px); } /* a big hand in two rows: every card keeps a 44 px slice to tap */
-.table { flex: 0 1 auto; height: clamp(240px, 46vh, 380px); }
+.table { flex: 1 1 auto; max-height: none; } /* the table takes the height that's left; the deck and pile scale with it (layout) */
 .hand .card { position: absolute; bottom: 0; padding: 0; cursor: default; transition: translate 0.12s steps(2), left 0.16s steps(3); touch-action: manipulation; }
 .hand .card.can { translate: 0 -10px; cursor: pointer; box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-accent-hi), inset 0 calc(var(--px) * -3) 0 var(--card-lo); } /* gold has one job (the eight); what you can play is the accent (inset: the card's clipped corners would cut an outline) */
 .hand .card.can.new { translate: 0 -16px; } /* the card you just drew stands highest */
@@ -605,7 +605,8 @@
   function layout() {
     const w = Math.min(window.innerWidth, 600) - 20;
     const bw = Math.max(56, Math.min(92, Math.floor(w / 4.2))), bh = Math.round(bw * 1.4); // your cards: big enough to read at a glance
-    const hw = Math.max(72, Math.min(112, Math.round(bw * 1.35))), hh = Math.round(hw * 1.4);
+    const tableH = window.innerHeight - 56 - 64 - (bh + 12) - 48 - 48; // what's left after the HUD, the call, the hand and the dock
+    const hw = Math.max(72, Math.min(132, Math.round(Math.min(bw * 1.6, (tableH * 0.5) / 1.4)))), hh = Math.round(hw * 1.4);
     const root = $("scrGame").style;
     root.setProperty("--bw", `${bw}px`); root.setProperty("--bh", `${bh}px`);
     root.setProperty("--hw", `${hw}px`); root.setProperty("--hh", `${hh}px`);

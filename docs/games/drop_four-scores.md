@@ -254,3 +254,54 @@ less; the chip keeps its icon (dimmed while counting down).
 Tried and kept as is: making the bomb ready after the 4th or 5th disc changed
 nothing in how often a bomb's fall ends a game (48% in simulation either way),
 so the bomb stays ready after the third.
+
+## Round 6 (the last)
+
+| Category | A | B | Round score |
+|---|---|---|---|
+| Game design | 8 | 7 | **7** |
+| Signature moment | 8 | 8 | **8** |
+| Animation | 8 | 8 | **8** |
+| Sound and haptics | 8 | 8 | **8** |
+| Visual design | 8 | 8 | **8** |
+| UX and clarity | 7 | 7 | **7** |
+| Platform consistency | 9 | 9 | **9** |
+| Bots | 8 | 8 | **8** |
+| Implementation | 8 | 8 | **8** |
+| Accessibility | 8 | 8 | **8** |
+
+Clutter (both): not cluttered; unbalanced (an empty band above the call group, the
+cobalt board the one bright mass, the countdown shown at both ends, two markers in
+the lane at once).
+
+Fixed after round 6 (bugs the reviewers found; not re-scored): the armed bomb's
+words now follow the pointer and the arrow keys (they showed the last column's
+reach); the call text has its own full-width row, so it's never clipped at 360
+with the timer on; the result's Discs tile no longer counts the bomb; the line
+lights straight to its lit look (no cream flash: nothing blinks faster than
+three times a second).
+
+## Where it stands
+
+Six rounds, stopped at the limit. Lowest per category after round 6: game design
+7, UX 7, everything else 8, platform consistency 9. From round 1 to round 6 the
+lowest scores rose from 6–7 to 7–9; the strict reviewer swings about a point
+round to round.
+
+What's still under 9, and why:
+
+- **Game design (7): the bomb decides too many games.** In simulation a bomb's
+  fall ends 24–48% of games against Medium, nearly always as a win for the
+  bomber. Moving its readiness to the 4th or 5th disc changed nothing; the
+  levers left are rule changes the reviewers proposed: the blast clears left and
+  right only, or a four made by the bomb's own fall doesn't win for the bomber
+  (the bomb then breaks threats instead of finishing games). Both change the
+  game's twist, so they're left for you to choose.
+- **UX (7):** the empty band above the call group on tall phones; a single
+  marker in the lane (the last-move chevron and the disc in hand share it); the
+  bot's think time shows nothing (a hand that "thinks" over columns was
+  proposed); the countdown shown at both ends of the screen.
+- **The rest (8):** a bigger build-up for the winning disc, a bomb landing sound
+  of its own, the board's frame a step darker, player names in Pixelify in
+  their own case (STYLE), browser tests for a mid-game reload and a timeout at
+  360, and a gentler step from Medium to Hard for casual players (36% to 6%).

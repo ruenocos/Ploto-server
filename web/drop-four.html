@@ -41,7 +41,10 @@
 .call.mine { box-shadow: inset 0 0 0 var(--px) var(--c-accent); } /* STYLE's Active frame, the outline only: the board stays the one saturated mass */
 .call .disc { flex: none; image-rendering: pixelated; }
 .call b { font: 700 var(--fl-1)/1.1 var(--f-label); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; }
-.call span { flex: 1; min-width: 0; font: 400 var(--fs-s)/1.25 var(--f-text); color: var(--c-text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.call { flex-wrap: wrap; row-gap: 4px; }
+.call span { order: 5; flex: 1 0 100%; min-width: 0; font: 400 var(--fs-s)/1.25 var(--f-text); color: var(--c-text); } /* its own row, full width: never clipped */
+.call span:empty { display: none; }
+.call b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .clock-s { flex: none; min-width: 28px; text-align: right; font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-text); } /* not gold: gold is a player */
 .clock-s.low { color: var(--c-bad-hi); }
 .clock { flex: none; width: 56px; height: calc(var(--px) * 4); background: var(--c-well); box-shadow: 0 0 0 var(--px) var(--c-ink); }
@@ -351,7 +354,7 @@
         if (line) {
           for (const [c, r] of line) {
             const e = g.discs.querySelector(`[data-c="${c}"][data-r="${r}"]`);
-            if (e) { e.style.backgroundImage = `url(${A.disc(seat, { flash: true })})`; later2(() => { e.style.backgroundImage = `url(${A.disc(seat, { lit: true })})`; }, 110); }
+            if (e) e.style.backgroundImage = `url(${A.disc(seat, { lit: true })})`; // no cream flash: nothing blinks faster than 3 a second
             await sleep(RM() ? 0 : T.lineStep);
           }
           g.phase = "lit";
@@ -762,7 +765,7 @@
   $("cols").addEventListener("pointermove", (ev) => {
     if (ev.pointerType !== "mouse" || !isMine()) return;
     const b = ev.target.closest?.("button[data-col]");
-    if (b && Number(b.dataset.col) !== S.cursor) { S.cursor = Number(b.dataset.col); drawGrid(); }
+    if (b && Number(b.dataset.col) !== S.cursor) { S.cursor = Number(b.dataset.col); drawGrid(); if (S.bomb) renderCall(); } // the armed bomb's words follow the pointer
   });
   $("cols").addEventListener("click", (ev) => {
     const b = ev.target.closest?.("button[data-col]");
@@ -1021,9 +1024,8 @@
         for (const [c, r] of e.line) {
           const d = layer.querySelector(`.d[data-c="${c}"][data-r="${r}"]`);
           if (d) {
-            d.style.backgroundImage = `url(${A.disc(e.winner, { flash: true })})`;
+            d.style.backgroundImage = `url(${A.disc(e.winner, { lit: true })})`; // straight to lit (no cream flash: nothing blinks faster than 3 a second)
             d.animate([{ transform: "scale(1.25)" }, { transform: "scale(1.1)", offset: 0.4 }, { transform: "scale(1.1)", offset: 0.8 }, { transform: "scale(1)" }], { duration: 160, easing: "steps(4)" });
-            later(() => { d.style.backgroundImage = `url(${A.disc(e.winner, { lit: true })})`; }, 110);
           }
           cue("line", won ? { pitch: 1 + 0.12 * i++ } : { pitch: 1.1 - 0.08 * i++, vol: 0.7 }); // rising for you, falling for them
           await sleep(T.lineStep * speed());
@@ -1072,6 +1074,7 @@
       if (!S.keyUses++ && !P.local.get("drop_four.keysSeen")) { P.local.set("drop_four.keysSeen", true); toast(`← → column · Enter drop${g.bombsOn ? " · B bomb" : ""} · I grid`, 3000); }
       S.cursor = Math.max(0, Math.min(NCOL - 1, S.cursor + (e.key === "ArrowLeft" ? -1 : 1)));
       drawGrid();
+      if (S.bomb) renderCall(); // and the keys
       $("cols").children[S.cursor]?.focus({ preventScroll: true });
       return;
     }
@@ -1114,7 +1117,7 @@
       sub: g.forfeit ? (won ? `${rivalName()} forfeited` : "You forfeited") : g.draw ? "The grid filled up with no four" : `${won ? "Four in a row" : `${rivalName()} made four in a row`}${g.line ? `, ${lineKind(g.line).toLowerCase()}` : ""}`,
       win: won,
       tiles: [
-        { label: "Discs", value: g.moves[me] },
+        { label: "Discs", value: g.moves[me] - (g.bombsOn && !g.bombs[me] ? 1 : 0) }, // the bomb isn't a disc
         { label: "Longest line", value: longestRun(g.grid, me + 1) },
         ...(g.bombsOn ? [{ label: "Bomb", value: g.bombs[me] ? 0 : 1, format: (n) => (n ? "Used" : "Kept") }] : []),
       ],

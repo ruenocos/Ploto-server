@@ -9,10 +9,9 @@
  *           counts the ways that pass through it, so it finishes ships fast.
  *           It knows the corners around a hit are water (ships can't touch),
  *           and hides its own fleet where ships are least likely to be.
- *   medium  hunts a quarter of the time like Hard and otherwise on a checkerboard,
- *           follows up a hit around it (and along the line once it has two),
- *           with human slips: now and then a shot just off the line, or a
- *           hunting shot before finishing a ship, so it can be beaten.
+ *   medium  finishes ships like a person (around a hit, then along the line)
+ *           but hunts loosely, anywhere on the sea. It never makes a shot that
+ *           looks broken; it's beatable because it finds ships late.
  */
 import { BOARDS, Mark, SHIPS, randomFleet, type BoardSpec, type Fleet, type RandomSource, type SeaView, cellsOf } from "./engine.js";
 
@@ -139,12 +138,11 @@ function mediumShot(view: SeaView, random: RandomSource): [number, number] {
   const n = view.size;
   const open = (x: number, y: number) => x >= 0 && y >= 0 && x < n && y < n && view.outgoing[y * n + x] === Mark.Unknown;
   const hits = openHits(view);
-  if (!hits.length && random() < 0.25) return hardShot(view, random); // a quarter of its hunting is as sharp as Hard's
-  if (hits.length && random() < 0.9) { // the other 10%: a hunting shot before finishing (a slip)
+  if (hits.length) {
     const pts = hits.map((c) => [c % n, Math.floor(c / n)] as const);
     const candidates: [number, number][] = [];
-    if (pts.length >= 2 && (pts.every((p) => p[1] === pts[0]![1]) || pts.every((p) => p[0] === pts[0]![0])) && random() < 0.75) {
-      // Two or more in a line: try the ends (the other 25%: a cell beside the line, a human slip).
+    if (pts.length >= 2 && (pts.every((p) => p[1] === pts[0]![1]) || pts.every((p) => p[0] === pts[0]![0]))) {
+      // Two or more in a line: try the ends.
       const horizontal = pts.every((p) => p[1] === pts[0]![1]);
       const along = pts.map((p) => (horizontal ? p[0] : p[1]));
       const lo = Math.min(...along) - 1, hi = Math.max(...along) + 1;
@@ -158,11 +156,11 @@ function mediumShot(view: SeaView, random: RandomSource): [number, number] {
     }
     if (candidates.length) return candidates[Math.floor(random() * candidates.length)]!;
   }
-  // Hunting: mostly a checkerboard (every ship covers one), sometimes anywhere.
+  // Hunting: anywhere, like most people; now and then on a checkerboard (every ship covers one).
   const all: [number, number][] = [];
   const parity: [number, number][] = [];
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (open(x, y)) { all.push([x, y]); if ((x + y) % 2 === 0) parity.push([x, y]); }
-  const pool = parity.length && random() < 0.75 ? parity : all;
+  const pool = parity.length && random() < 0.1 ? parity : all;
   return pool[Math.floor(random() * pool.length)] ?? anyOpen(view, random);
 }
 

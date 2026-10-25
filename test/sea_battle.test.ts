@@ -101,6 +101,33 @@ describe("Sea Battle room", () => {
     for (const r of rooms.values()) r.dispose();
   });
 
+  it("in the rematch the loser fires first, found by connection even when both players share a name", async () => {
+    for (const seed of [4, 5, 6, 7, 8, 9]) { // several coin flips, so a lucky one can't pass it
+      const { ctx, rooms } = fakeCtx();
+      const lobby = new SeaBattleLobby(ctx, { timing: FAST, ...seeded(seed) });
+      const a = peer("a"), b = peer("b");
+      const hosted = (await lobby.handle(a, "seabattle:host", { displayName: "Player", settings: { board: "classic", timer: false } })) as any;
+      const room = rooms.get(hosted.roomId);
+      room.join(a);
+      await lobby.handle(b, "seabattle:join", { displayName: "Player", code: hosted.code });
+      room.join(b);
+      room.handleRequest("a", "seabattle:ready", { fleet: ROWS });
+      room.handleRequest("b", "seabattle:ready", { fleet: ROWS });
+      const winner = room.game.turn as number, shooter = winner === 0 ? "a" : "b", loserPeer = winner === 0 ? "b" : "a";
+      for (const p of ROWS) for (const [x, y] of cellsOf(p)) room.handleRequest(shooter, "seabattle:fire", { x, y });
+      const next = room.handleRequest(shooter, "lobby:rematch", {});
+      room.handleRequest(loserPeer, "lobby:rematch", {});
+      const again = rooms.get(next.roomId);
+      again.join(a); again.join(b);
+      await until(() => again.game?.phase === "placing");
+      again.handleRequest("a", "seabattle:ready", { fleet: ROWS });
+      again.handleRequest("b", "seabattle:ready", { fleet: ROWS });
+      const loserSeat = again.seated().findIndex((s: any) => s.peerId === loserPeer);
+      expect(again.game.turn).toBe(loserSeat);
+      for (const r of rooms.values()) r.dispose();
+    }
+  });
+
   it("leaving mid-game is a forfeit", async () => {
     const { room, recorded, b } = await hostedPair();
     room.handleRequest("a", "seabattle:ready", { fleet: ROWS });

@@ -312,7 +312,7 @@ Notifications: `mm:draftUpdate`, `mm:draftDone`, `mm:moveResult`, `mm:evolved`,
 ### Lobby
 
 Prefix `seabattle:`; the platform's methods (`seabattle:quick/host/practice/info/join/invite/acceptInvite`).
-Quick: classic board, timer on; a bot takes the seat if nobody comes in 20 s.
+Quick: the 8×8 Quick board, timer on; a bot takes the seat if nobody comes in 20 s.
 Host: a game for a friend (starts as soon as they join; whoever comes first, code
 or invite). Practice: you and a bot, no timer, board and difficulty from the
 practice setup. `settings` = `{board: 'classic'|'quick', timer: bool,

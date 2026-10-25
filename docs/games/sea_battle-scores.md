@@ -117,3 +117,40 @@ sink, the groan, bubbles under the rings, the incoming whistle, a quieter turn
 chime, no aim cue on the clock's shots; Hard eased (a good player wins ~26%),
 Medium's broken-looking corner shots removed; a keyboard-only, reduced-motion e2e
 game; a bot band test against a good-human stand-in.
+
+## Round 4
+
+| Category | A | B | Score |
+|---|---|---|---|
+| Game design | 8 | 8 | **8** |
+| Signature moment | 8 | 8 | **8** |
+| Animation | 8 | 8 | **8** |
+| Sound and haptics | 8 | 8 | **8** |
+| Visual design | 7 | 8 | **7** |
+| UX and clarity | 8 | 7 | **7** |
+| Platform consistency | 9 | 9 | **9** |
+| Bots | 9 | 8 | **8** |
+| Implementation | 8 | 9 | **8** |
+| Accessibility | 8 | 8 | **8** |
+
+What both saw: the final sink's wobble rotates the board off the pixel grid; the
+roll call flashes about 9 times a second; the call still says "Hit. Fire again"
+under SUNK; the call bar changes height at 360 as the copy wraps; the fleet
+trackers are tiny; the result is two thumbnails above empty space; the card's
+star is a sliver under a big grid; the banner's crosshair crops and its sink beat
+runs long; sink cues pile up on one tick; the rival's turn has no sound of its
+own; the rematch opener is found by name; Medium's slips look broken.
+
+Fixes built after round 4: a stepped, unrotated board shake; a roll call at under
+3 flashes a second after FLEET SUNK holds alone; the call names the sink as it
+lands (and Victory / Defeat on the last); shorter call copy and a fixed bar
+height; "Your shots" keeps up with each impact; trackers at 2×; dimmed cells where
+no ship still afloat fits; SUNK lands in three stepped frames with a jolt, names
+the rival, and is bigger for big ships; staggered sink cues, a theirTurn cue, a
+coin landing, a louder win, a softer splash; the card's star redrawn as a 2×
+battleship sailing in; banner framing, a visible sail-in intro, a sink beat under
+a second; aim hops shortened; the result's rival sea at 2×; the rematch opener
+found by connection, then account (tested over six coin flips); Medium hunts
+loosely but never makes a broken-looking shot (a casual player wins about 1 in 3,
+a good one about 64%); a reload-mid-battle e2e; a touch-phone screen in the
+evidence.

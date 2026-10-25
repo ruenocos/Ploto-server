@@ -72,8 +72,8 @@ export async function browser(base, { headed = false } = {}) {
       await api("POST", "/api/friends", b2.key, { username: a.username });
     },
     /** A player: a guest with a name, or signed in as an account. */
-    async player({ name = "Guest", account = null, width = 390, height = 844, reducedMotion = "no-preference", dpr = 1 } = {}) {
-      const ctx = await b.newContext({ viewport: { width, height }, deviceScaleFactor: dpr, reducedMotion });
+    async player({ name = "Guest", account = null, width = 390, height = 844, reducedMotion = "no-preference", dpr = 1, touch = false } = {}) {
+      const ctx = await b.newContext({ viewport: { width, height }, deviceScaleFactor: dpr, reducedMotion, hasTouch: touch, isMobile: touch });
       await ctx.addInitScript(([nm, acct]) => {
         if (acct) { localStorage.setItem("mm.key", JSON.stringify(acct.key)); localStorage.setItem("mm.account", JSON.stringify({ id: acct.id, username: acct.username })); }
         else localStorage.setItem("mm.guestName", JSON.stringify(nm));

@@ -188,6 +188,11 @@ window.PLOTO_SOUNDS = {
       "vol": 0.5,
       "buzz": 20
     },
+    "land": {
+      "code": "34T6PkyDRjVtjLeL7wprFjNFqCpYXMtSUAVcAPeQcJTnnBTGrtoi1jZFBgubM2qrrVr5aNXnyXxjBUmRhhFVW3XhhJXdyAxcX6NHc9ovYkUU2drFUyFfHRrEj",
+      "vol": 0.35,
+      "buzz": 15
+    },
     "aim": {
       "code": "57uBnWcURsYKtmkuFPu6q8C4AwQbFsyPySwvTPgMwbkCFJMs3dFciii4HheXvSEK68eUXvrdF2D8J3hk2pVTQBqkA1fPFoFd9pHvaGqqNw2P1giunN5ZhPFGs",
       "vol": 0.25,
@@ -199,8 +204,8 @@ window.PLOTO_SOUNDS = {
       "buzz": 20
     },
     "splash": {
-      "code": "7GQhofh85QrmQ62SeL2B3PjtAKkKAB6zqNx199TYx7sc9KNQiAokBkpyNkHMGCuPn9Dk6dDM6g8r5DX8hASdPAxgcsGNBGksA6tS9P6msuNMa2xgNwxEHjkeb",
-      "vol": 0.6,
+      "code": "7GQhofh85QrmQ62SeL2B3PkBsJ517tBDq9MYbTSLKMt3wR2DsKEfmivBzkwoKj4KgHJGSftqDvLWXros3AdaLc9mcLRtresw2nUMFtZctcSSPywvH642TZFef",
+      "vol": 0.75,
       "buzz": 15
     },
     "hit": {
@@ -229,7 +234,7 @@ window.PLOTO_SOUNDS = {
       "buzz": 10
     },
     "win": {
-      "code": "111118JWVRNs9rM4Eqi9f2tuHSWmLRT8PqUniNocrx7NMu4hkrTrENLxX9an84hDXmHpAXgJmpJUJsbprDipFNvBoAXWi5sKuGHghLwQQtTJ7YHBfoiTCtFq",
+      "code": "11111FbzLgcdUdxzWVFV8K48TPZoULDM15uqMWpJKbQXExsSNeGpAyTYw6qLwZhbCZ7Q5XD3oA26Lc7XVAe2s1TGnqaYzMVnZPiGTMw4hNJDXunexKrq1Ygo",
       "vol": 1,
       "buzz": [
         60,
@@ -282,12 +287,17 @@ window.PLOTO_SOUNDS = {
     },
     "yourTurn": {
       "code": "57uBnWj15e1vvDk9qK1fohVqCnpbXQr3u6wWQfoVVJ6rgiPvi73B7bYrU6eXmtiaHYC2orpjSDAtFZiCC9VXVsu45MoJKUN9pvdzniCSdJuD5RzsiVkTWhtpX",
-      "vol": 0.28,
+      "vol": 0.45,
       "buzz": [
         30,
         40,
         30
       ]
+    },
+    "theirTurn": {
+      "code": "57uBnWV6nWXMUKzzaPpjuFsioVhLKwcpWzkWXqC7DBPh4dTrUxWKcAGCkzAoySxRChVpmiq4p7HD4KNCDxFvJyGRcwmSoEAV5tbm9KFFYorLvvs7CXYBebBJX",
+      "vol": 0.25,
+      "buzz": 0
     },
     "incoming": {
       "code": "12eZRSDSVSKP7AxrtDfArJAhVfCwyu4UFATQPjSKHCTk2nA7MGTSXkZQ9tFXPFfz2gpKe7JPBHoDwbj1bfo4G4EE1yw7erXn3BfUGcStwv9e6GDjr5nTkyWL7H",

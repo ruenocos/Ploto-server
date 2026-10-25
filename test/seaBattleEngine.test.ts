@@ -170,8 +170,18 @@ function goodHuman(v: SeaView, r: () => number): [number, number] {
   return pool[Math.floor(r() * pool.length)]!;
 }
 
+/** A casual player: random hunting (no checkerboard), but follows up hits. */
+function casualHuman(v: SeaView, r: () => number): [number, number] {
+  const n = v.size, open = (x: number, y: number) => x >= 0 && y >= 0 && x < n && y < n && v.outgoing[y * n + x] === Mark.Unknown;
+  const sunk = new Set(v.rivalShips.flatMap((p) => cellsOf(p).map(([x, y]) => y * n + x)));
+  const cand: [number, number][] = [];
+  v.outgoing.forEach((m, c) => { if (m === Mark.Hit && !sunk.has(c)) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const x = (c % n) + dx, y = Math.floor(c / n) + dy; if (open(x, y)) cand.push([x, y]); } });
+  if (!cand.length) for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (open(x, y)) cand.push([x, y]);
+  return cand[Math.floor(r() * cand.length)]!;
+}
+
 describe("sea battle bot difficulty bands (against a good human stand-in)", () => {
-  const rate = (level: BotLevel, board: "classic" | "quick", N: number) => {
+  const rate = (level: BotLevel, board: "classic" | "quick", N: number, player = goodHuman) => {
     let humanWins = 0;
     for (let i = 0; i < N; i++) {
       const rng = new Rng(5000 + i), random = () => rng.next();
@@ -180,7 +190,7 @@ describe("sea battle bot difficulty bands (against a good human stand-in)", () =
       for (const s of [0, 1]) g.ready(s, s === human ? randomFleet(BOARDS[board], random) : botFleet(board, level, random));
       while (g.phase === "firing") {
         const s = g.turn!, v = g.viewFor(s);
-        const [x, y] = s === human ? goodHuman(v, random) : chooseShot(v, level, random);
+        const [x, y] = s === human ? player(v, random) : chooseShot(v, level, random);
         g.fire(s, x, y);
       }
       if (g.winner === human) humanWins++;
@@ -195,5 +205,8 @@ describe("sea battle bot difficulty bands (against a good human stand-in)", () =
       expect(vsHard).toBeGreaterThan(0.15);
       expect(vsHard).toBeLessThan(0.4);
     }
+  });
+  it("a casual player still wins a fair share against Medium on the quick board", () => {
+    expect(rate("medium", "quick", 600, casualHuman)).toBeGreaterThan(0.3); // about 1 in 3
   });
 });

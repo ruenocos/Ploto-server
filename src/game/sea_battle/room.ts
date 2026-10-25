@@ -92,7 +92,7 @@ export function animBudget(events: readonly SeaEvent[]): number {
   for (const e of events) {
     if (e.type === "start") ms += 2200; // the coin spins, then names who fires first, then the seas swap
     else if (e.type === "shot") {
-      const aim = 3 * 170 + 220 + 420; // the rival's aim hops, the lock, the shell
+      const aim = 2 * 130 + 220 + 420; // the rival's aim hops, the lock, the shell
       if (e.result === "miss") ms += aim + 300 + 280 + 100;
       else if (e.result === "hit") ms += aim + 90 + 480 + 100;
       else { const len = e.ship ? SHIP_LEN[e.ship.kind] : 3; ms += aim + 120 + 60 * len + 110 * len + 120 + 560 + 30 * len + 700 + 4 * 90 + 300; }
@@ -180,7 +180,7 @@ export class SeaBattleRoom extends LobbyRoom<SeaSettings> {
   /** The platform filled the seats: deal out random fleets, start placing. */
   protected startGame(): void {
     // A rematch: the last game's loser fires first.
-    const opener = this.settings.opener ? this.seats.findIndex((s) => s.name === this.settings.opener) : -1;
+    const opener = this.openerSeat();
     const game = (this.game = new SeaBattleGame({ board: this.settings.board, random: this.random, ...(opener >= 0 ? { first: opener } : {}) }));
     this.placeEnds = Date.now() + this.timing.placeMs;
     for (const seat of [0, 1]) {
@@ -247,6 +247,20 @@ export class SeaBattleRoom extends LobbyRoom<SeaSettings> {
     if (r.ok) this.after(r.events);
   }
 
+  /**
+   * The seat that opens a rematch: last game's loser, found by connection, then account,
+   * then by name only when no one else shares it (two guests called Player stay a coin flip).
+   */
+  private openerSeat(): number {
+    if (!this.settings.opener) return -1;
+    const [peerId, accountId, name] = this.settings.opener.split("|");
+    const by = (f: (s: Seat) => boolean) => { const i = this.seats.findIndex(f); return i >= 0 && this.seats.filter(f).length === 1 ? i : -1; };
+    const i = peerId ? by((s) => s.peerId === peerId) : -1;
+    if (i >= 0) return i;
+    const j = accountId ? by((s) => s.accountId === accountId) : -1;
+    return j >= 0 ? j : by((s) => s.name === name);
+  }
+
   /** Send what happened, then line up what comes next (a clock, a bot's move, or the end). */
   private after(events: readonly SeaEvent[]): void {
     this.animUntil = Date.now() + this.animMs(events);
@@ -256,8 +270,8 @@ export class SeaBattleRoom extends LobbyRoom<SeaSettings> {
     if (this.game?.phase !== "over") this.arm(); // first, so the update carries the new clock
     if (this.game?.phase === "over" && this.game.winner !== null) {
       // The loser opens the rematch (the platform copies these settings into it).
-      const loser = this.seats[1 - this.game.winner]?.name;
-      if (loser) this.settings = { ...this.settings, opener: loser };
+      const loser = this.seats[1 - this.game.winner];
+      if (loser) this.settings = { ...this.settings, opener: [loser.peerId ?? "", loser.accountId ?? "", loser.name].join("|") };
     }
     this.broadcast(events);
     if (this.game?.phase === "over") this.finish();

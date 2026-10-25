@@ -113,6 +113,41 @@ adapter.checks = [
       await p.close2();
     }
   }],
+  ["a reload mid-battle comes back to the same sea, marks and all, and play goes on", async ({ B, home, assert, sleep }) => {
+    const p = await B.player();
+    await home(p);
+    await p.click('[data-mode="practice"]'); await p.click("#practiceBtn"); await playing(p); await p.waitForSelector("#readyBtn");
+    await p.click("#readyBtn");
+    let shots = 0;
+    const t0 = Date.now();
+    while (shots < 3 && Date.now() - t0 < 40000) {
+      if (await myTurn(p) && (await p.locator("#sea.aiming .cells button.open").count())) {
+        const before = await p.locator("#sea .layer-marks .mark").count();
+        await p.locator("#sea.aiming .cells button.open").nth(shots * 7).click();
+        if (await p.waitForFunction((b) => document.querySelectorAll("#sea .layer-marks .mark").length > b, before, { timeout: 5000 }).then(() => true, () => false)) shots++;
+      }
+      await sleep(150);
+    }
+    assert(shots >= 1, "couldn't fire before the reload");
+    await sleep(1500);
+    await p.reload();
+    await playing(p);
+    await p.waitForSelector("#sea .layer-marks .mark", { timeout: 10000 });
+    // Whichever sea it shows, your shots are all on the overview or the main sea.
+    const after = await p.evaluate(() => document.querySelectorAll("#sea .layer-marks .mark").length);
+    assert(after >= 1, "the sea came back empty after a reload");
+    const t1 = Date.now(); let fired = false;
+    while (!fired && Date.now() - t1 < 30000) {
+      if (await myTurn(p) && (await p.locator("#sea.aiming .cells button.open").count())) {
+        const before = await p.locator("#sea .layer-marks .mark").count();
+        await p.locator("#sea.aiming .cells button.open").last().click();
+        fired = await p.waitForFunction((b) => document.querySelectorAll("#sea .layer-marks .mark").length > b, before, { timeout: 5000 }).then(() => true, () => false);
+      }
+      await sleep(150);
+    }
+    assert(fired, "couldn't fire after the reload");
+    await p.close2();
+  }],
   ["keyboard only, reduced motion: place, ready, fire; the copy never says \"1 shots\"", async ({ B, home, assert, sleep }) => {
     const p = await B.player({ reducedMotion: "reduce" });
     await home(p);

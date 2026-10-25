@@ -355,16 +355,18 @@
       for (let i = 0; i <= cols; i++) p.px(gx + i * C, gy, P.deep, 1, gh);
       for (let i = 0; i <= rows; i++) p.px(gx, gy + i * C, P.deep, gw, 1);
       // What you play with: a splash and a miss on the sea.
-      ascii(p, SPLASH_STILL, gx + 4 * C - 3, gy + C - 2);
-      ascii(p, MISS, gx + C, gy);
-      // The interface only it has: the crosshair locked on a cell, inside the sea (clear of the NEW badge).
-      ascii(p, CROSS, gx + 2 * C - 2, gy + C - 2);
-      // The star: the carrier (the biggest ship) crossing the sea's bottom-left corner, with its hard shadow, burning at the stern.
-      const shadow = pen(50, 10);
-      drawShip(shadow, "carrier");
-      p.g.globalAlpha = 0.14; p.g.filter = "brightness(0)"; p.g.drawImage(shadow.c, 3, 39); p.g.filter = "none"; p.g.globalAlpha = 1;
-      drawShip(p, "carrier", 2, 38);
-      ascii(p, FIRE[2], 8, 36);
+      ascii(p, SPLASH_STILL, gx + 4 * C - 3, gy - 2);
+      ascii(p, MISS, gx + 5 * C, gy + C);
+      // The interface only it has: the crosshair locked on a cell, inside the sea (clear of the NEW badge and the ship).
+      ascii(p, CROSS, gx + 2 * C - 2, gy - 2);
+      // The star: a battleship close to the camera (drawn at 2×), sailing in from the left edge over the
+      // sea's lower row, with its hard shadow and a hit burning on deck: the first thing the eye reads.
+      const ship = pen(40, 10);
+      drawShip(ship, "battleship");
+      ascii(ship, FIRE[2], 14, -1);
+      p.g.imageSmoothingEnabled = false;
+      p.g.globalAlpha = 0.18; p.g.filter = "brightness(0)"; p.g.drawImage(ship.c, -18, 32, 80, 20); p.g.filter = "none"; p.g.globalAlpha = 1;
+      p.g.drawImage(ship.c, -20, 30, 80, 20);
       return p.c;
     });
   }
@@ -373,7 +375,7 @@
    * How long each moment takes on the page, in ms (web/sea-battle.html plays them; the room's
    * animMs in src/game/sea_battle/room.ts must cover them: test/sea_battle.test.ts checks it).
    */
-  const ANIM = {"coinSpin": 900, "coinLabel": 800, "swap": 240, "aimHop": 170, "aimHops": 3, "aimLock": 220, "shell": 420, "splash": 300, "missHold": 280, "hitStop": 90, "hitHold": 480, "sinkStopBase": 120, "sinkStopPerCell": 60, "plate": 110, "crack": 120, "halves": 560, "halvesPerCell": 30, "stampHold": 700, "ring": 90, "turnHold": 200};
+  const ANIM = {"coinSpin": 900, "coinLabel": 800, "swap": 240, "aimHop": 130, "aimHops": 2, "aimLock": 220, "shell": 420, "splash": 300, "missHold": 280, "hitStop": 90, "hitHold": 480, "sinkStopBase": 120, "sinkStopPerCell": 60, "plate": 110, "crack": 120, "halves": 560, "halvesPerCell": 30, "stampHold": 700, "ring": 90, "turnHold": 200};
 
   /**
    * The placement rules as the page needs them, from the engine (src/game/sea_battle/engine.ts)
@@ -439,6 +441,6 @@
   document.head.appendChild(style);
   window.Ploto?.gameCard?.("sea_battle", {
     art: (W, H) => imgOf(cardCanvas(), Math.max(1, Math.round(Math.max(W / 80, H / 50)))),
-    icon: () => imgOf(cardCanvas(), 2, [2, 26, 24, 24]), // a crop on the star (the carrier's stern, burning)
+    icon: () => imgOf(cardCanvas(), 2, [0, 24, 26, 26]), // a crop on the star (the battleship's burning deck)
   });
 })();

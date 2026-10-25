@@ -32,6 +32,8 @@ export default {
     }
   },
   finishMs: 30000,
+  /** Checks of the game's own, after the shared flows: [[name, async ({ B, home, assert, sleep }) => …]]. */
+  checks: [],
   /** Extra screens for the screenshot set (home is always taken). */
   screens: [
     ["host", (p) => p.click('[data-mode="host"]')],

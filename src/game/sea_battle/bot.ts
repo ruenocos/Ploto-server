@@ -9,7 +9,7 @@
  *           counts the ways that pass through it, so it finishes ships fast.
  *           It knows the corners around a hit are water (ships can't touch),
  *           and hides its own fleet where ships are least likely to be.
- *   medium  hunts half the time like Hard and otherwise on a checkerboard,
+ *   medium  hunts a quarter of the time like Hard and otherwise on a checkerboard,
  *           follows up a hit around it (and along the line once it has two),
  *           but now and then wanders off or tries a corner, so it can be beaten.
  */
@@ -76,16 +76,19 @@ export function hiding(spec: BoardSpec, fleet: Fleet): number {
   return Math.max(0, Math.min(1, (max - avg) / (max - min)));
 }
 
-/** A bot's fleet. Hard tries a few and keeps the hardest to find; Medium takes any. */
+/**
+ * A bot's fleet. Hard usually hides it well (any layout at least half as hidden as
+ * it gets, picked at random, so "it hugs the edges" isn't a sure tell) and one game
+ * in four takes any layout; Medium takes any.
+ */
 export function botFleet(board: keyof typeof BOARDS, level: BotLevel, random: RandomSource): Fleet {
   const spec = BOARDS[board];
-  if (level !== "hard") return randomFleet(spec, random);
-  let best = randomFleet(spec, random), score = hiding(spec, best);
-  for (let i = 0; i < 30; i++) {
-    const f = randomFleet(spec, random), s = hiding(spec, f);
-    if (s > score) { best = f; score = s; }
+  if (level !== "hard" || random() < 0.25) return randomFleet(spec, random);
+  for (let i = 0; i < 60; i++) {
+    const f = randomFleet(spec, random);
+    if (hiding(spec, f) >= 0.5) return f;
   }
-  return best;
+  return randomFleet(spec, random);
 }
 
 function hardShot(view: SeaView, random: RandomSource): [number, number] {
@@ -134,7 +137,7 @@ function mediumShot(view: SeaView, random: RandomSource): [number, number] {
   const n = view.size;
   const open = (x: number, y: number) => x >= 0 && y >= 0 && x < n && y < n && view.outgoing[y * n + x] === Mark.Unknown;
   const hits = openHits(view);
-  if (!hits.length && random() < 0.5) return hardShot(view, random); // half its hunting is as sharp as Hard's
+  if (!hits.length && random() < 0.25) return hardShot(view, random); // a quarter of its hunting is as sharp as Hard's
   if (hits.length && random() < 0.92) {
     const pts = hits.map((c) => [c % n, Math.floor(c / n)] as const);
     const candidates: [number, number][] = [];
@@ -152,7 +155,7 @@ function mediumShot(view: SeaView, random: RandomSource): [number, number] {
       for (const [x, y] of pts) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) if (open(x + dx, y + dy)) candidates.push([x + dx, y + dy]);
     }
     // Now and then it tries a corner by a hit (a real player's mistake: ships can't touch).
-    if (random() < 0.12) for (const [x, y] of pts) for (const [dx, dy] of [[1, 1], [-1, -1], [1, -1], [-1, 1]] as const) if (open(x + dx, y + dy)) candidates.push([x + dx, y + dy]);
+    if (random() < 0.18) for (const [x, y] of pts) for (const [dx, dy] of [[1, 1], [-1, -1], [1, -1], [-1, 1]] as const) if (open(x + dx, y + dy)) candidates.push([x + dx, y + dy]);
     if (candidates.length) return candidates[Math.floor(random() * candidates.length)]!;
   }
   // Hunting: mostly a checkerboard (every ship covers one), sometimes anywhere.

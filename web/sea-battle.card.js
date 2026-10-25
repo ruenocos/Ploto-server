@@ -228,7 +228,8 @@
   const CROSS = [
     "rrrr......rrrr", "rcc........ccr", "rc..........cr", "r............r", "..............", "......rr......", ".....rccr.....", ".....rccr.....", "......rr......", "..............", "r............r", "rc..........cr", "rcc........ccr", "rrrr......rrrr",
   ];
-  const SHELL = [".kk.", "kmMk", "kmmk", ".kk."];
+  const SHELL = [".kkk.", "kcwck", "kwwwk", "kcwck", ".kkk."];
+  const TRAIL = [[".Mm.", "MmmM", ".mM."], ["....", ".mm.", "...."]];
 
   function coinFrames() {
     // A spinning gold coin: widths shrink to an edge and back; the last frame shows an anchor.
@@ -266,8 +267,34 @@
     });
   }
 
+  /**
+   * A sinking half of a broken ship, tilted `t` steps (0 flat, 1, 2) in whole art pixels:
+   * the broken end dips in a stair step (no rotation, so it stays on the grid).
+   * `first`: the stern half (left, or top when vertical).
+   */
+  function halfCanvas(kind, dir, first, t) {
+    return memo(`half.${kind}.${dir}.${first}.${t}`, () => {
+      const L = LEN[kind], W = L * C, hw = Math.ceil(W / 2);
+      const src = pen(W, C);
+      drawShip(src, kind, 0, 0, true);
+      const h = pen(hw, C + 4);
+      const x0 = first ? 0 : W - hw;
+      for (let x = 0; x < hw; x++) {
+        const fromBreak = first ? hw - 1 - x : x; // 0 at the break
+        const dip = Math.floor(((hw - fromBreak) / hw) * 2 * t);
+        h.g.drawImage(src.c, x0 + x, 0, 1, C, x, dip, 1, C);
+      }
+      if (dir === "h") return h.c;
+      const v = pen(C + 4, hw);
+      v.g.translate(C + 4, 0); v.g.rotate(Math.PI / 2); v.g.drawImage(h.c, 0, 0);
+      return v.c;
+    });
+  }
+  const half = (kind, dir, first, t) => memo(`halfurl.${kind}.${dir}.${first}.${t}`, () => halfCanvas(kind, dir, first, t).toDataURL());
+
   const SHEETS = {
     column: () => smokeColumn(),
+    trail: () => sheet("trail", TRAIL),
     ripple: () => sheet("ripple", RIPPLE),
     fire: () => sheet("fire", FIRE),
     splash: () => sheet("splash", SPLASH),
@@ -276,7 +303,7 @@
     bubbles: () => sheet("bubbles", BUBBLES),
     coin: () => sheet("coin", coinFrames()),
   };
-  const SINGLE = { miss: MISS, water: WATER_MARK, cross: CROSS, shell: SHELL, splash: SPLASH_STILL };
+  const SINGLE = { miss: MISS, water: WATER_MARK, cross: CROSS, shell: SHELL, splash: SPLASH_STILL, trail: TRAIL[0] };
   /** A one-frame sprite: {url, w, h}. */
   function sprite(name) {
     return memo(`sprite.${name}`, () => {
@@ -304,8 +331,8 @@
     return memo("card", () => {
       const p = pen(80, 50);
       p.px(0, 0, P.back, 80, 50);
-      // The sea: 5×3 cells framed on the right, clear of the NEW badge (top right 20×10).
-      const gx = 28, gy = 14, cols = 5, rows = 3, gw = cols * C + 1, gh = rows * C + 1;
+      // The sea: 6×3 cells framed on the right (cropped by the card's edge), below the NEW badge (top right 20×10).
+      const gx = 24, gy = 12, cols = 6, rows = 3, gw = cols * C + 1, gh = rows * C + 1;
       p.px(gx - 2, gy - 2, P.ink, gw + 4, gh + 4);
       p.px(gx - 1, gy - 1, P.lite, gw + 2, 1); // the frame's lit top row
       p.px(gx, gy, P.sea, gw, gh);
@@ -315,28 +342,91 @@
       }
       for (let i = 0; i <= cols; i++) p.px(gx + i * C, gy, P.deep, 1, gh);
       for (let i = 0; i <= rows; i++) p.px(gx, gy + i * C, P.deep, gw, 1);
-      // What you play with: a miss and a splash on the sea.
-      ascii(p, MISS, gx + 3 * C, gy);
-      ascii(p, SPLASH_STILL, gx + 2 * C - 3, gy + 2 * C - 2);
-      // The interface only it has: the crosshair locked on a cell.
-      ascii(p, CROSS, gx + 4 * C - 2, gy + C - 2);
-      // The star: the battleship crossing the sea's edge, with its hard shadow, burning amidships.
-      const shadow = pen(40, 10);
-      drawShip(shadow, "battleship");
-      p.g.globalAlpha = 0.14; p.g.filter = "brightness(0)"; p.g.drawImage(shadow.c, 5, 30); p.g.filter = "none"; p.g.globalAlpha = 1;
-      drawShip(p, "battleship", 4, 29);
-      ascii(p, FIRE[2], 14, 27);
+      // What you play with: a splash and a miss on the sea.
+      ascii(p, SPLASH_STILL, gx + C - 3, gy + C - 3);
+      ascii(p, MISS, gx + 4 * C, gy + C);
+      // The interface only it has: the crosshair locked on a cell, inside the sea.
+      ascii(p, CROSS, gx + 3 * C - 2, gy - 2);
+      // The star: the carrier (the biggest ship) crossing the sea's bottom-left corner, with its hard shadow, burning at the stern.
+      const shadow = pen(50, 10);
+      drawShip(shadow, "carrier");
+      p.g.globalAlpha = 0.14; p.g.filter = "brightness(0)"; p.g.drawImage(shadow.c, 3, 37); p.g.filter = "none"; p.g.globalAlpha = 1;
+      drawShip(p, "carrier", 2, 36);
+      ascii(p, FIRE[2], 8, 34);
       return p.c;
     });
   }
 
-  window.SEA_ART = { P, C, LEN, water, waterCanvas, ship, shipCanvas, shipIcon, mini, sprite, sheet: (name) => SHEETS[name](), card: cardCanvas, drawShip, pen, ascii, FRAMES: { FIRE, SPLASH, MISS, CROSS } };
+  /**
+   * How long each moment takes on the page, in ms (web/sea-battle.html plays them; the room's
+   * animMs in src/game/sea_battle/room.ts must cover them: test/sea_battle.test.ts checks it).
+   */
+  const ANIM = {"coinSpin": 900, "coinLabel": 800, "swap": 240, "aimHop": 170, "aimHops": 3, "aimLock": 220, "shell": 420, "splash": 300, "missHold": 280, "hitStop": 90, "hitHold": 480, "sinkStopBase": 120, "sinkStopPerCell": 60, "plate": 110, "crack": 120, "halves": 560, "halvesPerCell": 30, "stampHold": 700, "ring": 90, "turnHold": 200};
+
+  /**
+   * The placement rules as the page needs them, from the engine (src/game/sea_battle/engine.ts)
+   * and the bots' hiding score (bot.ts); test/sea_battle.test.ts checks they agree.
+   */
+  const SHIPS = { carrier: { name: "Carrier", length: 5 }, battleship: { name: "Battleship", length: 4 }, cruiser: { name: "Cruiser", length: 3 }, submarine: { name: "Submarine", length: 3 }, destroyer: { name: "Destroyer", length: 2 } };
+  const BOARDS = { classic: { size: 10, fleet: ["carrier", "battleship", "cruiser", "submarine", "destroyer"] }, quick: { size: 8, fleet: ["battleship", "cruiser", "submarine", "destroyer"] } };
+  const cellsOf = (p) => Array.from({ length: SHIPS[p.kind].length }, (_, i) => (p.dir === "h" ? [p.x + i, p.y] : [p.x, p.y + i]));
+  /** Whether ship `p` fits with the rest of `fleet` (in bounds, not overlapping or touching). */
+  function fits(n, fleet, p) {
+    const others = new Set(fleet.filter((q) => q.kind !== p.kind).flatMap((q) => cellsOf(q).map(([x, y]) => y * n + x)));
+    return cellsOf(p).every(([x, y]) => {
+      if (x < 0 || y < 0 || x >= n || y >= n) return false;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const nx = x + dx, ny = y + dy;
+        if (nx >= 0 && ny >= 0 && nx < n && ny < n && others.has(ny * n + nx)) return false;
+      }
+      return true;
+    });
+  }
+  function randomFleet(board, random = Math.random) {
+    const { size: n, fleet: kinds } = BOARDS[board];
+    for (let attempt = 0; attempt < 500; attempt++) {
+      const fleet = [];
+      const ok = [...kinds].sort((a, b) => SHIPS[b].length - SHIPS[a].length).every((kind) => {
+        for (let t = 0; t < 200; t++) {
+          const dir = random() < 0.5 ? "h" : "v", len = SHIPS[kind].length;
+          const q = { kind, dir, x: Math.floor(random() * (dir === "h" ? n - len + 1 : n)), y: Math.floor(random() * (dir === "v" ? n - len + 1 : n)) };
+          if (fits(n, fleet, q)) { fleet.push(q); return true; }
+        }
+        return false;
+      });
+      if (ok) return kinds.map((k) => fleet.find((q) => q.kind === k));
+    }
+    return null;
+  }
+  /** How often a ship could cover each cell of an empty board: where hunters look first. */
+  function density(board) {
+    const { size: n, fleet: kinds } = BOARDS[board];
+    const d = new Array(n * n).fill(0);
+    for (const k of kinds) {
+      const len = SHIPS[k].length;
+      for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+        if (x + len <= n) for (let i = 0; i < len; i++) d[y * n + x + i]++;
+        if (y + len <= n) for (let i = 0; i < len; i++) d[(y + i) * n + x]++;
+      }
+    }
+    return d;
+  }
+  /** How hard a fleet is to find, 0..1 (the bots' hiding score). */
+  function hiding(board, fleet) {
+    const n = BOARDS[board].size, d = density(board);
+    const max = Math.max(...d), min = Math.min(...d);
+    const cells = fleet.flatMap((q) => cellsOf(q).map(([x, y]) => d[y * n + x]));
+    return Math.max(0, Math.min(1, (max - cells.reduce((a, b) => a + b, 0) / cells.length) / (max - min)));
+  }
+  window.SEA_RULES = { SHIPS, BOARDS, cellsOf, fits, randomFleet, density, hiding };
+
+  window.SEA_ART = { P, C, LEN, ANIM, water, waterCanvas, half, halfCanvas, ship, shipCanvas, shipIcon, mini, sprite, sheet: (name) => SHEETS[name](), card: cardCanvas, drawShip, pen, ascii, FRAMES: { FIRE, SPLASH, MISS, CROSS } };
 
   const style = document.createElement("style");
   style.textContent = `.lc-art[data-art="sea_battle"] { background: ${P.back}; }`;
   document.head.appendChild(style);
   window.Ploto?.gameCard?.("sea_battle", {
     art: (W, H) => imgOf(cardCanvas(), Math.max(1, Math.round(Math.max(W / 80, H / 50)))),
-    icon: () => imgOf(cardCanvas(), 2, [6, 19, 24, 24]), // a crop on the star
+    icon: () => imgOf(cardCanvas(), 2, [2, 26, 24, 24]), // a crop on the star
   });
 })();

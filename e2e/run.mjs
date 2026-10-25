@@ -14,6 +14,8 @@
  * A game takes part through its adapter, e2e/games/<id>.mjs (scaffolded with the
  * game): how to host a room, how to tell it's in the game, how to finish one.
  * The flows are the same for every game, and any console error fails the run.
+ * An adapter may add its own checks (`checks: [[name, ({ B, home }) => …]]`),
+ * e.g. playing to a real finish and checking the signature moment's layout.
  */
 import fs from "node:fs";
 import os from "node:os";
@@ -142,6 +144,7 @@ try {
         await Promise.all([G.inGame(a), G.inGame(b)]);
         await done(a, b);
       }]] : []),
+      ...(G.checks || []).map(([name, fn]) => [name, () => fn({ B, home, assert, sleep })]),
     ], { onFail }));
 
     if (opt("screens")) {

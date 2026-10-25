@@ -71,12 +71,32 @@ export const DEFAULT_TIMING: SeaTiming = {
   turnMs: 20_000,
   awayMs: 30_000,
   botMs: [800, 1600],
-  botFollowMs: [450, 900],
+  botFollowMs: [650, 1200],
   botAfterSinkMs: [1100, 1900],
   botPlaceMs: [1200, 3200],
   quickStartMs: 20_000,
   animScale: 1,
 };
+
+/**
+ * How long the page (web/sea-battle.html) takes to play these events, in ms, with some
+ * room to spare: an incoming shot's aim and shell, then the splash, the hit, or the sink
+ * (longer for longer ships), the coin flip, the seas swapping. The page's own timings
+ * are SEA_ART.ANIM in web/sea-battle.card.js; test/sea_battle.test.ts checks this covers them.
+ */
+export function animBudget(events: readonly SeaEvent[]): number {
+  let ms = 0;
+  for (const e of events) {
+    if (e.type === "start") ms += 2200; // the coin spins, then names who fires first, then the seas swap
+    else if (e.type === "shot") {
+      const aim = 3 * 170 + 220 + 420; // the rival's aim hops, the lock, the shell
+      if (e.result === "miss") ms += aim + 300 + 280 + 100;
+      else if (e.result === "hit") ms += aim + 90 + 480 + 100;
+      else { const len = e.ship ? SHIP_LEN[e.ship.kind] : 3; ms += aim + 120 + 60 * len + 110 * len + 120 + 560 + 30 * len + 700 + 4 * 90 + 300; }
+    } else if (e.type === "turn") ms += 240 + 200 + 100; // the seas swap places
+  }
+  return ms;
+}
 
 export interface SeaRoomOptions extends LobbyRoomOptions<SeaSettings> {
   readonly timing?: Partial<SeaTiming>;
@@ -252,7 +272,8 @@ export class SeaBattleRoom extends LobbyRoom<SeaSettings> {
     const seat = game.turn;
     if (this.seats[seat]!.kind === "bot") {
       // A human rhythm: quick when finishing a ship, slower hunting blind, a breath after a sink.
-      const [lo, hi] = this.lastShot === "hit" ? this.timing.botFollowMs : this.lastShot === "sunk" ? this.timing.botAfterSinkMs : this.timing.botMs;
+      let [lo, hi] = this.lastShot === "hit" ? this.timing.botFollowMs : this.lastShot === "sunk" ? this.timing.botAfterSinkMs : this.timing.botMs;
+      if (this.lastShot === "hit" && this.random() < 0.2) [lo, hi] = [hi, hi * 1.35]; // now and then it stops to think
       this.setClock(seat, wait + lo + this.random() * (hi - lo), () => this.botFire(seat), false);
       return;
     }
@@ -292,19 +313,9 @@ export class SeaBattleRoom extends LobbyRoom<SeaSettings> {
     return s.kind === "bot" || this.peers.has(s.peerId ?? "");
   }
 
-  /**
-   * The time the client takes to animate these events (web/sea-battle.html), so clocks
-   * and bots wait for it: aiming and the shell (~1.1 s for an incoming shot), then the
-   * splash, the hit, or the sink (longer for longer ships).
-   */
+  /** The time the client takes to animate these events, so clocks and bots wait for it. */
   private animMs(events: readonly SeaEvent[]): number {
-    let ms = 0;
-    for (const e of events) {
-      if (e.type === "start") ms += 2500; // the coin spins, then names who fires first
-      else if (e.type === "shot") ms += e.result === "sunk" ? 1150 + 2100 + 140 * (e.ship ? SHIP_LEN[e.ship.kind] : 3) : e.result === "hit" ? 1550 : 1500;
-      else if (e.type === "turn") ms += 700; // the seas swap places
-    }
-    return ms * this.timing.animScale;
+    return animBudget(events) * this.timing.animScale;
   }
 
   // ------------------------------------------------------------ results and views

@@ -15,7 +15,7 @@
  * art pixels (--k CSS px each), Animate.css poses, steps() motion. Its accent is
  * the sea's teal (--sea-hi); Ploto's purple stays on buttons and your turn.
  */
-:root { --sea-back: #0c3346; --sea-hi: #2bb3c0; --sea-hit: var(--c-bad); }
+:root { --sea-back: #0c3346; --sea-hi: #2bb3c0; --sea-hit: var(--c-bad); --sea-hit-lo: #7c1626; }
 .scr[hidden] { display: none; }
 
 /* ---- home ---- */
@@ -33,10 +33,12 @@
 .away { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; padding: 2px 4px; background: var(--c-raise); color: var(--c-mute); }
 .fleet { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; min-height: 10px; }
 .fleet img { image-rendering: pixelated; display: block; }
-.call { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 12px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
+.call { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 8px 12px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
 .call.mine { background: var(--c-accent-lo); box-shadow: inset 0 var(--px) 0 var(--sea-hi), inset 0 calc(var(--px) * -2) 0 rgba(10, 12, 20, 0.45); }
 .call b { font: 700 var(--fl-1)/1.1 var(--f-label); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; }
-.call span { flex: 1; min-width: 0; font: 400 var(--fs-s)/1.25 var(--f-text); color: var(--c-text); }
+.call span { flex: 1; min-width: 0; font: 400 var(--fs-s)/1.25 var(--f-text); color: var(--c-text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.clock-s { flex: none; min-width: 28px; text-align: right; font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-gold); }
+.clock-s.low { color: var(--c-bad-hi); }
 .clock { flex: none; width: 56px; height: calc(var(--px) * 4); background: var(--c-well); box-shadow: 0 0 0 var(--px) var(--c-ink); }
 .clock i { display: block; height: 100%; background: var(--c-gold); transition: width 0.25s steps(2); }
 .clock.low i { background: var(--c-bad); }
@@ -46,12 +48,12 @@
 .sea-label { align-self: stretch; display: flex; justify-content: space-between; gap: 8px; font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-mute); }
 .sea-label b { color: var(--c-cream); font-weight: 700; }
 .board { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; }
-.board.swap-out { transform: translateY(24px) scale(0.94); opacity: 0; transition: transform 0.16s steps(4), opacity 0.16s steps(4); }
-.board.swap-in { animation: seaIn 0.16s steps(4); }
-@keyframes seaIn { from { transform: translateY(-24px) scale(0.94); opacity: 0; } }
+.board.swap-out { transform: translateY(24px); opacity: 0; transition: transform 0.12s steps(4), opacity 0.12s steps(4); }
+.board.swap-in { animation: seaIn 0.12s steps(4); }
+@keyframes seaIn { from { transform: translateY(-24px); opacity: 0; } }
 .coords { display: grid; font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-mute); text-align: center; align-items: center; }
-.coords.top { grid-column: 2; grid-template-columns: repeat(var(--n), var(--cell)); padding-left: var(--k); height: 16px; }
-.coords.left { grid-row: 2; grid-template-rows: repeat(var(--n), var(--cell)); padding-top: var(--k); width: 26px; text-align: right; padding-right: 8px; }
+.coords.top { grid-column: 2; grid-template-columns: repeat(var(--n), var(--cell)); padding-left: var(--k); height: calc(16px + var(--px) * 3); align-items: start; }
+.coords.left { grid-row: 2; grid-template-rows: repeat(var(--n), var(--cell)); padding-top: var(--k); width: calc(26px + var(--px) * 2); text-align: right; padding-right: calc(8px + var(--px) * 2); }
 .sea { position: relative; width: calc(var(--n) * var(--cell) + var(--k)); height: calc(var(--n) * var(--cell) + var(--k)); background-size: 100% 100%; image-rendering: pixelated; box-shadow: 0 0 0 var(--px) var(--c-ink), var(--px) var(--px) 0 var(--px) rgba(10, 12, 20, 0.5); }
 .sea.aiming { box-shadow: 0 0 0 var(--px) var(--c-ink), 0 0 0 calc(var(--px) * 2) var(--sea-hi), var(--px) var(--px) 0 calc(var(--px) * 2) rgba(10, 12, 20, 0.5); }
 .sea > div { position: absolute; inset: 0; }
@@ -71,21 +73,31 @@
 .sea.aiming .cells button.open:hover { background: rgba(43, 179, 192, 0.18); }
 .sea .cells button:focus-visible { outline: var(--px) solid var(--c-cream); outline-offset: calc(var(--px) * -1); }
 .sea.placing .cells button { cursor: pointer; touch-action: none; }
-.sea .fire-loop { animation: fireLoop 0.45s steps(3) infinite; }
+.sea .fire-loop { animation: fireLoop 0.6s steps(3) infinite; } /* 5 frames a second: well clear of WCAG 2.3.1 */
 @keyframes fireLoop { to { background-position: -300% 0; } }
 .sea .stamp { position: absolute; transform: translate(-50%, -50%); text-align: center; pointer-events: none; white-space: nowrap; }
-.sea .stamp b { display: inline-block; padding: 8px 14px 10px; font: 700 var(--fl-3)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); background: var(--sea-hit); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-bad-hi), inset 0 calc(var(--px) * -2) 0 #7c1626, var(--px) var(--px) 0 var(--c-ink); }
+.sea .stamp-in { display: block; } /* the pose plays here, so it never replaces the centring above */
+.sea .stamp b { display: inline-block; padding: 8px 14px 10px; font: 700 var(--fl-3)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); background: var(--sea-hit); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-bad-hi), inset 0 calc(var(--px) * -2) 0 var(--sea-hit-lo), var(--px) var(--px) 0 var(--c-ink); }
 .sea .stamp small { display: block; margin-top: 6px; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); }
 .sea .spot { position: absolute; box-shadow: 0 0 0 9999px rgba(10, 12, 20, 0.45); pointer-events: none; }
 .sea .pop { position: absolute; pointer-events: none; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); white-space: nowrap; }
 .sea .pop.hit { color: var(--c-bad-hi); }
-.sea .flash { position: absolute; background: var(--c-cream); }
+.sea .flash { position: absolute; background: var(--c-cream); opacity: 0.7; }
+.sea .hunt { position: absolute; inset: 0; image-rendering: pixelated; background-size: 100% 100%; opacity: 0.3; pointer-events: none; }
 .coin-wrap { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 12px; background: rgba(10, 12, 20, 0.55); pointer-events: none; }
 .coin-wrap .coin { image-rendering: pixelated; }
 .coin-wrap b { font: 700 var(--fl-2)/1.2 var(--f-label); text-transform: uppercase; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); text-align: center; padding: 0 12px; }
 
 .dock { display: flex; gap: 12px; align-items: flex-start; }
+.dock .minicol { flex: none; display: flex; flex-direction: column; gap: 6px; }
 .dock .mini { flex: none; image-rendering: pixelated; box-shadow: 0 0 0 var(--px) var(--c-ink); background-size: 100% 100%; }
+.firebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; padding: 8px 8px calc(env(safe-area-inset-bottom) + 8px); background: var(--c-panel); border-top: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
+.firebar > div { max-width: 584px; margin: 0 auto; }
+.firebar button { width: 100%; min-height: 48px; }
+.firebar[hidden] { display: none; }
+#scrGame.with-bar { padding-bottom: calc(env(safe-area-inset-bottom) + 84px); }
+.keys { font: 400 var(--fs-xs)/1.3 var(--f-text); color: var(--c-mute); text-align: center; margin: 0; }
+@media (pointer: coarse) { .keys { display: none; } }
 .dock .side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .tools .big { grid-column: 1 / -1; }
@@ -152,7 +164,7 @@
     <div class="who" id="rivalBox"><div class="nm"><span class="ell" id="rivalName">Rival</span><span class="away" id="rivalAway" hidden>Away</span></div><div class="fleet" id="rivalFleet" role="img" aria-label="Their fleet"></div></div>
     <button id="menuBtn" class="ghost icon-btn" aria-label="Menu" title="Menu"></button>
   </div>
-  <div class="call" id="call"><b id="callTitle"></b><span id="callText"></span><div class="clock" id="clock" hidden><i></i></div></div>
+  <div class="call" id="call"><b id="callTitle"></b><span id="callText"></span><div class="clock" id="clock" role="timer" hidden><i></i></div><span class="clock-s" id="clockS" aria-hidden="true"></span></div>
   <div class="stage">
     <div class="sea-label"><span id="seaName">Your sea</span><b id="seaAim"></b></div>
     <div class="board" id="board">
@@ -161,8 +173,11 @@
       <div class="sea" id="sea"><div class="layer-ships"></div><div class="layer-marks"></div><div class="cells" role="grid" aria-label="Your sea"></div><div class="layer-fx"></div></div>
     </div>
   </div>
+  <p class="keys" id="keys"></p>
   <div class="dock" id="dock"></div>
-  <p class="sr-only" id="announce" aria-live="assertive"></p>
+  <div class="firebar" id="firebar" hidden><div><button class="big" id="fireBar" disabled>Tap a cell to aim</button></div></div>
+  <p class="sr-only" id="announce" aria-live="polite"></p>
+  <p class="sr-only" id="announceNow" aria-live="assertive"></p>
 </section>
 
 <!-- Result: Ploto's (kit.renderResult), the game's art and stats inside -->
@@ -189,60 +204,19 @@
   const GAME = "sea_battle", PREFIX = "seabattle:";
 
   /* ================================================================ the game's rules, as the page needs them (the engine is src/game/sea_battle/engine.ts) */
-  const SHIPS = { carrier: { name: "Carrier", length: 5 }, battleship: { name: "Battleship", length: 4 }, cruiser: { name: "Cruiser", length: 3 }, submarine: { name: "Submarine", length: 3 }, destroyer: { name: "Destroyer", length: 2 } };
-  const BOARDS = { classic: { size: 10, fleet: ["carrier", "battleship", "cruiser", "submarine", "destroyer"] }, quick: { size: 8, fleet: ["battleship", "cruiser", "submarine", "destroyer"] } };
+  const { SHIPS, BOARDS, cellsOf, fits, randomFleet, hiding, density } = window.SEA_RULES; // shared with the art (web/sea-battle.card.js)
+  const T = A.ANIM; // how long each moment takes (the room's animBudget covers these)
   const MARK = { unknown: 0, miss: 1, hit: 2, water: 3 };
   const COLS = "ABCDEFGHIJ";
   const cellName = (x, y) => `${COLS[x]}${y + 1}`;
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-  const cellsOf = (p) => Array.from({ length: SHIPS[p.kind].length }, (_, i) => (p.dir === "h" ? [p.x + i, p.y] : [p.x, p.y + i]));
-  /** Whether ship `p` fits with the rest of `fleet` (in bounds, not overlapping or touching). */
-  function fits(n, fleet, p) {
-    const others = new Set(fleet.filter((q) => q.kind !== p.kind).flatMap((q) => cellsOf(q).map(([x, y]) => y * n + x)));
-    return cellsOf(p).every(([x, y]) => {
-      if (x < 0 || y < 0 || x >= n || y >= n) return false;
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-        const nx = x + dx, ny = y + dy;
-        if (nx >= 0 && ny >= 0 && nx < n && ny < n && others.has(ny * n + nx)) return false;
-      }
-      return true;
-    });
-  }
-  function randomFleet(board) {
-    const { size: n, fleet: kinds } = BOARDS[board];
-    for (let attempt = 0; attempt < 500; attempt++) {
-      const fleet = [];
-      const ok = [...kinds].sort((a, b) => SHIPS[b].length - SHIPS[a].length).every((kind) => {
-        for (let t = 0; t < 200; t++) {
-          const dir = Math.random() < 0.5 ? "h" : "v", len = SHIPS[kind].length;
-          const p = { kind, dir, x: Math.floor(Math.random() * (dir === "h" ? n - len + 1 : n)), y: Math.floor(Math.random() * (dir === "v" ? n - len + 1 : n)) };
-          if (fits(n, fleet, p)) { fleet.push(p); return true; }
-        }
-        return false;
-      });
-      if (ok) return kinds.map((k) => fleet.find((p) => p.kind === k));
-    }
-    return null;
-  }
-  /** How hard a fleet is to find, 0..1: hunters look first where ships fit most often (the bots' hiding score). */
-  function hiding(board, fleet) {
-    const { size: n, fleet: kinds } = BOARDS[board];
-    const d = new Array(n * n).fill(0);
-    for (const k of kinds) {
-      const len = SHIPS[k].length;
-      for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
-        if (x + len <= n) for (let i = 0; i < len; i++) d[y * n + x + i]++;
-        if (y + len <= n) for (let i = 0; i < len; i++) d[(y + i) * n + x]++;
-      }
-    }
-    const max = Math.max(...d), min = Math.min(...d);
-    const cells = fleet.flatMap((p) => cellsOf(p).map(([x, y]) => d[y * n + x]));
-    return Math.max(0, Math.min(1, (max - cells.reduce((a, b) => a + b, 0) / cells.length) / (max - min)));
-  }
+  // A setting of Ploto's sheet that's this game's own: fire with one tap, or tap to aim and tap again.
+  P.addSettings([{ key: "seaOneTap", label: "Firing", options: [[false, "Aim, then fire"], [true, "One tap"]], note: () => "Sea Battle: on small cells, aim first so a slip doesn't fire" }]);
+  if (P.settings.seaOneTap === undefined) P.settings.seaOneTap = false;
 
   /* ================================================================ the platform's lobby, told about this game once */
   const BOT_FIELD = { key: "botStyle", label: "Bot difficulty", kind: "choice", options: [["relaxed", "Medium"], ["sharp", "Hard"]], hint: "Medium bots aim loosely and miss chances. Hard bots hunt like a pro" };
-  const BOARD_FIELD = { key: "board", label: "Board", kind: "choice", options: [["classic", "Classic"], ["quick", "Quick"]], hint: "Classic: 10×10, five ships. Quick: 8×8, four ships, shorter games" };
+  const BOARD_FIELD = { key: "board", label: "Board", kind: "choice", options: [["classic", "Classic"], ["quick", "Quick"]], hint: "Classic: 10×10, five ships, about 4 min. Quick: 8×8, four ships, about 2 min" };
   const SCHEMA = [
     BOARD_FIELD,
     { key: "timer", label: "Turn timer", kind: "choice", options: [[true, "On"], [false, "Off"]], hint: "20 s a shot and 60 s to place your fleet" },
@@ -263,8 +237,9 @@
         "A miss is a splash, and the turn passes. A hit fires again.",
         "Hit every cell of a ship to sink it. The ship shows, and the water around it is marked: nothing else can be there. You fire again.",
         "Sink their whole fleet to win. Tip: ships along the edges are harder to find.",
+        "With the turn timer on you get 20 s a shot and 60 s to place. When it runs out, it fires at a random cell for you.",
       ],
-      extra: `<p class="pl-label">The fleet</p><div class="pl-seats">${Object.entries(SHIPS).map(([k, s]) => `<div class="pl-seat pl-frame"><img src="${A.ship(k)}" alt="" width="${s.length * 20}" height="20" style="image-rendering:pixelated"><div class="pl-seat-t"><span class="nm">${s.name}</span><span class="note">${s.length} cells${k === "carrier" ? " · classic board only" : ""}</span></div></div>`).join("")}</div>`,
+      extra: `<p class="pl-label">The fleet</p><div class="pl-seats">${Object.entries(SHIPS).map(([k, s]) => `<div class="pl-seat pl-frame"><img src="${A.ship(k)}" alt="" width="${s.length * 20}" height="20" style="image-rendering:pixelated"><div class="pl-seat-t"><span class="nm">${s.name}</span><span class="note">${s.length} cells${k === "carrier" ? " · Classic board only" : ""}</span></div></div>`).join("")}</div>`,
     }),
   });
 
@@ -278,12 +253,12 @@
     call: { preset: "pulse", speed: "faster" },      // the turn call
     place: { preset: "pulse", speed: "faster" },     // a ship settles
     nope: { preset: "shakeX", speed: "faster" },     // it doesn't fit there
-    enter: { preset: "backInLeft", speed: "fast" },  // a ship sails in (the banner)
+    enter: { preset: "slideInLeft", speed: "fast" }, // a ship sails in (the banner; no scaling, it stays on the grid)
     win: { preset: "tada" },
   });
 
   /* ================================================================ screens: a small stack; the room's phase picks lobby, game or result */
-  const S = { room: null, sock: null, lobby: null, view: null, M: null, place: null, firing: false, anim: false, resultReady: false, cursor: [0, 0], pending: null, pointer: "mouse", streak: 0, retry: 0, leaving: false, dirty: false };
+  const S = { room: null, sock: null, lobby: null, view: null, M: null, place: null, firing: false, anim: false, resultReady: false, cursor: [0, 0], pending: null, pointer: "mouse", streak: 0, retry: 0, leaving: false, dirty: false, hunt: false };
   const nav = { stack: ["home"] };
   const SCREENS = { home: "scrHome", host: "scrHost", practice: "scrPractice", lobby: "scrLobby", wait: "scrWait", game: "scrGame", result: "scrResult" };
   const cur = () => nav.stack[nav.stack.length - 1];
@@ -376,10 +351,12 @@
       hero.appendChild(shipBanner(sx, sy, k));
       hero.appendChild(el("div", "hs hs-cross", { left: `${(tx * 10 - 2) * k}px`, top: `${(ty * 10 - 2) * k}px`, width: `${14 * k}px`, height: `${14 * k}px`, backgroundImage: `url(${A.sprite("cross").url})` }));
       hero._geo = { k, sx, sy, tx, ty, cols, rows };
-      if (RM()) { // the still end state: a burning hit on the ship and a miss by the crosshair
-        markBanner(hero, "fire", sx * 10 + 10, sy * 10, k);
-        markBanner(hero, "miss", tx * 10, ty * 10, k);
-      }
+      // A battle already under way: two misses around the crosshair and a burning hit on the ship.
+      markBanner(hero, "miss", (tx - 1) * 10, (ty + 1) * 10, k).classList.add("hs-miss");
+      markBanner(hero, "miss", (tx + 1) * 10, (ty + 2) * 10, k).classList.add("hs-miss");
+      const burn = markBanner(hero, "fire", (sx + 1) * 10, sy * 10, k);
+      burn.classList.add("hs-burn");
+      if (!RM()) burn.classList.add("fire-loop");
     },
     intro(hero) {
       pose(hero.querySelector(".hs-ship"), "enter");
@@ -394,21 +371,15 @@
         const ship = hero.querySelector(".hs-ship");
         const [ax, ay] = kind === 0 ? [g.tx * 10, g.ty * 10] : [(g.sx + 1 + (n % 2)) * 10, g.sy * 10];
         await shellBanner(hero, ax, ay, g);
-        if (kind === 0) { sheetFx(hero, "splash", ax - 3, ay - 3, g.k, 480); return; }
+        if (kind === 0) { sheetFx(hero, "splash", ax - 3, ay - 3, g.k, 480); await sleep(300); markBanner(hero, "miss", ax, ay, g.k).classList.add("hs-miss"); return; }
         sheetFx(hero, "boom", ax - 3, ay - 3, g.k, 420);
-        if (kind === 1) { P.playPreset(ship, "headShake", { speed: "faster" }); markBanner(hero, "fire", ax, ay, g.k).classList.add("fire-loop", "hs-burn"); return; }
-        // The short sink: two halves tilt apart and go down in bubbles; a new ship sails in.
+        if (kind === 1) { P.playPreset(ship, "headShake", { speed: "faster" }); const f = markBanner(hero, "fire", ax, ay, g.k); f.classList.add("hs-burn"); if (!RM()) f.classList.add("fire-loop"); return; }
+        // The game's own sink (sinkFx): it breaks in two and goes down; then the sea clears and a new ship sails in.
         hero.querySelectorAll(".hs-burn").forEach((e) => e.remove());
         ship.remove();
-        const halves = [0, 1].map((i) => {
-          const h = shipBanner(g.sx, g.sy, g.k, true);
-          h.style.clipPath = i ? "inset(0 0 0 50%)" : "inset(0 50% 0 0)";
-          hero.appendChild(h);
-          return h.animate([{ transform: "rotate(0)", opacity: 1 }, { transform: `rotate(${i ? 12 : -12}deg) translate(${i ? 3 : -3}px, ${4 * g.k}px)`, opacity: 0 }], { duration: 800, easing: "steps(5)", fill: "forwards" }).finished.then(() => h.remove());
-        });
-        for (let i = 0; i < 4; i++) setTimeout(() => sheetFx(hero, "bubbles", (g.sx + i) * 10, g.sy * 10, g.k, 640), i * 80);
-        await Promise.all(halves);
-        await sleep(500);
+        await sinkFx(hero, { kind: "battleship", x: g.sx, y: g.sy, dir: "h" }, g.k, 1, "hs");
+        hero.querySelectorAll(".hs-miss").forEach((e) => e.remove());
+        await sleep(400);
         const next = shipBanner(g.sx, g.sy, g.k);
         hero.appendChild(next);
         pose(next, "enter");
@@ -427,13 +398,7 @@
     return e;
   }
   async function shellBanner(hero, ax, ay, g) {
-    const sh = A.sprite("shell");
-    const sx = g.cols * 5, sy = g.rows * 10 + 4;
-    const e = el("div", "hs", { left: `${sx * g.k}px`, top: `${sy * g.k}px`, width: `${sh.w * g.k}px`, height: `${sh.h * g.k}px`, backgroundImage: `url(${sh.url})` });
-    hero.appendChild(e);
-    const tx = (ax + 3 - sx) * g.k, ty = (ay + 3 - sy) * g.k;
-    await e.animate([{ transform: "translate(0,0) scale(1)" }, { transform: `translate(${tx / 2}px, ${ty / 2 - 14 * g.k}px) scale(1.6)` }, { transform: `translate(${tx}px, ${ty}px) scale(1)` }], { duration: 320, easing: "steps(6)" }).finished.catch(() => {});
-    e.remove();
+    await shellFx(hero, g.cols * 5, g.rows * 10 + 4, ax, ay, g.k, 340, "hs");
   }
 
   /* ================================================================ settings screens */
@@ -638,7 +603,8 @@
       const c = Number(b.dataset.c), m = list[c], p = at2.get(c);
       const open = side === "target" && m === MARK.unknown;
       b.classList.toggle("open", open);
-      b.disabled = !(aiming && open) && !placing;
+      // Not disabled: keyboard and screen-reader users can explore any time; clicks are guarded.
+      b.setAttribute("aria-disabled", String(!(aiming && open) && !placing));
       let what;
       if (side === "mine" && p) what = `your ${SHIPS[p.kind].name.toLowerCase()}${sunk.has(p.kind) ? ", sunk" : m === MARK.hit ? ", hit" : ""}`;
       else if (side === "target" && p && sunk.has(p.kind)) what = `sunk ${SHIPS[p.kind].name.toLowerCase()}`;
@@ -648,6 +614,17 @@
     }
     if (aiming || placing) rovingFocus();
     if (aiming && S.pending) crossAt(...S.pending);
+    // While placing: where hunters look first (the bots' density), tinted over the sea.
+    sea.querySelector(".hunt")?.remove();
+    if (placing && S.hunt) {
+      const d = density(n === 8 ? "quick" : "classic"), max = Math.max(...d), min = Math.min(...d);
+      const c = document.createElement("canvas");
+      c.width = n; c.height = n;
+      const x2 = c.getContext("2d");
+      d.forEach((v, i) => { const a = (v - min) / (max - min); x2.fillStyle = `rgba(216, 54, 75, ${a.toFixed(2)})`; x2.fillRect(i % n, Math.floor(i / n), 1, 1); });
+      const h = el("div", "hunt", { backgroundImage: `url(${c.toDataURL()})`, inset: `${geo.k}px 0 0 ${geo.k}px` });
+      sea.insertBefore(h, sea.querySelector(".layer-ships"));
+    }
   }
   function rovingFocus() {
     const [x, y] = S.cursor;
@@ -700,7 +677,21 @@
     drawSea(side);
     renderCall();
     renderDock(side);
+    renderBar();
+    const placing = g.phase === "placing" && !g.ready[you()];
+    $("keys").textContent = placing ? "1-5 picks a ship · arrows move it · R turns · S shuffles · Enter: ready" : isAiming() ? "Arrows move · Enter fires" : "";
   }
+  /** On your turn with tap-to-aim, a Fire bar sits in the thumb zone. */
+  function renderBar() {
+    const on = !!G() && isAiming() && twoStepMode();
+    $("firebar").hidden = !on;
+    $("scrGame").classList.toggle("with-bar", on);
+    if (!on) return;
+    const b = $("fireBar");
+    b.disabled = !S.pending;
+    b.textContent = S.pending ? `Fire at ${cellName(...S.pending)}` : "Tap a cell to aim";
+  }
+  $("fireBar").onclick = () => { if (S.pending) fire(...S.pending); };
   function fleetIcons(kinds, sunk) {
     const left = [...sunk];
     return kinds.map((k) => {
@@ -716,8 +707,10 @@
       const h = S.place ? hiding(g.size === 8 ? "quick" : "classic", S.place.fleet) : 0;
       const band = h < 0.34 ? 1 : h < 0.6 ? 2 : 3;
       dock.innerHTML = `<div class="side"><div class="tools"><button class="ghost" id="rotBtn">Rotate</button><button class="ghost" id="shufBtn">Shuffle</button><button class="big" id="readyBtn">Ready</button></div>` +
-        `<div class="hide-meter" title="Ships along the edges are harder to find"><span>Hiding</span>${[1, 2, 3].map((i) => `<i class="${i <= band ? "on" : ""}"></i>`).join("")}<b>${["", "Easy to find", "Fair", "Hard to find"][band]}</b></div>` +
-        `<p class="hint" id="placeHint">${S.place?.sel ? `${SHIPS[S.place.sel].name}: tap a cell to move it, or Rotate` : "Tap or drag a ship to move it. Ready when you are"}</p></div>`;
+        `<div class="hide-meter" title="Ships along the edges are harder to find"><span>Hiding</span>${[1, 2, 3].map((i) => `<i class="${i <= band ? "on" : ""}"></i>`).join("")}<b>${["", "Easy to find", "Fair", "Hard to find"][band]}</b>` +
+        `<button class="flat small" id="huntBtn" aria-pressed="${!!S.hunt}">${S.hunt ? "Hide where hunters look" : "Show where hunters look"}</button></div>` +
+        `<p class="hint" id="placeHint">${S.place?.sel ? `${SHIPS[S.place.sel].name}: tap a cell to move it, or Rotate` : "Tap a ship to pick it, then tap a cell or Rotate. Or drag it"}</p></div>`;
+      $("huntBtn").onclick = () => { S.hunt = !S.hunt; renderGame(); };
       $("rotBtn").onclick = rotate;
       $("shufBtn").onclick = shuffle;
       $("readyBtn").onclick = ready;
@@ -738,12 +731,11 @@
     const label = other === "mine" ? "Your sea" : `${esc(rivalName())}'s sea`;
     const taken = g.incoming.filter((m) => m === MARK.hit).length;
     const miniLabel = other === "mine" ? `Your sea: ${plural(taken, "hit", "hits")} taken, ${plural(g.fleetKinds.length - g.yourSunk.length, "ship", "ships")} afloat` : `${esc(rivalName())}'s sea: ${plural(st.hits, "hit", "hits")}, ${plural(g.rivalSunk.length, "ship", "ships")} sunk`;
-    const fireBtn = S.pending && isAiming() ? `<button class="big" id="fireBtn">Fire at ${cellName(...S.pending)}</button>` : "";
-    dock.innerHTML = `<div class="mini" style="width:${(n * 10 + 1) * k}px;height:${(n * 10 + 1) * k}px;background-image:url(${drawMini(other)})" role="img" aria-label="${miniLabel}"></div>` +
-      `<div class="side"><div class="sea-label"><span>${label}</span></div>` +
+    // The small sea carries its own label; the side panel is your fleet, so labels never cross.
+    dock.innerHTML = `<div class="minicol"><div class="sea-label"><span>${label}</span></div><div class="mini" style="width:${(n * 10 + 1) * k}px;height:${(n * 10 + 1) * k}px;background-image:url(${drawMini(other)})" role="img" aria-label="${miniLabel}"></div></div>` +
+      `<div class="side"><div class="sea-label"><span>Your fleet</span></div>` +
       `<div class="who"><div class="nm"><span class="ell">${esc(nameOf(you()))}</span><span class="pl-you">You</span></div><div class="fleet" role="img" aria-label="Your fleet: ${plural(g.fleetKinds.length - g.yourSunk.length, "ship", "ships")} afloat">${fleetIcons(g.fleetKinds, g.yourSunk)}</div></div>` +
-      `<p class="hint">Your shots: ${st.shots ? `${plural(st.hits, "hit", "hits")} from ${st.shots}` : "none yet"}</p>${fireBtn}</div>`;
-    if (fireBtn) $("fireBtn").onclick = () => fire(...S.pending);
+      `<p class="hint">Your shots: ${st.shots ? `${plural(st.hits, "hit", "hits")} from ${st.shots}` : "none yet"}</p></div>`;
   }
   function renderCall() {
     const g = G();
@@ -770,7 +762,7 @@
   function tickClock() {
     const v = S.view, e = $("clock"), c = v?.clock, g = G();
     const shownFor = c && g && (c.seat === null ? !g.ready[you()] : true);
-    if (!shownFor) { e.hidden = true; return; }
+    if (!shownFor) { e.hidden = true; $("clockS").textContent = ""; return; }
     const left = Math.max(0, c.deadline - Date.now());
     const key = `${c.seat}:${c.deadline}`;
     if (clockTotal.key !== key) clockTotal = { key, ms: Math.max(left, 1) };
@@ -779,8 +771,15 @@
     const low = left < 5000;
     e.classList.toggle("low", low);
     const secs = Math.ceil(left / 1000);
+    $("clockS").textContent = `${secs} s`;
+    $("clockS").classList.toggle("low", low);
+    if (secs % 5 === 0 || low) e.setAttribute("aria-label", `${secs} seconds left`);
     const mineClock = c.seat === you() || c.seat === null;
-    if (low && mineClock && secs !== lastTick && secs > 0 && secs <= 3) { lastTick = secs; cue("tick"); if (secs === 3) say("3 seconds left"); }
+    if (mineClock && secs !== lastTick && secs > 0) {
+      if (secs === 10) say("10 seconds left");
+      if (low && secs <= 3) { cue("tick"); if (secs === 3) sayNow("3 seconds left"); }
+      lastTick = secs;
+    }
   }
   setInterval(() => { if (screenNow() === "game" && !$("clock").hidden) tickClock(); }, 250);
 
@@ -899,7 +898,7 @@
   /* ================================================================ firing: tap to aim, tap again (or Fire) to fire on small touch cells; one click with a mouse, Enter on the keyboard */
   $("sea").querySelector(".cells").addEventListener("click", (ev) => {
     const b = ev.target.closest("button");
-    if (!b || b.disabled) return;
+    if (!b || b.getAttribute("aria-disabled") === "true") return;
     const c = Number(b.dataset.c), x = c % geo.n, y = Math.floor(c / geo.n);
     S.cursor = [x, y];
     const g = G();
@@ -909,11 +908,13 @@
       if (S.place.sel) moveTo(S.place.sel, x, y);
       return;
     }
-    const twoStep = S.pointer !== "mouse" && ev.detail !== 0 && 10 * geo.k < 44;
+    const twoStep = ev.detail !== 0 && twoStepMode();
     if (twoStep && !(S.pending && S.pending[0] === x && S.pending[1] === y)) return aim(x, y);
     fire(x, y);
   });
-  /** Aim without firing (touch, small cells): the crosshair locks on, Fire shows in the dock. */
+  /** Touch on cells under 44 px aims first (unless the player picked one-tap firing in Settings). */
+  const twoStepMode = () => S.pointer !== "mouse" && 10 * geo.k < 44 && !P.settings.seaOneTap;
+  /** Aim without firing (touch, small cells): the crosshair locks on, Fire shows in the bar. */
   function aim(x, y) {
     if (!isAiming()) return;
     S.pending = [x, y];
@@ -921,19 +922,20 @@
     $("seaAim").textContent = cellName(x, y);
     cue("aim", { vol: 0.6 });
     renderCall();
-    renderDock("target");
-    say(`Aiming at ${cellName(x, y)}. Tap again to fire`);
+    renderBar();
+    say(`Aiming at ${cellName(x, y)}. Tap again or Fire`);
   }
   async function fire(x, y) {
     const g = G();
     if (!isAiming() || g.outgoing[y * geo.n + x] !== MARK.unknown) return;
+    const aimed = S.pending && S.pending[0] === x && S.pending[1] === y; // the aim already played its sound
     S.firing = true;
     S.pending = null;
     drawSea("target");
-    renderDock("target");
+    renderBar();
     $("seaAim").textContent = cellName(x, y);
     const cross = crossAt(x, y);
-    cue("aim");
+    if (!aimed) cue("aim");
     try { await req(PREFIX + "fire", { x, y }); }
     catch (e) { toast(P.errText(e), 2600); cross.remove(); S.firing = false; renderGame(); }
   }
@@ -968,11 +970,13 @@
   async function showSide(side) {
     if (geo.side === side && $("seaName").dataset.side === side) return;
     const board = $("board");
-    if (!RM()) { board.classList.add("swap-out"); await sleep(160); }
+    if (!RM()) { board.classList.add("swap-out"); await sleep(T.swap / 2); }
     $("seaName").dataset.side = side;
-    renderGameAs(side);
+    // The new sea is drawn and starts coming in in the same frame: there's always a sea on screen.
     board.classList.remove("swap-out");
-    if (!RM()) { board.classList.add("swap-in"); await sleep(160); board.classList.remove("swap-in"); }
+    if (!RM()) board.classList.add("swap-in");
+    renderGameAs(side);
+    if (!RM()) { await sleep(T.swap / 2); board.classList.remove("swap-in"); }
   }
 
   async function play(u) {
@@ -995,11 +999,12 @@
   }
 
   const EV = {
-    async ready(e) {
+    async ready(e, v) {
       const g = G();
       g.ready[e.seat] = true;
-      if (e.seat === you()) { S.place = null; renderGameAs("mine"); return; }
+      if (e.seat === you()) { g.fleet = v.game.fleet ?? S.place?.fleet ?? g.fleet; S.place = null; renderGameAs("mine"); return; }
       renderCall();
+      cue("ready", { vol: 0.5 });
       say(`${rivalName()} is ready`);
     },
     async start(e) {
@@ -1014,18 +1019,18 @@
       $("callText").textContent = "Who fires first?";
       $("call").classList.remove("mine");
       const wrap = el("div", "coin-wrap");
-      const s = A.sheet("coin"), k = geo.k + 2;
+      const s = A.sheet("coin"), k = Math.min(geo.k * 2, 8);
       wrap.innerHTML = `<div class="coin" style="width:${s.w * k}px;height:${s.h * k}px;background-image:url(${s.url});background-size:${s.w * s.n * k}px ${s.h * k}px"></div><b></b>`;
       fxLayer().appendChild(wrap);
       cue("coin");
-      if (!RM()) await wrap.querySelector(".coin").animate([{ backgroundPosition: "0 0" }, { backgroundPosition: `${-s.w * s.n * k}px 0` }], { duration: 700, easing: `steps(${s.n})`, iterations: 2 }).finished.catch(() => {});
+      if (!RM()) await wrap.querySelector(".coin").animate([{ backgroundPosition: "0 0" }, { backgroundPosition: `${-s.w * s.n * k}px 0` }], { duration: T.coinSpin, easing: `steps(${s.n})` }).finished.catch(() => {});
       cue("coin", { vol: 0.6 });
       const label = wrap.querySelector("b");
       label.textContent = e.first === you() ? "You fire first" : `${rivalName()} fires first`;
-      say(label.textContent);
       P.playPreset(label, "bounceIn", { speed: "fast" });
       cue(e.first === you() ? "turn" : "select");
-      await sleep(900);
+      sayNow(label.textContent);
+      await sleep(T.coinLabel);
       wrap.remove();
       g.turn = e.first;
       await showSide(e.first === you() ? "target" : "mine");
@@ -1040,16 +1045,16 @@
         $("callText").textContent = `${rivalName()} is aiming`;
         if (!RM() && !e.auto) {
           const finishing = g.incoming.some((m, c) => m === MARK.hit && !shipCells((g.fleet ?? []).filter((p) => g.yourSunk.includes(p.kind))).has(c));
-          const hops = finishing ? 1 : 1 + Math.floor(Math.random() * 3);
+          const hops = finishing ? 1 : 1 + Math.floor(Math.random() * T.aimHops);
           for (let i = 0; i < hops; i++) {
             const ax = Math.max(0, Math.min(n - 1, e.x + Math.round((Math.random() - 0.5) * 4))), ay = Math.max(0, Math.min(n - 1, e.y + Math.round((Math.random() - 0.5) * 4)));
             crossAt(ax, ay);
-            await sleep(170 * speed());
+            await sleep(T.aimHop * speed());
           }
         }
         crossAt(e.x, e.y);
-        cue("aim", { vol: 0.5 });
-        await wait2(220);
+        cue("aim", { vol: 0.5, buzz: false }); // only their hits buzz your phone
+        await wait2(T.aimLock);
       } else if (!fx.querySelector(".cross")) crossAt(e.x, e.y);
       if (e.auto) {
         cue("timeout");
@@ -1057,19 +1062,7 @@
       }
       // The shell: up from your side for your shots, down from theirs for incoming.
       cue("fire", { pitch: 0.96 + Math.random() * 0.08 });
-      if (!RM()) {
-        const sh = A.sprite("shell");
-        const sx = (n * 10) / 2, sy = mine ? n * 10 + 8 : -8;
-        const shell = el("div", "fx", { ...at(sx, sy), width: `${sh.w * k}px`, height: `${sh.h * k}px`, backgroundImage: `url(${sh.url})` });
-        fx.appendChild(shell);
-        const tx = (e.x * 10 + 3 - sx) * k, ty = (e.y * 10 + 3 - sy) * k;
-        await shell.animate([
-          { transform: "translate(0, 0) scale(1)" },
-          { transform: `translate(${tx * 0.5}px, ${ty * 0.5 - 18 * k}px) scale(1.6)` },
-          { transform: `translate(${tx}px, ${ty}px) scale(1)` },
-        ], { duration: 360 * speed(), easing: "steps(7)" }).finished.catch(() => {});
-        shell.remove();
-      }
+      if (!RM()) await shellFx(fx, (n * 10) / 2, mine ? n * 10 + 8 : -8, e.x * 10 + 2, e.y * 10 + 2, k, T.shell * speed(), "fx");
       fx.querySelector(".cross")?.remove();
       const list = mine ? g.outgoing : g.incoming;
       const c = e.y * n + e.x;
@@ -1077,19 +1070,19 @@
       g.stats[e.by].shots++;
       if (e.result === "miss") {
         cue("splash", { pitch: 0.96 + Math.random() * 0.08 });
-        if (!RM()) await new Promise((res) => { sheetFx(fx, "splash", e.x * 10 - 3, e.y * 10 - 3, k, 420 * speed()); setTimeout(res, 300 * speed()); });
+        if (!RM()) await new Promise((res) => { sheetFx(fx, "splash", e.x * 10 - 3, e.y * 10 - 3, k, 420 * speed()); setTimeout(res, T.splash * speed()); });
         list[c] = MARK.miss;
         marks.appendChild(markEl("miss", e.x, e.y));
         popAt(e.x, e.y, "Miss", "");
         say(`${mine ? "You" : rivalName()} missed at ${cellName(e.x, e.y)}`);
-        await wait2(280);
+        await wait2(T.missHold);
         await hold(mine ? 450 : 700);
         return;
       }
       // A hit: a beat of stillness, a flash, then the burst; it keeps burning.
       S.streak++;
       const len = e.ship ? SHIPS[e.ship.kind].length : 0;
-      await hitStop(e.x, e.y, e.result === "sunk" ? 150 + 30 * len : 90);
+      await hitStop(e.x, e.y, e.result === "sunk" ? T.sinkStopBase + T.sinkStopPerCell * len : T.hitStop);
       if (e.result === "hit") cue(mine ? "hit" : "struck", { pitch: Math.min(1.3, 1 + 0.06 * (S.streak - 1)) });
       if (!RM()) sheetFx(fx, "boom", e.x * 10 - 3, e.y * 10 - 3, k, 420 * speed());
       if (e.result === "hit") pose($("sea"), "hit");
@@ -1100,11 +1093,10 @@
         popAt(e.x, e.y, "Hit", "hit");
         $("callText").textContent = mine ? (S.streak > 1 ? `Hit, ${S.streak} in a row. Fire again` : "Hit. Fire again") : S.streak > 1 ? `${rivalName()} hit you, ${S.streak} in a row` : `${rivalName()} hit your ship`;
         say(`${mine ? "You hit" : `${rivalName()} hit your ship`} at ${cellName(e.x, e.y)}`);
-        await wait2(520);
+        await wait2(T.hitHold);
         await hold(mine ? 450 : 700);
         return;
       }
-      await wait2(200);
       await sink(e, mine);
       await hold(mine ? 450 : 700);
     },
@@ -1114,9 +1106,9 @@
       S.streak = 0;
       await showSide(e.seat === you() ? "target" : "mine");
       pose($("call"), "call");
-      if (e.seat === you()) { cue("turn"); say("Your turn"); }
-      else say(`${rivalName()}'s turn`);
-      await wait2(200);
+      if (e.seat === you()) { cue("turn"); sayNow("Your turn"); }
+      else { cue("select", { vol: 0.4 }); say(`${rivalName()}'s turn`); }
+      await wait2(T.turnHold);
     },
     async over(e, v) {
       const g = G();
@@ -1126,7 +1118,7 @@
         await showSide("target");
         renderGameAs("target");
         cue(won ? "win" : "lose");
-        say(won ? (e.forfeit ? `${rivalName()} forfeited. Victory` : "Victory. Their whole fleet is down") : e.forfeit ? "You forfeited" : "Defeat. Your fleet is down");
+        sayNow(won ? (e.forfeit ? `${rivalName()} forfeited. Victory` : "Victory. Their whole fleet is down") : e.forfeit ? "You forfeited" : "Defeat. Your fleet is down");
         if (!RM()) {
           // The finale: whatever was left of their fleet flashes up where it hid.
           for (const s of $("sea").querySelectorAll(".layer-ships .ship.fade")) s.animate([{ filter: "brightness(2.2)", opacity: 1 }, { filter: "brightness(1)", opacity: 0.55 }], { duration: 480, easing: "steps(3)" });
@@ -1141,7 +1133,7 @@
   /** A frozen beat and a flash on the cell before an impact (hit-stop). */
   async function hitStop(x, y, ms) {
     if (RM()) return;
-    const f = el("div", "flash", { ...at(x * 10 + 1, y * 10 + 1), width: `${9 * geo.k}px`, height: `${9 * geo.k}px` });
+    const f = el("div", "flash", { ...at(x * 10 + 2, y * 10 + 2), width: `${6 * geo.k}px`, height: `${6 * geo.k}px` });
     fxLayer().appendChild(f);
     await sleep(ms * speed());
     f.remove();
@@ -1158,15 +1150,70 @@
     if (RM()) { setTimeout(() => e.remove(), 600); return; }
     e.animate([{ transform: "translateY(4px)", opacity: 1 }, { transform: `translateY(-${3 * geo.k}px)`, opacity: 1, offset: 0.7 }, { transform: `translateY(-${4 * geo.k}px)`, opacity: 0 }], { duration: 760 * speed(), easing: "steps(6)", fill: "forwards" }).finished.then(() => e.remove()).catch(() => {});
   }
-  function say(text) { $("announce").textContent = ""; requestAnimationFrame(() => { $("announce").textContent = text; }); }
+  /** Screen readers: `say` for the play by play (polite), `sayNow` for your turn, sinks and the end (assertive). */
+  function say(text, id = "announce") { $(id).textContent = ""; requestAnimationFrame(() => { $(id).textContent = text; }); }
+  const sayNow = (text) => say(text, "announceNow");
+
+  /** A shell in flight from (sx, sy) to (ax, ay) art px, with a puff of smoke left every two steps. */
+  async function shellFx(root, sx, sy, ax, ay, k, ms, cls) {
+    const sh = A.sprite("shell"), tr = A.sprite("trail");
+    const e = el("div", cls, { position: "absolute", left: `${sx * k}px`, top: `${sy * k}px`, width: `${sh.w * k}px`, height: `${sh.h * k}px`, backgroundImage: `url(${sh.url})`, backgroundSize: "100% 100%", imageRendering: "pixelated" });
+    root.appendChild(e);
+    const steps = 8, tx = (ax - sx) * k, ty = (ay - sy) * k;
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps, arc = Math.round(Math.sin(t * Math.PI) * 16) * k;
+      const x = Math.round(tx * t), y = Math.round(ty * t) - arc;
+      if (i % 2 === 0 && i < steps) {
+        const puff = el("div", cls, { position: "absolute", left: `${sx * k + x}px`, top: `${sy * k + y + 2 * k}px`, width: `${tr.w * k}px`, height: `${tr.h * k}px`, backgroundImage: `url(${tr.url})`, backgroundSize: "100% 100%", imageRendering: "pixelated" });
+        root.appendChild(puff);
+        setTimeout(() => puff.remove(), ms * 0.5);
+      }
+      e.style.transform = `translate(${x}px, ${y}px)`;
+      await sleep(ms / steps);
+    }
+    e.remove();
+  }
+
+  /**
+   * A ship breaking in two and going down, the same on the sea and in the banner: the halves
+   * part, their broken ends dip in whole-pixel steps (pre-drawn, no rotation), and they sink
+   * in bubbles under columns of smoke. Resolves when the halves are gone.
+   */
+  async function sinkFx(root, p, k, sp, cls) {
+    const len = SHIPS[p.kind].length, cells = cellsOf(p), horiz = p.dir === "h";
+    const W = (horiz ? len * 10 : 10) * k, H = (horiz ? 10 : len * 10) * k;
+    const halves = [true, false].map((first) => {
+      const hw = Math.ceil(len * 10 / 2);
+      const e = el("div", cls, { position: "absolute", imageRendering: "pixelated", backgroundSize: "100% 100%", pointerEvents: "none",
+        left: `${p.x * 10 * k + (horiz && !first ? W - hw * k : 0)}px`, top: `${p.y * 10 * k + (!horiz && !first ? H - hw * k : 0)}px`,
+        width: `${(horiz ? hw : 14) * k}px`, height: `${(horiz ? 14 : hw) * k}px` });
+      root.appendChild(e);
+      return { e, first };
+    });
+    for (let i = 0; i < len * 2; i++) { const [x, y] = cells[i % len]; setTimeout(() => sheetFx(root, "bubbles", x * 10, y * 10, k, (640 + 80 * len) * sp).className = `fx ${cls}`, i * 70 * sp); }
+    for (let i = 0; i < Math.ceil(len / 2); i++) { const [x, y] = cells[Math.min(len - 1, i * 2)]; setTimeout(() => sheetFx(root, "column", x * 10 - 1, y * 10 - 20, k, 1200 * sp).className = `fx ${cls}`, (100 + i * 140) * sp); }
+    // Six frames: part, dip, dip further, sink, sink, gone.
+    const frames = [[0, 0, 1], [1, 0, 1], [2, 1, 1], [2, 2, 0.85], [2, 4, 0.6], [2, 6, 0]];
+    const dur = (T.halves + T.halvesPerCell * len) * sp / frames.length;
+    for (const [t, down, op] of frames) {
+      for (const { e, first } of halves) {
+        const s2 = first ? -1 : 1;
+        e.style.backgroundImage = `url(${A.half(p.kind, p.dir, first, t)})`;
+        e.style.transform = horiz ? `translate(${s2 * Math.min(t, 1) * 3 * k}px, ${down * k}px)` : `translate(${down * k}px, ${s2 * Math.min(t, 1) * 3 * k}px)`;
+        e.style.opacity = op;
+      }
+      await sleep(dur);
+    }
+    halves.forEach(({ e }) => e.remove());
+  }
 
   /**
    * The signature moment: a sink. A beat of stillness; a burst on every plate; the whole
-   * ship shows plate by plate and cracks with one flash; it breaks in two, the halves tilt
-   * apart and go down in bubbles under columns of smoke; the sea shakes (a big ship wobbles
-   * the board); the board dims around the wreck and SUNK lands beside it with the ship's
-   * name; the water around it is marked ring by ring; its icon is struck through. Bigger
-   * ships sink bigger: longer, more bursts, more smoke, a harder shake.
+   * ship shows plate by plate and cracks with one flash; SUNK lands beside it while the
+   * board dims around it, and its icon is struck through; it breaks in two and goes down in
+   * bubbles under columns of smoke while the water around it is marked ring by ring; the
+   * sea shakes (a big ship wobbles the board). Bigger ships sink bigger: longer, more bursts
+   * and smoke, a lower sound, a harder shake.
    */
   async function sink(e, mine) {
     const g = G(), n = g.size, k = geo.k, fx = fxLayer();
@@ -1174,81 +1221,36 @@
     const cells = cellsOf(p), mid = cells[Math.floor((len - 1) / 2)];
     const sunkList = mine ? g.rivalSunk : g.yourSunk;
     if (mine) g.rivalShips = [...g.rivalShips.filter((q) => q.kind !== p.kind), p];
-    cue(mine ? "sunk" : "lost", { vol: Math.min(1, 0.8 + len * 0.04) });
     const layer = $("sea").querySelector(".layer-ships");
     layer.querySelector(`.ship[data-kind="${p.kind}"]`)?.remove();
     $("sea").querySelectorAll(".layer-marks .mark").forEach((m) => { if (cells.some(([x, y]) => Number(m.dataset.c) === y * n + x)) m.remove(); });
-    const wreck = shipEl(p, { wreck: true });
-    // The ship's box on the sea (for the spotlight and the stamp).
     const box = { x: p.x * 10 * k, y: p.y * 10 * k, w: (p.dir === "h" ? len * 10 : 10) * k, h: (p.dir === "v" ? len * 10 : 10) * k };
+    const whole = shipEl(p);
+    layer.appendChild(whole);
     if (!RM()) {
       cells.forEach(([x, y], i) => setTimeout(() => sheetFx(fx, "boom", x * 10 - 3, y * 10 - 3, k, 420 * sp), i * 60 * sp));
-      // 1. The whole ship shows, plate by plate, then cracks with one flash.
-      const whole = shipEl(p);
-      layer.appendChild(whole);
+      if (len >= 4) cells.forEach(([x, y], i) => setTimeout(() => sheetFx(fx, "boom", x * 10 - 3, y * 10 - 3, k, 420 * sp), 180 * sp + i * 60 * sp)); // a second wave for a big ship
+      // 1. The whole ship shows plate by plate, then cracks with one flash.
       const horiz = p.dir === "h";
-      await whole.animate([{ clipPath: horiz ? "inset(0 100% 0 0)" : "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: 140 * len * sp, easing: `steps(${len})` }).finished.catch(() => {});
-      await whole.animate([{ filter: "brightness(3)" }, { filter: "brightness(1)" }], { duration: 120, easing: "steps(2)" }).finished.catch(() => {});
-      pose($("sea"), len >= 4 ? "sink" : len === 3 ? "sink" : "hit");
-      if (len >= 4) pose($("board"), "sinkBig");
-      // 2. It breaks in two: the halves part, tilt and go down; bubbles and smoke.
-      whole.remove();
-      const gap = 3 * k, rot = 8 + 2 * len, dur = (700 + 40 * len) * sp;
-      const half = (first) => {
-        const h = shipEl(p, { wreck: true });
-        h.style.clipPath = horiz ? (first ? "inset(0 50% 0 0)" : "inset(0 0 0 50%)") : first ? "inset(0 0 50% 0)" : "inset(50% 0 0 0)";
-        layer.appendChild(h);
-        const s = first ? -1 : 1;
-        const apart = horiz ? `translate(${s * gap}px, 0)` : `translate(0, ${s * gap}px)`;
-        return h.animate([
-          { transform: "translate(0, 0) rotate(0)", opacity: 1 },
-          { transform: `${apart} rotate(${s * rot * 0.5}deg)`, opacity: 1, offset: 0.35 },
-          { transform: `${apart} translate(0, ${2 * k}px) rotate(${s * rot}deg)`, opacity: 0.8, offset: 0.7 },
-          { transform: `${apart} translate(0, ${5 * k}px) rotate(${s * rot}deg)`, opacity: 0 },
-        ], { duration: dur, easing: "steps(6)", fill: "forwards" }).finished.then(() => h.remove()).catch(() => {});
-      };
-      const sinking = [half(true), half(false)];
-      for (let i = 0; i < len * 2; i++) { const [x, y] = cells[i % len]; setTimeout(() => sheetFx(fx, "bubbles", x * 10, y * 10, k, (640 + 80 * len) * sp), i * 70 * sp); }
-      for (let i = 0; i < Math.ceil(len / 2); i++) { const [x, y] = cells[Math.min(len - 1, i * 2)]; setTimeout(() => sheetFx(fx, "column", x * 10 - 1, y * 10 - 20, k, 1200 * sp), 100 + i * 140 * sp); }
-      await Promise.all(sinking);
-      layer.appendChild(wreck);
-      wreck.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: "steps(2)" });
-    } else {
-      layer.appendChild(wreck);
+      await whole.animate([{ clipPath: horiz ? "inset(0 100% 0 0)" : "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: T.plate * len * sp, easing: `steps(${len})` }).finished.catch(() => {});
+      cue("crack");
+      await whole.animate([{ filter: "brightness(3)" }, { filter: "brightness(1)" }], { duration: T.crack, easing: "steps(2)" }).finished.catch(() => {});
     }
-    // 3. The board dims around the wreck; SUNK lands beside it with the ship's name; the water is marked ring by ring.
+    cue(mine ? "sunk" : "lost", { pitch: 1.15 - 0.07 * len });
+    // 2. SUNK lands beside the ship, the board dims around it, its icon is struck through.
     const spot = el("div", "spot", { left: `${box.x}px`, top: `${box.y}px`, width: `${box.w}px`, height: `${box.h}px` });
     fx.appendChild(spot);
     const stamp = el("div", "stamp");
-    stamp.innerHTML = `<b>Sunk</b><small>${mine ? "Their" : "Your"} ${SHIPS[p.kind].name.toLowerCase()}</small>`;
+    stamp.innerHTML = `<span class="stamp-in"><b>Sunk</b><small>${mine ? "Their" : "Your"} ${SHIPS[p.kind].name.toLowerCase()}</small></span>`;
     fx.appendChild(stamp);
     const W = fx.clientWidth, H = fx.clientHeight, sw = stamp.offsetWidth, sh = stamp.offsetHeight;
     const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
-    // Beside the ship, on the side with more room, kept inside the sea.
-    let sx = cx, sy = cy;
+    let sx = cx, sy = cy; // beside the ship, on the side with more room, kept inside the sea
     if (p.dir === "h") sy = cy + (cy < H / 2 ? 1 : -1) * (box.h / 2 + sh / 2 + 2 * k);
     else sx = cx + (cx < W / 2 ? 1 : -1) * (box.w / 2 + sw / 2 + 2 * k);
     stamp.style.left = `${Math.max(sw / 2 + 2, Math.min(W - sw / 2 - 2, sx))}px`;
     stamp.style.top = `${Math.max(sh / 2 + 2, Math.min(H - sh / 2 - 2, sy))}px`;
-    pose(stamp, "stamp");
-    const water = e.water || [];
-    const list = mine ? g.outgoing : g.incoming;
-    const marks = $("sea").querySelector(".layer-marks");
-    // Rings spread from the ship's middle out to its ends.
-    const ring = ([x, y]) => Math.max(Math.abs(x - mid[0]), Math.abs(y - mid[1]));
-    const rings = [...new Set(water.map(ring))].sort((a, b) => a - b);
-    for (const r of rings) {
-      for (const [x, y] of water.filter((w) => ring(w) === r)) {
-        list[y * n + x] = MARK.water;
-        if (!RM()) sheetFx(fx, "ripple", x * 10, y * 10, k, 330 * sp);
-        setTimeout(() => marks.appendChild(markEl("water", x, y)), RM() ? 0 : 300 * sp);
-      }
-      await wait2(110);
-    }
-    await sleep(RM() ? 900 : Math.max(0, 900 - rings.length * 110) * sp);
-    spot.remove();
-    stamp.remove();
-    // 4. Its icon is struck through.
+    pose(stamp.firstElementChild, "stamp");
     sunkList.push(p.kind);
     g.stats[e.by].sunk++;
     if (mine) {
@@ -1256,9 +1258,35 @@
       const icons = [...$("rivalFleet").querySelectorAll(`img[data-kind="${p.kind}"]`)];
       pose(icons[icons.length - 1], "cross");
     } else renderDock(geo.side);
+    sayNow(`${mine ? "You sank their" : `${rivalName()} sank your`} ${SHIPS[p.kind].name.toLowerCase()}`);
+    // 3. It breaks in two and goes down while the water around it is marked ring by ring; the sea shakes.
+    pose($("sea"), len === 2 ? "hit" : "sink");
+    if (len >= 4) pose($("board"), "sinkBig");
+    whole.remove();
+    const water = e.water || [];
+    const list = mine ? g.outgoing : g.incoming;
+    const marks = $("sea").querySelector(".layer-marks");
+    const ring = ([x, y]) => Math.max(Math.abs(x - mid[0]), Math.abs(y - mid[1])); // rings spread from the ship's middle out to its ends
+    const rings = [...new Set(water.map(ring))].sort((a, b) => a - b);
+    const marking = (async () => {
+      for (const r of rings) {
+        for (const [x, y] of water.filter((w) => ring(w) === r)) {
+          list[y * n + x] = MARK.water;
+          if (!RM()) sheetFx(fx, "ripple", x * 10, y * 10, k, 330 * sp);
+          setTimeout(() => marks.appendChild(markEl("water", x, y)), RM() ? 0 : 300 * sp);
+        }
+        await wait2(T.ring);
+      }
+    })();
+    if (!RM()) await sinkFx(fx, p, k, sp, "fx");
+    await marking;
+    const wreck = shipEl(p, { wreck: true });
+    layer.appendChild(wreck);
+    if (!RM()) wreck.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: "steps(2)" });
+    await sleep(RM() ? 900 : T.stampHold * sp);
+    spot.remove();
+    stamp.remove();
     $("callText").textContent = mine ? `You sank their ${SHIPS[p.kind].name.toLowerCase()}. Fire again` : `${rivalName()} sank your ${SHIPS[p.kind].name.toLowerCase()}`;
-    say(`${mine ? "You sank their" : `${rivalName()} sank your`} ${SHIPS[p.kind].name.toLowerCase()}`);
-    await wait2(200);
   }
 
   /* ================================================================ keyboard */
@@ -1307,15 +1335,17 @@
     const won = g.winner === you();
     const st = g.stats[you()];
     const fresh = $("resMain")._resKey !== S.room?.roomId;
-    const hero = `<img src="${A.ship("battleship", "h", !won)}" alt="" width="${40 * 4}" height="${10 * 4}">`; // whole if you won, a wreck if you lost
+    // Both seas as they ended: theirs (every ship shown) and yours.
+    const n = g.size, km = window.innerWidth >= 420 ? 2 : 1, sz = (n * 10 + 1) * km;
+    const seaImg = (side, label) => `<figure style="margin:0;display:grid;gap:6px;justify-items:center"><img src="${drawMini(side)}" alt="${label}" width="${sz}" height="${sz}" style="box-shadow:0 0 0 var(--px) var(--c-ink)"><figcaption class="pl-label" style="margin:0">${label}</figcaption></figure>`;
+    const hero = `<div style="display:flex;gap:16px;justify-content:center">${seaImg("target", `${esc(rivalName())}'s sea`)}${seaImg("mine", "Your sea")}</div>`;
     kit.renderResult($("resMain"), {
       hero,
       title: won ? "Victory" : "Defeat",
-      sub: g.forfeit ? (won ? `${rivalName()} forfeited` : "You forfeited") : won ? `You sank ${rivalName()}'s fleet in ${st.shots} shots` : `${rivalName()} sank your fleet`,
+      sub: g.forfeit ? (won ? `${rivalName()} forfeited` : "You forfeited") : won ? `You sank ${rivalName()}'s fleet in ${st.shots} shots` : `${rivalName()} sank your fleet. You fired ${st.shots} shots`,
       win: won,
       tiles: [
-        { label: "Accuracy", value: st.shots ? Math.round((100 * st.hits) / st.shots) : 0, format: (n) => `${n}%` },
-        { label: "Shots", value: st.shots },
+        { label: "Accuracy", value: st.shots ? Math.round((100 * st.hits) / st.shots) : 0, format: (v2) => `${v2}%` },
         { label: "Ships sunk", value: st.sunk },
         { label: "Best streak", value: st.bestStreak },
       ],

@@ -171,7 +171,7 @@ window.PLOTO_SOUNDS = {
     },
     "rotate": {
       "code": "11111ErVEZzZitbBZKUHEVU7T4vjRTbqLRSKFeXLGnxHvhUrZVoExoTg5tV8Vnnt94gts4dF4gYjmpVa8ZZxnaqZPDvgKeK47t1KSpw3nojLBomWjDvSsa4o",
-      "vol": 0.35,
+      "vol": 0.6,
       "buzz": 12
     },
     "nope": {
@@ -199,8 +199,8 @@ window.PLOTO_SOUNDS = {
       "buzz": 20
     },
     "splash": {
-      "code": "7GQhofh85QrmQ62SeL2B3PjtAKkKAB6zqNx199TYx7sc9KNQiAokBkpyNkHMGCuPn9Dk6dDM6g8r5DX8hASdPAxgcsGNBEmWentrhgccqLYZBhaRfM14eMJQP",
-      "vol": 0.45,
+      "code": "7GQhofh85QrmQ62SeL2B3PjtAKkKAB6zqNx199TYx7sc9KNQiAokBkpyNkHMGCuPn9Dk6dDM6g8r5DX8hASdPAxgcsGNBEckWkkpsoZ5XbyJ7xiyft8t3wFQb",
+      "vol": 0.8,
       "buzz": 15
     },
     "hit": {
@@ -213,8 +213,8 @@ window.PLOTO_SOUNDS = {
       ]
     },
     "sunk": {
-      "code": "7BMHBGLnZ1Y33mHaAGAcTGjXRYG5Q19rGgA8sH15N2pvcAfDa3xetyp1kLXe7gad1FxiZpVT4JUvvUAEMJxVUPgRERQZcd3UK49vYQuAXkBK32hQN1jhjNi4f",
-      "vol": 1,
+      "code": "7BMHBGQSJ3xez8rpTzZibXVfxzfkiGgnQog8VwmTh36zbqLQeSoFjFzuZGQgBLjAAJSastS42j7Ne54Lzk47pFJ9p85D3bKJZsQzPTH1nUdNjVkFG93kSk4JK",
+      "vol": 0.8,
       "buzz": [
         90,
         40,
@@ -230,7 +230,7 @@ window.PLOTO_SOUNDS = {
     },
     "win": {
       "code": "111118JWVRNs9rM4Eqi9f2tuHSWmLRT8PqUniNocrx7NMu4hkrTrENLxX9an84hDXmHpAXgJmpJUJsbprDipFNvBoAXWi5sKuGHghLwQQtTJ7YHBfoiTCtFq",
-      "vol": 0.8,
+      "vol": 1,
       "buzz": [
         60,
         40,
@@ -258,8 +258,8 @@ window.PLOTO_SOUNDS = {
       ]
     },
     "lost": {
-      "code": "7BMHBGAc9GHo5uMSuXpPPZUPJASM6nA45Vr3qg4wbAGeDVKoK6xdycZwYUX2iJPaZmE5BUsCRseCzn9piarYYbn1MB9sDiXhk6vgei84hmQEKzdrFfZWA3Za7",
-      "vol": 0.95,
+      "code": "7BMHBGNG5JtMJTCtLCv9rcbXLyZhQQWXJnwUj71wM8dnP3hbYmsZqL4GUz7QD8rqbkBpN5eAssDCAKDUtJ6DCVQUkQVwJHoUegZf5VUpbK5zui7vcUQF4TcSj",
+      "vol": 0.8,
       "buzz": [
         140,
         50,
@@ -274,6 +274,11 @@ window.PLOTO_SOUNDS = {
         40,
         80
       ]
+    },
+    "crack": {
+      "code": "34T6PkyDRjVvQR9q4nUczv2o496kevTp8jXZVryiW8ZEANfyr3LWWTkb4oLihdwAejGsUCSYr6GWnwoTzz3TwofB6EpAzBowxU76HzEiYqwSR7JU8ZDLH6W2B",
+      "vol": 0.7,
+      "buzz": 30
     }
   }
 };

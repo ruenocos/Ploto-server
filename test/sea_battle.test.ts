@@ -1,7 +1,10 @@
 import { describe, it, expect } from "vitest";
+import fs from "node:fs";
+import vm from "node:vm";
 import { SeaBattleLobby } from "../src/game/sea_battle/lobby.js";
-import { parseSettings, DEFAULT_SETTINGS } from "../src/game/sea_battle/room.js";
-import { Mark, cellsOf, type Fleet } from "../src/game/sea_battle/engine.js";
+import { parseSettings, DEFAULT_SETTINGS, animBudget } from "../src/game/sea_battle/room.js";
+import { BOARDS, Mark, SHIPS, cellsOf, fits, fleetProblem, randomFleet, type Fleet } from "../src/game/sea_battle/engine.js";
+import { hiding } from "../src/game/sea_battle/bot.js";
 import { Rng } from "../src/game/matchmonsters/rng.js";
 
 /** A lobby context with no server around it: rooms in a map, results captured. */
@@ -188,5 +191,49 @@ describe("Sea Battle room", () => {
     await until(() => room.phase === "playing");
     expect(room.seated().map((s: any) => s.kind)).toEqual(["player", "bot"]);
     room.dispose();
+  });
+});
+
+/** web/sea-battle.card.js in a bare VM (no canvas needed for its rules and timings). */
+function pageModule() {
+  const win: any = {};
+  const doc = { createElement: () => ({ style: {}, textContent: "" }), head: { appendChild: () => {} } };
+  vm.runInNewContext(fs.readFileSync("web/sea-battle.card.js", "utf8"), { window: win, document: doc });
+  return win;
+}
+
+describe("Sea Battle's page and server agree", () => {
+  const { SEA_ART, SEA_RULES } = pageModule();
+
+  it("the server waits at least as long as the page animates each event (so clocks and bots never start early)", () => {
+    const T = SEA_ART.ANIM;
+    const aim = T.aimHops * T.aimHop + T.aimLock + T.shell; // the longest path: an incoming shot
+    const miss = aim + T.splash + T.missHold;
+    const hit = aim + T.hitStop + T.hitHold;
+    const sink = (len: number) => aim + T.sinkStopBase + T.sinkStopPerCell * len + T.plate * len + T.crack + T.halves + T.halvesPerCell * len + T.stampHold + 4 * T.ring;
+    expect(animBudget([{ type: "shot", by: 0, x: 0, y: 0, result: "miss" }])).toBeGreaterThanOrEqual(miss);
+    expect(animBudget([{ type: "shot", by: 0, x: 0, y: 0, result: "hit" }])).toBeGreaterThanOrEqual(hit);
+    for (const kind of ["destroyer", "cruiser", "battleship", "carrier"] as const) {
+      expect(animBudget([{ type: "shot", by: 0, x: 0, y: 0, result: "sunk", ship: { kind, x: 0, y: 0, dir: "h" }, water: [] }])).toBeGreaterThanOrEqual(sink(SHIPS[kind].length));
+    }
+    expect(animBudget([{ type: "start", first: 0 }])).toBeGreaterThanOrEqual(T.coinSpin + T.coinLabel + T.swap);
+    expect(animBudget([{ type: "turn", seat: 0 }])).toBeGreaterThanOrEqual(T.swap + T.turnHold);
+  });
+
+  it("the page's placement rules and hiding meter match the engine and the bots", () => {
+    const r = new Rng(12);
+    const random = () => r.next();
+    for (const board of ["classic", "quick"] as const) {
+      for (let i = 0; i < 200; i++) {
+        const fleet = randomFleet(BOARDS[board], random);
+        expect(SEA_RULES.hiding(board, fleet)).toBeCloseTo(hiding(BOARDS[board], fleet), 10);
+        // Move one ship somewhere random: the page and the engine agree on whether it fits.
+        const kind = fleet[i % fleet.length]!.kind;
+        const p = { kind, x: Math.floor(random() * 10) - 1, y: Math.floor(random() * 10) - 1, dir: random() < 0.5 ? "h" : "v" } as const;
+        expect(SEA_RULES.fits(BOARDS[board].size, fleet, p)).toBe(fits(BOARDS[board], fleet, p));
+        const pageFleet = SEA_RULES.randomFleet(board, random);
+        expect(fleetProblem(BOARDS[board], pageFleet)).toBeNull();
+      }
+    }
   });
 });

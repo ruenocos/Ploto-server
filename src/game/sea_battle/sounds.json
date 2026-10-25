@@ -1,5 +1,5 @@
 {
-  "about": "Sea Battle's sounds, in its own words: placing (place, rotate, nope), the coin flip, aiming and firing, splash / hit / sunk on their sea, struck / lost on yours, the clock's last seconds and a timeout, win and lose. Ploto's set covers ready and your turn. jsfxr stock presets with a seed; impacts use hand-set parameters so a splash hisses, a hit bangs and a sink rumbles long and low. vol is relative (0..1), buzz a vibration pattern in ms. Run npm run sounds after editing.",
+  "about": "Sea Battle's sounds, in its own words: placing (place, rotate, nope), the coin flip, aiming and firing, splash / hit / crack / sunk on their sea, struck / lost on yours, the clock's last seconds and a timeout, win and lose. Ploto's set covers ready and your turn. jsfxr stock presets with a seed; impacts use hand-set parameters so a splash hisses, a hit bangs and a sink rumbles long and low. vol is relative (0..1), buzz a vibration pattern in ms. Run npm run sounds after editing.",
   "set": "sea_battle",
   "cues": {
     "place": {
@@ -11,7 +11,7 @@
     "rotate": {
       "preset": "click",
       "seed": 4,
-      "vol": 0.35,
+      "vol": 0.6,
       "buzz": 12
     },
     "nope": {
@@ -74,11 +74,11 @@
         "p_env_sustain": 0.08,
         "p_env_decay": 0.32,
         "p_env_punch": 0.1,
-        "p_lpf_freq": 0.32,
+        "p_lpf_freq": 0.5,
         "p_lpf_resonance": 0.1,
         "p_hpf_freq": 0
       },
-      "vol": 0.45,
+      "vol": 0.8,
       "buzz": 15
     },
     "hit": {
@@ -109,15 +109,15 @@
         "p_base_freq": 0.1,
         "p_freq_ramp": -0.08,
         "p_env_attack": 0,
-        "p_env_sustain": 0.3,
-        "p_env_decay": 0.85,
+        "p_env_sustain": 0.2,
+        "p_env_decay": 0.62,
         "p_env_punch": 0.7,
         "p_vib_strength": 0.35,
         "p_vib_speed": 0.25,
         "p_lpf_freq": 0.6,
         "p_repeat_speed": 0.55
       },
-      "vol": 1,
+      "vol": 0.8,
       "buzz": [
         90,
         40,
@@ -162,7 +162,7 @@
         "p_repeat_speed": 0,
         "p_vib_strength": 0
       },
-      "vol": 0.8,
+      "vol": 1.0,
       "buzz": [
         60,
         40,
@@ -214,15 +214,15 @@
         "p_base_freq": 0.07,
         "p_freq_ramp": -0.06,
         "p_env_attack": 0,
-        "p_env_sustain": 0.32,
-        "p_env_decay": 0.9,
+        "p_env_sustain": 0.22,
+        "p_env_decay": 0.66,
         "p_env_punch": 0.6,
         "p_vib_strength": 0.4,
         "p_vib_speed": 0.2,
         "p_lpf_freq": 0.4,
         "p_repeat_speed": 0.55
       },
-      "vol": 0.95,
+      "vol": 0.8,
       "buzz": [
         140,
         50,
@@ -241,6 +241,22 @@
         40,
         80
       ]
+    },
+    "crack": {
+      "preset": "hitHurt",
+      "seed": 4,
+      "params": {
+        "wave_type": 1,
+        "p_base_freq": 0.45,
+        "p_freq_ramp": -0.4,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.05,
+        "p_env_decay": 0.18,
+        "p_env_punch": 0.6,
+        "p_repeat_speed": 0
+      },
+      "vol": 0.7,
+      "buzz": 30
     }
   }
 }

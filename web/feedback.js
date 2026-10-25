@@ -89,12 +89,12 @@ function bufferFor(/** @type {string} */ code) {
 /**
  * Play one moment's sound and haptic.
  * @param {Cue} name
- * @param {{ pitch?: number, vol?: number }} [opts] pitch: playback rate (combo steps rise); vol: extra scale
+ * @param {{ pitch?: number, vol?: number, buzz?: boolean }} [opts] pitch: playback rate (combo steps rise); vol: extra scale; buzz: false plays the sound without its haptic
  */
 function cue(name, opts = {}) {
   const c = soundFor(name);
   if (!c) return;
-  buzz(c.buzz);
+  if (opts.buzz !== false) buzz(c.buzz);
   if (!settings.sound || !ctx || !master || ctx.state !== "running") return;
   const buf = bufferFor(c.code);
   if (!buf) return;

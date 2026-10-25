@@ -42,7 +42,7 @@ It writes a working placeholder game (a tap race) on the platform's lobby:
 | `web/<slug>.card.js` | its launcher card art and list icon (`Ploto.gameCard`) | game |
 | `src/game/<id>/sounds.json` | its sound set, in its own words (`tap`, `win`); `npm run sounds` builds `web/sounds.js` | game |
 | `test/<id>.test.ts` | host, join by code, start, finish, record, rematch, practice | game |
-| `e2e/games/<id>.mjs` | its browser-test adapter: how to host, start, tell it's in the game, finish one | game (the flows are Ploto's) |
+| `e2e/games/<id>.mjs` | its browser-test adapter: how to host, start, tell it's in the game, finish one; optional `checks` of its own (e.g. a real game to its finish, checking the signature moment's layout) | game (the flows are Ploto's) |
 | `src/games.ts` | one registry entry: title, path, players, seats, profile tiles, lobby | Ploto |
 
 `npm test`, `npm run dev`, open `/play/<slug>`: it already has quick play,

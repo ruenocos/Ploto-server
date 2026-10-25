@@ -154,3 +154,54 @@ found by connection, then account (tested over six coin flips); Medium hunts
 loosely but never makes a broken-looking shot (a casual player wins about 1 in 3,
 a good one about 64%); a reload-mid-battle e2e; a touch-phone screen in the
 evidence.
+
+## Round 5
+
+| Category | A | B | Score |
+|---|---|---|---|
+| Game design | 8 | 8 | **8** |
+| Signature moment | 8 | 8 | **8** |
+| Animation | 8 | 8 | **8** |
+| Sound and haptics | 8 | 8 | **8** |
+| Visual design | 8 | 8 | **8** |
+| UX and clarity | 8 | 8 | **8** |
+| Platform consistency | 9 | 9 | **9** |
+| Bots | 8 | 8 | **8** |
+| Implementation | 9 | 9 | **9** |
+| Accessibility | 8 | 8 | **8** |
+
+New this round, from the product owner: **does it feel cluttered, and can we
+reduce eye strain?** (now a standing question in docs/SCORING.md). Both reviewers:
+readable but busier than it needs to be. The sea stacks three textures (a
+checkerboard, grid lines, light wave dashes the size of real marks) that swell
+every 1.1 s; every hit's fire loops forever; four accents compete (purple call,
+cyan frame, red crosshair, orange fire); your fleet shows three times; the
+tracker wraps; four lines of hints sit under Ready.
+
+What both saw otherwise: SUNK's first frame crops at the sea's edge; the smoke
+column reads as grey blocks; the plate reveal hides behind the bursts; Victory
+shows before the last sink plays; the call bar resizes on impact; the swap is
+one frame; Medium fires into cells the page dims; the whistle ends before the
+shell lands, every miss buzzes twice, the win is louder than the house set;
+30 px cells on the quick board at 360; the defeat result features the rival's
+sea; redaction only tested at engine level.
+
+Fixes built after round 5: **clutter** — flat water (no checkerboard), a quiet
+wave dash in one cell in three a step off the water, a swell that rests 10 s
+after the last event, fires that burn 2.4 s then hold still, water marks at half
+strength, a quiet frame instead of the cyan one, the dock down to one mini sea
+and two lines ("Afloat: you 4 · Ben 3", your shots), a one-row compact tracker,
+one placing hint that goes once you've moved a ship, the keyboard line hidden on
+touch and after a few keys, dimmed cells with a dot as well as a tint, short
+two-line call copy in a fixed-height bar. **The rest** — SUNK lands from 1.3×
+and is placed with room for it; round, dithered smoke; one burst, then the plate
+reveal with the fires still burning until the crack (two burst waves at most,
+a softer crack flash); "Sunk" on the last shot, the verdict after; a 360 ms swap
+that moves 48 px; "Miss" / "They missed" in the call; no hit cue under a sink,
+a softer groan, later bubbles; a 450 ms whistle that ends on the impact, no buzz
+on firing, a softer win, a soft rotate; 40 px cells on the quick board at 360;
+the decisive sea large on the result (yours on a defeat), at 3× where it fits;
+Practice opens on Quick; Medium never fires where no ship fits and forgets a lone
+hit now and then (good player 65%, casual 31–37%); I reads the board aloud; a
+dashed focus cursor; one pose map for game and banner; a room-level redaction
+test and a test that Medium never fires into dimmed cells; copy fixes.

@@ -170,8 +170,8 @@ window.PLOTO_SOUNDS = {
       "buzz": 15
     },
     "rotate": {
-      "code": "11111ErVEZzZitbBZKUHEVU7T4vjRTbqLRSKFeXLGnxHvhUrZVoExoTg5tV8Vnnt94gts4dF4gYjmpVa8ZZxnaqZPDvgKeK47t1KSpw3nojLBomWjDvSsa4o",
-      "vol": 0.6,
+      "code": "57uBnWcURQNHSVbZfZD9R54v3vF3xwXeFn3ojv6SnupTCS1bm8N2XbtR6Tse3p9VGxyRQBoQ7gS4AFvRcamz7naEWiiLhKCMzi3nB9j96SneDS68anzpHEnGX",
+      "vol": 0.25,
       "buzz": 12
     },
     "nope": {
@@ -201,7 +201,7 @@ window.PLOTO_SOUNDS = {
     "fire": {
       "code": "34T6PkmVMMJ28jGLSChuRUXgd6JRmghQNJCTGsDqun4P996kkqhpCrkR4dyssmRZW7VKUjxkGa1J5g11yYuN1bbUcp94ByY1SZ764b1JsJQX7GBUALsivBM8T",
       "vol": 0.45,
-      "buzz": 20
+      "buzz": 0
     },
     "splash": {
       "code": "7GQhofh85QrmQ62SeL2B3PkBsJ517tBDq9MYbTSLKMt3wR2DsKEfmivBzkwoKj4KgHJGSftqDvLWXros3AdaLc9mcLRtresw2nUMFtZctcSSPywvH642TZFef",
@@ -234,8 +234,8 @@ window.PLOTO_SOUNDS = {
       "buzz": 10
     },
     "win": {
-      "code": "11111FbzLgcdUdxzWVFV8K48TPZoULDM15uqMWpJKbQXExsSNeGpAyTYw6qLwZhbCZ7Q5XD3oA26Lc7XVAe2s1TGnqaYzMVnZPiGTMw4hNJDXunexKrq1Ygo",
-      "vol": 1,
+      "code": "11111FbzLgcdUdxzWVFV8K48TPZoULDM15uqMWpJKbQXExsSNeGpAyTYw6qLwZhbCNwC2cupywd7pGELqdexsFfZRoXtVytHEbKsXsEKSy3K5P8RDisAfjEf",
+      "vol": 0.65,
       "buzz": [
         60,
         40,
@@ -300,8 +300,8 @@ window.PLOTO_SOUNDS = {
       "buzz": 0
     },
     "incoming": {
-      "code": "12eZRSDSVSKP7AxrtDfArJAhVfCwyu4UFATQPjSKHCTk2nA7MGTSXkZQ9tFXPFfz2gpKe7JPBHoDwbj1bfo4G4EE1yw7erXn3BfUGcStwv9e6GDjr5nTkyWL7H",
-      "vol": 0.3,
+      "code": "6mTcDiyYGtj7R1vS4YPCDYCRVG7JnzPQTs8gWTiLYCMXWeM21HG2TBWXXVXwmzHw9hk8vG6Xs6q16rEcXWUiJWYM2xQADAMvGAHcJm6FQKi3UtVpLH3wBuF19",
+      "vol": 0.2,
       "buzz": 0
     },
     "groan": {

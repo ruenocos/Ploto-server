@@ -148,12 +148,31 @@ describe("sea battle simulation (bots)", () => {
   });
 });
 
+/** Open cells no ship still afloat fits through: the page dims them, so the stand-ins skip them as players would. */
+function dimmed(v: SeaView): Set<number> {
+  const n = v.size, out = new Set<number>();
+  if (!v.rivalSunk.length) return out;
+  const sunk = new Set(v.rivalShips.flatMap((p) => cellsOf(p).map(([x, y]) => y * n + x)));
+  const left = [...v.fleetKinds];
+  for (const k of v.rivalSunk) left.splice(left.indexOf(k), 1);
+  const free = (x: number, y: number) => v.outgoing[y * n + x] === Mark.Unknown || (v.outgoing[y * n + x] === Mark.Hit && !sunk.has(y * n + x));
+  const fits = new Set<number>();
+  for (const L of new Set(left.map((k) => SHIPS[k].length))) for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) for (const [dx, dy] of [[1, 0], [0, 1]]) {
+    if (x + dx * (L - 1) >= n || y + dy * (L - 1) >= n) continue;
+    let ok = true;
+    for (let i = 0; i < L && ok; i++) ok = free(x + dx * i, y + dy * i);
+    if (ok) for (let i = 0; i < L; i++) fits.add((y + dy * i) * n + x + dx * i);
+  }
+  v.outgoing.forEach((m, c) => { if (m === Mark.Unknown && !fits.has(c)) out.add(c); });
+  return out;
+}
+
 /**
  * A "good human" stand-in: hunts on a checkerboard, follows a line of hits to its ends,
  * otherwise tries the cells beside a hit. What a practised player does without counting.
  */
 function goodHuman(v: SeaView, r: () => number): [number, number] {
-  const n = v.size, open = (x: number, y: number) => x >= 0 && y >= 0 && x < n && y < n && v.outgoing[y * n + x] === Mark.Unknown;
+  const dim = dimmed(v), n = v.size, open = (x: number, y: number) => x >= 0 && y >= 0 && x < n && y < n && v.outgoing[y * n + x] === Mark.Unknown && !dim.has(y * n + x);
   const sunk = new Set(v.rivalShips.flatMap((p) => cellsOf(p).map(([x, y]) => y * n + x)));
   const hits = v.outgoing.flatMap((m, c) => (m === Mark.Hit && !sunk.has(c) ? [[c % n, Math.floor(c / n)] as [number, number]] : []));
   const cand: [number, number][] = [];
@@ -172,7 +191,7 @@ function goodHuman(v: SeaView, r: () => number): [number, number] {
 
 /** A casual player: random hunting (no checkerboard), but follows up hits. */
 function casualHuman(v: SeaView, r: () => number): [number, number] {
-  const n = v.size, open = (x: number, y: number) => x >= 0 && y >= 0 && x < n && y < n && v.outgoing[y * n + x] === Mark.Unknown;
+  const dim = dimmed(v), n = v.size, open = (x: number, y: number) => x >= 0 && y >= 0 && x < n && y < n && v.outgoing[y * n + x] === Mark.Unknown && !dim.has(y * n + x);
   const sunk = new Set(v.rivalShips.flatMap((p) => cellsOf(p).map(([x, y]) => y * n + x)));
   const cand: [number, number][] = [];
   v.outgoing.forEach((m, c) => { if (m === Mark.Hit && !sunk.has(c)) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const x = (c % n) + dx, y = Math.floor(c / n) + dy; if (open(x, y)) cand.push([x, y]); } });
@@ -204,6 +223,19 @@ describe("sea battle bot difficulty bands (against a good human stand-in)", () =
       expect(vsMedium).toBeLessThan(0.75);
       expect(vsHard).toBeGreaterThan(0.15);
       expect(vsHard).toBeLessThan(0.4);
+    }
+  });
+  it("Medium never fires where the page shows no ship can be", () => {
+    for (let i = 0; i < 200; i++) {
+      const rng = new Rng(9000 + i), random = () => rng.next();
+      const g = new SeaBattleGame({ board: i % 2 ? "quick" : "classic", random });
+      for (const s of [0, 1]) g.ready(s, randomFleet(g.spec, random));
+      while (g.phase === "firing") {
+        const s = g.turn!, v = g.viewFor(s);
+        const [x, y] = chooseShot(v, "medium", random);
+        expect(dimmed(v).has(y * v.size + x)).toBe(false);
+        g.fire(s, x, y);
+      }
     }
   });
   it("a casual player still wins a fair share against Medium on the quick board", () => {

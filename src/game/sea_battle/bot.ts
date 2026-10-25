@@ -9,9 +9,10 @@
  *           counts the ways that pass through it, so it finishes ships fast.
  *           It knows the corners around a hit are water (ships can't touch),
  *           and hides its own fleet where ships are least likely to be.
- *   medium  finishes ships like a person (around a hit, then along the line)
- *           but hunts loosely, anywhere on the sea. It never makes a shot that
- *           looks broken; it's beatable because it finds ships late.
+ *   medium  finishes ships like a person (around a hit, then along the line),
+ *           though now and then it forgets a lone hit for a shot; it hunts
+ *           loosely, often away from its misses, but only where a ship could
+ *           still be. Nothing it does looks broken; it finds ships late.
  */
 import { BOARDS, Mark, SHIPS, randomFleet, type BoardSpec, type Fleet, type RandomSource, type SeaView, cellsOf } from "./engine.js";
 
@@ -34,6 +35,19 @@ function openHits(view: SeaView): number[] {
   const n = view.size;
   const sunk = new Set(view.rivalShips.flatMap((p) => Array.from({ length: SHIPS[p.kind].length }, (_, i) => (p.dir === "h" ? p.y * n + p.x + i : (p.y + i) * n + p.x))));
   return view.outgoing.flatMap((m, c) => (m === Mark.Hit && !sunk.has(c) ? [c] : []));
+}
+
+/** Open cells some ship still afloat could cover (the page dims the rest: nobody fires there). */
+function roomy(view: SeaView): Set<number> {
+  const n = view.size, hits = new Set(openHits(view)), out = new Set<number>();
+  const free = (x: number, y: number) => view.outgoing[y * n + x] === Mark.Unknown || hits.has(y * n + x);
+  for (const L of new Set(afloat(view))) for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) for (const [dx, dy] of [[1, 0], [0, 1]] as const) {
+    if (x + dx * (L - 1) >= n || y + dy * (L - 1) >= n) continue;
+    let ok = true;
+    for (let i = 0; i < L && ok; i++) ok = free(x + dx * i, y + dy * i);
+    if (ok) for (let i = 0; i < L; i++) { const c = (y + dy * i) * n + x + dx * i; if (view.outgoing[c] === Mark.Unknown) out.add(c); }
+  }
+  return out;
 }
 
 function pickMax(scores: Float64Array, ok: (c: number) => boolean, random: RandomSource): number {
@@ -134,11 +148,15 @@ function hardShot(view: SeaView, random: RandomSource): [number, number] {
   return [c % n, Math.floor(c / n)];
 }
 
+/** Medium's habits (test/seaBattleEngine.test.ts keeps the result in its bands). */
+const MEDIUM = { forget: 0.35, spaced: 0.1, parity: 0 };
+
 function mediumShot(view: SeaView, random: RandomSource): [number, number] {
   const n = view.size;
   const open = (x: number, y: number) => x >= 0 && y >= 0 && x < n && y < n && view.outgoing[y * n + x] === Mark.Unknown;
   const hits = openHits(view);
-  if (hits.length) {
+  // A human slip: now and then, with one hit open, it forgets it for a shot and keeps hunting.
+  if (hits.length && !(hits.length === 1 && random() < MEDIUM.forget)) {
     const pts = hits.map((c) => [c % n, Math.floor(c / n)] as const);
     const candidates: [number, number][] = [];
     if (pts.length >= 2 && (pts.every((p) => p[1] === pts[0]![1]) || pts.every((p) => p[0] === pts[0]![0]))) {
@@ -154,13 +172,18 @@ function mediumShot(view: SeaView, random: RandomSource): [number, number] {
     if (!candidates.length) {
       for (const [x, y] of pts) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) if (open(x + dx, y + dy)) candidates.push([x + dx, y + dy]);
     }
-    if (candidates.length) return candidates[Math.floor(random() * candidates.length)]!;
+    const fitting = candidates.filter(([x, y]) => roomy(view).has(y * n + x)); // never beside a hit where no ship could lie
+    if (fitting.length) return fitting[Math.floor(random() * fitting.length)]!;
   }
-  // Hunting: anywhere, like most people; now and then on a checkerboard (every ship covers one).
+  // Hunting like a person: only where a ship could still be; often away from its own misses,
+  // now and then on a checkerboard (every ship covers one), otherwise anywhere.
+  const fit = roomy(view);
+  const missNear = (x: number, y: number) => ([[1, 0], [-1, 0], [0, 1], [0, -1]] as const).some(([dx, dy]) => x + dx >= 0 && y + dy >= 0 && x + dx < n && y + dy < n && view.outgoing[(y + dy) * n + x + dx] === Mark.Miss);
   const all: [number, number][] = [];
-  const parity: [number, number][] = [];
-  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (open(x, y)) { all.push([x, y]); if ((x + y) % 2 === 0) parity.push([x, y]); }
-  const pool = parity.length && random() < 0.1 ? parity : all;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (open(x, y) && fit.has(y * n + x)) all.push([x, y]);
+  const r = random();
+  const spaced = all.filter(([x, y]) => !missNear(x, y)), parity = all.filter(([x, y]) => (x + y) % 2 === 0);
+  const pool = r < MEDIUM.spaced && spaced.length ? spaced : r < MEDIUM.spaced + MEDIUM.parity && parity.length ? parity : all;
   return pool[Math.floor(random() * pool.length)] ?? anyOpen(view, random);
 }
 

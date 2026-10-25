@@ -95,8 +95,8 @@ export function animBudget(events: readonly SeaEvent[]): number {
       const aim = 2 * 130 + 220 + 420; // the rival's aim hops, the lock, the shell
       if (e.result === "miss") ms += aim + 300 + 280 + 100;
       else if (e.result === "hit") ms += aim + 90 + 480 + 100;
-      else { const len = e.ship ? SHIP_LEN[e.ship.kind] : 3; ms += aim + 120 + 60 * len + 110 * len + 120 + 560 + 30 * len + 700 + 4 * 90 + 300; }
-    } else if (e.type === "turn") ms += 240 + 200 + 100; // the seas swap places
+      else { const len = e.ship ? SHIP_LEN[e.ship.kind] : 3; ms += aim + 120 + 60 * len + 260 + 110 * len + 120 + 560 + 30 * len + 700 + 4 * 90 + 300; }
+    } else if (e.type === "turn") ms += 360 + 200 + 100; // the seas swap places
   }
   return ms;
 }

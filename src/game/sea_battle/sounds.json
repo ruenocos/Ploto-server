@@ -9,10 +9,22 @@
       "buzz": 15
     },
     "rotate": {
-      "preset": "click",
-      "seed": 4,
-      "vol": 0.6,
-      "buzz": 12
+      "preset": "blipSelect",
+      "seed": 21,
+      "vol": 0.25,
+      "buzz": 12,
+      "params": {
+        "wave_type": 2,
+        "p_base_freq": 0.34,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.06,
+        "p_env_decay": 0.14,
+        "p_freq_ramp": 0,
+        "p_arp_mod": 0,
+        "p_repeat_speed": 0,
+        "p_lpf_freq": 1,
+        "p_hpf_freq": 0
+      }
     },
     "nope": {
       "preset": "hitHurt",
@@ -77,7 +89,7 @@
         "p_freq_limit": 0
       },
       "vol": 0.45,
-      "buzz": 20
+      "buzz": 0
     },
     "splash": {
       "preset": "explosion",
@@ -174,11 +186,11 @@
         "p_env_sustain": 0.55,
         "p_env_decay": 0.55,
         "p_env_punch": 0.5,
-        "p_duty": 0.4,
+        "p_duty": 0.5,
         "p_repeat_speed": 0,
         "p_vib_strength": 0
       },
-      "vol": 1.0,
+      "vol": 0.65,
       "buzz": [
         60,
         40,
@@ -316,17 +328,17 @@
       "preset": "laserShoot",
       "seed": 17,
       "params": {
-        "wave_type": 0,
+        "wave_type": 2,
         "p_base_freq": 0.55,
-        "p_freq_ramp": -0.35,
+        "p_freq_ramp": -0.2,
         "p_env_attack": 0.05,
-        "p_env_sustain": 0.3,
-        "p_env_decay": 0.15,
+        "p_env_sustain": 0.36,
+        "p_env_decay": 0.26,
         "p_repeat_speed": 0,
         "p_freq_limit": 0,
         "p_duty": 0.5
       },
-      "vol": 0.3,
+      "vol": 0.2,
       "buzz": 0
     },
     "groan": {

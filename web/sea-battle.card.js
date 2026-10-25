@@ -16,7 +16,7 @@
   const C = 10; // art pixels per cell
 
   const P = {
-    ink: "#0a0c14", deep: "#0a2a3d", sea: "#114560", sea2: "#13506e", lite: "#2a7f9e", foam: "#bfe8f2", white: "#eef0ff",
+    ink: "#0a0c14", deep: "#0a2a3d", sea: "#114560", sea2: "#13506e", swell: "#165a78", lite: "#2a7f9e", foam: "#bfe8f2", white: "#eef0ff",
     hull: "#7c86ad", hullHi: "#b3bbdc", hullLo: "#4a5486", deck: "#5d678f", red: "#d8364b", redHi: "#ff8080",
     orange: "#ff9d3b", yellow: "#ffcc33", cream: "#fff4d6", smoke: "#4b5170", smokeHi: "#8a90a8",
     wreck: "#6b6f8a", wreckHi: "#8d91ab", rust: "#7a3b2e", back: "#0c3346",
@@ -41,21 +41,20 @@
 
   // ------------------------------------------------------------ the sea
 
-  /** The sea for an n×n board: water, a grid line between cells, wave dashes (two frames for the swell). */
+  /**
+   * The sea for an n×n board: flat water, a grid line between cells, and a quiet wave dash in about
+   * one cell in three, one step off the water so nothing on it reads as a mark (two frames for the swell).
+   */
   const water = (n, frame = 0) => memo(`waterurl${n}.${frame}`, () => waterCanvas(n, frame).toDataURL());
   function waterCanvas(n, frame = 0) {
     return memo(`water${n}.${frame}`, () => {
       const p = pen(n * C + 1, n * C + 1);
       p.px(0, 0, P.sea, n * C + 1, n * C + 1);
       for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
-        if ((x + y) % 2) p.px(x * C + 1, y * C + 1, P.sea2, C - 1, C - 1);
-        // One or two short wave dashes per cell, nudged a pixel on the other frame.
-        for (let k = 0; k < 2; k++) {
-          if (hash(x * 7 + k, y * 13) < (k ? 0.75 : 0.2)) continue;
-          const wx = x * C + 2 + Math.floor(hash(x, y + k * 31) * 4) + (frame ? 1 : 0), wy = y * C + 2 + Math.floor(hash(y, x + k * 17) * 6);
-          p.px(wx, wy, P.lite, 3, 1);
-          p.px(wx + 1, wy - 1, P.lite, 1, 1);
-        }
+        if (hash(x * 7, y * 13) < 0.67) continue;
+        const wx = x * C + 2 + Math.floor(hash(x, y) * 4) + (frame ? 1 : 0), wy = y * C + 2 + Math.floor(hash(y, x) * 6);
+        p.px(wx, wy, P.swell, 3, 1);
+        p.px(wx + 1, wy - 1, P.swell, 1, 1);
       }
       for (let i = 0; i <= n; i++) { p.px(i * C, 0, P.deep, 1, n * C + 1); p.px(0, i * C, P.deep, n * C + 1, 1); }
       return p.c;
@@ -255,23 +254,31 @@
     });
   }
 
-  /** A tall column of smoke over a sinking ship: 12×24, 6 frames, puffs rising and spreading. */
+  /**
+   * A tall column of smoke over a sinking ship: 14×30, 6 frames. Round puffs (no outline, lit on the
+   * upper left) rise and widen, then thin out in a checker dither until they're gone: smoke, not debris.
+   */
   function smokeColumn() {
     return memo("sheet.column", () => {
       const W = 14, H = 30, N = 6;
       const p = pen(W * N, H);
-      const puff = (x, y, r) => { // an ink-outlined puff, lit on top
-        p.px(x - r, y - r + 1, P.ink, r * 2 + 2, r * 2);
-        p.px(x - r + 1, y - r, P.ink, r * 2, r * 2 + 2);
-        p.px(x - r + 1, y - r + 1, P.smoke, r * 2, r * 2);
-        p.px(x - r + 1, y - r + 1, P.smokeHi, Math.max(1, r), Math.max(1, r - 1));
+      const puff = (cx, cy, r, thin) => {
+        for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
+          if (x * x + y * y > r * r + r * 0.6) continue;
+          const X = cx + x, Y = cy + y;
+          if (X < 0 || Y < 0 || X >= W * N || Y >= H) continue;
+          if (thin >= 1 && (X + Y) % 2) continue; // half gone
+          if (thin >= 2 && (X % 2 || Y % 2)) continue; // nearly gone
+          p.px(X, Y, x + y < -r * 0.4 ? P.smokeHi : P.smoke, 1, 1);
+        }
       };
       for (let f = 0; f < N; f++) {
         for (let i = 0; i < 3; i++) {
-          const y = H - 5 - (f * 4 + i * 8);
-          if (y < 2 || y > H - 4) continue;
-          const r = 1 + Math.min(3, Math.floor((H - y) / 9));
-          puff(f * W + 6 + ((i % 2) ? 1 : -1) * Math.floor(f / 2), y, r);
+          const y = H - 4 - (f * 4 + i * 8);
+          if (y < 2 || y > H - 3) continue;
+          const r = 1 + Math.min(3, Math.floor((H - y) / 8)); // wider as it rises
+          const thin = f >= 5 ? 2 : f >= 4 || y < 8 ? 1 : 0;
+          puff(f * W + 7 + ((i % 2) ? 1 : -1) * Math.floor(f / 2), y, r, thin);
         }
       }
       return { url: p.c.toDataURL(), n: N, w: W, h: H };
@@ -375,7 +382,7 @@
    * How long each moment takes on the page, in ms (web/sea-battle.html plays them; the room's
    * animMs in src/game/sea_battle/room.ts must cover them: test/sea_battle.test.ts checks it).
    */
-  const ANIM = {"coinSpin": 900, "coinLabel": 800, "swap": 240, "aimHop": 130, "aimHops": 2, "aimLock": 220, "shell": 420, "splash": 300, "missHold": 280, "hitStop": 90, "hitHold": 480, "sinkStopBase": 120, "sinkStopPerCell": 60, "plate": 110, "crack": 120, "halves": 560, "halvesPerCell": 30, "stampHold": 700, "ring": 90, "turnHold": 200};
+  const ANIM = {"coinSpin": 900, "coinLabel": 800, "swap": 360, "aimHop": 130, "aimHops": 2, "aimLock": 220, "shell": 420, "splash": 300, "missHold": 280, "hitStop": 90, "hitHold": 480, "sinkStopBase": 120, "sinkStopPerCell": 60, "burst": 260, "plate": 110, "crack": 120, "halves": 560, "halvesPerCell": 30, "stampHold": 700, "ring": 90, "turnHold": 200};
 
   /**
    * The placement rules as the page needs them, from the engine (src/game/sea_battle/engine.ts)

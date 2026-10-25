@@ -128,6 +128,33 @@ describe("Sea Battle room", () => {
     }
   });
 
+  it("nothing secret reaches the rival over the wire: no fleet, draft or unsunk ship of the other seat", async () => {
+    const { room, b } = await hostedPair();
+    // Any of Ann's ships, exactly as placed, in what Ben receives is a leak.
+    const ann: Fleet = [
+      { kind: "carrier", x: 0, y: 0, dir: "v" }, { kind: "battleship", x: 2, y: 0, dir: "v" }, { kind: "cruiser", x: 4, y: 0, dir: "v" },
+      { kind: "submarine", x: 6, y: 0, dir: "v" }, { kind: "destroyer", x: 8, y: 0, dir: "v" },
+    ];
+    room.handleRequest("a", "seabattle:draft", { fleet: ann });
+    room.handleRequest("a", "seabattle:ready", { fleet: ann });
+    room.handleRequest("b", "seabattle:ready", { fleet: ROWS });
+    // A few shots each way: Ben hits Ann's carrier (never sinking it), Ann misses.
+    let benShots = 0;
+    for (let i = 0; i < 12 && room.game.phase === "firing" && benShots < 3; i++) {
+      if (room.game.turn === 1) { room.handleRequest("b", "seabattle:fire", { x: 0, y: benShots }); benShots++; }
+      else room.handleRequest("a", "seabattle:fire", { x: 9, y: 9 - i });
+    }
+    expect(benShots).toBe(3);
+    const updates = b.notes.filter((x) => x.method === "seabattle:update");
+    expect(updates.length).toBeGreaterThan(3);
+    for (const note of updates) {
+      const text = JSON.stringify(note.data);
+      for (const ship of ann) expect(text).not.toContain(JSON.stringify(ship));
+      for (const e of note.data.events ?? []) if (e.type === "shot" && e.result === "hit") expect(e.ship).toBeUndefined(); // a hit never names the ship
+    }
+    room.dispose();
+  });
+
   it("leaving mid-game is a forfeit", async () => {
     const { room, recorded, b } = await hostedPair();
     room.handleRequest("a", "seabattle:ready", { fleet: ROWS });
@@ -237,7 +264,7 @@ describe("Sea Battle's page and server agree", () => {
     const aim = T.aimHops * T.aimHop + T.aimLock + T.shell; // the longest path: an incoming shot
     const miss = aim + T.splash + T.missHold;
     const hit = aim + T.hitStop + T.hitHold;
-    const sink = (len: number) => aim + T.sinkStopBase + T.sinkStopPerCell * len + T.plate * len + T.crack + T.halves + T.halvesPerCell * len + T.stampHold + 4 * T.ring;
+    const sink = (len: number) => aim + T.sinkStopBase + T.sinkStopPerCell * len + T.burst + T.plate * len + T.crack + T.halves + T.halvesPerCell * len + T.stampHold + 4 * T.ring;
     expect(animBudget([{ type: "shot", by: 0, x: 0, y: 0, result: "miss" }])).toBeGreaterThanOrEqual(miss);
     expect(animBudget([{ type: "shot", by: 0, x: 0, y: 0, result: "hit" }])).toBeGreaterThanOrEqual(hit);
     for (const kind of ["destroyer", "cruiser", "battleship", "carrier"] as const) {

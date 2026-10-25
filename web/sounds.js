@@ -427,5 +427,98 @@ window.PLOTO_SOUNDS = {
       "vol": 0.25,
       "buzz": 0
     }
+  },
+  "wild_eights": {
+    "deal": {
+      "code": "7BMHBGAc9GHfqEF56JDF8P26SzG43kxkVwpTWeArJkqCwB9NiajCjWXdsmoae8zbpBM38VwJYFndjJUFXnCjhrceUodMErZt1VfpjczAzB38eP4M4PTmjVWko",
+      "vol": 0.25,
+      "buzz": 0
+    },
+    "play": {
+      "code": "7BMHBGAc9GHhWJka35pSAdaF7X1EukVwzZRuX3wwKyNWrrA4RYCPhzQ5vBoLfLATVVer2LuB7nFju7WN98U1kWSAdoijpT39fJwZkkHM7ofa6yQ2bYRB8j3JX",
+      "vol": 0.45,
+      "buzz": 12
+    },
+    "wild": {
+      "code": "7BMHBGAc9GHkrTutarPVQFkBKGinh2NZux8VzXcng6cjGRZPewihh7jkyFaCqpeskn9SJsFnPxqjwj3rQYPJfRRkgYcexrVdrTG3f2JvScxxtj4p5vpD4gwsD",
+      "vol": 0.6,
+      "buzz": [
+        40,
+        30,
+        90
+      ]
+    },
+    "suit": {
+      "code": "57uBnWj15e1vvDk9qZr89PHvdAuXsdpNdNCZ24rErxZ9LJ48ZEj21eJ6fD8bS6DThgnvRuQdoRfqwfEkNN5kPJuiY326uxPhZctHYndaJy9H6bGqCitWDhw19",
+      "vol": 0.4,
+      "buzz": 0
+    },
+    "draw": {
+      "code": "7BMHBGL5s2mdZHz3V9zoynypJn2NNLgBsXbg1XKnKy266Cs2a7oQF7cEbTmoUeFV7XbcWowAWZuhCqwGgRH86PSuJ6xnnyNFSVa1FEHMDQDKymiAkByM1xn7y",
+      "vol": 0.28,
+      "buzz": 0
+    },
+    "owe": {
+      "code": "34T6PkyDSCfyR4FCbLGxVH4rAGtdMe8ME8qecnTuz2NL5hNCNe4g55ye8J7Rgc97wmuuwhwpz435QPnSQeDFF548YfELJYqFKFbG7Vkf6qM8kZxLgK4eryNBR",
+      "vol": 0.4,
+      "buzz": [
+        60,
+        40,
+        60
+      ]
+    },
+    "skip": {
+      "code": "11111BFZ5uaXrYQKxtYCz97DuqDMYPt8NtnxM57KLRMJDefATyxZUL3mLXykBdRP4xsqXyohnhiVWNQbATqYcpm9oNXJTe2VF64zdeVyWz1qqnSgewnRSuPm",
+      "vol": 0.3,
+      "buzz": 20
+    },
+    "last": {
+      "code": "11111mqnbhpto9Ugf5dxtmRcDyWR1JSA7UqBbsotqAtPED9yui85kSWvz3gheEX5ssCu1X8shvPE4PmK2Td5A4Ekg79oBm28mhn7iRUaH5sFojX5eSa4twq",
+      "vol": 0.35,
+      "buzz": 25
+    },
+    "yourTurn": {
+      "code": "57uBnWSzi74NAi1vrxk268ARLfsc9QMNfY16SeUmL6XQ4Lu8BWR7bnmR3iB1NuUhMH75FfDuwo4nFVfpkgTzqcvYQ6GWgLSzQK1hxGgTniPekDfsCENJQpoZZ",
+      "vol": 0.28,
+      "buzz": 15
+    },
+    "nope": {
+      "code": "34T6PkyDRjVtjLeL7tstjCtkPiCspW9ipsdhnJtJdDUVx7FZTJagQAdAaZ2YYymwy2eLNeavRVp17vSGbwyv4pBsSiyKgqWQ9bt3pahSU3sFh9xjqUw9u1ZnF",
+      "vol": 0.3,
+      "buzz": 30
+    },
+    "tick": {
+      "code": "11111mqKRa1zVzWMjF9r8mJTcAXGzhnA3FKc88hGPSDwJVQ5m9g9mGxUopVMcn9nZeBNwshMAVDrhsWeiptywnkZQxCd4uifAkhEnqpdVaAguxxAYUTpwwM",
+      "vol": 0.3,
+      "buzz": 0
+    },
+    "timeout": {
+      "code": "11111BFZZ5cz8hjugYCusFe4aPqEh9QMhkDrT5jLvG9qupPwwq9NYSntdGK24k8E5xHLrA3DFNDtYDWidTuSyRRfpj1GiR5uH86PqM89NBX1Yrcjoy8DHaD5",
+      "vol": 0.6,
+      "buzz": [
+        50,
+        40,
+        50
+      ]
+    },
+    "win": {
+      "code": "57uBnWj167ByNVuVstQCN67Tkn2Arg7Wj1nPGoq4pjwhk86Czi2GcdbmTdmVW2QNHJgvjhxgdKHn1AS2fciANDFsUi21Rf5xHC3T4EMEir3AdK8QVFCTSWskb",
+      "vol": 0.6,
+      "buzz": [
+        60,
+        40,
+        60,
+        40,
+        140
+      ]
+    },
+    "lose": {
+      "code": "57uBnWdB7rJg35u6usrdythoJHM1vBpisUg4sNSydbPMx7RBadSMYhTz7wbHKLdwbBvk5ixFFmZ6fuqCkb4SDh71mbzXJ8oYJvpP4ERkB4oMQ4YpCPEhzYt1m",
+      "vol": 0.4,
+      "buzz": [
+        120,
+        60
+      ]
+    }
   }
 };

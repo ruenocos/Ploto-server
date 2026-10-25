@@ -1,0 +1,262 @@
+{
+  "about": "Wild Eights' sounds, in its own words: cards dealt (deal), a card slapped on the pile (play), the wild eight's slam (wild) and the named suit's swirl (suit, pitched per suit), a card drawn (draw), a 2 landing on you (owe), a jack's skip (skip), last card (last), your turn (yourTurn), a card that doesn't fit (nope), the clock's last seconds and a timeout (tick, timeout), win and lose. Ploto's set covers select and ready. jsfxr stock presets with a seed and hand-set parameters; vol is relative (0..1), buzz a vibration pattern in ms. Run npm run sounds after editing.",
+  "set": "wild_eights",
+  "cues": {
+    "deal": {
+      "preset": "blipSelect",
+      "seed": 61,
+      "params": {
+        "wave_type": 3,
+        "p_base_freq": 0.55,
+        "p_freq_ramp": -0.2,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.02,
+        "p_env_decay": 0.08,
+        "p_lpf_freq": 0.5,
+        "p_hpf_freq": 0.2,
+        "p_repeat_speed": 0
+      },
+      "vol": 0.25,
+      "buzz": 0
+    },
+    "play": {
+      "preset": "hitHurt",
+      "seed": 62,
+      "params": {
+        "wave_type": 3,
+        "p_base_freq": 0.4,
+        "p_freq_ramp": -0.3,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.02,
+        "p_env_decay": 0.14,
+        "p_env_punch": 0.6,
+        "p_lpf_freq": 0.45,
+        "p_hpf_freq": 0.1,
+        "p_repeat_speed": 0
+      },
+      "vol": 0.45,
+      "buzz": 12
+    },
+    "wild": {
+      "preset": "explosion",
+      "seed": 63,
+      "params": {
+        "wave_type": 3,
+        "p_base_freq": 0.22,
+        "p_freq_ramp": -0.18,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.08,
+        "p_env_decay": 0.3,
+        "p_env_punch": 0.8,
+        "p_lpf_freq": 0.55,
+        "p_hpf_freq": 0.05,
+        "p_repeat_speed": 0
+      },
+      "vol": 0.6,
+      "buzz": [
+        40,
+        30,
+        90
+      ]
+    },
+    "suit": {
+      "preset": "powerUp",
+      "seed": 64,
+      "params": {
+        "wave_type": 2,
+        "p_base_freq": 0.35,
+        "p_freq_ramp": 0.2,
+        "p_arp_mod": 0.35,
+        "p_arp_speed": 0.55,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.18,
+        "p_env_decay": 0.3,
+        "p_repeat_speed": 0
+      },
+      "vol": 0.4,
+      "buzz": 0
+    },
+    "draw": {
+      "preset": "blipSelect",
+      "seed": 65,
+      "params": {
+        "wave_type": 3,
+        "p_base_freq": 0.62,
+        "p_freq_ramp": 0.15,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.03,
+        "p_env_decay": 0.1,
+        "p_lpf_freq": 0.55,
+        "p_hpf_freq": 0.25,
+        "p_repeat_speed": 0
+      },
+      "vol": 0.28,
+      "buzz": 0
+    },
+    "owe": {
+      "preset": "hitHurt",
+      "seed": 66,
+      "params": {
+        "wave_type": 1,
+        "p_base_freq": 0.3,
+        "p_freq_ramp": -0.4,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.1,
+        "p_env_decay": 0.25,
+        "p_env_punch": 0.4,
+        "p_lpf_freq": 0.5,
+        "p_repeat_speed": 0
+      },
+      "vol": 0.4,
+      "buzz": [
+        60,
+        40,
+        60
+      ]
+    },
+    "skip": {
+      "preset": "blipSelect",
+      "seed": 67,
+      "params": {
+        "wave_type": 0,
+        "p_base_freq": 0.5,
+        "p_freq_ramp": -0.25,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.06,
+        "p_env_decay": 0.12,
+        "p_duty": 0.5,
+        "p_repeat_speed": 0.5
+      },
+      "vol": 0.3,
+      "buzz": 20
+    },
+    "last": {
+      "preset": "pickupCoin",
+      "seed": 68,
+      "params": {
+        "wave_type": 0,
+        "p_base_freq": 0.55,
+        "p_arp_mod": 0.3,
+        "p_arp_speed": 0.6,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.08,
+        "p_env_decay": 0.22,
+        "p_duty": 0.4,
+        "p_repeat_speed": 0
+      },
+      "vol": 0.35,
+      "buzz": 25
+    },
+    "yourTurn": {
+      "preset": "blipSelect",
+      "seed": 69,
+      "params": {
+        "wave_type": 2,
+        "p_base_freq": 0.45,
+        "p_arp_mod": 0.2,
+        "p_arp_speed": 0.6,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.08,
+        "p_env_decay": 0.18,
+        "p_repeat_speed": 0
+      },
+      "vol": 0.28,
+      "buzz": 15
+    },
+    "nope": {
+      "preset": "hitHurt",
+      "seed": 70,
+      "params": {
+        "wave_type": 1,
+        "p_base_freq": 0.2,
+        "p_freq_ramp": -0.1,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.05,
+        "p_env_decay": 0.12,
+        "p_lpf_freq": 0.4,
+        "p_repeat_speed": 0
+      },
+      "vol": 0.3,
+      "buzz": 30
+    },
+    "tick": {
+      "preset": "blipSelect",
+      "seed": 71,
+      "params": {
+        "wave_type": 0,
+        "p_base_freq": 0.6,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.01,
+        "p_env_decay": 0.05,
+        "p_duty": 0.5,
+        "p_repeat_speed": 0
+      },
+      "vol": 0.3,
+      "buzz": 0
+    },
+    "timeout": {
+      "preset": "hitHurt",
+      "seed": 72,
+      "params": {
+        "wave_type": 0,
+        "p_base_freq": 0.32,
+        "p_freq_ramp": -0.2,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.12,
+        "p_env_decay": 0.2,
+        "p_duty": 0.5,
+        "p_repeat_speed": 0
+      },
+      "vol": 0.6,
+      "buzz": [
+        50,
+        40,
+        50
+      ]
+    },
+    "win": {
+      "preset": "powerUp",
+      "seed": 73,
+      "params": {
+        "wave_type": 2,
+        "p_base_freq": 0.4,
+        "p_freq_ramp": 0.06,
+        "p_arp_mod": 0.45,
+        "p_arp_speed": 0.55,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.36,
+        "p_env_decay": 0.42,
+        "p_env_punch": 0.5,
+        "p_repeat_speed": 0
+      },
+      "vol": 0.6,
+      "buzz": [
+        60,
+        40,
+        60,
+        40,
+        140
+      ]
+    },
+    "lose": {
+      "preset": "hitHurt",
+      "seed": 74,
+      "params": {
+        "wave_type": 2,
+        "p_base_freq": 0.32,
+        "p_freq_ramp": -0.3,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.3,
+        "p_env_decay": 0.32,
+        "p_env_punch": 0,
+        "p_lpf_freq": 1,
+        "p_repeat_speed": 0
+      },
+      "vol": 0.4,
+      "buzz": [
+        120,
+        60
+      ]
+    }
+  }
+}

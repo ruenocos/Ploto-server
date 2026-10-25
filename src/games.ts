@@ -12,6 +12,7 @@ import { MatchMonstersLobby } from "./game/matchmonsters/lobby.js";
 import { HoldemLobby } from "./game/holdem/lobby.js";
 import { SeaBattleLobby } from "./game/sea_battle/lobby.js";
 import { DropFourLobby } from "./game/drop_four/lobby.js";
+import { WildEightsLobby } from "./game/wild_eights/lobby.js";
 
 export interface GameEntry extends GameInfo {
   /** The game's page in web/. */
@@ -45,6 +46,12 @@ export const GAMES: readonly GameEntry[] = [
     players: "1v1", minSeats: 2, maxSeats: 2, badge: "NEW",
     profile: { played: "Games", stats: [{ key: "longestLine", label: "Longest line" }] },
     lobby: (ctx) => new DropFourLobby(ctx),
+  },
+  {
+    id: "wild_eights", title: "Wild Eights", path: "/play/wild-eights", page: "wild-eights.html", card: "wild-eights.card.js",
+    players: "2–4 players", minSeats: 2, maxSeats: 4, badge: "NEW",
+    profile: { played: "Games", stats: [{ key: "eights", label: "Most eights in a game" }] },
+    lobby: (ctx) => new WildEightsLobby(ctx),
   },
   // new games go above this line (scripts/new-game.mjs adds them here)
 ];

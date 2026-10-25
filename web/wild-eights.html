@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Wild Eights · Ploto</title>
+<link rel="stylesheet" href="/play/platform.css" />
+<link rel="stylesheet" href="/play/animate.min.css" />
+<style>
+/*
+ * Wild Eights' page. Everything outside the game itself is Ploto's: the pl-*
+ * blocks from platform.css and the lobby kit (web/lobbykit.js), including the
+ * in-game menu, How to play and the result. The game screen and the home banner
+ * are Wild Eights' own: a felt table (web/wild-eights.card.js) with Ploto's deck
+ * on it (the same card faces as Hold'em). After a wild eight the table's rim
+ * takes the named suit's colour; that colour and the suit badge are the only
+ * saturated things on the table besides the cards.
+ */
+:root { --we-felt: #1d4c3c; --we-rim: #10302a; --we-rim-hi: #1a4238; --flood: var(--we-rim-hi);
+  --card: #fff4d6; --card-lo: #e3d2a6; --card-ink: #141a2c; --card-red: #b8213a; }
+.scr[hidden] { display: none; }
+
+/* ---- home ---- */
+.pl-hero.we-hero { background: var(--we-felt); }
+.we-hero .hs { position: absolute; image-rendering: pixelated; background-size: 100% 100%; }
+.pl-row .pl-ic img { image-rendering: pixelated; display: block; }
+
+/* ---- cards: Ploto's deck (as Hold'em's) ---- */
+.card { --w: 40px; --h: 56px; position: relative; flex: none; width: var(--w); height: var(--h); background: var(--card); color: var(--card-ink); border: var(--px) solid var(--c-ink);
+  box-shadow: inset 0 calc(var(--px) * -2) 0 var(--card-lo); --n: var(--px);
+  clip-path: polygon(0 var(--n), var(--n) var(--n), var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n), 100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%, var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n))); }
+.card.red { color: var(--card-red); }
+.card.back { background: repeating-conic-gradient(var(--c-accent) 0 25%, #5a41c8 0 50%) 0 0 / 8px 8px; box-shadow: inset 0 0 0 var(--px) var(--c-accent-hi), inset 0 0 0 calc(var(--px) * 2) var(--c-accent-lo); }
+.card.back > * { display: none; }
+.card.xs { --w: 16px; --h: 22px; } .card.xs > * { display: none; }
+.card.md { --w: var(--bw, 48px); --h: var(--bh, 68px); }
+.card.lg { --w: var(--hw, 64px); --h: var(--hh, 90px); }
+.card .ix { position: absolute; left: 3px; top: 3px; display: grid; justify-items: center; gap: 2px; }
+.card .ix.b { left: auto; top: auto; right: 3px; bottom: 3px; rotate: 180deg; }
+.card.lg .ix { left: 4px; top: 4px; gap: 3px; } .card.lg .ix.b { left: auto; top: auto; right: 4px; bottom: 4px; }
+.card.md { --ixl: 3px; --ixw: 8px; --pw: 6px; } .card.lg { --ixl: 4px; --ixw: 10px; --pw: 8px; }
+.card .pips { position: absolute; top: 12%; bottom: 12%; left: calc(var(--ixl) + var(--ixw) + 1px + var(--pw) / 2); right: calc(var(--ixl) + var(--ixw) + 1px + var(--pw) / 2); }
+.card .pips i, .card .ace { position: absolute; display: block; line-height: 0; translate: -50% -50%; }
+.card .pips i.flip { rotate: 180deg; }
+.card .ace { left: 50%; top: 50%; }
+.card .court { position: absolute; inset: 9% 22%; display: grid; grid-template-rows: 1fr 1fr; overflow: hidden; padding: 2px; background: color-mix(in srgb, currentColor 7%, transparent); }
+.card .court::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 45%, transparent); pointer-events: none; }
+.card .court .half { min-height: 0; display: flex; justify-content: center; align-items: flex-end; overflow: hidden; }
+.card .court .half.flip { rotate: 180deg; }
+.card .court img { height: 100%; max-width: 100%; object-fit: contain; object-position: 50% 100%; image-rendering: pixelated; pointer-events: none; }
+.card .px-s { display: block; fill: currentColor; shape-rendering: crispEdges; }
+/* an eight is wild: a gold frame inside its edge, on every card of the deck */
+.card.wild:not(.back) { box-shadow: inset 0 0 0 var(--px) var(--c-gold), inset 0 calc(var(--px) * -2) 0 var(--card-lo); }
+.card.wild .ace { filter: drop-shadow(0 0 0 var(--c-gold)); }
+
+/* ---- the game screen ---- */
+#scrGame { display: flex; flex-direction: column; min-height: 100dvh; padding: calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset-bottom) + 10px); max-width: 600px; margin: 0 auto; gap: 8px; }
+#scrGame[hidden] { display: none; }
+.hud { display: flex; align-items: flex-start; gap: 8px; }
+.rivals { flex: 1; min-width: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
+.seat { position: relative; min-width: 0; display: grid; gap: 4px; padding: 6px 6px 7px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
+.seat.on { box-shadow: inset 0 0 0 var(--px) var(--c-accent); } /* STYLE's Active frame: whose turn */
+.seat .top { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.seat .nm { min-width: 0; flex: 1; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seat .n { flex: none; font: 700 var(--fs-s)/1 var(--f-text); color: var(--c-text); font-variant-numeric: tabular-nums; }
+.seat .fan { display: flex; height: 22px; }
+.seat .fan .card + .card { margin-left: -10px; }
+.seat .tag { position: absolute; right: 4px; bottom: 5px; padding: 2px 4px; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; background: var(--c-gold); color: var(--c-ink); }
+.seat .tag.away { background: var(--c-raise); color: var(--c-mute); }
+.seat .stampl { position: absolute; inset: 0; display: grid; place-items: center; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-ink); background: color-mix(in srgb, var(--c-gold) 92%, transparent); pointer-events: none; }
+.call { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 8px 12px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
+.call.mine { box-shadow: inset 0 0 0 var(--px) var(--c-accent); }
+.call b { font: 700 var(--fl-1)/1.1 var(--f-label); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; }
+.call span { flex: 1; min-width: 0; font: 400 var(--fs-s)/1.25 var(--f-text); color: var(--c-text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.clock-s { flex: none; min-width: 28px; text-align: right; font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-gold); }
+.clock-s.low { color: var(--c-bad-hi); }
+.clock { flex: none; width: 48px; height: calc(var(--px) * 4); background: var(--c-well); box-shadow: 0 0 0 var(--px) var(--c-ink); }
+.clock i { display: block; height: 100%; background: var(--c-gold); transition: width 0.25s steps(2); }
+.clock.low { height: calc(var(--px) * 6); }
+.clock.low i { background: var(--c-bad); }
+.clock[hidden] { display: none; }
+
+/* The table: felt with a rim that takes the suit's colour after a wild eight. */
+.table { position: relative; flex: 1; min-height: 200px; display: grid; place-items: center; background: var(--we-felt) center / 32px 32px; image-rendering: pixelated;
+  border: var(--px) solid var(--c-ink); box-shadow: inset 0 0 0 calc(var(--px) * 3) var(--flood), inset 0 0 0 calc(var(--px) * 4) var(--c-ink); }
+.table .mid { display: flex; align-items: center; gap: 22px; }
+.deck { position: relative; padding: 0; border: 0; background: none; box-shadow: none; clip-path: none; min-height: 0; cursor: default; }
+.deck:active { transform: none; }
+.deck.can { cursor: pointer; }
+.deck.can .card { box-shadow: inset 0 0 0 var(--px) var(--c-cream), inset 0 0 0 calc(var(--px) * 2) var(--c-accent-lo); }
+.deck .card + .card { position: absolute; left: 0; top: 0; }
+.deck .left { position: absolute; left: 50%; bottom: -20px; translate: -50% 0; font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-text); white-space: nowrap; }
+.deck:focus-visible { outline: none; box-shadow: 0 0 0 var(--px) var(--c-cream); }
+.pile { position: relative; width: var(--hw, 64px); height: var(--hh, 90px); }
+.pile .card { position: absolute; left: 0; top: 0; }
+.suit { position: absolute; left: 50%; top: 10px; translate: -50% 0; display: flex; align-items: center; gap: 6px; padding: 4px 8px 4px 6px; background: var(--c-ink); font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; }
+.suit img { image-rendering: pixelated; display: block; }
+.owed { position: absolute; right: 10px; top: 10px; padding: 4px 8px; background: var(--c-bad); color: var(--c-cream); font: 700 var(--fl-1)/1 var(--f-label); box-shadow: inset 0 var(--px) 0 var(--c-bad-hi), var(--px) var(--px) 0 var(--c-ink); }
+.owed[hidden] { display: none; }
+.table .fx { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.table .fx > * { position: absolute; image-rendering: pixelated; }
+.stamp { position: absolute; z-index: 5; left: 50%; bottom: 14px; translate: -50% 0; text-align: center; pointer-events: none; white-space: nowrap; }
+.stamp b { display: inline-block; padding: 8px 14px 10px; font: 700 var(--fl-3)/1 var(--f-label); text-transform: uppercase; color: var(--c-ink); background: var(--c-gold); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 #fff0a0, inset 0 calc(var(--px) * -2) 0 #d99a1a, var(--px) var(--px) 0 var(--c-ink); }
+.stamp.plain b { background: var(--c-panel); color: var(--c-cream); box-shadow: inset 0 var(--px) 0 var(--c-edge), var(--px) var(--px) 0 var(--c-ink); }
+/* the suit picker for an eight: four big buttons over the table */
+.picker { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; background: rgba(10, 12, 20, 0.72); }
+.picker[hidden] { display: none; }
+.picker .in { display: grid; gap: 10px; justify-items: center; padding: 12px; }
+.picker b { font: 700 var(--fl-1)/1.1 var(--f-label); text-transform: uppercase; color: var(--c-cream); }
+.picker .grid4 { display: grid; grid-template-columns: repeat(2, minmax(108px, 1fr)); gap: 8px; }
+.picker .grid4 button { display: grid; justify-items: center; gap: 6px; padding: 10px 8px; min-height: 76px; }
+.picker .grid4 button img { image-rendering: pixelated; display: block; }
+.picker .grid4 button small { font: 400 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); text-transform: none; }
+
+/* your hand: overlapped like a held fan; the cards you can play stand up */
+.hand { position: relative; height: calc(var(--bh, 68px) + 12px); margin: 0 2px; }
+.hand .card { position: absolute; bottom: 0; padding: 0; cursor: default; transition: translate 0.12s steps(2); touch-action: manipulation; }
+.hand .card.can { translate: 0 -10px; cursor: pointer; box-shadow: inset 0 0 0 var(--px) var(--c-gold), inset 0 calc(var(--px) * -2) 0 var(--card-lo); }
+.hand.mine .card:not(.can) { filter: brightness(0.62) saturate(0.8); } /* on your turn: what can't go sits back, still readable */
+.hand .card.new::after { content: "New"; position: absolute; left: 50%; top: -1px; translate: -50% -100%; padding: 2px 4px; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; background: var(--c-cream); color: var(--c-ink); }
+.hand .card:focus-visible { outline: none; box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-cream); }
+.dock { display: flex; align-items: center; gap: 10px; min-height: 48px; }
+.dock .me { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+.dock .me .nm { min-width: 0; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dock .me .n { font: 700 var(--fs-s)/1 var(--f-text); color: var(--c-text); }
+.dock button { min-height: 48px; }
+.dock button[hidden] { display: none; }
+.fly { position: fixed; z-index: 30; left: 0; top: 0; pointer-events: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.standings { display: grid; gap: 6px; width: 100%; }
+.standings .row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--c-panel); border: var(--px) solid var(--c-ink); }
+.standings .row.me { box-shadow: inset 0 0 0 var(--px) var(--c-accent); }
+.standings .pl { flex: none; width: 26px; font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-gold); }
+.standings .nm { flex: 1; min-width: 0; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.standings .left { display: flex; flex: none; }
+.standings .left img { image-rendering: pixelated; display: block; }
+.standings .left img + img { margin-left: -14px; }
+.standings .pts { flex: none; min-width: 44px; text-align: right; font: 700 var(--fs-s)/1 var(--f-text); color: var(--c-text); }
+</style>
+</head>
+<body>
+
+<header class="pl-bar" id="bar">
+  <div class="pl-bar-in">
+    <button id="barBack" class="ghost icon-btn" aria-label="Back" title="Back"></button>
+    <h1 class="pl-title" id="barTitle" tabindex="-1">Wild Eights</h1>
+    <div id="barAct"></div>
+  </div>
+</header>
+
+<!-- Home: Ploto's blocks, the game's banner -->
+<section class="scr" id="scrHome" hidden>
+  <main class="pl-view">
+    <div class="pl-hero pl-frame we-hero" id="hero" aria-hidden="true"></div>
+    <button class="pl-row" data-mode="quick"><span class="pl-ic" data-ic="quick"></span><span><b>Quick game</b><small>Play anyone online</small></span><span class="pl-go" data-chev></span></button>
+    <button class="pl-row" data-mode="host"><span class="pl-ic" data-ic="host"></span><span><b>Play friends</b><small>Invite them or share a code</small></span><span class="pl-go" data-chev></span></button>
+    <button class="pl-row" data-mode="practice"><span class="pl-ic" data-ic="practice"></span><span><b>Practice</b><small>You vs bots</small></span><span class="pl-go" data-chev></span></button>
+    <p class="pl-label">Have a code?</p>
+    <form class="pl-form" data-code-form autocomplete="off">
+      <input class="pl-code" type="text" placeholder="Table code" maxlength="8" autocapitalize="characters" spellcheck="false" aria-label="Table code" />
+      <button class="ghost small" type="submit">Join</button>
+    </form>
+  </main>
+</section>
+
+<!-- Play friends: the table's settings, drawn by the kit from SCHEMA -->
+<section class="scr pl-flow" id="scrHost" hidden>
+  <main class="pl-view"><div class="fields" id="hostFields"></div></main>
+  <div class="pl-foot"><div class="pl-foot-in"><button class="big" id="createBtn">Create table</button></div></div>
+</section>
+
+<!-- Practice: how many bots, how hard -->
+<section class="scr pl-flow" id="scrPractice" hidden>
+  <main class="pl-view"><div class="fields" id="practiceFields"></div></main>
+  <div class="pl-foot"><div class="pl-foot-in"><button class="big" id="practiceBtn">Start practice</button></div></div>
+</section>
+
+<!-- Room lobby: Ploto's (kit.renderRoom) -->
+<section class="scr pl-flow" id="scrLobby" hidden>
+  <main class="pl-view" id="lobbyMain"></main>
+  <div class="pl-foot"><div class="pl-foot-in" id="lobbyFoot"></div></div>
+</section>
+
+<!-- Waiting for a seat -->
+<section class="scr" id="scrWait" hidden>
+  <main class="pl-view"><div class="pl-waitline"><span class="pl-dots"><i></i><i></i><i></i></span><span id="waitText">Finding a seat</span></div></main>
+</section>
+
+<!-- The game: all its own, plus Ploto's menu button (kit.menu) -->
+<section class="scr" id="scrGame" hidden>
+  <div class="hud">
+    <div class="rivals" id="rivals" role="list" aria-label="Players, in turn order"></div>
+    <button id="menuBtn" class="ghost icon-btn" aria-label="Menu" title="Menu"></button>
+  </div>
+  <div class="call" id="call"><b id="callTitle"></b><span id="callText"></span><div class="clock" id="clock" role="timer" hidden><i></i></div><span class="clock-s" id="clockS" aria-hidden="true"></span></div>
+  <div class="table" id="table">
+    <div class="suit" id="suit"></div>
+    <div class="owed" id="owed" hidden></div>
+    <div class="mid">
+      <button type="button" class="deck" id="deck" aria-label="Draw a card"></button>
+      <div class="pile" id="pile" aria-hidden="true"></div>
+    </div>
+    <div class="fx" id="fx"></div>
+    <div class="picker" id="picker" role="dialog" aria-modal="true" aria-labelledby="pickTitle" hidden>
+      <div class="in"><b id="pickTitle">Name the suit</b><div class="grid4" id="pickGrid"></div><button type="button" class="ghost small" id="pickCancel">Keep the eight</button></div>
+    </div>
+  </div>
+  <div class="hand" id="hand" role="group" aria-label="Your hand"></div>
+  <div class="dock" id="dock"><div class="me" id="meBox"></div><button class="ghost" id="keepBtn" hidden>Keep it</button><button id="drawBtn" hidden>Draw</button></div>
+  <p class="sr-only" id="announce" aria-live="polite"></p>
+  <p class="sr-only" id="announceNow" aria-live="assertive"></p>
+</section>
+
+<!-- Result: Ploto's (kit.renderResult), the game's standings inside -->
+<section class="scr pl-flow" id="scrResult" hidden>
+  <main class="pl-view" id="resMain"></main>
+  <div class="pl-foot"><div class="pl-foot-in" id="resFoot"></div></div>
+</section>
+
+<script src="/play/riffwave.js"></script>
+<script src="/play/sfxr.js"></script>
+<script src="/play/sounds.js"></script>
+<script src="/play/feedback.js"></script>
+<script src="/play/icons.js"></script>
+<script src="/play/platform.js"></script>
+<script src="/play/motion.js"></script>
+<script src="/play/lobbykit.js"></script>
+<script src="/play/cards.js"></script>
+<script src="/play/card/wild_eights.js"></script>
+<script>
+(() => {
+  "use strict";
+  const P = window.Ploto, A = window.EIGHTS_ART;
+  const { $, esc, toast, cue, sleep } = P;
+  const RM = () => P.reduceMotion();
+  const GAME = "wild_eights", PREFIX = "wildeights:";
+  const T = A.ANIM; // how long each moment takes (the room's animBudget covers these)
+  const SUITS = A.SUITS, SUIT = A.SUIT;
+  const rankOf = (c) => c.slice(0, -1), suitOf = (c) => c.slice(-1);
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const RANK_NAME = { A: "ace", J: "jack", Q: "queen", K: "king" };
+  const cardName = (c) => `${RANK_NAME[rankOf(c)] || rankOf(c)} of ${SUIT[suitOf(c)].name}`;
+  const ORD = (n) => ["", "1st", "2nd", "3rd", "4th"][n] || `${n}th`;
+
+  /* ================================================================ the platform's lobby, told about this game once */
+  const BOT_FIELD = { key: "botStyle", label: "Bot difficulty", kind: "choice", options: [["relaxed", "Medium"], ["sharp", "Hard"]], hint: "Medium plays what fits. Hard holds its eights and steers the suit" };
+  const SCHEMA = [
+    { key: "seats", label: "Seats", kind: "choice", options: [[2, "2"], [3, "3"], [4, "4"]] },
+    { key: "bots", label: "Fill empty seats with bots", kind: "toggle" },
+    { key: "timer", label: "Turn timer", kind: "choice", options: [[true, "On"], [false, "Off"]], hint: "20 s a turn" },
+    { ...BOT_FIELD, hint: "For bots in empty seats. " + BOT_FIELD.hint },
+  ];
+  const kit = P.lobbyKit({
+    gameId: GAME, prefix: PREFIX, path: "/play/wild-eights", title: "Wild Eights",
+    nouns: { code: "Table code", room: "table", quick: "Quick game", yours: "Your table" },
+    schema: SCHEMA, defaults: { seats: 4, bots: true, timer: true, botStyle: "relaxed" },
+    summary: (s) => [`${s.seats} seats`, s.bots ? "bots fill in" : "no bots", s.timer ? "timer on" : "no timer"].join(" · "),
+    shareText: (code) => `Play Wild Eights with me on Ploto. Code ${code}`,
+    quickNote: "Bots fill the empty seats if nobody comes",
+    rules: () => ({
+      steps: [
+        "Play a card that matches the top of the pile by suit or by number. First to empty their hand wins.",
+        "Eights are wild: play one on anything and name the next suit.",
+        "A 2 makes the next player draw two, unless they answer with a 2 of their own: then the next one draws four, and so on.",
+        "A jack skips the next player.",
+        "Can't play, or don't want to? Draw one. If it fits you can play it straight away, or keep it.",
+      ],
+      extra: `<p class="pl-label">Good to know</p><p class="hint">Two players get 7 cards each, three or four get 5. When someone goes out, everyone else is placed by the cards left in their hand: eights count 50, faces 10, aces 1, the rest their number. Down to one card, everyone sees it. With the turn timer on you get 20 s; when it runs out the clock plays your first card that fits (keeping eights), or draws. On a keyboard: arrows pick a card, Enter plays, D draws, K keeps a drawn card, I reads the table.</p>`,
+    }),
+  });
+
+  /* ================================================================ the game's body language (Animate.css presets) */
+  const pose = P.poses({
+    call: { preset: "pulse", speed: "faster" },     // the turn call
+    nope: { preset: "headShake", speed: "faster" }, // a card that doesn't fit
+    owe: { preset: "shakeX", speed: "fast" },       // a 2 lands on someone
+    pop: { preset: "bounceIn", speed: "fast" },     // a badge appears (last card, the suit)
+    win: { preset: "tada" },
+  });
+
+  /* ================================================================ screens */
+  const S = { room: null, sock: null, lobby: null, view: null, M: null, anim: false, resultReady: false, retry: 0, leaving: false, timers: new Set(), sending: false, focus: 0, seen: {}, newCard: null, dealt: null };
+  const nav = { stack: ["home"] };
+  const SCREENS = { home: "scrHome", host: "scrHost", practice: "scrPractice", lobby: "scrLobby", wait: "scrWait", game: "scrGame", result: "scrResult" };
+  const cur = () => nav.stack[nav.stack.length - 1];
+  function roomScreen() {
+    const v = S.lobby;
+    if (!v) return "wait";
+    if (v.phase === "lobby") return v.mode === "practice" ? "wait" : "lobby";
+    if (v.phase === "over" && S.resultReady && !S.anim) return "result";
+    return "game";
+  }
+  const screenNow = () => (cur() === "room" ? roomScreen() : cur());
+  let shown = null;
+  function show() {
+    const name = screenNow();
+    const changed = name !== shown;
+    shown = name;
+    for (const [n, id] of Object.entries(SCREENS)) $(id).hidden = n !== name;
+    $("bar").hidden = name === "game";
+    $("barTitle").textContent = { home: "Wild Eights", host: "Play friends", practice: "Practice", wait: "Wild Eights", result: "Wild Eights" }[name] || kit.title(S.lobby);
+    $("barBack").innerHTML = px("back");
+    $("barAct").innerHTML = name === "home" ? `<button class="ghost small" id="rulesBtn">Rules</button>` : "";
+    if (name === "home") { $("rulesBtn").onclick = kit.rules; renderHome(); }
+    if (name === "host") { $("hostFields").innerHTML = kit.fieldsHTML(kit.settings); kit.wireFields($("hostFields"), kit.settings, kit.saveSettings); }
+    if (name === "practice") renderPractice();
+    if (name === "lobby") kit.renderRoom(S.lobby, { main: $("lobbyMain"), foot: $("lobbyFoot"), req });
+    if (name === "game") renderGame();
+    if (name === "result") renderResult();
+    if (changed) { window.scrollTo(0, 0); P.setActivity(GAME, cur() === "room" ? "At a Wild Eights table" : "In Wild Eights"); }
+    syncBack();
+  }
+  const go = (name) => { nav.stack.push(name); show(); };
+  const goHome = () => { nav.stack = ["home"]; show(); };
+  function back() {
+    if (!$("picker").hidden) return closePicker();
+    if (screenNow() === "game") return openMenu();
+    if (cur() === "room" && !S.room) { kit.cancelSeat(); return goHome(); }
+    if (cur() === "room") return leave();
+    if (nav.stack.length > 1) { nav.stack.pop(); show(); }
+  }
+  const syncBack = P.backGuard({ canGoBack: () => nav.stack.length > 1, onBack: back });
+  $("barBack").onclick = () => (cur() === "home" ? (location.href = "/play") : back());
+
+  const px = (name, scale = 2) => window.MM_ICONS.icon(name, scale);
+  $("menuBtn").innerHTML = px("menu");
+  const imgTag = (url, w, h, k, cls = "") => `<img src="${url}" alt="" width="${w * k}" height="${h * k}"${cls ? ` class="${cls}"` : ""}>`;
+
+  /* ================================================================ Ploto's deck: the same faces as Hold'em's */
+  /** A pixel glyph from EIGHTS_ART.GRIDS as crisp SVG, in whole device pixels. */
+  function glyph(name, s = 2) {
+    const g = A.GRIDS[name];
+    if (!g) return "";
+    let r = "";
+    g.forEach((row, y) => { for (let x = 0; x < row.length; ) { if (row[x] !== "X") { x++; continue; } let e = x; while (row[e] === "X") e++; r += `<rect x="${x}" y="${y}" width="${e - x}" height="1"/>`; x = e; } });
+    const w = g[0].length, h = g.length, dpr = window.devicePixelRatio || 1, u = Math.max(1, Math.round(s * dpr)) / dpr;
+    return `<svg class="px-s" viewBox="0 0 ${w} ${h}" width="${w * u}" height="${h * u}" aria-hidden="true" focusable="false">${r}</svg>`;
+  }
+  const SIX = [[0, 0], [1, 0], [0, 0.5], [1, 0.5], [0, 1], [1, 1]];
+  const PIPS = {
+    2: [[0.5, 0], [0.5, 1]], 3: [[0.5, 0], [0.5, 0.5], [0.5, 1]], 4: [[0, 0], [1, 0], [0, 1], [1, 1]],
+    5: [[0, 0], [1, 0], [0.5, 0.5], [0, 1], [1, 1]], 6: SIX, 7: [...SIX, [0.5, 0.25]], 8: [...SIX, [0.5, 0.25], [0.5, 0.75]],
+    9: [[0, 0], [1, 0], [0, 1 / 3], [1, 1 / 3], [0.5, 0.5], [0, 2 / 3], [1, 2 / 3], [0, 1], [1, 1]],
+    10: [[0, 0], [1, 0], [0.5, 1 / 6], [0, 1 / 3], [1, 1 / 3], [0, 2 / 3], [1, 2 / 3], [0.5, 5 / 6], [0, 1], [1, 1]],
+  };
+  const FACE = { md: { rank: 1.5, idx: ["p", 1], pip: ["p", 1.25], ace: 3 }, lg: { rank: 2, idx: ["", 1], pip: ["p", 1.5], ace: 4 } };
+  const COURT = { J: "jack", Q: "queen", K: "king" };
+  /** A card's HTML: `tag` button for your hand (with its label), div elsewhere; null card = the back. */
+  function cardHTML(c, size, { cls = "", tag = "div", attrs = "" } = {}) {
+    if (!c) return `<${tag} class="card back ${size} ${cls}" ${attrs}></${tag}>`;
+    const r = rankOf(c), s = suitOf(c), red = s === "H" || s === "D", F = FACE[size];
+    const head = `<${tag} class="card ${size}${red ? " red" : ""}${r === "8" ? " wild" : ""} ${cls}" data-c="${c}" ${attrs}>`;
+    if (!F) return head + `</${tag}>`;
+    const ix = (flip) => `<span class="ix${flip ? " b" : ""}">${glyph("r" + r, F.rank)}${glyph(F.idx[0] + s, F.idx[1])}</span>`;
+    const art = COURT[r] && window.PLOTO_CARDS?.[COURT[r]];
+    let body;
+    if (art) { const img = `<img src="${art[red ? "red" : "black"]}" alt="" draggable="false">`; body = `<div class="court"><div class="half">${img}</div><div class="half flip">${img}</div></div>`; }
+    else if (PIPS[r]) body = `<div class="pips">${PIPS[r].map(([x, y]) => `<i${y > 0.5 ? ' class="flip"' : ""} style="left:${x * 100}%;top:${y * 100}%">${glyph(F.pip[0] + s, F.pip[1])}</i>`).join("")}</div>`;
+    else body = `<i class="ace">${glyph(s, F.ace)}</i>`;
+    return head + ix(false) + ix(true) + body + `</${tag}>`;
+  }
+
+  /* ================================================================ home */
+  const ICON = {
+    quick: () => imgTag(A.mini("8H"), 13, 18, 2),
+    host: () => `<span style="display:flex">${imgTag(A.mini("5S"), 13, 18, 2)}<span style="margin-left:-12px;margin-top:4px">${imgTag(A.mini("8D"), 13, 18, 2)}</span></span>`,
+    practice: () => imgTag(A.mini("", true), 13, 18, 2),
+  };
+  function renderHome() {
+    for (const s of document.querySelectorAll("[data-chev]")) s.innerHTML = px("chev");
+    for (const s of document.querySelectorAll("[data-ic]")) if (!s.firstChild) s.innerHTML = ICON[s.dataset.ic]();
+    banner.paint();
+  }
+  kit.home($("scrHome"), {
+    onMode: (m) => (m === "host" ? go("host") : m === "practice" ? go("practice") : takeSeat("Finding a seat", "quick")),
+    onCode: async (code) => {
+      try { const r = await kit.join(code, { wait: () => wait(`Joining ${code}`) }); if (r) enter(r); else goHome(); }
+      catch (e) { toast(P.errText(e), 2600); goHome(); }
+    },
+  });
+
+  /**
+   * The banner (docs/STYLE.md, Home banners): the card's pieces in play. The felt, the deck, the
+   * pile and a fan of cards close up. Intro: the fan slides up. Beats (the game's own moves): a card
+   * from the fan goes onto the pile; every third beat it's an eight, the rim floods to its suit and
+   * the suit's pips burst out. Silent, as banners are.
+   */
+  const BANNER_PLAYS = ["7H", "7C", "8S", "KS", "KD", "8H", "3H", "3D", "8C"];
+  const banner = P.banner($("hero"), {
+    draw(hero, W, H) {
+      hero.innerHTML = "";
+      const k = Math.max(2, Math.min(4, Math.floor((H - 8) / 22)));
+      hero.style.backgroundImage = `url(${A.felt()})`; hero.style.backgroundSize = `${16 * k}px ${16 * k}px`; hero.style.imageRendering = "pixelated";
+      const rim = el("div", "hs", { inset: "0", boxShadow: `inset 0 0 0 ${k}px ${A.P.rimHi}` });
+      hero.appendChild(rim);
+      const cx = Math.round(W / 2), cy = Math.round(H / 2);
+      const deck = el("div", "hs", { left: `${cx - 22 * k}px`, top: `${cy - 9 * k}px`, width: `${13 * k}px`, height: `${18 * k}px`, backgroundImage: `url(${A.mini("", true)})` });
+      const pile = el("div", "hs", { left: `${cx - 4 * k}px`, top: `${cy - 9 * k}px`, width: `${13 * k}px`, height: `${18 * k}px`, backgroundImage: `url(${A.mini("7S")})` });
+      const fx = el("div", "hs", { inset: "0" });
+      const fan = el("div", "hs", { left: `${cx + 16 * k}px`, top: `${cy - 6 * k}px`, width: `${40 * k}px`, height: `${24 * k}px` });
+      hero.append(deck, pile, fan, fx);
+      hero._g = { k, pile, fan, fx, rim, step: 0, W, H, cx, cy };
+      bannerFan(hero);
+    },
+    intro(hero) { if (!RM()) P.playPreset(hero._g.fan, "slideInUp", { speed: "fast" }); },
+    async beat(hero) {
+      const g = hero._g;
+      if (!g || hero._busy) return;
+      hero._busy = true;
+      try {
+        const c = BANNER_PLAYS[g.step++ % BANNER_PLAYS.length];
+        const from = g.fan.firstElementChild;
+        if (from && !RM()) await from.animate([{ transform: "translate(0, 0)" }, { transform: `translate(${-(20 * g.k)}px, ${-3 * g.k}px)` }], { duration: 260, easing: "steps(5)", fill: "forwards" }).finished.catch(() => {});
+        g.pile.style.backgroundImage = `url(${A.mini(c)})`;
+        if (rankOf(c) === "8") {
+          const s = suitOf(c);
+          if (!RM()) { g.pile.animate([{ transform: "scale(1.35)" }, { transform: "scale(0.95)" }, { transform: "scale(1)" }], { duration: 200, easing: "steps(3)" }); sheetAt(g.fx, A.burst(s), g.cx + 2.5 * g.k, g.cy, g.k * 0.75, 420); }
+          g.rim.style.boxShadow = `inset 0 0 0 ${g.k}px ${SUIT[s].flood}`;
+        }
+        bannerFan(hero);
+      } finally { hero._busy = false; }
+    },
+    every: 2600,
+  });
+  function bannerFan(hero) {
+    const g = hero._g, hand = ["9H", "KC", "8D", "4S"].map((c, i) => BANNER_PLAYS[(g.step + i + 1) % BANNER_PLAYS.length]);
+    g.fan.innerHTML = "";
+    hand.forEach((c, i) => g.fan.appendChild(el("div", "hs", { left: `${i * 8 * g.k}px`, top: `${(i === 1 || i === 2 ? 0 : 2) * g.k}px`, width: `${13 * g.k}px`, height: `${18 * g.k}px`, backgroundImage: `url(${A.mini(c)})` })));
+  }
+  function el(tag, cls, style = {}) { const e = document.createElement(tag); if (cls) e.className = cls; Object.assign(e.style, style); return e; }
+  /** A frame sheet played once, centred on (x, y) CSS px inside `root`, drawn at k CSS px per art pixel. */
+  function sheetAt(root, s, x, y, k, ms) {
+    const e = el("div", "", { position: "absolute", left: `${Math.round(x - (s.w * k) / 2)}px`, top: `${Math.round(y - (s.h * k) / 2)}px`, width: `${s.w * k}px`, height: `${s.h * k}px`, backgroundImage: `url(${s.url})`, backgroundSize: `${s.w * s.n * k}px ${s.h * k}px`, imageRendering: "pixelated", pointerEvents: "none" });
+    root.appendChild(e);
+    e.animate([{ backgroundPosition: "0 0" }, { backgroundPosition: `${-s.w * s.n * k}px 0` }], { duration: ms, easing: `steps(${s.n})`, fill: "forwards" }).finished.then(() => e.remove()).catch(() => {});
+    return e;
+  }
+
+  /* ================================================================ settings screens */
+  const PRACTICE_SCHEMA = [{ key: "seats", label: "Players", kind: "choice", options: [[2, "2"], [3, "3"], [4, "4"]], hint: "You and the bots" }, BOT_FIELD];
+  const practiceSettings = { seats: 4, botStyle: "relaxed", ...(P.local.get("wild_eights.practice") || {}) };
+  function renderPractice() {
+    $("practiceFields").innerHTML = kit.fieldsHTML(practiceSettings, { schema: PRACTICE_SCHEMA });
+    kit.wireFields($("practiceFields"), practiceSettings, () => P.local.set("wild_eights.practice", practiceSettings));
+  }
+  $("practiceBtn").onclick = () => takeSeat("Starting practice", "practice", { settings: { ...practiceSettings } });
+  let inviteFriend = null;
+  $("createBtn").onclick = async () => {
+    if (!(await P.ensureName())) return;
+    try {
+      const r = await kit.seat("host", { settings: { ...kit.settings } });
+      if (!r) return;
+      await enter(r);
+      if (inviteFriend) { const id = inviteFriend; inviteFriend = null; kit.invite(id, r.roomId).catch((e) => toast(P.errText(e), 2600)); }
+    } catch (e) { toast(P.errText(e), 2600); }
+  };
+  function wait(text) { $("waitText").textContent = text; nav.stack = ["home", "room"]; S.lobby = null; show(); }
+  async function takeSeat(label, method, data = {}) {
+    if (!(await P.ensureName())) return;
+    wait(label);
+    try {
+      const r = await kit.seat(method, data);
+      if (!r) return;
+      if (cur() !== "room") return kit.abandon(r);
+      enter(r);
+    } catch (e) { toast(P.errText(e), 2600); goHome(); }
+  }
+
+  /* ================================================================ the room connection */
+  const Q = P.playQueue({
+    run: (u) => play(u),
+    onError: (e, u) => { console.error(e); S.anim = false; settle(u.view); },
+    onReturn: (items) => [{ view: items[items.length - 1].view, events: [] }],
+  });
+  async function enter({ roomId, code }) {
+    closeSock();
+    Q.clear();
+    Object.assign(S, { room: { roomId, code }, lobby: null, view: null, M: null, anim: false, resultReady: false, retry: 0, leaving: false, sending: false, seen: {}, newCard: null, dealt: null });
+    P.saveRoom(GAME, S.room);
+    nav.stack = ["home", "room"];
+    show();
+    try { await openSock(); }
+    catch (e) { toast(P.errText(e), 2600); drop(); goHome(); }
+  }
+  async function openSock() {
+    const room = S.room;
+    if (!room) return;
+    const sock = (S.sock = P.connect(room.roomId));
+    let ready = false;
+    const early = [];
+    sock.on("lobby:update", (d) => { if (S.sock === sock) { S.lobby = d.view; noteSeen(); if (!S.anim) show(); } });
+    sock.on(PREFIX + "update", (d) => {
+      if (S.sock !== sock) return;
+      if (!ready) return early.push(d);
+      if (!d.events?.length && Q.backlog) return Q.collapse((items) => [...items.filter((x) => x.events?.length), d]);
+      Q.add(d);
+    });
+    sock.addEventListener("close", () => {
+      if (S.sock !== sock) return;
+      S.sock = null;
+      if (S.room && !S.leaving) {
+        if (screenNow() === "game") { $("callTitle").textContent = "Reconnecting"; $("callText").textContent = "Hold on, finding the table again"; }
+        clearTimeout(S.retryTimer);
+        S.retryTimer = setTimeout(() => openSock().catch(() => {}), Math.min(8000, 600 * 2 ** S.retry++));
+      }
+    });
+    await P.waitOpen(sock);
+    const [lob, v] = await Promise.all([sock.request("lobby:getView"), sock.request(PREFIX + "getState")]);
+    S.lobby = lob;
+    noteSeen();
+    S.retry = 0;
+    S.resultReady = v.phase === "over";
+    Q.clear();
+    ready = true;
+    S.anim = false;
+    // A deal that came before the state: start from an empty table and play it.
+    const dealAt = early.findIndex((d) => d.events?.some((e) => e.type === "deal"));
+    if (dealAt >= 0 && v.game && v.game.stats.every((s) => !s.played && !s.drawn)) {
+      settle(v);
+      for (const d of early.slice(dealAt)) Q.add(d);
+    } else settle(v);
+  }
+  function closeSock() { const s = S.sock; S.sock = null; clearTimeout(S.retryTimer); s?.close(); }
+  const req = (method, data) => (S.sock?.readyState === 1 ? S.sock.request(method, data) : Promise.reject(new Error("not connected")));
+  function drop() { S.leaving = true; closeSock(); S.room = null; S.lobby = null; S.view = null; S.M = null; Q.clear(); P.forgetRoom(GAME); }
+  const twoPlayer = () => (S.view?.order?.length ?? 2) <= 2;
+  async function leave() {
+    if (S.lobby?.phase === "playing" && !(await P.confirm({ title: "Leave the table?", body: twoPlayer() ? "Leaving now counts as a forfeit: your rival wins." : "You'll be placed last; the clock plays your turns and the game goes on.", yes: "Leave", no: "Stay", danger: true }))) return;
+    req("lobby:leave").catch(() => {});
+    drop();
+    goHome();
+  }
+  async function forfeit() {
+    if (!(await P.confirm({ title: "Forfeit this match?", body: twoPlayer() ? "Your rival wins, and it counts as a loss." : "You're placed last; the others play on.", yes: "Forfeit", no: "Keep playing", danger: true }))) return;
+    req(PREFIX + "forfeit").catch((e) => toast(P.errText(e), 2600));
+  }
+  const openMenu = () => kit.menu({ view: S.lobby, items: [{ label: "Forfeit match", danger: true, run: forfeit }] });
+  $("menuBtn").onclick = openMenu;
+  P.acceptInvitesHere(GAME, (inv) => { if (S.room) { req("lobby:leave").catch(() => {}); drop(); } takeSeat("Taking your seat", "acceptInvite", { inviteId: inv.inviteId }); });
+  P.setInviteBusy(() => S.lobby?.phase === "playing");
+
+  /* ================================================================ the model on screen */
+  const G = () => S.M?.game;
+  const me = () => S.M?.game?.you ?? -1; // your player number in the game (-1 watching)
+  const seatOf = (p) => S.M?.order?.[p];
+  const nameOf = (p) => (p === me() ? "You" : S.lobby?.seats?.[seatOf(p)]?.name || `Player ${p + 1}`);
+  const ownName = (p) => S.lobby?.seats?.[seatOf(p)]?.name || "You";
+  const isGone = (p) => (S.M?.gone ?? []).includes(p);
+  const isAway = (p) => { const s = S.lobby?.seats?.[seatOf(p)]; return !!s && s.kind === "player" && s.connected === false && S.seen[p]; };
+  function noteSeen() { const order = S.M?.order ?? S.view?.order ?? []; order.forEach((seat, p) => { const s = S.lobby?.seats?.[seat]; if (s?.connected || s?.kind === "bot") S.seen[p] = true; }); }
+  function later(fn, ms) { const t = setTimeout(() => { S.timers.delete(t); fn(); }, ms); S.timers.add(t); return t; }
+  function settle(v) {
+    for (const t of S.timers) clearTimeout(t);
+    S.timers.clear();
+    const wasMine = isMine();
+    S.view = v;
+    S.M = JSON.parse(JSON.stringify(v));
+    noteSeen();
+    if (v.phase === "over") S.resultReady = true;
+    if (!isMine()) S.sending = false;
+    if (!G()?.drawn) S.newCard = null;
+    S.dealt = null;
+    show();
+    if (!wasMine && isMine()) focusHand();
+  }
+  const isMine = () => { const g = G(); return !!g && g.phase === "playing" && g.turn === me() && me() >= 0 && !S.anim && !S.sending; };
+  /** Whether card c may be played now (the engine's rule, for the page's hints). */
+  function fits(g, c) {
+    if (g.owed > 0) return rankOf(c) === "2";
+    if (g.drawn && c !== g.drawn) return false;
+    return rankOf(c) === "8" || suitOf(c) === g.suit || rankOf(c) === rankOf(g.top);
+  }
+  /** Why card c can't go, in plain words. */
+  function whyNot(g, c) {
+    if (g.owed > 0) return `Answer with a 2, or draw ${g.owed}`;
+    if (g.drawn) return "Play the card you drew, or keep it";
+    return `It needs ${SUIT[g.suit].name} or a ${RANK_NAME[rankOf(g.top)] || rankOf(g.top)}`;
+  }
+
+  /* ================================================================ drawing the table */
+  function layout() {
+    const w = Math.min(window.innerWidth, 600) - 20;
+    const bw = Math.max(44, Math.min(64, Math.floor(w / 6.4))), bh = Math.round(bw * 1.4);
+    const hw = Math.max(60, Math.min(84, Math.round(bw * 1.3))), hh = Math.round(hw * 1.4);
+    const root = $("scrGame").style;
+    root.setProperty("--bw", `${bw}px`); root.setProperty("--bh", `${bh}px`);
+    root.setProperty("--hw", `${hw}px`); root.setProperty("--hh", `${hh}px`);
+    $("table").style.backgroundImage = `url(${A.felt()})`;
+  }
+  function renderGame() {
+    const g = G();
+    if (!g) return;
+    layout();
+    renderSeats();
+    renderCall();
+    renderTable();
+    renderHand();
+    renderDock();
+  }
+  /** The other players, in turn order after you (the next player first). */
+  function others() {
+    const g = G(), n = g.counts.length, m = Math.max(0, me());
+    return Array.from({ length: n - 1 }, (_, i) => (m + 1 + i) % n).concat(me() < 0 ? [0] : []);
+  }
+  function renderSeats() {
+    const g = G();
+    $("rivals").innerHTML = others().map((p, i) => {
+      const n = S.dealt ? S.dealt[p] : g.counts[p], fan = Math.min(n, 5);
+      const tag = isGone(p) ? '<span class="tag away">Left</span>' : isAway(p) ? '<span class="tag away">Away</span>' : n === 1 && g.phase === "playing" ? '<span class="tag">Last card</span>' : "";
+      const label = `${nameOf(p)}${i === 0 ? ", plays next after you" : ""}: ${plural(n, "card", "cards")}${isGone(p) ? ", left the table" : isAway(p) ? ", away" : ""}${g.turn === p && g.phase === "playing" ? ", their turn" : ""}`;
+      return `<div class="seat${g.turn === p && g.phase === "playing" ? " on" : ""}" role="listitem" data-p="${p}" aria-label="${esc(label)}"><div class="top"><span class="nm">${esc(nameOf(p))}</span><span class="n">${n}</span></div><div class="fan">${Array.from({ length: fan }, () => cardHTML(null, "xs")).join("")}</div>${tag}</div>`;
+    }).join("");
+  }
+  function renderCall() {
+    const g = G();
+    const mine = g.phase === "playing" && g.turn === me();
+    let title = "", text = "";
+    if (g.phase === "playing" && g.turn !== null) {
+      if (mine) {
+        title = "Your turn";
+        const can = g.hand.filter((c) => fits(g, c));
+        text = S.callNote || (g.owed ? (can.length ? `Answer with a 2, or draw ${g.owed}` : `Draw ${g.owed}: you have no 2`) : g.drawn ? (fits(g, g.drawn) ? "It fits: play it, or keep it" : "") : can.length ? `Match ${SUIT[g.suit].name} or a ${RANK_NAME[rankOf(g.top)] || rankOf(g.top)}` : "Nothing fits: draw a card");
+      } else {
+        title = `${nameOf(g.turn)}'s turn`;
+        text = S.callNote || (isGone(g.turn) ? `${nameOf(g.turn)} left. The clock plays for them` : isAway(g.turn) ? `${nameOf(g.turn)} is away. The clock plays for them` : "");
+      }
+    } else if (g.phase === "playing") { title = "Dealing"; text = ""; }
+    else {
+      const won = g.winner === me();
+      title = won ? "Victory" : `${nameOf(g.winner)} ${g.winner === me() ? "go" : "goes"} out`;
+      text = g.forfeit ? "The game ended early" : won ? "You played your last card" : "";
+    }
+    $("callTitle").textContent = title;
+    $("callText").textContent = text;
+    $("call").classList.toggle("mine", mine);
+    tickClock();
+  }
+  function renderTable() {
+    const g = G();
+    $("table").style.setProperty("--flood", S.flood ? SUIT[g.suit].flood : A.P.rimHi);
+    const deckN = g.deckLeft, layers = Math.min(3, Math.max(1, Math.ceil(deckN / 15)));
+    const can = isMine() && !g.drawn;
+    $("deck").innerHTML = (deckN ? Array.from({ length: layers }, (_, i) => cardHTML(null, "lg", { attrs: `style="translate:${-i * 2}px ${-i * 2}px"` })).join("") : "") + `<span class="left">${deckN ? plural(deckN, "card", "cards") : "Empty"}</span>`;
+    $("deck").classList.toggle("can", can);
+    $("deck").disabled = !can;
+    $("deck").setAttribute("aria-label", g.owed ? `Draw ${g.owed}` : `Draw a card (${plural(deckN, "card", "cards")} left)`);
+    $("pile").innerHTML = g.top ? cardHTML(g.top, "lg") : "";
+    $("suit").innerHTML = `${imgTag(A.pip(g.suit, { flood: true, outline: true }), 9, 9, 2)}<span>${SUIT[g.suit].name}${g.top && rankOf(g.top) === "8" ? " named" : ""}</span>`;
+    $("suit").setAttribute("aria-label", `Suit to follow: ${SUIT[g.suit].name}`);
+    $("owed").hidden = !(g.owed > 0 && g.phase === "playing");
+    $("owed").textContent = `+${g.owed}`;
+  }
+  function renderHand() {
+    const g = G(), hand = $("hand"), mine = isMine();
+    const cards = S.dealt ? g.hand.slice(0, S.dealt[me()] ?? 0) : g.hand;
+    const W = hand.clientWidth || Math.min(window.innerWidth, 600) - 20;
+    const bw = parseFloat(getComputedStyle($("scrGame")).getPropertyValue("--bw")) || 48;
+    const n = cards.length, step = n > 1 ? Math.min(bw + 4, (W - bw) / (n - 1)) : 0;
+    const x0 = Math.round((W - (bw + step * (n - 1))) / 2);
+    S.focus = Math.max(0, Math.min(S.focus, n - 1));
+    hand.innerHTML = cards.map((c, i) => {
+      const ok = mine && fits(g, c);
+      return cardHTML(c, "md", { tag: "button", cls: `${ok ? "can" : ""}${S.newCard === c ? " new" : ""}`, attrs: `type="button" style="left:${Math.round(x0 + i * step)}px;z-index:${i + 1}" tabindex="${i === S.focus ? 0 : -1}" aria-label="${cardName(c)}${mine ? (ok ? ", can play" : ", doesn't fit") : ""}"` });
+    }).join("");
+    hand.classList.toggle("mine", mine);
+  }
+  function renderDock() {
+    const g = G(), m = me();
+    $("meBox").innerHTML = m >= 0 ? `<span class="nm">${esc(ownName(m))}</span><span class="pl-you">You</span><span class="n">${plural(g.hand.length, "card", "cards")}</span>${g.hand.length === 1 && g.phase === "playing" ? '<span class="pl-you" style="background:var(--c-gold);color:var(--c-ink)">Last card</span>' : ""}` : `<span class="nm">Watching</span>`;
+    const mine = isMine();
+    const d = $("drawBtn"), k = $("keepBtn");
+    d.hidden = !mine || !!g.drawn;
+    d.textContent = g.owed ? `Draw ${g.owed}` : "Draw";
+    k.hidden = !mine || !g.drawn;
+    k.textContent = "Keep it";
+  }
+  function focusHand() {
+    if (P.sheetOpen()) return;
+    const a = document.activeElement;
+    if (a && a !== document.body && !a.closest?.("#scrGame")) return;
+    const g = G(), i = g ? g.hand.findIndex((c) => fits(g, c)) : -1;
+    if (i >= 0) S.focus = i;
+    renderHand();
+    $("hand").children[S.focus]?.focus({ preventScroll: true });
+  }
+
+  /** The clock bar. */
+  let clockTotal = { key: "", ms: 1 }, lastTick = 0;
+  function tickClock() {
+    const v = S.view, e = $("clock"), c = v?.clock;
+    if (!c || !G() || G().phase !== "playing") { e.hidden = true; $("clockS").textContent = ""; return; }
+    const left = Math.max(0, c.deadline - Date.now()), key = `${c.seat}:${c.deadline}`;
+    if (clockTotal.key !== key) clockTotal = { key, ms: Math.max(left, 1) };
+    e.hidden = false;
+    e.firstElementChild.style.width = `${Math.round((100 * left) / clockTotal.ms)}%`;
+    const low = left < 5000, secs = Math.ceil(left / 1000);
+    e.classList.toggle("low", low);
+    $("clockS").textContent = `${secs} s`;
+    $("clockS").classList.toggle("low", low);
+    if (secs % 5 === 0 || low) e.setAttribute("aria-label", `${secs} seconds left`);
+    const mineClock = S.M?.order?.[me()] === c.seat;
+    if (mineClock && secs !== lastTick && secs > 0) { if (low && secs <= 3) { cue("tick"); if (secs === 3) sayNow("3 seconds left"); } lastTick = secs; }
+  }
+  setInterval(() => { if (screenNow() === "game" && !$("clock").hidden) tickClock(); }, 250);
+
+  /* ================================================================ your move */
+  $("hand").addEventListener("click", (ev) => {
+    const b = ev.target.closest?.("button[data-c]");
+    if (!b) return;
+    S.focus = [...$("hand").children].indexOf(b);
+    playCard(b.dataset.c, b);
+  });
+  $("deck").onclick = () => drawCard();
+  $("drawBtn").onclick = () => drawCard();
+  $("keepBtn").onclick = () => keep();
+  async function playCard(c, btn) {
+    const g = G();
+    if (!g || !isMine()) return;
+    if (!fits(g, c)) {
+      cue("nope");
+      if (btn) pose(btn, "nope");
+      S.callNote = whyNot(g, c); renderCall(); later(() => { S.callNote = ""; if (isMine()) renderCall(); }, 1600);
+      say(`${cardName(c)} doesn't fit. ${whyNot(g, c)}`);
+      return;
+    }
+    if (rankOf(c) === "8") return openPicker(c);
+    send(PREFIX + "play", { card: c });
+  }
+  async function send(method, data) {
+    S.sending = true;
+    renderHand(); renderDock(); renderTable();
+    try { await req(method, data); }
+    catch (e) { S.sending = false; toast(P.errText(e), 2600); renderGame(); }
+  }
+  function drawCard() { const g = G(); if (!g || !isMine() || g.drawn) return; cue("select", { vol: 0.5 }); send(PREFIX + "draw"); }
+  function keep() { const g = G(); if (!g || !isMine() || !g.drawn) return; send(PREFIX + "pass"); }
+
+  /** The suit picker for an eight: your counts of each suit, the longest marked. */
+  let picking = null;
+  function openPicker(card) {
+    const g = G();
+    picking = card;
+    const rest = g.hand.filter((c) => c !== card && rankOf(c) !== "8");
+    const n = Object.fromEntries(SUITS.map((s) => [s, rest.filter((c) => suitOf(c) === s).length]));
+    const best = SUITS.reduce((a, b) => (n[b] > n[a] ? b : a), SUITS[0]);
+    $("pickGrid").innerHTML = SUITS.map((s, i) => `<button type="button" class="${s === best ? "" : "ghost"}" data-suit="${s}" aria-label="${SUIT[s].name}, you hold ${n[s]}">${imgTag(A.pip(s, { flood: true, outline: true }), 9, 9, 4)}<span>${SUIT[s].name}</span><small>${n[s] ? `You hold ${n[s]}` : "None in hand"}</small></button>`).join("");
+    $("picker").hidden = false;
+    cue("select", { vol: 0.5 });
+    $("pickGrid").querySelector(`[data-suit="${best}"]`)?.focus();
+    sayNow("Name the suit for your eight");
+  }
+  function closePicker() { $("picker").hidden = true; picking = null; focusHand(); }
+  $("pickGrid").addEventListener("click", (ev) => {
+    const b = ev.target.closest?.("button[data-suit]");
+    if (!b || !picking) return;
+    const card = picking;
+    $("picker").hidden = true; picking = null;
+    send(PREFIX + "play", { card, suit: b.dataset.suit });
+  });
+  $("pickCancel").onclick = closePicker;
+
+  /* ================================================================ animating what happened */
+  const speed = () => Q.speed();
+  const wait2 = (ms) => (RM() ? Promise.resolve() : sleep(ms * speed()));
+  const hold = (ms) => (RM() ? sleep(ms) : Promise.resolve());
+  function say(text, id = "announce") { $(id).textContent = ""; requestAnimationFrame(() => { $(id).textContent = text; }); }
+  const sayNow = (text) => say(text, "announceNow");
+  /** Where a player sits on screen: your hand, or their seat in the HUD. */
+  function spotOf(p) {
+    const e = p === me() ? $("hand") : document.querySelector(`.seat[data-p="${p}"]`);
+    const r = (e || $("table")).getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+  const centreOf = (e) => { const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+  /** A card flying across the screen (stepped, whole pixels), from a to b; resolves when it lands. */
+  async function fly(html, a, b, ms, { flip = false } = {}) {
+    if (RM()) return;
+    const f = el("div", "fly");
+    f.innerHTML = html;
+    document.body.appendChild(f);
+    const c = f.firstElementChild, r = c.getBoundingClientRect(), w = r.width, h = r.height;
+    const at = (p) => `translate(${Math.round(p.x - w / 2)}px, ${Math.round(p.y - h / 2)}px)`;
+    const frames = [{ transform: at(a) + (flip ? " scaleX(1)" : "") }, ...(flip ? [{ transform: at({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 - 12 }) + " scaleX(0.1)" }] : []), { transform: at(b) + (flip ? " scaleX(1)" : "") }];
+    await f.animate(frames, { duration: ms * speed(), easing: "steps(6)", fill: "forwards" }).finished.catch(() => {});
+    f.remove();
+  }
+
+  async function play(u) {
+    const events = u.events || [];
+    const dealing = events.some((e) => e.type === "deal");
+    if (!G() && dealing && u.view.game) { S.view = u.view; S.M = JSON.parse(JSON.stringify(u.view)); }
+    const g = G();
+    if (!g || !events.length || (screenNow() !== "game" && !dealing)) return settle(u.view);
+    if (dealing && S.lobby && S.lobby.phase === "lobby") { S.lobby = { ...S.lobby, phase: "playing" }; show(); }
+    S.anim = true;
+    try {
+      for (const e of events) { const fn = EV[e.type]; if (fn) await fn(e, u.view); }
+    } finally {
+      S.anim = false;
+      S.sending = false;
+      S.callNote = "";
+      settle(u.view);
+    }
+  }
+
+  const EV = {
+    async deal(e, v) {
+      const g = G();
+      Object.assign(g, { turn: null, top: e.top, suit: suitOf(e.top) });
+      S.flood = false;
+      S.dealt = e.counts.map(() => 0);
+      const pileTop = g.top;
+      g.top = null;
+      renderGame();
+      $("pile").innerHTML = "";
+      const deck = centreOf($("deck")), total = e.counts.reduce((a, b) => a + b, 0), most = Math.max(...e.counts);
+      cue("deal");
+      sayNow(`Dealing ${plural(e.counts[0], "card", "cards")} each`);
+      for (let round = 0; round < most; round++) for (let p = 0; p < e.counts.length; p++) {
+        if (round >= e.counts[p]) continue;
+        S.dealt[p]++;
+        if (!RM()) { fly(cardHTML(null, "md"), deck, spotOf(p), T.deal * 2); if ((round + p) % 2 === 0) cue("deal", { pitch: 0.9 + 0.05 * p, vol: 0.5, buzz: false }); }
+        later(() => { renderSeats(); renderHand(); }, RM() ? 0 : T.deal * 2 * speed());
+        await wait2(T.deal);
+      }
+      await wait2(T.deal * 2);
+      S.dealt = null;
+      g.top = pileTop;
+      renderGame();
+      if (!RM()) { const pc = $("pile").firstElementChild; pc?.animate([{ transform: "scaleX(0.1)" }, { transform: "scaleX(1)" }], { duration: 160, easing: "steps(3)" }); }
+      cue("play", { pitch: 1.1 });
+      say(`The first card is the ${cardName(pileTop)}. ${nameOf(e.first)} ${e.first === me() ? "go" : "goes"} first`);
+      await wait2(400 - T.deal * 2 > 0 ? 400 - T.deal * 2 : 0);
+      void total; void v;
+    },
+    async play(e) {
+      const g = G(), mine = e.by === me(), wild = !!e.suit;
+      const from = mine ? (() => { const b = $("hand").querySelector(`[data-c="${e.card}"]`); return b ? centreOf(b) : spotOf(e.by); })() : spotOf(e.by);
+      if (mine) g.hand = g.hand.filter((c) => c !== e.card);
+      g.counts[e.by] = e.left;
+      g.drawn = null;
+      if (mine) { S.newCard = null; renderHand(); renderDock(); }
+      renderSeats();
+      if (e.auto) { cue("timeout"); S.callNote = mine ? `Time's up: the clock played your ${cardName(e.card)}` : `The clock played for ${nameOf(e.by)}`; $("callText").textContent = S.callNote; sayNow(S.callNote); }
+      await fly(cardHTML(e.card, "lg"), from, centreOf($("pile")), T.play * 0.7);
+      g.top = e.card;
+      if (!wild) g.suit = suitOf(e.card);
+      renderTable();
+      const pc = $("pile").firstElementChild;
+      const pileC = centreOf($("pile")), tr = $("table").getBoundingClientRect();
+      if (!wild) {
+        cue("play", { pitch: 0.92 + Math.random() * 0.16 });
+        if (!RM()) { pc?.animate([{ transform: "scale(1.08)" }, { transform: "scale(1)" }], { duration: 100, easing: "steps(2)" }); sheetAt($("fx"), A.sheet("slap"), pileC.x - tr.left, pileC.y - tr.top, Math.max(2, Math.round(($("pile").offsetWidth) / 20)), 180); }
+        if (!e.auto) say(`${nameOf(e.by)} played the ${cardName(e.card)}`);
+        await wait2(T.play * 0.3);
+      } else {
+        // The wild eight: it slams down, a beat of stillness, the rim floods to the named suit and its pips burst out.
+        cue("wild");
+        if (!RM()) await pc?.animate([{ transform: "scale(1.4) rotate(-4deg)" }, { transform: "scale(0.94)" }, { transform: "scale(1)" }], { duration: 180, easing: "steps(3)" }).finished.catch(() => {});
+        await wait2(90);
+        g.suit = e.suit; S.flood = true;
+        renderTable();
+        if (!RM()) { sheetAt($("fx"), A.burst(e.suit), pileC.x - tr.left, pileC.y - tr.top, Math.max(2, Math.round($("pile").offsetWidth / 22)), 480); pose($("suit"), "pop"); }
+        later(() => cue("suit", { pitch: { S: 0.9, H: 1.06, D: 1.19, C: 1 }[e.suit] }), 120);
+        sayNow(`${nameOf(e.by)} played an eight and named ${SUIT[e.suit].name}`);
+        await wait2(T.wild - 270);
+      }
+      await hold(400);
+    },
+    async draw(e) {
+      const g = G(), mine = e.by === me();
+      if (e.forced) { cue("owe"); const tgt = mine ? $("hand") : document.querySelector(`.seat[data-p="${e.by}"]`); if (tgt) pose(tgt, "owe"); $("owed").hidden = false; await wait2(T.owed * 0.5); }
+      if (e.reshuffled) { say("The pile was shuffled back into the deck"); if (!RM()) pose($("deck"), "pop"); }
+      const deck = centreOf($("deck")), n = Math.min(e.n, 6);
+      for (let i = 0; i < n; i++) {
+        fly(cardHTML(null, "md"), deck, spotOf(e.by), T.draw * 1.6);
+        cue("draw", { pitch: 1 + 0.05 * i, buzz: false });
+        await wait2(T.draw);
+      }
+      g.counts[e.by] += e.n;
+      if (mine && e.cards) { g.hand.push(...e.cards); if (!e.forced && e.cards.length === 1) { S.newCard = e.cards[0]; g.drawn = e.cards[0]; } }
+      if (e.forced) { g.owed = 0; $("owed").hidden = true; }
+      renderSeats(); renderHand(); renderDock();
+      say(mine ? (e.forced ? `You drew ${e.n}` : `You drew the ${cardName(e.cards?.[0] ?? "")}`) : `${nameOf(e.by)} drew ${plural(e.n, "card", "cards")}`);
+      if (e.forced) await wait2(T.owed * 0.5);
+      await hold(300);
+    },
+    async pass(e) {
+      const g = G();
+      if (e.by !== me() && !S.lastForced) say(`${nameOf(e.by)} passed`);
+      g.drawn = null; S.newCard = null;
+    },
+    async skip(e) {
+      const tgt = e.seat === me() ? null : document.querySelector(`.seat[data-p="${e.seat}"]`);
+      cue("skip");
+      if (tgt) { const st = el("div", "stampl"); st.textContent = "Skipped"; tgt.appendChild(st); if (!RM()) P.playPreset(st, "bounceIn", { speed: "fast" }); later(() => st.remove(), T.skip + 600); }
+      else { S.callNote = "You're skipped"; $("callText").textContent = S.callNote; }
+      sayNow(e.seat === me() ? "A jack: you're skipped" : `A jack: ${nameOf(e.seat)} is skipped`);
+      await wait2(T.skip);
+      await hold(600);
+    },
+    async lastCard(e) {
+      cue("last");
+      renderSeats(); renderDock();
+      const tag = e.seat === me() ? null : document.querySelector(`.seat[data-p="${e.seat}"] .tag`);
+      if (tag && !RM()) pose(tag, "pop");
+      sayNow(e.seat === me() ? "Last card" : `${nameOf(e.seat)} is down to one card`);
+      await wait2(T.last);
+    },
+    async turn(e) {
+      const g = G();
+      Object.assign(g, { turn: e.seat, owed: e.owed, suit: e.suit });
+      if (e.seat !== me() || !g.drawn) g.drawn = null;
+      S.callNote = "";
+      renderGame();
+      if (e.seat === me()) {
+        if (!g.drawn) { pose($("call"), "call"); cue("yourTurn"); }
+        sayNow(g.owed ? `Your turn. Answer with a 2, or draw ${g.owed}` : g.drawn ? `It fits: play the ${cardName(g.drawn)}, or keep it` : `Your turn. ${SUIT[g.suit].name} or a ${RANK_NAME[rankOf(g.top)] || rankOf(g.top)}`);
+      } else say(`${nameOf(e.seat)}'s turn`);
+      await wait2(T.turn);
+    },
+    async over(e) {
+      const g = G(), won = e.winner === me();
+      Object.assign(g, { phase: "over", winner: e.winner, forfeit: !!e.forfeit, turn: null, hands: e.hands, scores: e.scores });
+      renderGame();
+      const stamp = el("div", `stamp${won ? "" : " plain"}`);
+      stamp.setAttribute("aria-hidden", "true");
+      stamp.innerHTML = `<b>${e.forfeit ? "Game over" : won ? "You're out" : `${esc(nameOf(e.winner))} is out`}</b>`;
+      $("table").appendChild(stamp);
+      if (!RM()) { stamp.firstElementChild.animate([{ transform: "scale(1.3)" }, { transform: "scale(0.94)" }, { transform: "scale(1)" }], { duration: 180, easing: "steps(3)", fill: "backwards" }); if (won) later(() => pose(stamp.firstElementChild, "win"), 200); }
+      cue(won ? "win" : "lose");
+      sayNow(e.forfeit ? "The game ended early" : won ? "You played your last card. You win" : `${nameOf(e.winner)} played their last card`);
+      await sleep(RM() ? 1500 : T.win);
+      stamp.remove();
+      S.resultReady = true;
+    },
+  };
+
+  /* ================================================================ keyboard */
+  document.addEventListener("keydown", (e) => {
+    if (screenNow() !== "game" || P.sheetOpen() || e.target.matches?.("input")) return;
+    if (!$("picker").hidden) {
+      if (e.key === "Escape") { e.preventDefault(); closePicker(); }
+      const i = "1234".indexOf(e.key);
+      if (i >= 0) { e.preventDefault(); $("pickGrid").children[i]?.click(); }
+      return;
+    }
+    if (e.key === "Escape" && !e.defaultPrevented) { openMenu(); return; }
+    const g = G();
+    if (!g) return;
+    if ((e.key === "i" || e.key === "I") && g.phase === "playing") { e.preventDefault(); sayNow(tableSummary(g)); return; }
+    if (!isMine()) return;
+    const n = $("hand").children.length;
+    if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && n) {
+      e.preventDefault();
+      if (!S.keyUses && !P.local.get("wild_eights.keysSeen")) { P.local.set("wild_eights.keysSeen", true); toast("← → card · Enter play · D draw · K keep · I table", 3000); }
+      S.keyUses = (S.keyUses || 0) + 1;
+      S.focus = Math.max(0, Math.min(n - 1, S.focus + (e.key === "ArrowLeft" ? -1 : 1)));
+      renderHand();
+      $("hand").children[S.focus]?.focus({ preventScroll: true });
+      return;
+    }
+    if (e.key === "d" || e.key === "D") { e.preventDefault(); drawCard(); return; }
+    if (e.key === "k" || e.key === "K") { e.preventDefault(); keep(); return; }
+  });
+  /** I on the keyboard: the table in words. */
+  function tableSummary(g) {
+    const rivals = others().map((p) => `${nameOf(p)} ${plural(g.counts[p], "card", "cards")}`).join(", ");
+    const can = g.hand.filter((c) => fits(g, c));
+    return `Top card: ${cardName(g.top)}. Suit to follow: ${SUIT[g.suit].name}.${g.owed ? ` ${g.owed} to draw unless a 2 answers.` : ""} ${rivals}. You hold ${plural(g.hand.length, "card", "cards")}${g.turn === me() ? `; ${can.length ? `you can play ${can.map(cardName).join(", ")}` : "nothing fits"}` : ""}. ${plural(g.deckLeft, "card", "cards")} in the deck.`;
+  }
+  window.addEventListener("resize", () => { if (screenNow() === "game") renderGame(); });
+
+  /* ================================================================ the result: Ploto's screen, the game's standings */
+  function renderResult() {
+    const v = S.view, g = v?.game, res = v?.results;
+    if (!g || g.phase !== "over" || !res) return;
+    const mine = res.find((r) => r.seat === v.order[me()]) ?? res[0];
+    const won = mine.place === 1;
+    const fresh = $("resMain")._resKey !== S.room?.roomId;
+    const rows = res.map((r) => {
+      const p = v.order.indexOf(r.seat), hand = (g.hands?.[p] ?? []).slice(0, 6);
+      return `<div class="row${p === me() ? " me" : ""}"><span class="pl">${ORD(r.place)}</span><span class="nm">${esc(r.name)}</span><span class="left">${hand.map((c) => imgTag(A.mini(c), 13, 18, 2)).join("")}</span><span class="pts">${r.place === 1 && !g.forfeit ? "Out" : `${r.points} pts`}</span></div>`;
+    }).join("");
+    kit.renderResult($("resMain"), {
+      hero: `<div class="standings" aria-label="Final places">${rows}</div>`,
+      title: won ? "Victory" : `${ORD(mine.place)} place`,
+      sub: g.forfeit ? "The game ended early" : won ? "You went out first" : `${res[0].name} went out first; the rest are placed by the cards left in hand`,
+      win: won,
+      tiles: [
+        { label: "Place", value: mine.place, format: ORD },
+        { label: "Cards played", value: mine.played },
+        { label: "Eights", value: mine.eights },
+      ],
+      view: S.lobby, rematchHint: "Same table, a new deal", actions: $("resFoot"), key: S.room?.roomId,
+      onRematch: async () => { try { enter(await req("lobby:rematch")); } catch (e) { toast(P.errText(e), 2600); } },
+      onLeave: () => { drop(); goHome(); },
+    });
+    if (won && fresh) pose($("resMain").querySelector(".pl-res-head h2"), "win");
+    kit.countResult($("resMain"));
+  }
+
+  /* ================================================================ boot */
+  P.restoreAccount();
+  const q = new URLSearchParams(location.search);
+  const code = q.get("code"), invite = q.get("invite"), friend = q.get("inviteFriend");
+  if (code || invite || friend) history.replaceState(null, "", location.pathname);
+  show();
+  const saved = P.savedRoom(GAME);
+  if (invite) takeSeat("Taking your seat", "acceptInvite", { inviteId: invite });
+  else if (code) kit.join(code.toUpperCase(), { wait: () => wait(`Joining ${code}`) }).then((r) => (r ? enter(r) : goHome())).catch((e) => { toast(P.errText(e), 2600); goHome(); });
+  else if (friend) { inviteFriend = friend; go("host"); }
+  else if (saved) enter(saved);
+})();
+</script>
+</body>
+</html>

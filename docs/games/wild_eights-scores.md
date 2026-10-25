@@ -117,3 +117,51 @@ second-best suit now and then (never one it lacks); Hard turns a jack into a
 free turn in two-player games and sheds dear cards when anyone is on two.
 Bands: Medium beats a casual player about 60%, Hard about 63%, Hard beats
 Medium about 54% (luck rules: logged in the brief).
+
+## Round 3
+
+| Category | A | B | Round score |
+|---|---|---|---|
+| Game design | 8 | 8 | **8** |
+| Signature moment | 8 | 8 | **8** |
+| Animation | 7 | 8 | **7** |
+| Sound and haptics | 8 | 8 | **8** |
+| Visual design | 7 | 7 | **7** |
+| UX and clarity | 7 | 7 | **7** |
+| Platform consistency | 9 | 8 | **8** |
+| Bots | 7 | 7 | **7** |
+| Implementation | 8 | 8 | **8** |
+| Accessibility | 8 | 8 | **8** |
+
+Clutter (both): not cluttered; a text-dense HUD over an empty felt, a muddy wash
+left over the felt after an eight, the flat purple deck the loudest block.
+
+What both saw: at 1× a pixel 5 reads as an 8 ("8 cards" holding five, "eights
+count 80"); the felt wash turned the green olive and stayed; "Last card" covered
+the count; "Next" cut names short; the hint clipped at 430; the in-game back flat
+while the banner's is a checker; an eight on the pile looked like any card; the
++2 preview flew cards into your hand before you drew them; the banner jumped
+between states; focus at the start of a turn could land on the wrong card (the
+hand on screen is sorted; the index wasn't); the rim colour lived only in the
+page's memory (a reload lost it); Hard barely ahead of Medium.
+
+Fixes built after round 3: card counts in the grid font as bare numbers, numbers
+in words in the rules and copy ("Draw two"); no lasting wash: the colour floods
+in from the rim as a band that grows and settles, the felt stays green; "Last
+card" takes the count's place; a chevron marks the next player (names keep
+their room); a shorter hint; the deck's checker back (low contrast); a 2 px gold
+frame on an eight on the pile; the deck lifts when a 2 lands (cards travel only
+when drawn); a drawn card joins the hand the moment it lands; the banner repaints
+only on a resize; focus uses the sorted hand; the rim's colour follows the table
+(reloads keep it); a rival's eight flies face down and shows itself as it slams;
+the last card gets a slam and a burst, and the winner celebrates; the suits a
+player has shown they lack appear as faded pips on their seat; your hand's points
+show once a rival is down to two; the picker says its keys and the call says
+"Name the suit for your eight"; the focus ring sits outside the "can play" edge;
+the deck count always shows (gold under ten); "Points left" replaces the Place
+tile; the think dots obey Ploto's Motion setting; a jingle for the win, a soft
+sine for the loss, a louder falling skip, a rival's last card a higher note, a
+little buzz on the suit; a reshuffle makes a riffle. Bots: Medium plays more
+loosely and Hard names a suit the next player lacks with an eight when they're
+close; the bands barely move (Medium about 59%, Hard about 62% against a casual
+player): this game is mostly luck, as the brief says.

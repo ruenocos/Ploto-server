@@ -74,7 +74,7 @@
         "p_repeat_speed": 0
       },
       "vol": 0.4,
-      "buzz": 0
+      "buzz": 20
     },
     "draw": {
       "preset": "blipSelect",
@@ -121,14 +121,14 @@
       "params": {
         "wave_type": 0,
         "p_base_freq": 0.5,
-        "p_freq_ramp": -0.45,
+        "p_freq_ramp": -0.3,
         "p_env_attack": 0,
-        "p_env_sustain": 0.1,
-        "p_env_decay": 0.16,
+        "p_env_sustain": 0.12,
+        "p_env_decay": 0.22,
         "p_duty": 0.5,
         "p_repeat_speed": 0.35
       },
-      "vol": 0.3,
+      "vol": 0.45,
       "buzz": 20
     },
     "last": {
@@ -145,7 +145,7 @@
         "p_duty": 0.4,
         "p_repeat_speed": 0
       },
-      "vol": 0.35,
+      "vol": 0.5,
       "buzz": 25
     },
     "yourTurn": {
@@ -221,21 +221,21 @@
       ]
     },
     "win": {
-      "preset": "powerUp",
+      "preset": "pickupCoin",
       "seed": 73,
       "params": {
-        "wave_type": 2,
-        "p_base_freq": 0.4,
-        "p_freq_ramp": 0.06,
-        "p_arp_mod": 0.45,
+        "wave_type": 0,
+        "p_base_freq": 0.45,
+        "p_arp_mod": 0.5,
         "p_arp_speed": 0.55,
         "p_env_attack": 0,
-        "p_env_sustain": 0.36,
-        "p_env_decay": 0.42,
-        "p_env_punch": 0.5,
+        "p_env_sustain": 0.3,
+        "p_env_decay": 0.4,
+        "p_env_punch": 0.3,
+        "p_duty": 0.45,
         "p_repeat_speed": 0
       },
-      "vol": 0.5,
+      "vol": 0.85,
       "buzz": [
         60,
         40,
@@ -248,20 +248,19 @@
       "preset": "hitHurt",
       "seed": 74,
       "params": {
-        "wave_type": 0,
-        "p_base_freq": 0.42,
-        "p_freq_ramp": -0.18,
+        "wave_type": 2,
+        "p_base_freq": 0.45,
+        "p_freq_ramp": -0.25,
         "p_env_attack": 0,
         "p_env_sustain": 0.25,
-        "p_env_decay": 0.45,
+        "p_env_decay": 0.4,
         "p_env_punch": 0,
-        "p_duty": 0.5,
-        "p_lpf_freq": 0.6,
+        "p_lpf_freq": 1,
         "p_hpf_freq": 0,
         "p_repeat_speed": 0,
         "p_arp_mod": 0
       },
-      "vol": 0.6,
+      "vol": 0.3,
       "buzz": [
         120,
         60

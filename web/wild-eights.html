@@ -30,7 +30,7 @@
   box-shadow: inset 0 calc(var(--px) * -2) 0 var(--card-lo); --n: var(--px);
   clip-path: polygon(0 var(--n), var(--n) var(--n), var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n), 100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%, var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n))); }
 .card.red { color: var(--card-red); }
-.card.back { background: var(--c-accent-lo) radial-gradient(circle, var(--c-accent) 0 3px, transparent 3.5px) center / 100% 100% no-repeat; /* flat, one mark: the pile is the bright thing on the felt */ box-shadow: inset 0 0 0 var(--px) var(--c-accent-hi), inset 0 0 0 calc(var(--px) * 2) var(--c-accent-lo); }
+.card.back { background: repeating-conic-gradient(var(--c-accent-lo) 0 25%, color-mix(in srgb, var(--c-accent-lo) 86%, var(--c-ink)) 0 50%) 0 0 / 8px 8px; /* the deck's checker (as the banner's), low contrast: the pile stays the bright thing */ box-shadow: inset 0 0 0 var(--px) var(--c-accent-hi), inset 0 0 0 calc(var(--px) * 2) var(--c-accent-lo); }
 .card.back > * { display: none; }
 .card.xs { --w: 16px; --h: 22px; } .card.xs > * { display: none; }
 .card.md { --w: var(--bw, 48px); --h: var(--bh, 68px); }
@@ -51,6 +51,7 @@
 .card .px-s { display: block; fill: currentColor; shape-rendering: crispEdges; }
 /* an eight is wild: a gold frame inside its edge, on every card of the deck */
 .card.wild:not(.back) { box-shadow: inset 0 0 0 var(--px) var(--c-gold), inset 0 calc(var(--px) * -2) 0 var(--card-lo); }
+.card.wild.lg:not(.back) { box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-gold), inset 0 calc(var(--px) * -3) 0 var(--card-lo); } /* on the pile an eight reads wild at a glance */
 .card.wild .ace { filter: drop-shadow(0 0 0 var(--c-gold)); }
 
 /* ---- the game screen ---- */
@@ -62,12 +63,14 @@
 .seat.on { background: color-mix(in srgb, var(--c-panel) 82%, var(--c-accent)); box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-accent); } /* STYLE's Active frame: whose turn */
 .seat .top { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .seat .nm { min-width: 0; flex: 1; font: 700 var(--fs-s)/1.1 var(--f-text); color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } /* a player's name: Pixelify, their own case (STYLE) */
-.seat .next { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); }
+.seat .next { flex: none; display: block; line-height: 0; } .seat .next svg { fill: var(--c-mute); }
 .seat .row2 { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
-.seat .n { flex: none; font: 700 var(--fs-s)/1 var(--f-text); color: var(--c-text); font-variant-numeric: tabular-nums; }
+.seat .n { flex: none; display: inline-flex; align-items: center; gap: 4px; font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-cream); } /* card counts in the grid font: a pixel 5 never reads as an 8 */
+.seat .n small { font: 400 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); }
+.seat .voids { display: inline-flex; gap: 2px; margin-left: auto; } .seat .voids img { image-rendering: pixelated; opacity: 0.5; }
 .seat .fan { display: flex; height: 22px; }
 .seat .fan .card + .card { margin-left: -10px; }
-.seat .tag { position: absolute; right: 4px; bottom: 5px; padding: 2px 4px; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; background: var(--c-gold); color: var(--c-ink); }
+.seat .tag { padding: 2px 4px; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; background: var(--c-gold); color: var(--c-ink); }
 .seat .tag.away { background: var(--c-raise); color: var(--c-mute); }
 .seat .stampl, .hand .stampl { position: absolute; inset: 0; display: grid; place-items: center; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-ink); background: color-mix(in srgb, var(--c-gold) 92%, transparent); pointer-events: none; }
 .call { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 8px 12px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
@@ -83,19 +86,20 @@
 .clock[hidden] { display: none; }
 
 /* The table: felt with a rim that takes the suit's colour after a wild eight. */
-.table { position: relative; flex: 1; min-height: 200px; max-height: min(56vh, 460px); display: grid; place-items: center; background: var(--we-felt) center / 32px 32px; image-rendering: pixelated;
+.table { position: relative; flex: 1 1 auto; min-height: 200px; /* the table takes the height that's left; the deck and pile scale with it (layout) */ display: grid; place-items: center; background: var(--we-felt) center / 32px 32px; image-rendering: pixelated;
   border: var(--px) solid var(--c-ink); box-shadow: inset 0 0 0 calc(var(--px) * 5) var(--flood), inset 0 0 0 calc(var(--px) * 6) var(--c-ink); }
-.table::before { content: ""; position: absolute; inset: 0; background: var(--wash, transparent); opacity: 0.1; pointer-events: none; } /* the named suit's colour, faintly, over the felt while it's in force */
 .seat .think { display: inline-flex; gap: 2px; } .seat .think i { width: 3px; height: 3px; background: var(--c-mute); animation: we-think 0.6s steps(1) infinite; } .seat .think i:nth-child(2) { animation-delay: 0.2s; } .seat .think i:nth-child(3) { animation-delay: 0.4s; }
 @keyframes we-think { 0%, 66% { opacity: 0.3; } 33% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .seat .think i { animation: none; } }
+.rm .seat .think i { animation: none; } /* Ploto's own Motion setting too */
 .table .mid { display: flex; align-items: center; gap: 22px; }
 .deck { position: relative; padding: 0; border: 0; background: none; box-shadow: none; clip-path: none; min-height: 0; cursor: default; }
 .deck:active { transform: none; }
 .deck.can { cursor: pointer; }
 .deck.can .card { box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-accent-hi); }
 .deck .card + .card { position: absolute; left: 0; top: 0; }
-.deck .left { position: absolute; left: 50%; bottom: -20px; translate: -50% 0; font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-text); white-space: nowrap; }
+.deck .left { position: absolute; left: 50%; bottom: -20px; translate: -50% 0; font: 400 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); white-space: nowrap; }
+.deck .left.low { color: var(--c-gold); }
 .deck:focus-visible { outline: none; box-shadow: 0 0 0 var(--px) var(--c-cream); }
 .pile { position: relative; width: var(--hw, 64px); height: var(--hh, 90px); }
 .pile .card { position: absolute; left: 0; top: 0; }
@@ -123,16 +127,17 @@
 /* your hand: overlapped like a held fan; the cards you can play stand up */
 .hand { position: relative; height: calc(var(--bh, 68px) + 12px); margin: 0 2px; }
 .hand.two { height: calc(var(--bh, 68px) + 58px); } /* a big hand in two rows: every card keeps a 44 px slice to tap */
-.table { flex: 1 1 auto; max-height: none; } /* the table takes the height that's left; the deck and pile scale with it (layout) */
+
 .hand .card { position: absolute; bottom: 0; padding: 0; cursor: default; transition: translate 0.12s steps(2), left 0.16s steps(3); touch-action: manipulation; }
 .hand .card.can { translate: 0 -10px; cursor: pointer; box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-accent-hi), inset 0 calc(var(--px) * -3) 0 var(--card-lo); } /* gold has one job (the eight); what you can play is the accent (inset: the card's clipped corners would cut an outline) */
 .hand .card.can.new { translate: 0 -16px; } /* the card you just drew stands highest */
-.hand.mine .card:not(.can) { background: color-mix(in srgb, var(--card) 72%, var(--c-well)); translate: 0 4px; } /* on your turn: what can't go sits back (a duller face, a little lower), its index still full strength */
-.hand .card:focus-visible { outline: none; box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-cream); }
+.hand.mine .card:not(.can) { background: color-mix(in srgb, var(--card) 82%, var(--c-well)); translate: 0 4px; } /* on your turn: what can't go sits back (a duller face, a little lower), its index still full strength */
+.hand .card:focus-visible { outline: var(--px) solid var(--c-cream); outline-offset: 2px; } /* the focus ring sits outside: the "can play" edge stays */
 .dock { display: flex; align-items: center; gap: 10px; min-height: 48px; }
 .dock .me { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
 .dock .me .nm { min-width: 0; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dock .me .n { font: 700 var(--fs-s)/1 var(--f-text); color: var(--c-text); }
+.dock .me .n { font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-cream); }
+.dock .me .pts { font: 400 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); }
 .dock button { min-height: 48px; }
 .dock button[hidden] { display: none; }
 .fly { position: fixed; z-index: 30; left: 0; top: 0; pointer-events: none; }
@@ -202,7 +207,7 @@
     </div>
     <div class="fx" id="fx"></div>
     <div class="picker" id="picker" role="dialog" aria-modal="true" aria-labelledby="pickTitle" hidden>
-      <div class="in"><b id="pickTitle">Name the suit</b><div class="grid4" id="pickGrid"></div><button type="button" class="ghost" id="pickCancel">Back</button></div>
+      <div class="in"><b id="pickTitle">Name the suit</b><small class="hint" style="margin:0">1 to 4 on a keyboard</small><div class="grid4" id="pickGrid"></div><button type="button" class="ghost" id="pickCancel">Back</button></div>
     </div>
   </div>
   <div class="hand" id="hand" role="group" aria-label="Your hand"></div>
@@ -265,7 +270,7 @@
         "A jack skips the next player.",
         "Can't play, or don't want to? Draw one. If it fits you can play it straight away, or keep it.",
       ],
-      extra: `<p class="pl-label">Good to know</p><ul class="hint" style="margin:0 0 12px;padding-left:18px;display:grid;gap:6px"><li>Two players get 7 cards each; three or four get 5.</li><li>When someone goes out, the rest are placed by what's left in hand: eights count 50, faces 10, aces 1, the rest their number.</li><li>Down to one card, everyone sees it.</li><li>With the turn timer on you get 20 seconds. When it runs out, the clock plays your first card that fits (keeping eights), or draws.</li></ul><p class="pl-label">On a keyboard</p><p class="hint">Arrows pick a card, Enter plays, D draws, K keeps a drawn card, I reads the table.</p>`,
+      extra: `<p class="pl-label">Good to know</p><ul class="hint" style="margin:0 0 12px;padding-left:18px;display:grid;gap:6px"><li>Two players get seven cards each; three or four get five.</li><li>When someone goes out, the rest are placed by what's left in hand: eights count fifty, faces ten, aces one, the rest their number.</li><li>Down to one card, everyone sees it.</li><li>With the turn timer on you get 20 seconds. When it runs out, the clock plays your first card that fits (keeping eights), or draws.</li></ul><p class="pl-label">On a keyboard</p><p class="hint">Arrows pick a card, Enter plays, D draws, K keeps a drawn card, 1 to 4 name a suit, I reads the table.</p>`,
     }),
   });
 
@@ -390,6 +395,7 @@
   const BANNER_PLAYS = ["8H", "7H", "7C", "8S", "KS", "KD", "3D", "8C", "3C"]; // an eight first: the moment shows within one beat
   const banner = P.banner($("hero"), {
     draw(hero, W, H) {
+      if (hero._g && hero._g.W === W && hero._g.H === H && hero.firstChild) return; // a repaint at the same size changes nothing (no jumps)
       hero.innerHTML = "";
       const k = Math.max(2, Math.min(4, Math.floor((H - 8) / 22), Math.floor((W - 16) / 74)));
       hero.style.backgroundImage = `url(${A.felt()})`; hero.style.backgroundSize = `${16 * k}px ${16 * k}px`; hero.style.imageRendering = "pixelated";
@@ -570,6 +576,7 @@
     if (v.phase === "over") S.resultReady = true;
     if (!isMine()) S.sending = false;
     if (!G()?.drawn) S.newCard = null;
+    S.flood = !!G()?.top && rankOf(G().top) === "8"; // the rim's colour follows the table (a reload or a reconnect keeps it)
     S.dealt = null;
     show();
     if (!wasMine && isMine()) focusHand();
@@ -593,6 +600,9 @@
     const key = (c) => (rankOf(c) === "8" ? 100 + "SHCD".indexOf(suitOf(c)) : "SHCD".indexOf(suitOf(c)) * 20 + RANK_ORDER.indexOf(rankOf(c)));
     return [...cards].sort((a, b) => key(a) - key(b));
   }
+  const cardPoints = (c) => { const r = rankOf(c); return r === "8" ? 50 : r === "A" ? 1 : ["J", "Q", "K"].includes(r) ? 10 : Number(r); };
+  /** The suits a player has shown they're out of (they drew with nothing to play): small faded pips on their seat. */
+  const voidsHTML = (p) => (G()?.voids?.[p] ?? []).map((x) => `<img src="${A.pip(x, { big: false })}" alt="" width="10" height="${(A.GRIDS["p" + x].length) * 2}" title="Out of ${SUIT[x].name}">`).join("") ? `<span class="voids" aria-label="Out of ${(G().voids[p]).map((x) => SUIT[x].name).join(" and ")}">${(G().voids[p]).map((x) => `<img src="${A.pip(x, { big: false })}" alt="" width="10" height="${A.GRIDS["p" + x].length * 2}">`).join("")}</span>` : "";
   /** Why card c can't go, in plain words. */
   function whyNot(g, c) {
     if (g.owed > 0) return `Answer with a 2, or draw ${g.owed}`;
@@ -615,6 +625,7 @@
   function renderGame() {
     const g = G();
     if (!g) return;
+    $("scrGame").classList.toggle("rm", RM());
     layout();
     renderSeats();
     renderCall();
@@ -633,7 +644,7 @@
       const n = S.dealt ? S.dealt[p] : g.counts[p], fan = Math.min(n, 5);
       const tag = isGone(p) ? '<span class="tag away">Left</span>' : isAway(p) ? '<span class="tag away">Away</span>' : n === 1 && g.phase === "playing" && !S.dealt ? '<span class="tag">Last card</span>' : "";
       const label = `${nameOf(p)}${i === 0 ? ", plays next after you" : ""}: ${plural(n, "card", "cards")}${isGone(p) ? ", left the table" : isAway(p) ? ", away" : ""}${g.turn === p && g.phase === "playing" ? ", their turn" : ""}`;
-      return `<div class="seat${g.turn === p && g.phase === "playing" ? " on" : ""}" role="listitem" data-p="${p}" aria-label="${esc(label)}"><div class="top"><span class="nm">${esc(nameOf(p))}</span>${i === 0 && others().length > 1 ? '<span class="next">Next</span>' : ""}</div><div class="row2"><span class="n">${plural(n, "card", "cards")}</span>${g.turn === p && g.phase === "playing" && !S.anim ? '<span class="think" aria-hidden="true"><i></i><i></i><i></i></span>' : ""}</div>${tag}</div>`; // one back and the count (a fan repeated the number as speckle)
+      return `<div class="seat${g.turn === p && g.phase === "playing" ? " on" : ""}" role="listitem" data-p="${p}" aria-label="${esc(label)}"><div class="top">${i === 0 && others().length > 1 ? `<span class="next" aria-hidden="true">${px("chev", 1)}</span>` : ""}<span class="nm">${esc(nameOf(p))}</span></div><div class="row2">${tag || `<span class="n">${n}<small>${n === 1 ? "card" : "cards"}</small></span>`}${g.turn === p && g.phase === "playing" && !S.anim ? '<span class="think" aria-hidden="true"><i></i><i></i><i></i></span>' : ""}${voidsHTML(p)}</div></div>`; // one back and the count (a fan repeated the number as speckle)
     }).join("");
   }
   function renderCall() {
@@ -647,7 +658,7 @@
         title = "Your turn";
         const can = g.hand.filter((c) => fits(g, c));
         const low = others().find((p) => g.counts[p] === 1), stopper = g.hand.find((c) => fits(g, c) && (rankOf(c) === "2" || rankOf(c) === "J"));
-        text = S.callNote || (g.owed ? (can.length ? `Answer with a 2, or draw ${g.owed}` : `Draw ${g.owed}: you have no 2`) : g.drawn ? (fits(g, g.drawn) ? "It fits: play it, or keep it" : "") : low !== undefined && stopper ? `${nameOf(low)} is on one card: a 2 or a jack slows them` : can.length ? ((S.myTurns ?? 0) < 4 ? matchText(g) : "") : "Nothing fits: draw a card"); // the plain "match" hint only while you're learning: the suit chip says it
+        text = S.callNote || (g.owed ? (can.length ? `Answer with a 2, or draw ${g.owed}` : `Draw ${RANK_NAME[g.owed] || g.owed}: you have no two`) : g.drawn ? (fits(g, g.drawn) ? "It fits: play it, or keep it" : "") : low !== undefined && stopper ? `${nameOf(low)} has one card. A two or jack slows them` : can.length ? ((S.myTurns ?? 0) < 4 ? matchText(g) : "") : "Nothing fits: draw a card"); // the plain "match" hint only while you're learning: the suit chip says it
       } else {
         title = `${nameOf(g.turn)}'s turn`;
         text = S.callNote || (isGone(g.turn) ? `${nameOf(g.turn)} left. The clock plays for them` : isAway(g.turn) ? `${nameOf(g.turn)} is away. The clock plays for them` : "");
@@ -666,10 +677,9 @@
   function renderTable() {
     const g = G();
     $("table").style.setProperty("--flood", S.flood ? SUIT[g.suit].flood : A.P.rimHi);
-    $("table").style.setProperty("--wash", S.flood ? SUIT[g.suit].flood : "transparent");
     const deckN = g.deckLeft, layers = Math.min(3, Math.max(1, Math.ceil(deckN / 15)));
     const can = isMine() && !g.drawn;
-    $("deck").innerHTML = (deckN ? Array.from({ length: layers }, (_, i) => cardHTML(null, "lg", { attrs: `style="translate:${-i * 2}px ${-i * 2}px"` })).join("") : "") + (deckN <= 10 ? `<span class="left">${deckN ? plural(deckN, "card", "cards") : "Empty"}</span>` : ""); // the count only when it's running low (the label always says it)
+    $("deck").innerHTML = (deckN ? Array.from({ length: layers }, (_, i) => cardHTML(null, "lg", { attrs: `style="translate:${-i * 2}px ${-i * 2}px"` })).join("") : "") + `<span class="left${deckN <= 10 ? " low" : ""}">${deckN ? plural(deckN, "card", "cards") : "Empty"}</span>`; // you can see a reshuffle coming
     $("deck").classList.toggle("can", can);
     $("deck").disabled = !can;
     $("deck").setAttribute("aria-label", g.owed ? `Draw ${g.owed}` : `Draw a card (${plural(deckN, "card", "cards")} left)`);
@@ -701,11 +711,11 @@
   }
   function renderDock() {
     const g = G(), m = me();
-    $("meBox").innerHTML = m >= 0 ? `<span class="nm">${esc(ownName(m))}</span><span class="pl-you">You</span><span class="n">${plural(g.hand.length, "card", "cards")}</span>${g.hand.length === 1 && g.phase === "playing" ? '<span class="pl-you" style="background:var(--c-gold);color:var(--c-ink)">Last card</span>' : ""}` : `<span class="nm">Watching</span>`;
+    $("meBox").innerHTML = m >= 0 ? `<span class="nm">${esc(ownName(m))}</span><span class="pl-you">You</span>${g.hand.length === 1 && g.phase === "playing" ? '<span class="pl-you" style="background:var(--c-gold);color:var(--c-ink)">Last card</span>' : `<span class="n">${g.hand.length}</span>`}${others().some((p) => g.counts[p] <= 2) && g.phase === "playing" ? `<span class="pts">Hand ${g.hand.reduce((a, c) => a + cardPoints(c), 0)} pts</span>` : ""}` : `<span class="nm">Watching</span>`;
     const mine = isMine();
     const d = $("drawBtn"), k = $("keepBtn");
     d.hidden = !mine || !!g.drawn;
-    d.textContent = g.owed ? `Draw ${g.owed}` : "Draw";
+    d.textContent = g.owed ? `Draw ${RANK_NAME[g.owed] || g.owed}` : "Draw";
     k.hidden = !mine || !g.drawn;
     k.textContent = "Keep it";
   }
@@ -713,7 +723,7 @@
     if (P.sheetOpen()) return;
     const a = document.activeElement;
     if (a && a !== document.body && !a.closest?.("#scrGame")) return;
-    const g = G(), i = g ? g.hand.findIndex((c) => fits(g, c)) : -1;
+    const g = G(), i = g ? sortHand(g.hand).findIndex((c) => fits(g, c)) : -1; // the hand on screen is sorted
     if (i >= 0) S.focus = i;
     renderHand();
     $("hand").children[S.focus]?.focus({ preventScroll: true });
@@ -782,6 +792,7 @@
     $("pickGrid").innerHTML = SUITS.map((s, i) => `<button type="button" class="${s === best ? "" : "ghost"}" data-suit="${s}" aria-label="${SUIT[s].name}, you hold ${n[s]}">${imgTag(A.pip(s, { flood: true, outline: true }), 9, 9, 4)}<span>${SUIT[s].name}</span><small>${n[s] ? `You hold ${n[s]}` : "None in hand"}</small></button>`).join("");
     $("picker").hidden = false;
     for (const id of ["hand", "dock", "deck"]) $(id).inert = true; // really modal: nothing behind it can be tapped
+    $("callText").textContent = "Name the suit for your eight";
     cue("select", { vol: 0.5 });
     $("pickGrid").querySelector(`[data-suit="${best}"]`)?.focus();
     sayNow(`Name the suit for your eight. ${SUITS.map((x) => `${SUIT[x].name} ${n[x] || "none"}`).join(", ")}`);
@@ -813,12 +824,8 @@
     for (const [b, axis] of bars) await b.animate([{ transform: `${axis}(0)` }, { transform: `${axis}(1)` }], { duration: 110, easing: "steps(4)", fill: "forwards" }).finished.catch(() => {});
     t.style.setProperty("--flood", col);
     bars.forEach(([b]) => b.remove());
-    // The felt takes a wash of the colour: strong for a moment, then faint while the suit holds.
-    const wash = el("div", "", { position: "absolute", inset: "0", background: col, pointerEvents: "none", zIndex: 1 });
-    t.appendChild(wash);
-    await wash.animate([{ opacity: 0.28 }, { opacity: 0.18 }, { opacity: 0.1 }], { duration: 240, easing: "steps(3)", fill: "forwards" }).finished.catch(() => {});
-    t.style.setProperty("--wash", col);
-    wash.remove();
+    // The colour floods in from the rim (a band that grows, then settles back): the felt itself stays green.
+    await t.animate([{ boxShadow: `inset 0 0 0 calc(var(--px) * 10) ${col}, inset 0 0 0 calc(var(--px) * 11) var(--c-ink)` }, { boxShadow: `inset 0 0 0 calc(var(--px) * 16) ${col}, inset 0 0 0 calc(var(--px) * 17) var(--c-ink)` }, { boxShadow: `inset 0 0 0 calc(var(--px) * 5) ${col}, inset 0 0 0 calc(var(--px) * 6) var(--c-ink)` }], { duration: 240, easing: "steps(3)" }).finished.catch(() => {});
   }
   const speed = () => Q.speed();
   const wait2 = (ms) => (RM() ? Promise.resolve() : sleep(ms * speed()));
@@ -902,7 +909,7 @@
       if (mine) { S.newCard = null; renderHand(); renderDock(); }
       renderSeats();
       if (e.auto) { cue("timeout"); S.callNote = mine ? `Time's up: the clock played your ${cardName(e.card)}` : `The clock played for ${nameOf(e.by)}`; $("callText").textContent = S.callNote; sayNow(S.callNote); }
-      await fly(cardHTML(e.card, "lg"), from, centreOf($("pile")), T.play * 0.7);
+      await fly(cardHTML(wild && !mine ? null : e.card, "lg"), from, centreOf($("pile")), T.play * 0.7); // a rival's eight comes face down: you see it only as it slams
       g.top = e.card;
       if (!wild) { g.suit = suitOf(e.card); S.flood = false; } // the rim's colour belongs to an eight: a plain card lets it go
       renderTable();
@@ -949,12 +956,13 @@
       const deck = centreOf($("deck")), n = Math.min(e.n, 6);
       for (let i = 0; i < n; i++) {
         const f = fly(mine && e.cards?.[i] ? cardHTML(e.cards[i], "md") : cardHTML(null, "md"), deck, spotOf(e.by), T.draw * 1.6, { flip: mine });
-        if (i === n - 1) await f; // the cards join the hand when the last one lands
         cue("draw", { pitch: 1 + 0.05 * i, buzz: false });
-        await wait2(T.draw);
+        if (i === n - 1) await f; // the cards join the hand the moment the last one lands
+        else await wait2(T.draw);
       }
       g.counts[e.by] += e.n;
       if (mine && e.cards) { g.hand.push(...e.cards); if (!e.forced && e.cards.length === 1) { S.newCard = e.cards[0]; g.drawn = e.cards[0]; } }
+      if (e.reshuffled) { cue("deal", { pitch: 0.7, buzz: false }); later(() => cue("deal", { pitch: 0.75, buzz: false }), 70); }
       if (e.forced) { g.owed = 0; $("owed").hidden = true; }
       renderSeats(); renderHand(); renderDock();
       say(mine ? (e.forced ? `You drew ${e.n}` : `You drew the ${cardName(e.cards?.[0] ?? "")}`) : `${nameOf(e.by)} drew ${plural(e.n, "card", "cards")}`);
@@ -976,7 +984,7 @@
       await hold(600);
     },
     async lastCard(e) {
-      cue("last");
+      cue("last", { pitch: e.seat === me() ? 1 : 1.15, buzz: e.seat === me() || e.seat === (me() + 1) % G().counts.length }); // a rival's last card is a higher note
       renderSeats(); renderDock();
       const tag = e.seat === me() ? null : document.querySelector(`.seat[data-p="${e.seat}"] .tag`);
       if (tag && !RM()) pose(tag, "pop");
@@ -997,7 +1005,7 @@
         if (!RM()) {
           pose($("owed"), "pop");
           const tgt = e.seat === me() ? $("hand") : document.querySelector(`.seat[data-p="${e.seat}"]`);
-          for (let i = 0; i < 2; i++) later(() => fly(cardHTML(null, "md"), centreOf($("deck")), spotOf(e.seat), T.draw * 1.2), i * 90); // what's coming their way
+          $("deck").animate([{ transform: "translateY(0)" }, { transform: "translateY(-6px)" }, { transform: "translateY(0)" }], { duration: 320, easing: "steps(2)" }); // the deck lifts: what's coming (the cards travel when they're drawn)
           if (tgt) later(() => pose(tgt, "owe"), 260);
         }
       }
@@ -1011,6 +1019,14 @@
       const g = G(), won = e.winner === me();
       Object.assign(g, { phase: "over", winner: e.winner, forfeit: !!e.forfeit, turn: null, hands: e.hands, scores: e.scores });
       renderGame();
+      // The last card gets its moment: a slam and a burst of its suit, the winner's seat (or your hand) celebrates.
+      if (!RM() && g.top && !e.forfeit) {
+        const pc = $("pile").firstElementChild, pileC = centreOf($("pile")), tr = $("table").getBoundingClientRect();
+        pc?.animate([{ transform: "scale(1.4)" }, { transform: "scale(0.94)" }, { transform: "scale(1)" }], { duration: 180, easing: "steps(3)" });
+        sheetAt($("fx"), A.burst(suitOf(g.top)), pileC.x - tr.left, pileC.y - tr.top, Math.max(2, Math.round($("pile").offsetWidth / 16)), 420);
+        const w = won ? $("hand") : document.querySelector(`.seat[data-p="${e.winner}"]`);
+        if (w) pose(w, "win");
+      }
       const stamp = el("div", `stamp${won ? "" : " plain"}`);
       stamp.setAttribute("aria-hidden", "true");
       stamp.innerHTML = `<b>${e.forfeit ? "Game over" : won ? "Last card down" : `${esc(nameOf(e.winner))} went out`}</b>`;
@@ -1076,7 +1092,7 @@
       sub: g.forfeit ? "The game ended early" : won ? "You went out first" : `${res[0].name} went out first; the rest are placed by the cards left in hand`,
       win: won,
       tiles: [
-        { label: "Place", value: mine.place, format: ORD },
+        { label: "Points left", value: mine.points },
         { label: "Cards played", value: mine.played },
         { label: "Eights", value: mine.eights },
       ],

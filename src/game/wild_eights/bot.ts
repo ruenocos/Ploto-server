@@ -40,11 +40,11 @@ export function chooseMove(v: EightsView, level: BotLevel, random: RandomSource)
   if (level === "medium") {
     if (v.drawn && random() < 0.2) return { action: "pass" }; // keeps the card it drew
     const plain = playable.filter((c) => rankOf(c) !== "8");
-    const pool = plain.length && random() > 0.15 ? plain : playable; // an early 8 now and then
+    const pool = plain.length && random() > 0.3 ? plain : playable; // an early 8 now and then
     const same = pool.filter((c) => suitOf(c) === v.suit); // people tend to follow the suit before changing it
-    const card = random() < 0.35 && same.length ? same[0]! : pool[Math.floor(random() * pool.length)]!;
+    const card = random() < 0.2 && same.length ? same[0]! : pool[Math.floor(random() * pool.length)]!;
     const rest = hand.filter((c) => c !== card);
-    const suit = rankOf(card) === "8" ? (random() < 0.25 ? secondSuit(rest, v.suit) : longSuit(rest, v.suit)) : undefined; // now and then its second-longest suit, never one it lacks
+    const suit = rankOf(card) === "8" ? (random() < 0.4 ? secondSuit(rest, v.suit) : longSuit(rest, v.suit)) : undefined; // now and then its second-longest suit, never one it lacks
     return { action: "play", card, ...(suit ? { suit } : {}) };
   }
   // Hard.
@@ -62,7 +62,12 @@ export function chooseMove(v: EightsView, level: BotLevel, random: RandomSource)
     const jack = plain.find((c) => rankOf(c) === "J" && hand.some((x) => x !== c && (suitOf(x) === suitOf(c) || rankOf(x) === "J" || rankOf(x) === "8")));
     if (jack && hand.length > 2) return { action: "play", card: jack };
   }
-  // Punish a player about to go out: 2s, then Jacks (a jack also works on the player after next, past the one it skips).
+  // The next player is about to go out and has shown they lack a suit: an eight naming it.
+  if (v.counts[next]! <= 2 && eights.length) {
+    const lack = SUITS.find((x) => v.voids[next]?.includes(x));
+    if (lack && !plain.some((c) => rankOf(c) === "2" || rankOf(c) === "J")) return { action: "play", card: eights[0]!, suit: lack };
+  }
+  // Punish a player about to go out: 2s, then Jacks.
   if (nextLow) {
     const hit = plain.find((c) => rankOf(c) === "2") ?? plain.find((c) => rankOf(c) === "J");
     if (hit) return { action: "play", card: hit };

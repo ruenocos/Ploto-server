@@ -246,7 +246,7 @@
     for (const [x, y] of dots) p.px(x - 1, y - 1, P.cream, 2, 2);
     for (const [c, r] of line) { // cut the discs back out
       const ox = F + c * C + 1, oy = F + (ROWS - 1 - r) * C + 1;
-      for (let y = -1; y < 9; y++) for (let x = -1; x < 9; x++) if (inRound(x, y) || inRound(x - 1, y) || inRound(x + 1, y) || inRound(x, y - 1) || inRound(x, y + 1)) p.g.clearRect(ox + x, oy + y, 1, 1);
+      for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (inRound(x, y)) p.g.clearRect(ox + x, oy + y, 1, 1);
     }
     return p.c;
   }

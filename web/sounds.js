@@ -86,7 +86,7 @@ window.PLOTO_SOUNDS = {
     },
     "yourTurn": {
       "code": "57uBnWSzhdtNWEA2iN9aGSJixy5psH27n7i4bRRNNvEVmUY2VpNTucKEVhdDHcfmQQS7QVvRWrVwVQ37274Czv1u4WfAy98BY53J79Xix2QoT4rxreSnmaEVD",
-      "vol": 0.28,
+      "vol": 0.4,
       "buzz": 15
     },
     "tick": {
@@ -115,7 +115,7 @@ window.PLOTO_SOUNDS = {
       ]
     },
     "lose": {
-      "code": "1111111UE2QmoXVZoh3SG69jHVzYxb5XtBdWeW8xq2r9X2wwJNhryHDok8XK9JnC83kmWa1rMpsVyXy6GSmVRnbJz5YK8Rey8AQgaATp3avY3H3TvRQc1ps",
+      "code": "1111111UE2QmoXVUrt25XCC9oQwNtn4kbPWCnwmYQZnoNbSTrbywAh7eaicUw4soHLNmrgUvvLhS2eNxpm8kYFewXpUNzXZiWEpfKMvHbyaFaCtNrSc7abh",
       "vol": 0.45,
       "buzz": [
         120,

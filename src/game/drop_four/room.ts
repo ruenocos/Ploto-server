@@ -89,7 +89,7 @@ export class DropFourRoom extends LobbyRoom<DropSettings> {
   game: DropFourGame | null = null;
   private readonly timing: DropTiming;
   private readonly random: RandomSource;
-  private clock: { seat: number; deadline: number; timer: ReturnType<typeof setTimeout> } | null = null;
+  private clock: { seat: number; deadline: number; startsAt: number; timer: ReturnType<typeof setTimeout> } | null = null;
   /** Clock and bots wait this long for the last events' animation. */
   private animUntil = 0;
 
@@ -222,7 +222,7 @@ export class DropFourRoom extends LobbyRoom<DropSettings> {
       return;
     }
     const ms = !this.connected(seat) ? this.timing.awayMs : this.settings.timer ? this.timing.turnMs : 0;
-    if (ms) this.setClock(seat, wait + ms, () => this.autoDrop(seat));
+    if (ms) this.setClock(seat, wait + ms, () => this.autoDrop(seat), true, wait);
   }
 
   /** Re-time the clock after someone connects or disconnects. */
@@ -279,7 +279,7 @@ export class DropFourRoom extends LobbyRoom<DropSettings> {
     return {
       ...this.lobbyView(seat),
       game: game ? game.viewFor(seat) : null,
-      clock: this.clock?.deadline ? { seat: this.clock.seat, deadline: this.clock.deadline } : null,
+      clock: this.clock?.deadline ? { seat: this.clock.seat, deadline: this.clock.deadline, startsAt: this.clock.startsAt } : null, // startsAt: when the page's animation is done and the turn really starts
       results: this.phase === "over" && game ? this.results() : null,
     };
   }
@@ -300,13 +300,13 @@ export class DropFourRoom extends LobbyRoom<DropSettings> {
   }
 
   /** `shown`: a clock players see (a bot's thinking isn't one; its deadline stays 0). */
-  private setClock(seat: number, ms: number, fn: () => void, shown = true): void {
+  private setClock(seat: number, ms: number, fn: () => void, shown = true, wait = 0): void {
     const timer = setTimeout(() => {
       this.clock = null;
       fn();
     }, ms);
     timer.unref?.();
-    this.clock = { seat, deadline: shown ? Date.now() + ms : 0, timer };
+    this.clock = { seat, deadline: shown ? Date.now() + ms : 0, startsAt: Date.now() + wait, timer };
   }
 
   private clearClock(): void {

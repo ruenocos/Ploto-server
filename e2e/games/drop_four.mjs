@@ -109,6 +109,7 @@ adapter.checks = [
     await a.waitForFunction(() => /used/i.test(document.getElementById("bombBtn").textContent), null, { timeout: 8000 });
     await sleep(1500);
     assert((await discs(a)) < before, `the bomb cleared discs (before ${before}, after ${await discs(a)})`);
+    assert((await a.locator("#fx .scorch").count()) >= 1, "the bomb leaves a mark where it cleared");
     await a.close2(); await b.close2();
   }],
   ["no screen scrolls sideways at 360, 390 or 430 wide; the board fits above the dock", async ({ B, home, assert }) => {

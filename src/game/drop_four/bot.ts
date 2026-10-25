@@ -4,14 +4,16 @@
  * caps the work, so a move never takes long and is the same on every machine
  * (iterative deepening: the deepest search that finished within the budget wins).
  *
- *   hard    searches up to 8 moves ahead (40,000 positions at most: about 40 ms),
+ *   hard    searches up to 7 moves ahead (25,000 positions at most: about 21 ms),
  *           never misses a win or a block, never leaves a move the rival's bomb
- *           can win from, and weighs its own bomb: it bombs to win, or to break
- *           a position it would otherwise lose.
- *   medium  looks one move ahead: it always takes a four it can see and blocks
- *           most threats, but misses setups, and often plays one of its next
- *           few moves instead of the best (never one that hands you a win).
- *           It bombs to win, and sometimes to stop a loss.
+ *           can win from, plays a near-best move one time in eight (a wall is no
+ *           fun), and weighs its bomb: to win, to break a lost position, or when
+ *           a blast that clears two of your discs is clearly better.
+ *   medium  looks two moves ahead: it always takes a four it can see, misses one
+ *           threat in four and many setups, often plays one of its next few
+ *           moves instead of the best (never one that hands you a win), sees a
+ *           bomb win a quarter of the time and now and then bombs to clear two
+ *           of your discs.
  */
 import { BOMB_AFTER, COLS, DropFourGame, ROWS, closedToOpening, type Cell, type DropView, type Grid, type RandomSource } from "./engine.js";
 
@@ -153,7 +155,7 @@ export const LEVELS: Record<BotLevel, Style> = {
   // Hard now and then plays a near-best move instead of the best (nearSlip): a wall would be no fun.
   hard: { depth: 7, budget: 25_000, win: 1, block: 1, slip: 0, bombSave: 1, bombSee: 1, rivalBomb: true, bombAttack: 1, nearSlip: 0.12 },
   // Medium sees a bomb win half the time (people miss them), blocks most threats, misses setups.
-  medium: { depth: 2, budget: 2_000, win: 1, block: 0.75, slip: 0.4, bombSave: 0.5, bombSee: 0.35, bombAttack: 0.3 },
+  medium: { depth: 2, budget: 2_000, win: 1, block: 0.75, slip: 0.4, bombSave: 0.5, bombSee: 0.25, bombAttack: 0.15 },
 };
 
 /**

@@ -203,3 +203,54 @@ human stand-in and Medium, nearly always as a win for the bomber. The bomb is
 the game's comeback twist, and search-based stand-ins spot bomb wins far more
 often than people will; if play data shows it deciding too much, the first lever
 is BOMB_AFTER (4).
+
+## Round 5
+
+| Category | A | B | Round score |
+|---|---|---|---|
+| Game design | 8 | 8 | **8** |
+| Signature moment | 8 | 8 | **8** |
+| Animation | 8 | 8 | **8** |
+| Sound and haptics | 7 | 8 | **7** |
+| Visual design | 7 | 8 | **7** |
+| UX and clarity | 7 | 7 | **7** |
+| Platform consistency | 8 | 9 | **8** |
+| Bots | 8 | 8 | **8** |
+| Implementation | 8 | 8 | **8** |
+| Accessibility | 8 | 8 | **8** |
+
+Clutter (both): not busy but unbalanced: an empty band at the top, the rival's
+bomb state far from the board, the gold clock and the cream last-move mark
+competing with the gold player.
+
+Note: reviewer A scored lower than round 4 in three categories and asked to undo
+round 4's result change (the spent discs back out); round to round the strict
+reviewer moves about a point either way. The fixes below follow what both
+reviewers asked for.
+
+What both saw: the bomb's mark never appeared when nothing fell (a real bug: the
+animation's timer was cleared before it fired); the call said Victory/Defeat
+before the line lit; the clock counted the animation wait (16–32 s on a 15 s
+timer) and ran during the coin flip; the rival's drop announcement was cut off
+by "Your turn"; How to play's bomb step ran to 60 words; the result's tiles
+changed between a win and a loss; Medium bombed in most games.
+
+Fixes built after round 5: the bomb's mark is drawn as soon as the fall ends
+(and an e2e checks it); Victory/Defeat lands with the bar; the room sends when
+the turn really starts, so the clock shows 15 s and holds full through the
+animation, hidden during the coin flip, in plain text and edge grey (gold is a
+player); the rival and their bomb chip sit right above the call, by the board;
+one announcement for their move and your turn ("Ben dropped in C, row 2. Your
+turn. Their bomb is ready"); the armed bomb says what it clears ("Clears 2 of
+theirs and 1 of yours"); How to play's bomb in two short steps, the mouse note
+in Good to know; fixed result tiles (Discs, Longest line, Bomb); the last move
+is a chevron over its column, not a mark on the disc; the coin blips each turn
+and the dim lifts in steps; the rival's hand never starts over the closed
+column; the rival's bomb becoming ready has a sound and a pulse; the winning
+disc lands heavier and everyone feels the blast; a louder turn chime and a
+longer lose; Medium sees a bomb win a quarter of the time and attacks with it
+less; the chip keeps its icon (dimmed while counting down).
+
+Tried and kept as is: making the bomb ready after the 4th or 5th disc changed
+nothing in how often a bomb's fall ends a game (48% in simulation either way),
+so the bomb stays ready after the third.

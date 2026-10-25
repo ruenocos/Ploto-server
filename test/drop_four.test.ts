@@ -109,7 +109,9 @@ describe("Drop Four room", () => {
 
   it("with the timer on, the clock drops for you, so a silent game still ends", async () => {
     const { room, b } = await hostedPair({ timer: true }, 8);
-    expect(b.last().view.clock).toMatchObject({ seat: room.game.turn });
+    const clock = b.last().view.clock;
+    expect(clock).toMatchObject({ seat: room.game.turn });
+    expect(clock.deadline - clock.startsAt).toBe(40); // the turn's own length; the wait for the animation is apart
     await until(() => room.phase === "over", 10000);
     expect(b.notes.some((x) => x.data?.events?.some((e: any) => e.type === "drop" && e.auto))).toBe(true);
     room.dispose();

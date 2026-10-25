@@ -27,23 +27,25 @@
 #scrGame { display: flex; flex-direction: column; min-height: 100dvh; padding: calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset-bottom) + 12px); max-width: 600px; margin: 0 auto; gap: 10px; }
 #scrGame[hidden] { display: none; }
 @media (max-width: 399px) { #scrGame { padding-left: 4px; padding-right: 4px; } }
-.hud { display: flex; align-items: center; gap: 8px; }
+.hud { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.stage .who { align-self: stretch; flex: none; } /* the rival sits with the call and the board: one group */
+.fields .hint { margin-bottom: 12px; }
 .who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
 .who img { image-rendering: pixelated; display: block; flex: none; }
 .who .nm { min-width: 0; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .who .bombchip { flex: none; display: flex; align-items: center; gap: 4px; padding: 3px 6px; background: var(--c-well); font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; color: var(--c-text); text-transform: uppercase; white-space: nowrap; } /* not gold: gold is a player */
 .who .bombchip.used, .who .bombchip.wait { color: var(--c-mute); }
-.who .bombchip.wait img { opacity: 0.45; }
+.who .bombchip.wait img, .who .bombchip.used img { opacity: 0.45; }
 .away { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; padding: 2px 4px; background: var(--c-raise); color: var(--c-mute); }
 .call { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 8px 12px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
 .call.mine { box-shadow: inset 0 0 0 var(--px) var(--c-accent); } /* STYLE's Active frame, the outline only: the board stays the one saturated mass */
 .call .disc { flex: none; image-rendering: pixelated; }
 .call b { font: 700 var(--fl-1)/1.1 var(--f-label); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; }
 .call span { flex: 1; min-width: 0; font: 400 var(--fs-s)/1.25 var(--f-text); color: var(--c-text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.clock-s { flex: none; min-width: 28px; text-align: right; font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-gold); }
+.clock-s { flex: none; min-width: 28px; text-align: right; font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-text); } /* not gold: gold is a player */
 .clock-s.low { color: var(--c-bad-hi); }
 .clock { flex: none; width: 56px; height: calc(var(--px) * 4); background: var(--c-well); box-shadow: 0 0 0 var(--px) var(--c-ink); }
-.clock i { display: block; height: 100%; background: var(--c-gold); transition: width 0.25s steps(2); }
+.clock i { display: block; height: 100%; background: var(--c-edge); transition: width 0.25s steps(2); }
 .clock.low { height: calc(var(--px) * 6); } /* low time: taller as well as red */
 .clock.low i { background: var(--c-bad); }
 .clock[hidden] { display: none; }
@@ -72,8 +74,8 @@
 .board .reach.x::after { content: "×"; position: absolute; inset: 0; display: grid; place-items: center; font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); }
 .board .grid.clip { overflow: hidden; } /* the discs that shake loose leave through the bottom of the frame */
 .board .bar { position: absolute; inset: 0; background-size: 100% 100%; image-rendering: pixelated; pointer-events: none; }
-.board .last { position: absolute; background: var(--c-cream); box-shadow: 0 0 0 var(--px) var(--c-ink); pointer-events: none; animation: last-fade 4s steps(1) forwards; } /* the last move: cream, then quiet, then gone */
-@keyframes last-fade { 0% { background: var(--c-cream); } 30% { background: var(--c-edge); } 100% { background: var(--c-edge); opacity: 0; } }
+.board .last { position: absolute; background: var(--c-cream); clip-path: polygon(0 0, 100% 0, 50% 100%); pointer-events: none; animation: last-fade 0.24s steps(1) 1.5s forwards; } /* the last move: a chevron over its column, cream, then quiet (it stays until the next drop) */
+@keyframes last-fade { to { background: var(--c-mute); } }
 .board .scorch { position: absolute; outline: var(--px) dashed var(--c-bad); outline-offset: calc(var(--px) * -1); pointer-events: none; } /* where the last bomb cleared, until the next drop */
 .board .lock { position: absolute; display: grid; place-items: center; font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-mute); pointer-events: none; }
 .board .closed { position: absolute; background: rgba(10, 12, 20, 0.45); pointer-events: none; } /* the middle column, closed to the first disc */
@@ -155,10 +157,10 @@
 <!-- The game: all its own, plus Ploto's menu button (kit.menu) -->
 <section class="scr" id="scrGame" hidden>
   <div class="hud">
-    <div class="who" id="rivalBox"></div>
     <button id="menuBtn" class="ghost icon-btn" aria-label="Menu" title="Menu"></button>
   </div>
   <div class="stage">
+    <div class="who" id="rivalBox"></div>
     <div class="call" id="call"><img class="disc" id="callDisc" alt="" /><b id="callTitle"></b><span id="callText"></span><div class="clock" id="clock" role="timer" hidden><i></i></div><span class="clock-s" id="clockS" aria-hidden="true"></span></div>
     <div class="board" id="board">
       <div class="lane" id="lane"></div>
@@ -201,10 +203,10 @@
 
   /* ================================================================ the platform's lobby, told about this game once */
   const BOT_FIELD = { key: "botStyle", label: "Bot difficulty", kind: "choice", options: [["relaxed", "Medium"], ["sharp", "Hard"]], hint: "Medium misses setups. Hard rarely slips" };
-  const BOMBS_FIELD = { key: "bombs", label: "Bombs", kind: "choice", options: [[true, "On"], [false, "Off"]], hint: "One each, ready after your third disc · Clears beside and below" };
+  const BOMBS_FIELD = { key: "bombs", label: "Bombs", kind: "choice", options: [[true, "On"], [false, "Off"]], hint: "One each, ready after your third disc. It clears beside and below" };
   const SCHEMA = [
     BOMBS_FIELD,
-    { key: "timer", label: "Turn timer", kind: "choice", options: [[true, "On"], [false, "Off"]], hint: "15 s a move" },
+    { key: "timer", label: "Turn timer", kind: "choice", options: [[true, "On"], [false, "Off"]], hint: "15 seconds a move" },
     { ...BOT_FIELD, hint: "Used if a bot takes the other seat. " + BOT_FIELD.hint },
   ];
   const kit = P.lobbyKit({
@@ -219,11 +221,12 @@
       steps: [
         "Tap a column to drop your disc. It falls to the lowest free space. The middle column opens after the game's first disc.",
         "Four of yours in a row wins: across, down or on a slant.",
-        "Your bomb (one a game, if bombs are on, ready after your third disc): tap Bomb, then a column to see what it clears, and tap it again to drop it (with a mouse, hover to see, click to drop). It clears itself and the discs right beside it and under it. Discs above fall down.",
+        "Your bomb: one a game, if bombs are on, ready after your third disc. It clears itself and the discs beside and under it. Discs above fall.",
+        "To drop it, tap Bomb, then a column: it shows what it would clear. Tap the column again to drop it.",
         "If the fall makes four for the bomber, the bomber wins. If it makes four only for the other player, they win.",
         "A full grid with no four is a draw. In a rematch, the loser goes first.",
       ],
-      extra: `<p class="pl-label">The bomb</p><div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">${A.bombDemo().map((u, i) => `<figure style="margin:0;display:grid;gap:4px;justify-items:center"><img src="${u}" alt="${i ? "After: the discs above fall down" : "The bomb lands on C3: it clears C3, B3 beside it and C2 under it"}" width="129" height="126" style="image-rendering:pixelated"><figcaption class="hint">${i ? "Then the discs above fall" : "It clears beside and below"}</figcaption></figure>`).join("")}</div><p class="pl-label">Good to know</p><p class="hint">With the turn timer on you get 15 s a move; when it runs out a disc drops in the most central free column for you. On a keyboard: arrows pick a column, Enter drops, B arms your bomb, I reads the grid.</p>`,
+      extra: `<p class="pl-label">The bomb</p><div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">${A.bombDemo().map((u, i) => `<figure style="margin:0;display:grid;gap:4px;justify-items:center"><img src="${u}" alt="${i ? "After: the discs above fall down" : "The bomb lands on C3: it clears C3, B3 beside it and C2 under it"}" width="129" height="126" style="image-rendering:pixelated"><figcaption class="hint">${i ? "Then the discs above fall" : "It clears beside and below"}</figcaption></figure>`).join("")}</div><p class="pl-label">Good to know</p><p class="hint">With the turn timer on you get 15 s a move; when it runs out a disc drops in the most central free column for you. With a mouse, pointing at a column shows the bomb's reach and one click drops it. On a keyboard: arrows pick a column, Enter drops, B arms your bomb, I reads the grid.</p>`,
     }),
   });
 
@@ -288,7 +291,7 @@
   const ICON = {
     quick: () => imgTag(A.disc(0, { outline: true }), 10, 10, 4),
     host: () => `<span style="display:flex;gap:2px">${imgTag(A.disc(0, { outline: true }), 10, 10, 2)}${imgTag(A.disc(1, { outline: true }), 10, 10, 2)}</span>`,
-    practice: () => imgTag(A.bomb(1), 10, 10, 4),
+    practice: () => `<span style="display:flex;gap:2px;align-items:center">${imgTag(A.disc(0, { outline: true }), 10, 10, 2)}${px("person", 2)}</span>`,
   };
   function renderHome() {
     for (const s of document.querySelectorAll("[data-chev]")) s.innerHTML = px("chev");
@@ -593,11 +596,7 @@
     }
     $("fx").querySelectorAll(".bar").forEach((b) => b.remove());
     if (g.phase === "over" && g.line) $("fx").appendChild(el("div", "bar", { backgroundImage: `url(${A.lineCanvas(g.line).toDataURL()})` }));
-    // The last move: a cream pip on top of that disc (where the eye goes after the rival moves).
-    if (g.last && g.phase === "playing" && g.grid[g.last.col][g.last.row]) {
-      const [ax, ay] = slotXY(g.last.col, g.last.row);
-      layer.appendChild(el("div", "last", { left: `${(ax + 3.5) * k}px`, top: `${(ay + 1) * k}px`, width: `${3 * k}px`, height: `${2 * k}px` }));
-    }
+
     // The middle column is closed to the game's first disc.
     const closed = (c) => g.phase === "playing" && c === 3 && g.moves[0] + g.moves[1] === 0;
     if (closed(3)) {
@@ -623,6 +622,12 @@
     }
     drawLane();
   }
+  /** Where the last bomb cleared: a dashed mark on each emptied slot, until the next drop. */
+  function drawScorch() {
+    const g = G(), k = geo.k, fx = $("fx");
+    fx.querySelectorAll(".scorch").forEach((x) => x.remove());
+    for (const [c, r] of g?.lastBlast ?? []) { const [x, y] = slotXY(c, r); fx.appendChild(el("div", "scorch", { left: `${(x + 1) * k}px`, top: `${(y + 1) * k}px`, width: `${8 * k}px`, height: `${8 * k}px` })); }
+  }
   /** What an armed bomb in column c would clear: its own slot and the discs beside and below it. */
   const bombReach = (g, c) => { const r = heightOf(g, c); return [[c, r], [c - 1, r], [c + 1, r], [c, r - 1]].filter(([x, y]) => x >= 0 && x < NCOL && y >= 0 && (x === c && y === r || g.grid[x][y])); };
   /** The disc in hand above the grid, over the column you'd drop in (your turn only). */
@@ -630,6 +635,8 @@
     const lane = $("lane"), g = G(), k = geo.k;
     lane.innerHTML = "";
     $("fx").querySelectorAll(".reach").forEach((e) => e.remove());
+    // The last move: a small chevron over its column (where the eye goes after the rival moves), not a mark on the disc.
+    if (g?.last && g.phase === "playing" && g.grid[g.last.col][g.last.row]) { const [ax] = slotXY(g.last.col, 0); lane.appendChild(el("div", "last", { left: `${(ax + 3) * k}px`, top: `${10 * k}px`, width: `${4 * k}px`, height: `${3 * k}px` })); }
     if (!g || !isMine()) return;
     const c = S.cursor, x = (F + c * CELL) * k;
     const bombing = S.bomb && g.bombs[you()];
@@ -657,7 +664,7 @@
   function renderHud() {
     const g = G(), r = 1 - you();
     const st = bombState(r);
-    const bombs = st ? `<span class="bombchip ${st.cls}">${st.cls === "" ? imgTag(A.bomb(-1), 10, 10, 2) : ""}${st.text}</span>` : ""; // the icon only when it's live
+    const bombs = st ? `<span class="bombchip ${st.cls}">${imgTag(A.bomb(-1), 10, 10, 2)}${st.text}</span>` : ""; // the icon dims while it counts down
     $("rivalBox").innerHTML = `${imgTag(A.disc(r, { outline: true }), 10, 10, 2)}<span class="nm">${esc(rivalName())}</span>${rivalAway() ? '<span class="away">Away</span>' : ""}${bombs}`;
     $("rivalBox").setAttribute("role", "group");
     $("rivalBox").setAttribute("aria-label", `${rivalName()}, ${A.DISC[r].name}${st ? `, ${st.say}` : ""}`);
@@ -702,7 +709,8 @@
       const bombing = S.bomb && g.bombs[you()];
       const reachEmpty = bombing && (() => { const c = S.cursor, r = heightOf(g, c); return r < NROW && ![[c - 1, r], [c + 1, r], [c, r - 1]].some(([x, y]) => x >= 0 && x < NCOL && y >= 0 && g.grid[x][y]); })();
       const opening = g.moves[0] + g.moves[1] === 0;
-      if (mine) { title = "Your turn"; text = S.callNote || (bombing ? (reachEmpty ? "Nothing to clear there" : S.armedCol !== null && S.armedCol !== undefined ? "Tap again to drop the bomb" : "Bomb armed: pick a column") : opening ? "First disc: any column but the middle" : g.moves[you()] < 2 ? "Tap a column to drop" : ""); }
+      const reachText = () => { const c = S.cursor, r = heightOf(g, c); const hit = bombReach(g, c).filter(([x, y]) => x !== c || y !== r); const th = hit.filter(([x, y]) => g.grid[x][y] - 1 !== you()).length, mn = hit.length - th; return [th ? `${th} of theirs` : "", mn ? `${mn} of yours` : ""].filter(Boolean).join(" and "); };
+      if (mine) { title = "Your turn"; text = S.callNote || (bombing ? (reachEmpty ? "Nothing to clear there" : `Clears ${reachText()}${S.armedCol !== null && S.armedCol !== undefined ? ". Tap again to drop" : ""}`) : opening ? "First disc: any column but the middle" : g.moves[you()] < 2 ? "Tap a column to drop" : ""); }
       else { title = `${rivalName()}'s turn`; text = rivalAway() ? `${rivalName()} is away. The clock plays for them` : rivalArriving() ? `Waiting for ${rivalName()} to arrive` : S.callNote || (g.bombsOn && g.bombs[1 - you()] && g.moves[1 - you()] === (g.bombAfter ?? 3) ? "Their bomb is ready now" : ""); }
     } else {
       title = g.draw ? "Draw" : g.winner === you() ? "Victory" : "Defeat";
@@ -729,10 +737,11 @@
   let lastTick = 0;
   function tickClock() {
     const v = S.view, e = $("clock"), c = v?.clock;
-    if (!c || !G() || G().phase !== "playing") { e.hidden = true; $("clockS").textContent = ""; return; }
-    const left = Math.max(0, c.deadline - Date.now());
+    if (!c || !G() || G().phase !== "playing" || G().turn === null) { e.hidden = true; $("clockS").textContent = ""; return; }
+    const total = Math.max(1, c.deadline - (c.startsAt ?? Date.now())); // the turn's real length: the wait for the animation isn't shown
+    const left = Math.min(total, Math.max(0, c.deadline - Date.now()));
     const key = `${c.seat}:${c.deadline}`;
-    if (clockTotal.key !== key) clockTotal = { key, ms: Math.max(left, 1) };
+    if (clockTotal.key !== key) clockTotal = { key, ms: total };
     e.hidden = false;
     e.firstElementChild.style.width = `${Math.round((100 * left) / clockTotal.ms)}%`;
     const low = left < 5000;
@@ -768,7 +777,7 @@
     if (col === 3 && g.moves[0] + g.moves[1] === 0) {
       cue("nope");
       S.cursor = col; drawGrid(); pose($("hand"), "nope");
-      $("callText").textContent = "The first disc can't go in the middle"; setTimeout(() => { if (isMine()) renderCall(); }, 1400);
+      $("callText").textContent = "The first disc can't go in the middle"; later(() => { if (isMine()) renderCall(); }, 1400);
       say("The first disc can't go in the middle column");
       return;
     }
@@ -779,7 +788,7 @@
       const [ax, ay] = slotXY(col, NROW - 1);
       const top = el("div", "reach", { left: `${(ax + 1) * geo.k}px`, top: `${(ay + 1) * geo.k}px`, width: `${8 * geo.k}px`, height: `${8 * geo.k}px` });
       $("fx").appendChild(top); setTimeout(() => top.remove(), 600);
-      $("callText").textContent = `Column ${colName(col)} is full`; setTimeout(() => { if (isMine()) renderCall(); }, 1200);
+      $("callText").textContent = `Column ${colName(col)} is full`; later(() => { if (isMine()) renderCall(); }, 1200);
       say(`Column ${colName(col)} is full`);
       return;
     }
@@ -860,9 +869,10 @@
       $("board").appendChild(wrap);
       // The coin is a disc turning over, gold side, coral side; it lands on whoever drops first.
       const coin = wrap.querySelector(".coin");
-      cue("coin");
+      if (RM()) cue("coin");
       if (!RM()) {
         const flips = 3, perFlip = T.coin * 0.55 / flips;
+        for (let f = 0; f < flips; f++) later(() => cue("coin", { pitch: 1 + 0.1 * f }), perFlip * f); // a blip a turn of the coin
         const spin = coin.animate([{ backgroundPosition: "0 0" }, { backgroundPosition: `${-s.w * s.n * k}px 0` }], { duration: perFlip, easing: `steps(${s.n})`, iterations: flips });
         await coin.animate([{ transform: "translateY(0)" }, { transform: `translateY(${-10 * k}px)`, offset: 0.45 }, { transform: "translateY(0) scale(1)", offset: 0.9 }, { transform: "translateY(0) scale(1.15, 0.85)" }], { duration: perFlip * flips, easing: "steps(9)" }).finished.catch(() => {});
         spin.cancel();
@@ -874,7 +884,8 @@
       label.textContent = e.rematch ? (e.first === you() ? "You lost last time: you go first" : `${rivalName()} lost last time: they go first`) : `${who} ${e.first === you() ? "go" : "goes"} first`;
       P.playPreset(label, "bounceIn", { speed: "fast" });
       sayNow(label.textContent);
-      await sleep(RM() ? 1200 : Math.max(900, T.coin * 0.45 * speed())); // long enough to read, however far behind
+      await sleep(RM() ? 1200 : Math.max(900, T.coin * 0.45 * speed()) - 180); // long enough to read, however far behind
+      if (!RM()) await wrap.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: "steps(3)", fill: "forwards" }).finished.catch(() => {}); // the dim lifts in steps, not a snap
       wrap.remove();
     },
     async drop(e) {
@@ -897,7 +908,7 @@
         const hand = el("div", "", { left: `${ax * k}px`, top: `${2 * k}px`, width: `${10 * k}px`, height: `${10 * k}px`, backgroundImage: `url(${e.bomb ? A.bomb(0) : A.disc(e.by, { outline: true })})` });
         $("lane").appendChild(hand);
         if (!mine && !RM()) {
-          const from = S.lastCol ?? 3;
+          const from = S.lastCol ?? (e.col < 3 ? 2 : 4); // never over the closed middle on the opener
           const path = e.ponder !== undefined && e.ponder !== e.col ? [from, e.ponder, e.col] : [from, e.col];
           for (let i = 1; i < path.length; i++) {
             const [a, b] = [path[i - 1], path[i]];
@@ -913,20 +924,23 @@
       }
       g.grid[e.col][e.row] = e.by + 1;
       S.lastCol = e.col;
-      cue("land", { pitch: 1.25 - 0.06 * (NROW - e.row), buzz: mine }); // only your own disc buzzes
+      if (S.final?.line) cue("land", { pitch: 0.8, vol: 1.2 }); // the winning disc: a heavier clack, felt by both
+      else cue("land", { pitch: 1.25 - 0.06 * (NROW - e.row), buzz: mine }); // only your own disc buzzes
       if (!RM()) {
         const [sx, sy] = slotXY(e.col, e.row);
         sheetFx($("fx"), "dust", sx - 1, sy + 7, k, 260 * speed());
       }
       g.moves[e.by]++;
-      if (!e.auto) say(`${mine ? "You" : rivalName()} ${e.bomb ? "dropped the bomb" : "dropped"} in ${colName(e.col)}${e.bomb ? "" : `, row ${e.row + 1}`}`);
+      const told = `${mine ? "You" : rivalName()} ${e.bomb ? "dropped the bomb" : "dropped"} in ${colName(e.col)}${e.bomb ? "" : `, row ${e.row + 1}`}`;
+      if (mine && !e.auto) say(told);
+      else if (!mine && !e.auto) S.toldRival = told; // said with "Your turn", in one line, so nothing talks over it
       // Your bomb is ready: the button wakes up (a spark, a pulse, a blip).
       if (mine && g.bombsOn && g.bombs[e.by] && g.moves[e.by] === (g.bombAfter ?? 3) && !S.final) {
         renderDock();
         cue("bombReady");
         later(() => { pose($("bombBtn"), "call"); sayNow("Your bomb is ready. Tap Bomb, or press B"); }, 200);
       }
-      if (!mine && g.bombsOn && g.bombs[e.by] && g.moves[e.by] === (g.bombAfter ?? 3) && !S.final) { renderHud(); say(`${rivalName()}'s bomb is ready`); }
+      if (!mine && g.bombsOn && g.bombs[e.by] && g.moves[e.by] === (g.bombAfter ?? 3) && !S.final) { renderHud(); cue("bombReady", { pitch: 0.75, vol: 0.6, buzz: false }); const chip = $("rivalBox").querySelector(".bombchip"); if (chip) pose(chip, "call"); }
       // The winning disc lands harder: a deeper squash and a rattle.
       if (S.final?.line && !RM()) { d.animate([{ transform: "scale(1.25, 0.7)" }, { transform: "scale(1)" }], { duration: 140, easing: "steps(2)" }); rattle(1); }
       if (e.bomb) {
@@ -946,7 +960,7 @@
       $("board").classList.add("stopped"); await wait2(120); $("board").classList.remove("stopped");
       const [bx, by] = slotXY(e.col, e.row);
       if (!RM()) sheetFx(fx, "blast", bx - 10, by - 10, k, T.blast * 0.8 * speed()); // gone before the next turn is called
-      cue("blast", { buzz: e.by === you() });
+      cue("blast"); // both players feel it
       rattle(2);
       let i = 0;
       for (const [c, r] of e.cleared) {
@@ -959,7 +973,7 @@
       }
       const names = e.cleared.filter(([c, r]) => c !== e.col || r !== e.row).map(([c, r]) => `${colName(c)}${r + 1}`);
       sayNow(names.length ? `The bomb cleared ${names.join(" and ")}${e.falls.length ? ". The discs above fall" : ""}` : "The bomb cleared nothing beside it");
-      later(() => { for (const [c, r] of e.cleared) { const [x, y] = slotXY(c, r); fx.appendChild(el("div", "scorch", { left: `${(x + 1) * k}px`, top: `${(y + 1) * k}px`, width: `${8 * k}px`, height: `${8 * k}px` })); } }, T.blast * speed());
+
       await wait2(T.blast * 0.6);
       // Discs above fall into the gap.
       const moves = e.falls.map((f) => ({ f, d: layer.querySelector(`.d[data-c="${f.col}"][data-r="${f.from}"]`) })).filter((m) => m.d);
@@ -972,6 +986,9 @@
         d.style.top = `${(y + 1) * k}px`;
       }));
       if (moves.length) cue("land", { pitch: 1.05 });
+      // Where it cleared: a dashed mark on each cleared slot (that's still empty), until the next drop.
+      g.lastBlast = e.cleared.filter(([c, r]) => !g.grid[c][r]);
+      drawScorch();
       await hold(700);
     },
     async turn(e) {
@@ -979,7 +996,12 @@
       g.turn = e.seat;
       S.callNote = "";
       renderGame();
-      if (e.seat === you()) { S.handIn = true; drawLane(); if (S.pulseNext) pose($("call"), "call"); cue("yourTurn"); sayNow("Your turn"); }
+      if (e.seat === you()) {
+        S.handIn = true; drawLane(); if (S.pulseNext) pose($("call"), "call"); cue("yourTurn");
+        const theirs = bombState(1 - you());
+        sayNow(`${S.toldRival ? `${S.toldRival}. ` : ""}Your turn${theirs && theirs.cls === "" ? ". Their bomb is ready" : ""}`);
+        S.toldRival = null;
+      }
       else say(`${rivalName()}'s turn`); // no sound for their turn: their disc's drop says it
       if (e.seat === you()) S.pulseNext = false;
       await wait2(T.turn);
@@ -990,7 +1012,6 @@
       $("lane").innerHTML = "";
       const won = e.winner === you();
       layer.querySelectorAll(".last").forEach((x) => x.remove());
-      renderCall(); // the call agrees with the board from the moment the winning disc lands
       if (e.line && !RM()) {
         // A beat of stillness; then the line lights disc by disc (a cream flash, then its own colour
         // ringed in cream, held big for a beat), a note higher each time; a bar joins them; then
@@ -1010,6 +1031,7 @@
         const bar = el("div", "bar", { backgroundImage: `url(${A.lineCanvas(e.line).toDataURL()})` });
         $("fx").appendChild(bar);
         bar.animate([{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: 160, easing: "steps(4)" });
+        renderCall(); pose($("call"), "call"); // Victory or Defeat lands with the bar
         const rest = [...layer.querySelectorAll(".d")].filter((d) => !e.line.some(([c, r]) => Number(d.dataset.c) === c && Number(d.dataset.r) === r));
         rattle(1);
         $("board").querySelector(".grid").classList.add("clip");
@@ -1093,7 +1115,7 @@
       win: won,
       tiles: [
         { label: "Discs", value: g.moves[me] },
-        won ? { label: "Game", value: g.moves[0] + g.moves[1], format: (n) => `${n} discs` } : { label: "Longest line", value: longestRun(g.grid, me + 1) },
+        { label: "Longest line", value: longestRun(g.grid, me + 1) },
         ...(g.bombsOn ? [{ label: "Bomb", value: g.bombs[me] ? 0 : 1, format: (n) => (n ? "Used" : "Kept") }] : []),
       ],
       view: S.lobby, rematchHint: "Same settings; the loser goes first", actions: $("resFoot"), key: S.room?.roomId,

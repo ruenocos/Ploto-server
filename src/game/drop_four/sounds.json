@@ -181,7 +181,7 @@
         "p_repeat_speed": 0,
         "p_freq_ramp": 0
       },
-      "vol": 0.28,
+      "vol": 0.4,
       "buzz": 15
     },
     "tick": {
@@ -251,7 +251,7 @@
         "p_freq_ramp": -0.28,
         "p_env_attack": 0,
         "p_env_sustain": 0.25,
-        "p_env_decay": 0.3,
+        "p_env_decay": 0.45,
         "p_env_punch": 0,
         "p_duty": 0.5,
         "p_lpf_freq": 0.6,

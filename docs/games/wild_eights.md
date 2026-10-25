@@ -69,7 +69,23 @@ Reverse cards, multi-round scoring to a target, 5–6 players, house-rule toggle
    they couldn't follow the suit; the bots (and the page, for screen readers)
    use it. Hidden hands are never sent to anyone else.
 6. **Bots:** Medium plays any card that fits, sometimes an 8 too early, and keeps
-   a drawn card a fifth of the time; Hard holds 8s back, saves 2s and Jacks for
-   when the next player is close to going out, and steers the suit towards one
-   the next player has shown they lack. Luck is a big part of this game: in two
-   player games Hard beats a casual player about 3 in 5, Medium about 11 in 20.
+   a drawn card a fifth of the time; Hard holds 8s back, saves 2s and jacks for
+   when the next player is close to going out, sheds its dearest cards when
+   someone is down to their last ones, and steers the suit towards one the next
+   player has shown they lack. Luck is a big part of this game (bots.txt in each
+   round has the numbers): in two-player games Hard beats a casual player about
+   3 in 5 and Medium about 11 in 20; with four players Hard wins about 31%
+   against a 25% fair share. Pushing Hard further barely moved these, so it was
+   left there.
+7. **Ploto's deck:** the cards are Hold'em's faces (the same glyphs and court
+   portraits), so a card reads the same in every Ploto card game; Wild Eights
+   adds a gold frame inside every eight (wild).
+8. **The rim's colour belongs to an eight:** after a wild eight the table's rim
+   takes the named suit's colour (spades cyan-grey, hearts red, diamonds
+   orange, clubs green) and keeps it while that suit is in force; the next
+   plain card lets it go.
+9. **Leaving a 3–4 player game:** you're placed last, the clock plays your
+   turns and the others play on (a forfeit with two players ends the game).
+10. **A draw by choice marks nothing:** only a draw with nothing to play shows
+    the table you're out of a suit (bots use it; so can people).
+11. **Profile tile:** Games, and Most eights in a game.

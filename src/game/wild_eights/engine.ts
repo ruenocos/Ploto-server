@@ -82,6 +82,8 @@ export class EightsGame {
   readonly first: number;
   stats: { played: number; drawn: number; eights: number; twos: number }[];
   voids: Set<Suit>[];
+  /** Players who left or forfeited a 3–4 player game: the clock plays their turns; they're placed after everyone still in. */
+  readonly out = new Set<number>();
   private readonly random: RandomSource;
 
   constructor(opts: GameOptions) {
@@ -155,7 +157,7 @@ export class EightsGame {
     if (this.drawn) return { ok: false, reason: "you've already drawn: play it or pass" };
     const owed = this.owed;
     const n = owed || 1;
-    if (!owed) this.voids[seat]!.add(this.suit); // they had nothing to follow it with (everyone saw them draw)
+    if (!owed && !this.hands[seat]!.some((c) => this.canPlay(c))) this.voids[seat]!.add(this.suit); // they had nothing to follow it with (a draw by choice tells nothing)
     const { cards, reshuffled } = this.take(n);
     this.hands[seat]!.push(...cards);
     this.stats[seat]!.drawn += cards.length;
@@ -209,9 +211,10 @@ export class EightsGame {
 
   handPoints(seat: number): number { return this.hands[seat]!.reduce((a, c) => a + points(c), 0); }
 
-  /** Final places, best first: the winner, then fewest points left. */
+  /** Final places, best first: the winner, then fewest points left, then those who left. */
   places(): number[] {
-    const order = [...Array(this.players).keys()].sort((a, b) => (a === this.winner ? -1 : b === this.winner ? 1 : this.handPoints(a) - this.handPoints(b)));
+    const rank = (s: number) => (s === this.winner ? 0 : this.out.has(s) ? 2 : 1);
+    const order = [...Array(this.players).keys()].sort((a, b) => rank(a) - rank(b) || this.handPoints(a) - this.handPoints(b));
     const place = new Array<number>(this.players);
     order.forEach((s, i) => { place[s] = i + 1; });
     return place;

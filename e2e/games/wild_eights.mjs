@@ -8,7 +8,7 @@ async function moveIfMine(p) {
   if (await p.locator("#picker:not([hidden])").count()) { await p.locator("#pickGrid button").first().click(); return true; }
   const can = p.locator("#hand .card.can");
   if (await can.count()) {
-    await can.first().click();
+    await can.first().click({ position: { x: 8, y: 30 } }); // the index corner: the rest of an overlapped card sits under its neighbour
     if (await p.waitForSelector("#picker:not([hidden])", { timeout: 300 }).then(() => true, () => false)) await p.locator("#pickGrid button").first().click();
     return true;
   }
@@ -75,7 +75,7 @@ adapter.checks = [
       for (const p of [a, b]) {
         if (!nopeSeen && (await myTurn(p)) && (await p.locator("#hand.mine .card:not(.can)").count())) {
           const before = await p.locator("#hand .card").count();
-          await p.locator("#hand.mine .card:not(.can)").first().click();
+          await p.locator("#hand.mine .card:not(.can)").first().click({ position: { x: 8, y: 30 } });
           await sleep(200);
           assert(/needs|answer|play the card/i.test(await p.locator("#callText").innerText()), "a card that doesn't fit says why");
           assert((await p.locator("#hand .card").count()) === before, "a card that doesn't fit stays in hand");
@@ -87,7 +87,7 @@ adapter.checks = [
     }
     assert(await over(a), `the game should end (made ${moves} moves)`);
     await b.waitForSelector('[data-res="rematch"]', { timeout: 15000 });
-    assert((await a.locator(".standings .row").count()) === 2, "both players are placed on the result");
+    assert((await a.locator(".pl-standings li").count()) === 2, "both players are placed on the result");
     const titles = [await a.locator(".pl-res-head h2").innerText(), await b.locator(".pl-res-head h2").innerText()];
     assert(titles.some((t) => /victory/i.test(t)) && titles.some((t) => /2nd/i.test(t)), `one Victory, one 2nd place (${titles.join(", ")})`);
     await a.close2(); await b.close2();

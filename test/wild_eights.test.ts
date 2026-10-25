@@ -137,6 +137,20 @@ describe("Wild Eights room", () => {
     three.room.dispose();
   });
 
+  it("forfeiting a four-player game leaves the others playing; the forfeiter is placed last", async () => {
+    const { room, recorded, peers } = await hostedTable(4, { timer: false, bots: false }, 6);
+    room.handleRequest("ben", "wildeights:forfeit", {});
+    expect(room.phase).toBe("playing");
+    for (let i = 0; i < 6000 && room.phase === "playing"; i++) {
+      if (room.game.turn === 1) await until(() => room.game.turn !== 1 || room.phase !== "playing");
+      else step(room);
+    }
+    expect(room.phase).toBe("over");
+    expect(recorded[0].players.find((p: any) => p.displayName === "Ben").place).toBe(4);
+    void peers;
+    room.dispose();
+  });
+
   it("with the timer on, the clock plays for a silent player, so the game still ends", async () => {
     const { room, peers } = await hostedTable(2, { timer: true, bots: false }, 8);
     expect(peers[1]!.last().view.clock).toMatchObject({ seat: room.order[room.game.turn] });

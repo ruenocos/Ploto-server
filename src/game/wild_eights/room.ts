@@ -113,6 +113,7 @@ export class WildEightsRoom extends LobbyRoom<EightsSettings> {
     if (p < 0 || !this.game || this.game.phase === "over") return;
     if (this.order.filter((s, i) => i !== p && !this.gone.has(i)).length <= 1) return this.concede(p);
     this.gone.add(p);
+    this.game.out.add(p); // placed after everyone still playing
     this.rearm();
     this.broadcast([]);
   }
@@ -147,8 +148,7 @@ export class WildEightsRoom extends LobbyRoom<EightsSettings> {
         return this.apply(this.requireGame().pass(p));
       case "wildeights:forfeit":
         if (this.phase !== "playing" || p < 0) throw new Error("the game isn't on");
-        this.leaveDuringGame(seat);
-        if (this.game?.phase !== "over") this.concede(p); // your own choice: you're out, placed last
+        this.leaveDuringGame(seat); // two players: a forfeit; more: you're out, placed last, and the others play on
         return { ok: true };
       default:
         throw new Error(`unknown method: ${method}`);
@@ -241,7 +241,7 @@ export class WildEightsRoom extends LobbyRoom<EightsSettings> {
     const game = this.game, p = this.order.indexOf(seat);
     return {
       ...this.lobbyView(seat),
-      game: game ? { ...game.viewFor(Math.max(0, p)), you: p, ...(p < 0 ? { hand: [] } : {}) } : null,
+      game: game ? { ...game.viewFor(Math.max(0, p)), you: p, ...(p < 0 ? { hand: [], drawn: null } : {}) } : null,
       order: this.order,
       gone: [...this.gone],
       clock: this.clock?.deadline ? { seat: this.order[this.clock.player], deadline: this.clock.deadline } : null,

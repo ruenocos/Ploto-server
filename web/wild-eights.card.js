@@ -14,13 +14,13 @@
   "use strict";
 
   const P = {
-    ink: "#0a0c14", felt: "#1d4c3c", feltHi: "#24594a", feltLo: "#163c30", rim: "#10302a", rimHi: "#1a4238",
+    ink: "#0a0c14", felt: "#1d4c3c", feltHi: "#214f40", feltLo: "#1a4537", rim: "#10302a", rimHi: "#1a4238",
     card: "#fff4d6", cardLo: "#e3d2a6", red: "#b8213a", black: "#141a2c", gold: "#ffcc33", goldLo: "#d99a1a",
     back: "#7c5cff", backLo: "#5a41c8", backHi: "#a996ff", cream: "#fff4d6", white: "#eef0ff",
   };
   /** Each suit: its name, its ink on a card, and its flood colour (the table's rim and the suit badge after an eight). */
   const SUIT = {
-    S: { name: "spades", one: "spade", ink: P.black, flood: "#8c9cf2", floodLo: "#4f5fb8" },
+    S: { name: "spades", one: "spade", ink: P.black, flood: "#7fc4d8", floodLo: "#3f7f94" }, // cyan-grey: never the accent purple that means "your turn"
     H: { name: "hearts", one: "heart", ink: P.red, flood: "#ff6b7f", floodLo: "#b8213a" },
     D: { name: "diamonds", one: "diamond", ink: P.red, flood: "#ffa94d", floodLo: "#c4661a" },
     C: { name: "clubs", one: "club", ink: P.black, flood: "#8fd45f", floodLo: "#4c8f2a" },
@@ -170,13 +170,14 @@
       // The pile under the star: two cards, the top one a little turned (offset, as pixel art does it).
       p.g.drawImage(miniCanvas("7S"), 20, 25); p.g.drawImage(miniCanvas("7H"), 23, 23);
       // The piece of interface only it has: the suit picker, four pips in a strip, hearts picked.
-      p.px(51, 4, P.ink, 26, 11); p.px(52, 5, P.rimHi, 24, 9);
-      SUITS.forEach((s, i) => { if (s === "H") { p.px(52 + i * 6, 5, P.cream, 6, 9); } p.g.drawImage(pipCanvas(s, { big: false, flood: s !== "H" }), 52 + i * 6 + 0.5 | 0, 6 + (s === "S" || s === "C" ? 0 : 1)); });
+      // (bottom left, clear of the NEW badge's corner)
+      p.px(2, 37, P.ink, 26, 11); p.px(3, 38, P.rimHi, 24, 9);
+      SUITS.forEach((s, i) => { if (s === "H") { p.px(3 + i * 6, 38, P.cream, 6, 9); } p.g.drawImage(pipCanvas(s, { big: false, flood: s !== "H" }), 3 + i * 6, 39 + (s === "S" || s === "C" ? 0 : 1)); });
       // The star: the eight of hearts slamming down, close to the camera (2×), with its burst.
       p.g.imageSmoothingEnabled = false;
       const star = miniCanvas("8H");
-      for (const [x, y] of [[6, 10], [36, 8], [8, 40], [37, 38], [21, 2]]) p.g.drawImage(pipCanvas("H", { big: false, flood: true }), x, y);
-      p.g.globalAlpha = 0.25; p.g.filter = "brightness(0)"; p.g.drawImage(star, 15, 11, 26, 36); p.g.filter = "none"; p.g.globalAlpha = 1;
+      for (const [x, y] of [[6, 10], [36, 8], [36, 38], [21, 2]]) p.g.drawImage(pipCanvas("H", { big: false, flood: true }), x, y);
+      p.g.globalAlpha = 0.14; p.g.filter = "brightness(0)"; p.g.drawImage(star, 14, 9, 26, 36); p.g.filter = "none"; p.g.globalAlpha = 1;
       p.g.drawImage(star, 13, 8, 26, 36);
       return p.c;
     });

@@ -439,8 +439,8 @@ window.PLOTO_SOUNDS = {
       "buzz": 12
     },
     "wild": {
-      "code": "7BMHBGAc9GHkrTutarPVQFkBKGinh2NZux8VzXcng6cjGRZPewihh7jkyFaCqpeskn9SJsFnPxqjwj3rQYPJfRRkgYcexrVdrTG3f2JvScxxtj4p5vpD4gwsD",
-      "vol": 0.6,
+      "code": "7BMHBGAc9GHkrTutawLK4RH9xoamnPwjkyELD1th2z14LsJqfBDaWxAqQhn6KGpodNdHJyPZt2dKxkkWyTer5dsrqgtLQzCBMBNV3nv9V1p2rTrYLSCqaDLYX",
+      "vol": 0.9,
       "buzz": [
         40,
         30,
@@ -467,7 +467,7 @@ window.PLOTO_SOUNDS = {
       ]
     },
     "skip": {
-      "code": "11111Fc13SajJH62Qe5bu4dSLdrtfahQkESzjPfcMzTnsdzUSMHAbBPqkn8QthGupbp6n512wYDUr4wj392Rn7bWZoS1cddZTMjoh6K5giFY8Z543SCydFyR",
+      "code": "11111Fc13SajJH62Qe5bu4dSLdrtfahQnHC8HLrVcpe1JTMh9cmJ9YFiTtHizh8eYG4NDBRHHMtkmnijWmSRnZpHN2jH6So37DG21Emcg1fFj6JVCgiwiNBZ",
       "vol": 0.3,
       "buzz": 20
     },
@@ -479,7 +479,11 @@ window.PLOTO_SOUNDS = {
     "yourTurn": {
       "code": "57uBnWSzi74NAi1vrxk268ARLfsc9QMNfY16SeUmL6XQ4Lu8BWR7bnmR3iB1NuUhMH75FfDuwo4nFVfpkgTzqcvYQ6GWgLSzQK1hxGgTniPekDfsCENJQpoZZ",
       "vol": 0.36,
-      "buzz": 15
+      "buzz": [
+        30,
+        40,
+        30
+      ]
     },
     "nope": {
       "code": "11111FbzaGYH27kT1ixh48GPMkmQrggoxnM9tDfWGmwevXwmTkg7fnjZS68ss6qw9g2ng4eD5rm6pRhdEqE34Nk9NxUD1kvAvez9d4jJdLxiVuBtjSAdrfSw",
@@ -502,7 +506,7 @@ window.PLOTO_SOUNDS = {
     },
     "win": {
       "code": "57uBnWj167ByNVuVstQCN67Tkn2Arg7Wj1nPGoq4pjwhk86Czi2GcdbmTdmVW2QNHJgvjhxgdKHn1AS2fciANDFsUi21Rf5xHC3T4EMEir3AdK8QVFCTSWskb",
-      "vol": 0.6,
+      "vol": 0.5,
       "buzz": [
         60,
         40,

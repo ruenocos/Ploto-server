@@ -13,7 +13,7 @@
  *           early now and then, sometimes names a suit at random, and keeps a
  *           drawn card a fifth of the time: it can be beaten.
  */
-import { SUITS, rankOf, suitOf, type Card, type EightsView, type RandomSource, type Suit } from "./engine.js";
+import { SUITS, points, rankOf, suitOf, type Card, type EightsView, type RandomSource, type Suit } from "./engine.js";
 
 export type BotLevel = "medium" | "hard";
 export type BotMove = { action: "play"; card: Card; suit?: Suit } | { action: "draw" } | { action: "pass" };
@@ -54,10 +54,15 @@ export function chooseMove(v: EightsView, level: BotLevel, random: RandomSource)
     return { action: "play", card: v.drawn, ...(rankOf(v.drawn) === "8" ? { suit: pickSuit(v, rest) } : {}) };
   }
   if (v.owed > 0) return { action: "play", card: playable[0]! }; // answer the 2 with a 2
-  // Punish a player about to go out: 2s, then Jacks.
+  // Punish a player about to go out: 2s, then Jacks (a jack also works on the player after next, past the one it skips).
   if (nextLow) {
     const hit = plain.find((c) => rankOf(c) === "2") ?? plain.find((c) => rankOf(c) === "J");
     if (hit) return { action: "play", card: hit };
+  }
+  // Someone is close to going out: shed the cards that cost most if they do (faces and tens first).
+  if (anyoneLow && plain.length > 1) {
+    const dear = plain.reduce((a, b) => (points(b) > points(a) ? b : a));
+    if (points(dear) >= 9) return { action: "play", card: dear };
   }
   if (plain.length && !(hand.length <= 2 && eights.length)) {
     // The card that leaves the most ways to follow: cards of the suit it sets, plus cards of its rank.

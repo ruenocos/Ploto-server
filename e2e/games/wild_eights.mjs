@@ -36,7 +36,7 @@ const adapter = {
   /** A hosted table, its lobby showing: two seats (a friend fills the other). */
   async host(p) {
     await p.click('[data-mode="host"]');
-    await p.click('#practiceFields [data-key="seats"][data-val="2"]');
+    await p.click('#hostFields [data-key="seats"][data-val="2"]');
     await p.click("#createBtn");
     await p.waitForSelector("#scrLobby:not([hidden]) .pl-codecard b");
   },

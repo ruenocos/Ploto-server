@@ -17,8 +17,8 @@
   const COLS = 7, ROWS = 6, F = 2; // the frame's border, in art pixels
 
   const P = {
-    ink: "#0a0c14", back: "#10142e", hole: "#0b0e22",
-    frame: "#2d4fb8", frameHi: "#5578e0", frameLo: "#1c3487", frameDeep: "#142563",
+    ink: "#0a0c14", back: "#10142e", hole: "#181d31",
+    frame: "#26449e", frameHi: "#4666c8", frameLo: "#18306f", frameDeep: "#122253", // a calm cobalt: the lattice doesn't flicker
     gold: "#ffcc33", goldHi: "#fff0a0", goldLo: "#d99a1a", goldRim: "#8a5a08",
     coral: "#ff6b6b", coralHi: "#ffb3a8", coralLo: "#c8424f", coralRim: "#7c1f2c",
     bomb: "#6b7299", bombHi: "#b3bbdc", bombLo: "#3d4466", bombBand: "#d8364b", fuse: "#c9a36b",
@@ -51,12 +51,13 @@
   // ------------------------------------------------------------ discs
 
   /**
-   * A disc, 8×8: a dark rim, the face, a lit arc top-left and a shade bottom-right; `lit` is the
-   * winning line's flash (a cream face); `outline` adds an ink edge (10×10) for discs drawn over
-   * the page rather than behind the frame.
+   * A disc, 8×8: a dark rim, the face, a lit arc top-left and a shade bottom-right. Gold has a
+   * groove ring, coral a centre pip, so they differ in shape as well as colour. `lit`: in the
+   * winning line, the disc's own colour with a cream ring and a bright face (it still says who
+   * won); `flash`: the one-frame cream flash as it lights; `outline` adds an ink edge (10×10).
    */
-  function discCanvas(seat, { lit = false, outline = false } = {}) {
-    return memo(`disc${seat}.${lit}.${outline}`, () => {
+  function discCanvas(seat, { lit = false, flash = false, outline = false } = {}) {
+    return memo(`disc${seat}.${lit}.${flash}.${outline}`, () => {
       const d = DISC[seat], o = outline ? 1 : 0;
       const p = pen(8 + 2 * o, 8 + 2 * o);
       if (outline) for (let y = -1; y <= 8; y++) for (let x = -1; x <= 8; x++) {
@@ -66,18 +67,22 @@
       for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
         if (!inRound(x, y)) continue;
         const edge = !inRound(x - 1, y) || !inRound(x + 1, y) || !inRound(x, y - 1) || !inRound(x, y + 1);
-        let col = lit ? P.cream : d.base;
-        if (edge) col = lit ? d.hi : d.rim;
-        else if (!lit && (x + y >= 10)) col = d.lo;          // the shade, bottom right
-        else if (!lit && (x + y <= 4)) col = d.hi;           // the light, top left
+        let col = d.base;
+        if (flash) col = edge ? d.hi : P.cream;
+        else if (lit) col = edge ? P.cream : x + y <= 4 ? d.hi : d.base; // its own colour, ringed in cream
+        else if (edge) col = d.rim;
+        else if (x + y >= 10) col = d.lo;          // the shade, bottom right
+        else if (x + y <= 4) col = d.hi;           // the light, top left
         p.px(x + o, y + o, col);
       }
-      // The inner ring: a disc's groove (it reads as a game piece, not a coin).
-      if (!lit) for (const [x, y] of [[3, 2], [4, 2], [2, 3], [5, 3], [2, 4], [5, 4], [3, 5], [4, 5]]) p.px(x + o, y + o, x + y >= 8 ? d.lo : d.base === P.gold ? P.goldLo : P.coralLo);
+      if (!flash) {
+        if (seat === 0) for (const [x, y] of [[3, 2], [4, 2], [2, 3], [5, 3], [2, 4], [5, 4], [3, 5], [4, 5]]) p.px(x + o, y + o, x + y >= 8 ? d.lo : P.goldLo); // gold: a groove ring
+        else { p.px(3 + o, 3 + o, d.rim, 2, 2); p.px(3 + o, 3 + o, lit ? P.cream : d.lo, 1, 1); } // coral: a centre pip
+      }
       return p.c;
     });
   }
-  const disc = (seat, opts = {}) => memo(`discurl${seat}.${opts.lit}.${opts.outline}`, () => discCanvas(seat, opts).toDataURL());
+  const disc = (seat, opts = {}) => memo(`discurl${seat}.${opts.lit}.${opts.flash}.${opts.outline}`, () => discCanvas(seat, opts).toDataURL());
 
   /** The bomb, 10×10: a dark round body, a lit spot, a fuse to the top right; `spark` 0/1 (two frames), -1 none. */
   function bombCanvas(spark = 0, outline = true) {
@@ -129,6 +134,7 @@
   }
   const frame = () => memo("frameurl", () => frameCanvas().toDataURL());
   /** The space behind the frame (seen through empty holes). */
+  const back = () => memo("backurl", () => backCanvas().toDataURL());
   function backCanvas() {
     return memo("back", () => {
       const W = COLS * C + 2 * F, H = ROWS * C + 2 * F, p = pen(W, H);
@@ -222,17 +228,44 @@
 
   // ------------------------------------------------------------ a whole grid (the result, the card, the banner)
 
-  /** A grid drawn whole: the back, the discs where they are, the frame over them. `lit`: cells of the winning line. */
+  /** A grid drawn whole: the back, the discs where they are, the frame over them. `lit`: cells of the winning line (the rest are dimmed). */
   function gridCanvas(grid, lit = []) {
     const W = COLS * C + 2 * F, H = ROWS * C + 2 * F, p = pen(W, H);
     p.g.drawImage(backCanvas(), 0, 0);
     const litSet = new Set(lit.map(([c, r]) => `${c},${r}`));
     for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
       const v = grid[c]?.[r];
-      if (v) p.g.drawImage(discCanvas(v - 1, { lit: litSet.has(`${c},${r}`) }), F + c * C + 1, F + (ROWS - 1 - r) * C + 1);
+      if (!v) continue;
+      const on = litSet.has(`${c},${r}`);
+      p.g.globalAlpha = lit.length && !on ? 0.4 : 1; // only the line is lit
+      p.g.drawImage(discCanvas(v - 1, { lit: on }), F + c * C + 1, F + (ROWS - 1 - r) * C + 1);
+      p.g.globalAlpha = 1;
     }
     p.g.drawImage(frameCanvas(), 0, 0);
     return p.c;
+  }
+
+  /**
+   * How to play's bomb diagram, two panels cropped to the grid's bottom-left corner: the bomb
+   * landing with what it clears outlined, then the grid after the fall.
+   */
+  function bombDemo() {
+    return memo("bombdemo", () => {
+      const empty = () => Array.from({ length: COLS }, () => new Array(ROWS).fill(0));
+      const before = empty(), after = empty();
+      // B: gold, coral, gold · C: coral, gold · D: gold. The bomb lands on C3.
+      [[1, [1, 2, 1, 2]], [2, [2, 1]], [3, [1]]].forEach(([c, col]) => col.forEach((v, r) => { before[c][r] = v; }));
+      // It clears C3 (itself), B3 (left) and C2 (below); B4 falls to B3.
+      [[1, [1, 2, 2]], [2, [2]], [3, [1]]].forEach(([c, col]) => col.forEach((v, r) => { after[c][r] = v; }));
+      const crop = (cv) => { const q = pen(50, 46); q.g.drawImage(cv, 0, 18, 50, 46, 0, 0, 50, 46); return q; };
+      const a = crop(gridCanvas(before));
+      a.g.drawImage(bombCanvas(1), F + 2 * C, F + 3 * C - 18); // the bomb, landing in C3
+      for (const [c, r] of [[2, 2], [1, 2], [2, 1]]) { // its reach, dashed
+        const x = F + c * C, y = F + (ROWS - 1 - r) * C - 18;
+        for (let i = 0; i < 10; i += 2) { a.px(x + i, y, P.red); a.px(x + i, y + 9, P.red); a.px(x, y + i, P.red); a.px(x + 9, y + i, P.red); }
+      }
+      return [a.c.toDataURL(), crop(gridCanvas(after)).c.toDataURL()];
+    });
   }
 
   // ------------------------------------------------------------ the launcher card
@@ -274,7 +307,7 @@
    */
   const ANIM = { coin: 1700, hover: 220, fallPerRow: 45, land: 160, fuse: 360, blast: 420, fallAfter: 300, lineStep: 120, lineHold: 700, turn: 160 };
 
-  window.DROP_ART = { P, C, COLS, ROWS, F, DISC, ANIM, disc, discCanvas, bomb, bombCanvas, frame, frameCanvas, backCanvas, gridCanvas, sheet: (name) => SHEETS[name](), card: cardCanvas, pen };
+  window.DROP_ART = { P, C, COLS, ROWS, F, DISC, ANIM, disc, discCanvas, bomb, bombCanvas, frame, frameCanvas, back, backCanvas, gridCanvas, bombDemo, sheet: (name) => SHEETS[name](), card: cardCanvas, pen };
 
   const style = document.createElement("style");
   style.textContent = `.lc-art[data-art="drop_four"] { background: ${P.back}; }`;

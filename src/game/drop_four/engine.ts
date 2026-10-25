@@ -20,7 +20,7 @@ export type Grid = Cell[][]; // grid[col][row]
 
 export type DropEvent =
   | { readonly type: "start"; readonly first: number; readonly rematch?: boolean } // sent by the room when play begins
-  | { readonly type: "drop"; readonly by: number; readonly col: number; readonly row: number; readonly bomb?: boolean; readonly auto?: boolean }
+  | { readonly type: "drop"; readonly by: number; readonly col: number; readonly row: number; readonly bomb?: boolean; readonly auto?: boolean; readonly ponder?: number } // ponder: a column a bot weighed first (the page shows its hand go there)
   | { readonly type: "blast"; readonly by: number; readonly col: number; readonly row: number; readonly cleared: readonly (readonly [number, number])[]; readonly falls: readonly { readonly col: number; readonly from: number; readonly to: number }[] }
   | { readonly type: "turn"; readonly seat: number }
   | { readonly type: "over"; readonly winner: number | null; readonly line?: readonly (readonly [number, number])[]; readonly forfeit?: boolean };
@@ -143,10 +143,10 @@ export class DropFourGame {
     return { ok: true, events: [...events, { type: "turn", seat: this.turn }] };
   }
 
-  /** A column that isn't full (the clock's move). */
+  /** The clock's move: the most central column that isn't full (a slow move costs time, not a random blunder). */
   randomColumn(): number {
-    const open = [...Array(COLS).keys()].filter((c) => height(this.grid, c) < ROWS);
-    return open[Math.floor(this.random() * open.length)]!;
+    const open = [3, 2, 4, 1, 5, 0, 6].filter((c) => height(this.grid, c) < ROWS);
+    return open[0]!;
   }
 
   concede(seat: number): Result {

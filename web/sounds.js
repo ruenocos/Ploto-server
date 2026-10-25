@@ -32,7 +32,7 @@ window.PLOTO_SOUNDS = {
       "buzz": 0
     },
     "land": {
-      "code": "34T6PktrziJveevtbvhE4Yc6T9xEKe7VUKzRRv6hiPpRf2VwMpqeLVUg44JC62fkszdLoYs6d1gU7xQmf2S1umBMraVf8F6FRdNsfrPXw8vW9TwUQBppB17nw",
+      "code": "34T6PktrziJwD1nmiZAKa4vzNM1XXZbcmo571TNoNqjihsHSdo1m7tdt1Qj9Nxm9buvnAXirNn2rpFbB1FwsUmzcJxAnvAhQPkedJfMEU6mijx8fTbTr2v9nw",
       "vol": 0.5,
       "buzz": 18
     },
@@ -42,8 +42,8 @@ window.PLOTO_SOUNDS = {
       "buzz": 12
     },
     "fuse": {
-      "code": "8puhcUQNVjTDpFQD9c3fhZXmNfnwKPABwy21ZFU81H1Ep7H7FhADmqFjFpb9NH4aEpJaifDECDT2n7X9XBL8F3tYAtzhdH1GBcCaw1vMCsCn4tYdWyBug2uPV",
-      "vol": 0.25,
+      "code": "8puhcUeGnrjV7nB7JfBMD6tXaH64emkQASrJrqMoe7HsEXXC1iC68EEUXLLPDN9D9V9msM6bqNhv1PfrGYraedtcMNnkEDMLPmc6VcAXosSSZnzCUBvcGSy1h",
+      "vol": 0.4,
       "buzz": 0
     },
     "blast": {
@@ -56,8 +56,8 @@ window.PLOTO_SOUNDS = {
       ]
     },
     "pop": {
-      "code": "11111mqnbcUGfL5yUzoxuEdAMjhXGA57b7ZJDHQCu6YZRYzcRUv5b5hyDKh3TghKDWJtXEAbZMeSo3Apuv6yop4TrF7nnLZNgAcKtWv9YZ1TG26unaqnRfV",
-      "vol": 0.3,
+      "code": "11111mqnbcUGfL5yUzBAAw6WdywmUtt6R6uzi1EXNhJWLr1taaMqnMSaUCvwoQudzjGS11n88Gx24Bxes8G1mz24kZA7XUeZcnLMPCAyH8KEE5z4jHefD1H",
+      "vol": 0.45,
       "buzz": 0
     },
     "line": {
@@ -87,11 +87,7 @@ window.PLOTO_SOUNDS = {
     "yourTurn": {
       "code": "57uBnWSzhdtNWEA2iN9aGSJixy5psH27n7i4bRRNNvEVmUY2VpNTucKEVhdDHcfmQQS7QVvRWrVwVQ37274Czv1u4WfAy98BY53J79Xix2QoT4rxreSnmaEVD",
       "vol": 0.4,
-      "buzz": [
-        30,
-        40,
-        30
-      ]
+      "buzz": 15
     },
     "theirTurn": {
       "code": "57uBnWcURsYKtmkuFSr4zAmQ7pzkgZYV9WRHYkeBfUZU1M9pErnCjEya7wNwtG7qqtQ3fTs6XL9CJJCK1DiTekEhmzxFSzKbwoRDpDkdRhsCzWKMc4CeMKKcT",
@@ -105,7 +101,7 @@ window.PLOTO_SOUNDS = {
     },
     "timeout": {
       "code": "11111B3zhG8pwZVYziHRA8m79R8gUCXL91QHibUKsUacEpxyNktbBb6DB7ZRdnBtaTX8LDve1AqXUh6ce2pqEdDqJw4W1Pk4eWo3Ly9awgTubJVTH9xei8qD",
-      "vol": 0.45,
+      "vol": 0.7,
       "buzz": [
         80,
         40,
@@ -124,12 +120,12 @@ window.PLOTO_SOUNDS = {
       ]
     },
     "lose": {
-      "code": "111118JmEXRtQTnbYrwtWpE9E7s9myqjZh6FMpd5mV3mr4ZArtSvvie2qHBifekEqHe8eesFYKzNam7qauSrPjQ34pMPLr6AbxSKGsxbx1N5j5Z1EXHffpTq",
-      "vol": 0.7,
+      "code": "57uBnWVsdJHPi4bGit9tnMATZ65nEJfpjtoC7VnvM8kfFeES2FV9QobNS58J1H1j7jA4ZJP7S84FcbATYWXamdFrbxL3XpP8TLKvQTPxtwfVdVQqBFthdoHt3",
+      "vol": 0.55,
       "buzz": [
-        120,
         60,
-        200
+        80,
+        60
       ]
     },
     "draw": {

@@ -15,7 +15,7 @@
  * art pixels (--k CSS px each), Animate.css poses, steps() motion. Its accent is
  * the frame's cobalt; the discs are gold (the first seat) and coral.
  */
-:root { --df-back: #10142e; --df-frame: #2d4fb8; --df-frame-hi: #5578e0; --df-gold: #ffcc33; --df-coral: #ff6b6b; }
+:root { --df-back: #10142e; --df-frame: #26449e; --df-frame-hi: #4666c8; --df-gold: #ffcc33; --df-coral: #ff6b6b; }
 .scr[hidden] { display: none; }
 
 /* ---- home ---- */
@@ -30,11 +30,11 @@
 .who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
 .who img { image-rendering: pixelated; display: block; flex: none; }
 .who .nm { min-width: 0; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.who .bombchip { flex: none; display: flex; align-items: center; gap: 4px; font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); text-transform: uppercase; }
-.who .bombchip.used img { opacity: 0.35; }
+.who .bombchip { flex: none; display: flex; align-items: center; gap: 4px; padding: 3px 6px; background: var(--c-well); font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-gold); text-transform: uppercase; white-space: nowrap; }
+.who .bombchip.used { color: var(--c-mute); }
 .away { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; padding: 2px 4px; background: var(--c-raise); color: var(--c-mute); }
 .call { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 8px 12px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
-.call.mine { background: var(--c-accent-lo); box-shadow: inset 0 var(--px) 0 var(--df-frame-hi), inset 0 calc(var(--px) * -2) 0 rgba(10, 12, 20, 0.45); }
+.call.mine { box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-accent), inset 0 var(--px) 0 var(--c-edge); } /* the Active frame: one saturated mass on screen (the board) */
 .call .disc { flex: none; image-rendering: pixelated; }
 .call b { font: 700 var(--fl-1)/1.1 var(--f-label); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; }
 .call span { flex: 1; min-width: 0; font: 400 var(--fs-s)/1.25 var(--f-text); color: var(--c-text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -45,7 +45,7 @@
 .clock.low i { background: var(--c-bad); }
 .clock[hidden] { display: none; }
 
-.stage { display: flex; flex-direction: column; align-items: center; }
+.stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 /* The board: a row for the disc in hand above it, then the grid (discs behind the frame). */
 .board { position: relative; width: calc(74 * var(--k)); height: calc((64 + 14) * var(--k)); }
 .board > div { position: absolute; left: 0; width: 100%; }
@@ -62,7 +62,10 @@
 .board .cols button:active { transform: none; }
 .board.mine .cols button.open { cursor: pointer; }
 .board.mine .cols button.open:hover, .board.mine .cols button.cur { background: rgba(255, 244, 214, 0.06); }
-.board .cols button:focus-visible { outline: var(--px) dashed var(--c-cream); outline-offset: calc(var(--px) * -2); }
+.board .cols button { touch-action: manipulation; }
+.board .cols button:focus-visible { outline: none; box-shadow: inset 0 0 0 var(--px) var(--c-cream); } /* the house focus ring, the column's full height */
+.board .reach { position: absolute; outline: var(--px) dashed var(--c-bad-hi); outline-offset: calc(var(--px) * -1); pointer-events: none; } /* what an armed bomb would clear */
+.board .last { position: absolute; background: var(--c-cream); pointer-events: none; } /* the last move */
 .board .d.dim { opacity: 0.45; }
 .board.stopped .d { animation-play-state: paused; }
 .board .stamp { position: absolute; z-index: 5; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; white-space: nowrap; }
@@ -70,12 +73,12 @@
 .board .stamp b { display: inline-block; padding: 8px 14px 10px; font: 700 var(--fl-3)/1 var(--f-label); text-transform: uppercase; color: var(--c-ink); background: var(--df-gold); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 #fff0a0, inset 0 calc(var(--px) * -2) 0 #d99a1a, var(--px) var(--px) 0 var(--c-ink); }
 .board .stamp.coral b { background: var(--df-coral); box-shadow: inset 0 var(--px) 0 #ffb3a8, inset 0 calc(var(--px) * -2) 0 #c8424f, var(--px) var(--px) 0 var(--c-ink); }
 .board .stamp.plain b { background: var(--c-panel); color: var(--c-cream); box-shadow: inset 0 var(--px) 0 var(--c-edge), var(--px) var(--px) 0 var(--c-ink); }
-.board .stamp small { display: block; margin-top: 6px; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); }
+.board .stamp small { display: inline-block; margin-top: 6px; padding: 4px 8px; background: var(--c-ink); font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); }
 .coin-wrap { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 12px; background: rgba(10, 12, 20, 0.6); pointer-events: none; z-index: 6; }
 .coin-wrap .coin { image-rendering: pixelated; }
 .coin-wrap b { font: 700 var(--fl-2)/1.2 var(--f-label); text-transform: uppercase; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); text-align: center; padding: 0 12px; }
 
-.dock { display: flex; align-items: center; gap: 12px; }
+.dock { display: flex; align-items: center; gap: 12px; margin-top: auto; }
 .dock .me { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
 .dock .me img { image-rendering: pixelated; display: block; flex: none; }
 .dock .me .nm { min-width: 0; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -83,7 +86,7 @@
 .bombBtn img { image-rendering: pixelated; display: block; }
 .bombBtn[aria-pressed="true"] { --b: var(--c-bad); --b-hi: var(--c-bad-hi); }
 .bombBtn[hidden] { display: none; }
-.keys { font: 400 var(--fs-xs)/1.3 var(--f-text); color: var(--c-mute); text-align: center; margin: 0; min-height: calc(var(--fs-xs) * 1.3); }
+.keys { font: 400 var(--fs-xs)/1.3 var(--f-text); color: var(--c-mute); text-align: center; margin: 0; height: calc(var(--fs-xs) * 1.3); white-space: nowrap; overflow: hidden; }
 @media (pointer: coarse) { .keys { display: none; } }
 .hint { font: 400 var(--fs-s)/1.3 var(--f-text); color: var(--c-mute); margin: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -187,7 +190,7 @@
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
   /* ================================================================ the platform's lobby, told about this game once */
-  const BOT_FIELD = { key: "botStyle", label: "Bot difficulty", kind: "choice", options: [["relaxed", "Medium"], ["sharp", "Hard"]], hint: "Medium is a fair fight. Hard looks 8 moves ahead" };
+  const BOT_FIELD = { key: "botStyle", label: "Bot difficulty", kind: "choice", options: [["relaxed", "Medium"], ["sharp", "Hard"]], hint: "Medium misses setups. Hard rarely slips" };
   const BOMBS_FIELD = { key: "bombs", label: "Bombs", kind: "choice", options: [[true, "On"], [false, "Off"]], hint: "One bomb each: it clears the discs beside and below it" };
   const SCHEMA = [
     BOMBS_FIELD,
@@ -210,7 +213,7 @@
         "If the fall makes four for the bomber, the bomber wins. If it makes four only for the other player, they win.",
         "A full grid with no four is a draw. In a rematch, the loser goes first.",
       ],
-      extra: `<p class="pl-label">Good to know</p><p class="hint">With the turn timer on you get 15 s a move; when it runs out a disc drops in a random column for you. On a keyboard: arrows pick a column, Enter drops, B arms your bomb, I reads the grid.</p>`,
+      extra: `<p class="pl-label">The bomb</p><div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">${A.bombDemo().map((u, i) => `<figure style="margin:0;display:grid;gap:4px;justify-items:center"><img src="${u}" alt="${i ? "After: the discs above fall down" : "The bomb lands on C3: it clears C3, B3 beside it and C2 under it"}" width="150" height="138" style="image-rendering:pixelated"><figcaption class="hint">${i ? "Then the discs above fall" : "It clears beside and below"}</figcaption></figure>`).join("")}</div><p class="pl-label">Good to know</p><p class="hint">With the turn timer on you get 15 s a move; when it runs out a disc drops in the most central free column for you. On a keyboard: arrows pick a column, Enter drops, B arms your bomb, I reads the grid.</p>`,
     }),
   });
 
@@ -290,53 +293,94 @@
   });
 
   /**
-   * The banner (docs/STYLE.md, Home banners): the card's grid, in play. Intro: the frame slides
-   * up with a game under way. Beats: a disc drops (coral blocks one side, gold builds the other,
-   * with the game's own fall and squash); the fourth beat lines up gold A1–D1 and lights it disc by
-   * disc, and the next beat empties the grid (the discs drop out of the bottom) to start again.
+   * The banner (docs/STYLE.md, Home banners): the card's pieces in play, the grid's bottom rows
+   * close up and the bomb beside it. Intro: the frame slides up and two discs drop in. Beats
+   * (the game's own fall, line light-up and blast): coral blocks, gold makes four and the line
+   * lights; then the bomb drops in and goes off; then the grid empties and it starts again.
    */
   const BANNER_START = [[1, 0], [2, 0], [1, 1], [2, 1]]; // [column, seat]: gold B1 C1, coral B2 C2
   const BANNER_MOVES = [[4, 1], [3, 0], [3, 1], [0, 0]]; // coral E1, gold D1, coral D2, gold A1: four
   const banner = P.banner($("hero"), {
     draw(hero, W, H) {
       hero.innerHTML = "";
-      const k = Math.max(2, Math.floor(Math.min(W / 90, (H - 8) / 64)));
-      const x0 = Math.round((W - 74 * k) / 2), y0 = H - 64 * k - 4;
+      const k = Math.max(2, Math.min(Math.floor((H - 6) / 43), Math.floor((W - 40) / 90))); // four rows tall
+      const x0 = Math.round((W - 74 * k) / 2) + 6 * k, y0 = H - 64 * k - 2; // the top rows run off the top
       const box = el("div", "hs", { left: `${x0}px`, top: `${y0}px`, width: `${74 * k}px`, height: `${64 * k}px` });
-      box.appendChild(el("div", "hs", { inset: "0", backgroundImage: `url(${A.backCanvas().toDataURL()})` }));
+      box.appendChild(el("div", "hs", { inset: "0", backgroundImage: `url(${A.back()})` }));
       const discs = el("div", "hs", { inset: "0" });
       box.appendChild(discs);
       box.appendChild(el("div", "hs", { inset: "0", backgroundImage: `url(${A.frame()})` }));
+      const fx = el("div", "hs", { inset: "0" });
+      box.appendChild(fx);
       hero.appendChild(box);
-      hero._g = { k, box, discs, grid: Array.from({ length: NCOL }, () => []), turn: 0, step: 0 };
+      // The bomb, its fuse lit, waiting at the left (the card's piece of interface).
+      const bomb = el("div", "hs", { left: `${x0 - 14 * k}px`, top: `${H - 14 * k}px`, width: `${10 * k}px`, height: `${10 * k}px`, backgroundImage: `url(${A.bomb(1)})` });
+      hero.appendChild(bomb);
+      hero._g = { k, box, discs, fx, bomb, grid: Array.from({ length: NCOL }, () => []), step: 0, phase: "build" };
       bannerReset(hero, true);
     },
-    intro(hero) { if (!RM()) P.playPreset(hero._g.box, "slideInUp", { speed: "fast" }); },
+    intro(hero) {
+      const g = hero._g;
+      if (RM()) return;
+      P.playPreset(g.box, "slideInUp", { speed: "fast" });
+      sleep(380).then(() => bannerDrop(hero)).then(() => sleep(120)).then(() => bannerDrop(hero));
+    },
     async beat(hero) {
       const g = hero._g;
       if (!g || hero._busy) return;
       hero._busy = true;
       try {
-        if (g.done) { await bannerClear(hero); return; }
-        const [col, seat] = BANNER_MOVES[g.step % BANNER_MOVES.length];
-        g.step++;
-        const row = g.grid[col].length;
-        g.grid[col].push(seat);
-        const d = discEl(seat, col, row, g.k);
-        g.discs.appendChild(d);
-        await fallTo(d, row, g.k, 1); // the banner is silent (docs/STYLE.md)
+        if (g.phase === "lit") { await bannerBomb(hero); g.phase = "bombed"; return; }
+        if (g.phase === "bombed") { await bannerClear(hero); return; }
+        const seat = await bannerDrop(hero);
         const line = bannerLine(g);
         if (line) {
-          for (const [c, r] of line) { const e = g.discs.querySelector(`[data-c="${c}"][data-r="${r}"]`); if (e) e.style.backgroundImage = `url(${A.disc(seat, { lit: true })})`; await sleep(RM() ? 0 : 110); }
-          g.done = true;
+          for (const [c, r] of line) {
+            const e = g.discs.querySelector(`[data-c="${c}"][data-r="${r}"]`);
+            if (e) { e.style.backgroundImage = `url(${A.disc(seat, { flash: true })})`; later2(() => { e.style.backgroundImage = `url(${A.disc(seat, { lit: true })})`; }, 110); }
+            await sleep(RM() ? 0 : T.lineStep);
+          }
+          g.phase = "lit";
         }
       } finally { hero._busy = false; }
     },
     every: 3800,
   });
+  const later2 = (fn, ms) => setTimeout(fn, ms);
+  /** The banner's next scripted disc drops (the game's fall); returns its seat. */
+  async function bannerDrop(hero) {
+    const g = hero._g;
+    if (g.step >= BANNER_MOVES.length) return 0;
+    const [col, seat] = BANNER_MOVES[g.step++];
+    const row = g.grid[col].length;
+    g.grid[col].push(seat);
+    const d = discEl(seat, col, row, g.k);
+    g.discs.appendChild(d);
+    await fallTo(d, row, g.k, 1); // the banner is silent (docs/STYLE.md)
+    return seat;
+  }
+  /** The bomb drops into column E and goes off: the blast, the cleared discs, the grid rattles. */
+  async function bannerBomb(hero) {
+    const g = hero._g, col = 4, row = g.grid[col].length;
+    g.bomb.style.visibility = "hidden";
+    const b = discEl(0, col, row, g.k, true);
+    b.style.backgroundImage = `url(${A.bomb(1)})`;
+    g.discs.appendChild(b);
+    await fallTo(b, row, g.k, 1);
+    await sleep(RM() ? 0 : 240);
+    b.remove();
+    const [bx, by] = slotXY(col, row);
+    if (!RM()) sheetFx(g.fx, "blast", bx - 5, by - 5, g.k, T.blast);
+    for (const [c, r] of [[col - 1, row], [col + 1, row], [col, row - 1]]) {
+      const e = g.discs.querySelector(`[data-c="${c}"][data-r="${r}"]`);
+      if (e) { e.remove(); g.grid[c][r] = undefined; if (!RM()) { const [x, y] = slotXY(c, r); sheetFx(g.fx, "pop", x, y, g.k, 240); } }
+    }
+    if (!RM()) pose(g.box, "shake");
+  }
   function bannerReset(hero, preset) {
     const g = hero._g;
-    g.discs.innerHTML = ""; g.grid = Array.from({ length: NCOL }, () => []); g.step = 0; g.done = false;
+    g.discs.innerHTML = ""; g.grid = Array.from({ length: NCOL }, () => []); g.step = 0; g.phase = "build";
+    if (g.bomb) g.bomb.style.visibility = "";
     if (preset) for (const [c, s] of BANNER_START) { const r = g.grid[c].length; g.grid[c].push(s); g.discs.appendChild(discEl(s, c, r, g.k)); }
   }
   function bannerLine(g) {
@@ -365,14 +409,15 @@
    * The fall: from above the grid down to its row, faster and faster (one stepped frame per row,
    * each shorter than the last), then a one-frame squash and a pixel of bounce. `sp`: speed scale.
    */
-  async function fallTo(e, row, k, sp) {
+  async function fallTo(e, row, k, sp, ticks = false) {
     if (RM()) return;
     const dist = (F + (NROW - 1 - row) * CELL + 1 + 12) * k; // from the hand's place in the lane, exactly
     const rows = NROW - row + 1;
     const frames = [];
     for (let i = 0; i <= rows; i++) { const t = i / rows; frames.push({ transform: `translateY(${Math.round(-dist + dist * (0.35 * t + 0.65 * t * t))}px)`, offset: t * 0.86 }); } // a push, then gravity
-    frames.push({ transform: `translateY(0) scale(1.15, 0.8)`, offset: 0.92 }, { transform: `translateY(${-k}px)`, offset: 0.96 }, { transform: "translateY(0)", offset: 1 });
+    frames.push({ transform: `translateY(0) scale(1.15, 0.8)`, offset: 0.9 }, { transform: `translateY(${-3 * k}px)`, offset: 0.94 }, { transform: `translateY(${-k}px)`, offset: 0.97 }, { transform: "translateY(0)", offset: 1 });
     const fall = T.fallPerRow * rows + T.land;
+    if (ticks) for (let i = 1; i < rows; i++) later(() => cue("drop", { pitch: 0.9 + 0.05 * i, vol: 0.5 }), fall * sp * 0.86 * Math.sqrt(i / rows)); // a tick per row, faster and faster
     await e.animate(frames, { duration: fall * sp, easing: "linear" }).finished.catch(() => {});
   }
 
@@ -427,8 +472,9 @@
     if (!room) return;
     const sock = (S.sock = P.connect(room.roomId));
     let ready = false;
+    const early = []; // updates that arrive before the first state (practice starts the moment you connect: its coin flip comes first)
     sock.on("lobby:update", (d) => { if (S.sock === sock) { S.lobby = d.view; if (!S.anim) show(); } });
-    sock.on(PREFIX + "update", (d) => { if (S.sock === sock && ready) Q.add(d); });
+    sock.on(PREFIX + "update", (d) => { if (S.sock !== sock) return; if (ready) Q.add(d); else early.push(d); });
     sock.addEventListener("close", () => {
       if (S.sock !== sock) return;
       S.sock = null;
@@ -446,7 +492,12 @@
     Q.clear();
     ready = true;
     S.anim = false;
-    settle(v);
+    // A start that came before the state: show the board as it was, then play the coin flip and what followed.
+    const startAt = early.findIndex((d) => d.events?.some((e) => e.type === "start"));
+    if (startAt >= 0 && v.game && v.game.moves[0] + v.game.moves[1] === 0) {
+      settle({ ...v, game: { ...v.game, turn: null } });
+      for (const d of early.slice(startAt)) Q.add(d);
+    } else settle(v);
   }
   function closeSock() { const s = S.sock; S.sock = null; clearTimeout(S.retryTimer); s?.close(); }
   const req = (method, data) => (S.sock?.readyState === 1 ? S.sock.request(method, data) : Promise.reject(new Error("not connected")));
@@ -496,10 +547,12 @@
   function layout() {
     const w = Math.min(window.innerWidth, 600) - 16;
     const h = window.innerHeight - 52 - 64 - 64 - 24 - 40; // the HUD, the call, the dock, gaps
-    const k = Math.max(2, Math.min(7, Math.floor(Math.min(w / 74, h / 78))));
+    // k in whole device pixels (a 2× phone at 360 wide gets 4.5: 45 px columns).
+    const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
+    const k = Math.max(2, Math.min(7, Math.floor((Math.min(w / 74, h / 78)) * dpr) / dpr));
     geo.k = k;
     $("board").style.setProperty("--k", `${k}px`);
-    $("back").style.backgroundImage = `url(${A.backCanvas().toDataURL()})`;
+    $("back").style.backgroundImage = `url(${A.back()})`;
     $("frame").style.backgroundImage = `url(${A.frame()})`;
     if ($("cols").children.length !== NCOL) $("cols").innerHTML = Array.from({ length: NCOL }, (_, c) => `<button type="button" data-col="${c}" tabindex="-1"></button>`).join("");
   }
@@ -515,6 +568,11 @@
       if (g.phase === "over" && line.size && line.has(`${c},${r}`)) d.style.backgroundImage = `url(${A.disc(v - 1, { lit: true })})`;
       else if (g.phase === "over" && line.size) d.classList.add("dim");
       layer.appendChild(d);
+    }
+    // The last move: a cream pip on top of that disc (where the eye goes after the rival moves).
+    if (g.last && g.phase === "playing" && g.grid[g.last.col][g.last.row]) {
+      const [ax, ay] = slotXY(g.last.col, g.last.row);
+      layer.appendChild(el("div", "last", { left: `${(ax + 4) * k}px`, top: `${(ay + 1) * k}px`, width: `${2 * k}px`, height: `${k}px` }));
     }
     // Columns: buttons for keyboard, screen readers and taps.
     const mine = isMine();
@@ -534,12 +592,19 @@
   function drawLane() {
     const lane = $("lane"), g = G(), k = geo.k;
     lane.innerHTML = "";
+    $("fx").querySelectorAll(".reach").forEach((e) => e.remove());
     if (!g || !isMine()) return;
     const c = S.cursor, x = (F + c * CELL) * k;
     const bombing = S.bomb && g.bombs[you()];
     const hand = el("div", "", { left: `${x}px`, top: `${2 * k}px`, width: `${10 * k}px`, height: `${10 * k}px`, backgroundImage: `url(${bombing ? A.bomb(0) : A.disc(you(), { outline: true })})` });
     lane.appendChild(hand);
     if (heightOf(g, c) >= NROW) hand.style.opacity = "0.35";
+    // An armed bomb shows its reach: the slot it lands in and the discs beside and below it.
+    if (bombing && heightOf(g, c) < NROW) {
+      const r = heightOf(g, c);
+      const cells = [[c, r], [c - 1, r], [c + 1, r], [c, r - 1]].filter(([x, y]) => x >= 0 && x < NCOL && y >= 0 && (x === c && y === r || g.grid[x][y]));
+      for (const [x, y] of cells) { const [ax, ay] = slotXY(x, y); $("fx").appendChild(el("div", "reach", { left: `${(ax + 1) * k}px`, top: `${(ay + 1) * k}px`, width: `${8 * k}px`, height: `${8 * k}px` })); }
+    }
   }
   function renderGame() {
     const g = G();
@@ -551,12 +616,13 @@
     renderDock();
     const keysOn = S.pointer !== "touch" && !matchMedia("(pointer: coarse)").matches && S.keyUses < 6 && !P.local.get("drop_four.keysSeen");
     if (S.keyUses >= 6) P.local.set("drop_four.keysSeen", true);
-    $("keys").textContent = keysOn && isMine() ? `Arrows pick a column · Enter drops${g.bombs[you()] ? " · B arms the bomb" : ""} · I reads the grid` : "";
+    $("keys").textContent = keysOn ? `← → column · Enter drop${g.bombsOn ? " · B bomb" : ""} · I grid` : ""; // on both turns, one line: the dock never jumps
   }
   function renderHud() {
     const g = G(), r = 1 - you();
-    const bombs = g.bombsOn ? `<span class="bombchip${g.bombs[r] ? "" : " used"}" title="${g.bombs[r] ? "Bomb ready" : "Bomb used"}">${imgTag(A.bomb(-1), 10, 10, 2)}${g.bombs[r] ? "" : "Used"}</span>` : "";
+    const bombs = g.bombsOn ? `<span class="bombchip${g.bombs[r] ? "" : " used"}">${g.bombs[r] ? imgTag(A.bomb(-1), 10, 10, 2) : ""}${g.bombs[r] ? "Bomb ready" : "Bomb used"}</span>` : "";
     $("rivalBox").innerHTML = `${imgTag(A.disc(r, { outline: true }), 10, 10, 2)}<span class="nm">${esc(rivalName())}</span>${rivalAway() ? '<span class="away">Away</span>' : ""}${bombs}`;
+    $("rivalBox").setAttribute("role", "group");
     $("rivalBox").setAttribute("aria-label", `${rivalName()}, ${A.DISC[r].name}${g.bombsOn ? (g.bombs[r] ? ", bomb ready" : ", bomb used") : ""}`);
   }
   function renderDock() {
@@ -574,6 +640,7 @@
     const g = G();
     if (!g || !isMine() || !g.bombs[you()]) return;
     S.bomb = !S.bomb;
+    S.armedCol = null;
     cue(S.bomb ? "arm" : "select", { vol: S.bomb ? 1 : 0.5 });
     say(S.bomb ? "Bomb armed: pick a column" : "Bomb put away");
     renderGame();
@@ -584,8 +651,10 @@
     let title = "", text = "", seat = null;
     if (g.phase === "playing") {
       seat = g.turn;
-      if (mine) { title = "Your turn"; text = S.callNote || (S.bomb ? "Bomb armed: tap a column" : "Tap a column to drop"); }
-      else { title = `${rivalName()}'s turn`; text = rivalAway() ? `${rivalName()} lost connection. The clock moves for them` : S.callNote || "Thinking"; }
+      const bombing = S.bomb && g.bombs[you()];
+      const reachEmpty = bombing && (() => { const c = S.cursor, r = heightOf(g, c); return r < NROW && ![[c - 1, r], [c + 1, r], [c, r - 1]].some(([x, y]) => x >= 0 && x < NCOL && y >= 0 && g.grid[x][y]); })();
+      if (mine) { title = "Your turn"; text = S.callNote || (bombing ? (reachEmpty ? "Nothing to clear there" : S.armedCol !== null && S.armedCol !== undefined ? "Tap again to drop the bomb" : "Bomb armed: pick a column") : g.moves[you()] < 2 ? "Tap a column to drop" : ""); }
+      else { title = `${rivalName()}'s turn`; text = rivalAway() ? `${rivalName()} lost connection. The clock moves for them` : S.callNote || (g.bombsOn && g.bombs[1 - you()] && g.moves[1 - you()] > 3 ? "Their bomb is ready" : ""); }
     } else {
       title = g.draw ? "Draw" : g.winner === you() ? "Victory" : "Defeat";
       text = g.forfeit ? (g.winner === you() ? `${rivalName()} forfeited` : "You forfeited") : g.draw ? "The grid is full" : g.winner === you() ? "Four in a row" : `${rivalName()} made four`;
@@ -640,18 +709,29 @@
   $("cols").addEventListener("click", (ev) => {
     const b = ev.target.closest?.("button[data-col]");
     if (!b) return;
-    S.cursor = Number(b.dataset.col);
-    dropIn(S.cursor);
+    const col = Number(b.dataset.col);
+    S.cursor = col;
+    dropIn(col);
   });
-  async function dropIn(col) {
+  async function dropIn(col, confirmed = false) {
     const g = G();
     if (!g || !isMine()) return;
     if (heightOf(g, col) >= NROW) { cue("nope"); pose($("cols").children[col], "nope"); say(`Column ${colName(col)} is full`); return; }
-    S.sending = true;
     const bomb = S.bomb && g.bombs[you()];
+    // An armed bomb on touch: the first tap shows what it would clear, a second tap on the same column drops it.
+    if (bomb && !confirmed && S.pointer === "touch" && S.armedCol !== col) { S.armedCol = col; S.cursor = col; drawGrid(); renderCall(); return; }
+    S.armedCol = null;
+    S.sending = true;
     drawGrid(); renderDock(); // it's out of your hands now: no second tap, no bomb toggle while it's on its way
+    $("callTitle").textContent = bomb ? "Bomb away" : "Dropping"; $("callText").textContent = "";
+    // It starts falling now; the server's event confirms it (and plays the rest).
+    const row = heightOf(g, col);
+    const d = discEl(you(), col, row, geo.k, bomb);
+    $("discs").appendChild(d);
+    if (!RM()) cue("drop", { pitch: 0.9 + 0.04 * (NROW - row) });
+    S.optimistic = { col, el: d, fall: fallTo(d, row, geo.k, 1, true) };
     try { await req(PREFIX + "drop", { col, bomb }); S.bomb = false; }
-    catch (e) { S.sending = false; toast(P.errText(e), 2600); renderGame(); }
+    catch (e) { d.remove(); S.optimistic = null; S.sending = false; toast(P.errText(e), 2600); renderGame(); }
   }
 
   /* ================================================================ animating what happened */
@@ -725,24 +805,37 @@
       g.turn = e.by;
       $("lane").innerHTML = "";
       const [ax] = slotXY(e.col, e.row);
-      // The disc in hand over its column (the rival's moves from the edge, so you see where it goes).
-      const hand = el("div", "", { left: `${ax * k}px`, top: `${2 * k}px`, width: `${10 * k}px`, height: `${10 * k}px`, backgroundImage: `url(${e.bomb ? A.bomb(0) : A.disc(e.by, { outline: true })})` });
-      $("lane").appendChild(hand);
-      if (!mine && !RM()) {
-        const from = S.lastCol ?? 3;
-        hand.style.left = `${(F + from * CELL) * k}px`;
-        await hand.animate([{ left: `${(F + from * CELL) * k}px` }, { left: `${ax * k}px` }], { duration: T.hover * speed(), easing: `steps(${Math.max(1, Math.abs(e.col - from))})`, fill: "forwards" }).finished.catch(() => {});
-      } else await wait2(T.hover / 2);
       if (e.auto) { cue("timeout"); S.callNote = mine ? `The clock dropped for you in ${colName(e.col)}` : `The clock dropped for ${rivalName()} in ${colName(e.col)}`; $("callText").textContent = S.callNote; }
-      hand.remove();
-      // The fall, behind the frame.
-      const d = discEl(e.by, e.col, e.row, k, !!e.bomb);
-      $("discs").appendChild(d);
-      cue("drop", { pitch: 0.9 + 0.04 * (NROW - e.row) });
-      await fallTo(d, e.row, k, speed());
+      let d;
+      const opt = S.optimistic;
+      S.optimistic = null;
+      if (mine && opt && opt.col === e.col && opt.el.isConnected) {
+        // Your disc started falling when you tapped: let it land.
+        d = opt.el;
+        await opt.fall;
+      } else {
+        opt?.el.remove();
+        // The disc in hand over its column; the rival's comes from where it last played, and now and then weighs another column first.
+        const hand = el("div", "", { left: `${ax * k}px`, top: `${2 * k}px`, width: `${10 * k}px`, height: `${10 * k}px`, backgroundImage: `url(${e.bomb ? A.bomb(0) : A.disc(e.by, { outline: true })})` });
+        $("lane").appendChild(hand);
+        if (!mine && !RM()) {
+          const from = S.lastCol ?? 3;
+          const path = e.ponder !== undefined && e.ponder !== e.col ? [from, e.ponder, e.col] : [from, e.col];
+          for (let i = 1; i < path.length; i++) {
+            const [a, b] = [path[i - 1], path[i]];
+            await hand.animate([{ left: `${(F + a * CELL) * k}px` }, { left: `${(F + b * CELL) * k}px` }], { duration: T.hover * speed(), easing: `steps(${Math.max(1, Math.abs(b - a))})`, fill: "forwards" }).finished.catch(() => {});
+            if (i < path.length - 1) await wait2(T.hover);
+          }
+        } else await wait2(T.hover / 2);
+        hand.remove();
+        d = discEl(e.by, e.col, e.row, k, !!e.bomb);
+        $("discs").appendChild(d);
+        cue("drop", { pitch: 0.9 + 0.04 * (NROW - e.row) });
+        await fallTo(d, e.row, k, speed(), true);
+      }
       g.grid[e.col][e.row] = e.by + 1;
       S.lastCol = e.col;
-      cue("land", { pitch: 1.25 - 0.06 * (NROW - e.row) });
+      cue("land", { pitch: 1.25 - 0.06 * (NROW - e.row), buzz: mine }); // only your own disc buzzes
       if (!RM()) {
         const [sx, sy] = slotXY(e.col, e.row);
         sheetFx($("fx"), "dust", sx - 1, sy + 7, k, 260 * speed());
@@ -753,6 +846,7 @@
         g.bombs[e.by] = false;
         renderHud(); renderDock();
         // The fuse fizzes.
+        $("callTitle").textContent = "Bomb lit"; $("callText").textContent = "";
         cue("fuse");
         if (!RM()) { const t0 = performance.now(); let f = 0; while (performance.now() - t0 < T.fuse * speed()) { d.style.backgroundImage = `url(${A.bomb(f++ % 2)})`; await sleep(90); } }
       }
@@ -765,14 +859,18 @@
       const [bx, by] = slotXY(e.col, e.row);
       if (!RM()) sheetFx(fx, "blast", bx - 5, by - 5, k, T.blast * speed());
       cue("blast");
-      if (!RM()) $("board").animate([{ transform: "translate(0, 0)" }, { transform: `translate(${2 * k}px, ${k}px)` }, { transform: `translate(${-2 * k}px, 0)` }, { transform: `translate(${k}px, ${k}px)` }, { transform: "translate(0, 0)" }], { duration: 260, easing: "steps(4)" });
+      pose($("board"), "shake");
+      let i = 0;
       for (const [c, r] of e.cleared) {
         layer.querySelector(`.d[data-c="${c}"][data-r="${r}"]`)?.remove();
         g.grid[c][r] = 0;
-        if (!RM() && (c !== e.col || r !== e.row)) { const [x, y] = slotXY(c, r); sheetFx(fx, "pop", x, y, k, 240 * speed()); }
+        if (c !== e.col || r !== e.row) {
+          if (!RM()) { const [x, y] = slotXY(c, r); sheetFx(fx, "pop", x, y, k, 240 * speed()); }
+          later(() => cue("pop", { pitch: 1 + 0.08 * i }), 100 + 40 * i++); // one pop per disc
+        }
       }
-      if (e.cleared.length > 1) later(() => cue("pop", { pitch: 1.1 }), 120);
-      say(`Boom: ${plural(e.cleared.length - 1, "disc", "discs")} cleared${e.falls.length ? ", the rest fall" : ""}`);
+      const names = e.cleared.filter(([c, r]) => c !== e.col || r !== e.row).map(([c, r]) => `${colName(c)}${r + 1}`);
+      sayNow(names.length ? `Boom: cleared ${names.join(" and ")}${e.falls.length ? ". The discs above fall" : ""}` : "Boom: nothing beside it to clear");
       await wait2(T.blast * 0.6);
       // Discs above fall into the gap.
       const moves = e.falls.map((f) => ({ f, d: layer.querySelector(`.d[data-c="${f.col}"][data-r="${f.from}"]`) })).filter((m) => m.d);
@@ -792,8 +890,7 @@
       g.turn = e.seat;
       S.callNote = "";
       renderGame();
-      pose($("call"), "call");
-      if (e.seat === you()) { cue("yourTurn"); sayNow("Your turn"); }
+      if (e.seat === you()) { pose($("call"), "call"); cue("yourTurn"); sayNow("Your turn"); }
       else { cue("theirTurn"); say(`${rivalName()}'s turn`); }
       await wait2(T.turn);
     },
@@ -802,17 +899,27 @@
       Object.assign(g, { phase: "over", winner: e.winner, draw: e.winner === null && !e.forfeit, forfeit: !!e.forfeit, turn: null, line: e.line ?? null });
       $("lane").innerHTML = "";
       const won = e.winner === you();
+      layer.querySelectorAll(".last").forEach((x) => x.remove());
       if (e.line && !RM()) {
-        // The line lights up disc by disc, a note higher each time; the rest of the grid steps back.
-        for (const d of layer.querySelectorAll(".d")) if (!e.line.some(([c, r]) => Number(d.dataset.c) === c && Number(d.dataset.r) === r)) d.classList.add("dim");
+        // A beat of stillness; then the line lights disc by disc (a cream flash, then its own colour
+        // ringed in cream), a note higher each time; then everything else shakes loose and drops out.
+        await sleep(90);
         let i = 0;
         for (const [c, r] of e.line) {
           const d = layer.querySelector(`.d[data-c="${c}"][data-r="${r}"]`);
-          if (d) { d.style.backgroundImage = `url(${A.disc(e.winner, { lit: true })})`; d.animate([{ transform: "scale(1.25)" }, { transform: "scale(1)" }], { duration: 120, easing: "steps(2)" }); }
+          if (d) {
+            d.style.backgroundImage = `url(${A.disc(e.winner, { flash: true })})`;
+            d.animate([{ transform: "scale(1.25)" }, { transform: "scale(1)" }], { duration: 120, easing: "steps(2)" });
+            later(() => { d.style.backgroundImage = `url(${A.disc(e.winner, { lit: true })})`; }, 110);
+          }
           cue("line", { pitch: 1 + 0.12 * i++ });
           await sleep(T.lineStep * speed());
         }
-      }
+        const rest = [...layer.querySelectorAll(".d")].filter((d) => !e.line.some(([c, r]) => Number(d.dataset.c) === c && Number(d.dataset.r) === r));
+        $("board").animate([{ transform: "translate(0, 0)" }, { transform: `translate(${k}px, 0)` }, { transform: `translate(${-k}px, 0)` }, { transform: "translate(0, 0)" }], { duration: 200, easing: "steps(3)" });
+        rest.forEach((d) => d.animate([{ transform: "translateY(0)", opacity: 1 }, { transform: `translateY(${-k}px)`, offset: 0.15 }, { transform: `translateY(${70 * k}px)`, opacity: 1 }], { duration: 480, easing: "steps(6)", delay: 30 * Number(d.dataset.c), fill: "forwards" }));
+        if (rest.length) later(() => cue("drop", { pitch: 0.8, vol: 0.6 }), 120);
+      } else if (e.line) for (const d of layer.querySelectorAll(".d")) d.classList.toggle("dim", !e.line.some(([c, r]) => Number(d.dataset.c) === c && Number(d.dataset.r) === r));
       renderCall();
       const stamp = el("div", `stamp ${e.winner === null ? "plain" : e.winner === 0 ? "" : "coral"}`);
       stamp.setAttribute("aria-hidden", "true");
@@ -864,22 +971,23 @@
     const v = S.view, g = v?.game;
     if (!g || g.phase !== "over") return;
     const won = g.winner === you(), me = you();
+    const fresh = $("resMain")._resKey !== S.room?.roomId;
     const km = window.innerWidth - 32 >= 74 * 4 ? 4 : 3;
     const hero = `<img src="${A.gridCanvas(g.grid, g.line ?? []).toDataURL()}" alt="The final grid" width="${74 * km}" height="${64 * km}" style="box-shadow:0 0 0 var(--px) var(--c-ink)">`;
     kit.renderResult($("resMain"), {
       hero,
       title: g.draw ? "Draw" : won ? "Victory" : "Defeat",
-      sub: g.forfeit ? (won ? `${rivalName()} forfeited` : "You forfeited") : g.draw ? "The grid filled up with no four" : won ? `Four in a row in ${plural(g.moves[me], "move", "moves")}` : `${rivalName()} made four in a row`,
+      sub: g.forfeit ? (won ? `${rivalName()} forfeited` : "You forfeited") : g.draw ? "The grid filled up with no four" : won ? "Four in a row" : `${rivalName()} made four in a row`,
       win: won,
       tiles: [
         { label: "Your moves", value: g.moves[me] },
-        { label: "Longest line", value: won && g.line ? g.line.length : 0 },
         ...(g.bombsOn ? [{ label: "Bomb", value: g.bombs[me] ? 0 : 1, format: (n) => (n ? "Used" : "Kept") }] : []),
       ],
       view: S.lobby, rematchHint: "Same settings; the loser goes first", actions: $("resFoot"), key: S.room?.roomId,
       onRematch: async () => { try { enter(await req("lobby:rematch")); } catch (e) { toast(P.errText(e), 2600); } },
       onLeave: () => { drop(); goHome(); },
     });
+    if (won && fresh) pose($("resMain").querySelector(".pl-res-head h2"), "win");
     kit.countResult($("resMain"));
   }
 

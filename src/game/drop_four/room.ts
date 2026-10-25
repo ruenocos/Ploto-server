@@ -71,7 +71,7 @@ export function animBudget(events: readonly DropEvent[]): number {
   let ms = 0;
   for (const e of events) {
     if (e.type === "start") ms += ANIM.coin + 300;
-    else if (e.type === "drop") ms += ANIM.hover + ANIM.fallPerRow * (7 - e.row) + ANIM.land + (e.bomb ? ANIM.fuse : 0) + 60;
+    else if (e.type === "drop") ms += ANIM.hover + ANIM.fallPerRow * (7 - e.row) + ANIM.land + (e.bomb ? ANIM.fuse : 0) + (e.ponder !== undefined ? 2 * ANIM.hover : 0) + 60;
     else if (e.type === "blast") ms += ANIM.blast + (e.falls.length ? ANIM.fallAfter : 0) + 100;
     else if (e.type === "over") ms += e.line ? ANIM.lineStep * e.line.length + ANIM.lineHold : 300;
     else if (e.type === "turn") ms += ANIM.turn + 40;
@@ -239,8 +239,12 @@ export class DropFourRoom extends LobbyRoom<DropSettings> {
     const game = this.game;
     if (!game || game.turn !== seat) return;
     const m = chooseMove(game.viewFor(seat), BOT_LEVEL[this.settings.botStyle], this.random);
+    // Now and then, once the grid is busy, its hand weighs a neighbouring column first (a person deciding).
+    const busy = game.moves[0] + game.moves[1];
+    const open = [m.col - 1, m.col + 1].filter((c) => c >= 0 && c < 7 && game.grid[c]![5] === 0);
+    const ponder = busy > 6 && open.length && this.random() < 0.3 ? open[Math.floor(this.random() * open.length)] : undefined;
     const r = game.drop(seat, m.col, m.bomb);
-    if (r.ok) this.after(r.events);
+    if (r.ok) this.after(ponder === undefined ? r.events : r.events.map((e, i) => (i === 0 && e.type === "drop" ? { ...e, ponder } : e)));
   }
 
   /** The clock ran out: a disc in a random open column for the player. */

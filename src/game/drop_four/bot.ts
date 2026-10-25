@@ -4,10 +4,12 @@
  * caps the work, so a move never takes long and is the same on every machine
  * (iterative deepening: the deepest search that finished within the budget wins).
  *
- *   hard    searches up to 8 moves ahead, never misses a win or a block, and weighs
- *           its bomb: it bombs to win, or to break a position it would otherwise lose.
- *   medium  looks 2 moves ahead, takes a win and blocks a threat most of the time,
- *           and often plays a safe move that isn't the best, so it can be beaten.
+ *   hard    searches up to 8 moves ahead (20,000 positions at most: about 20 ms),
+ *           never misses a win or a block, and weighs its bomb: it bombs to win,
+ *           or to break a position it would otherwise lose.
+ *   medium  looks one move ahead: it always takes a four it can see and blocks
+ *           most threats, but misses setups, and often plays one of its next
+ *           few moves instead of the best (never one that hands you a win).
  *           It bombs to win, and sometimes to stop a loss.
  */
 import { COLS, DropFourGame, ROWS, type Cell, type DropView, type Grid, type RandomSource } from "./engine.js";
@@ -98,27 +100,33 @@ class Search {
     }
     return best;
   }
-  /** Each legal drop for `who`, scored at `depth`. */
-  columns(who: number, depth: number): { col: number; v: number }[] {
+  /**
+   * Each legal drop for `who`, scored at `depth`. `narrow`: share the best score found so far
+   * across the root columns (a column that can't beat it scores at most that much): deeper in the
+   * same budget, at the cost of exact scores for the also-rans (Hard doesn't slip, so it doesn't need them).
+   */
+  columns(who: number, depth: number, narrow = false): { col: number; v: number }[] {
     const out: { col: number; v: number }[] = [];
+    let alpha = -Infinity;
     for (const c of ORDER) {
       if (this.b.h[c]! >= ROWS) continue;
-      if (this.b.wins(c, who)) { out.push({ col: c, v: WIN * 2 }); continue; }
+      if (this.b.wins(c, who)) { out.push({ col: c, v: WIN * 2 }); alpha = WIN * 2; continue; }
       this.b.play(c, who);
-      const v = -this.negamax(3 - who, depth - 1, -Infinity, Infinity);
+      const v = -this.negamax(3 - who, depth - 1, -Infinity, narrow ? -(alpha - 1) : Infinity);
       this.b.undo(c);
-      out.push({ col: c, v });
+      out.push({ col: c, v: narrow && v <= alpha - 1 && alpha > -Infinity ? Math.min(v, alpha - 1) : v });
+      if (v > alpha) alpha = v;
     }
     return out;
   }
 }
 
 /** The deepest full scoring of the columns that fits one node budget, shared by every depth (depth 1 always fits). */
-function scoreColumns(g: Grid, who: number, maxDepth: number, budget: number): { col: number; v: number }[] {
+function scoreColumns(g: Grid, who: number, maxDepth: number, budget: number, narrow = false): { col: number; v: number }[] {
   const s = new Search(new Board(g), budget);
   let best = new Search(new Board(g), Infinity).columns(who, 1);
   for (let d = 2; d <= maxDepth; d++) {
-    try { best = s.columns(who, d); } catch { break; }
+    try { best = s.columns(who, d, narrow); } catch { break; }
   }
   return best;
 }
@@ -139,8 +147,8 @@ function bombResult(view: DropView, col: number, seat: number): { grid: Grid; wi
  */
 export interface Style { readonly depth: number; readonly budget: number; readonly win: number; readonly block: number; readonly slip: number; readonly bombSave: number }
 export const LEVELS: Record<BotLevel, Style> = {
-  hard: { depth: 8, budget: 12_000, win: 1, block: 1, slip: 0, bombSave: 1 },
-  medium: { depth: 2, budget: 4_000, win: 0.9, block: 0.8, slip: 0.35, bombSave: 0.5 },
+  hard: { depth: 8, budget: 20_000, win: 1, block: 1, slip: 0, bombSave: 1 },
+  medium: { depth: 1, budget: 2_000, win: 1, block: 0.8, slip: 0.4, bombSave: 0.5 },
 };
 
 export function chooseMove(view: DropView, level: BotLevel | Style, random: RandomSource): BotMove {
@@ -175,9 +183,10 @@ export function chooseMove(view: DropView, level: BotLevel | Style, random: Rand
   if (winNow && random() < st.win) return { col: winNow.col, bomb: false };
   if (threat !== undefined && random() < st.block) return { col: threat, bomb: false };
   if (random() < st.slip) {
-    // A safe move that isn't the best: one that doesn't hand the rival a win next turn.
-    const ok = scored.filter((s) => s.v > -WIN);
-    if (ok.length) return { col: ok[Math.floor(random() * ok.length)]!.col, bomb: false };
+    // A safe move that isn't the best: one of the next few by its score (weighted to the better ones),
+    // never one that hands the rival a win next turn. People miss setups; they don't throw.
+    const ok = scored.filter((s) => s.v > -WIN).slice(0, 3);
+    if (ok.length) { const w = [0.6, 0.3, 0.1].slice(0, ok.length), t = random() * w.reduce((a, b) => a + b, 0); let acc = 0; for (let i = 0; i < ok.length; i++) { acc += w[i]!; if (t <= acc) return { col: ok[i]!.col, bomb: false }; } }
   }
   const top = scored.filter((s) => s.v === scored[0]!.v);
   return { col: top[Math.floor(random() * top.length)]!.col, bomb: false };

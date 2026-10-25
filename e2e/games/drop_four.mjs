@@ -64,18 +64,20 @@ adapter.checks = [
       if (i < 3) assert(await dropWhenMine(second, 6), "second player couldn't drop");
     }
     await first.waitForSelector("#call:not(.mine) #callTitle", { timeout: 8000 }).catch(() => {});
-    // The line lights before the result: discs dim around it.
-    await first.waitForSelector("#discs .d.dim", { timeout: 8000 });
+    // The line lights before the result, then the stamp lands.
+    await first.waitForSelector("#board .stamp", { timeout: 8000 });
     assert((await discs(first)) === 7, `7 discs on the grid, not ${await discs(first)}`);
     await first.waitForSelector('[data-res="rematch"]', { timeout: 15000 });
     assert(/victory/i.test(await first.locator(".pl-res-head h2").innerText()), "four in a row: Victory");
     assert(/defeat/i.test(await second.locator(".pl-res-head h2").innerText().catch(() => "")) || true, "the other side sees Defeat");
     await a.close2(); await b.close2();
   }],
-  ["the bomb: arm it, drop it, it clears the discs beside and below it", async ({ B, home, assert, sleep }) => {
+  ["the bomb: arm it, drop it, it clears the discs beside and below it (and practice opens with the coin flip)", async ({ B, home, assert, sleep }) => {
     const p = await B.player({ name: "Bo" });
     await home(p);
-    await p.click('[data-mode="practice"]'); await p.click("#practiceBtn"); await playing(p);
+    await p.click('[data-mode="practice"]'); await p.click("#practiceBtn");
+    await p.waitForSelector(".coin-wrap", { timeout: 5000 }).catch(() => assert(false, "practice should open with the coin flip"));
+    await playing(p);
     assert(await dropWhenMine(p, 3, 20000), "couldn't drop a disc");
     await sleep(400);
     const t0 = Date.now();
@@ -83,6 +85,7 @@ adapter.checks = [
     const before = await discs(p);
     await p.click("#bombBtn");
     assert((await p.getAttribute("#bombBtn", "aria-pressed")) === "true", "the bomb button arms");
+    assert((await p.locator("#fx .reach").count()) >= 1, "an armed bomb shows what it would clear");
     await p.locator('#cols button[data-col="3"]').click();
     await p.waitForFunction(() => /used/i.test(document.getElementById("bombBtn")?.textContent || ""), null, { timeout: 8000 });
     await sleep(1500);
@@ -111,11 +114,17 @@ adapter.checks = [
     while (moves < 5 && Date.now() - t0 < 60000) {
       if (await myTurn(p)) {
         const before = await discs(p);
-        await p.keyboard.press(moves % 2 ? "ArrowLeft" : "ArrowRight");
+        // Walk with the arrows to an open column (the labels say which are full).
+        const { cur, target } = await p.evaluate((m) => {
+          const cols = [...document.querySelectorAll("#cols button")];
+          const open = cols.map((b, i) => (/full/.test(b.getAttribute("aria-label")) ? -1 : i)).filter((i) => i >= 0);
+          return { cur: cols.findIndex((b) => b.tabIndex === 0), target: open[m % open.length] };
+        }, moves);
+        for (let i = 0; i < Math.abs(target - cur); i++) await p.keyboard.press(target > cur ? "ArrowRight" : "ArrowLeft");
         await p.keyboard.press("Enter");
         if (await p.waitForFunction((n) => document.querySelectorAll("#discs .d").length > n || !document.querySelector("#scrGame:not([hidden])"), before, { timeout: 5000 }).then(() => true, () => false)) moves++;
-        if (!(await p.locator("#scrGame:not([hidden])").count())) break;
       }
+      if (!(await p.locator("#scrGame:not([hidden])").count())) break; // the game ended (the bot may win first)
       await sleep(120);
     }
     assert(moves >= 3, `made only ${moves} moves from the keyboard`);

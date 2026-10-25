@@ -9,9 +9,9 @@
  *           that leaves its hand the most ways to follow, changing to its long
  *           suit; names the suit it holds most of, and one the next player has
  *           shown they're out of when it can.
- *   medium  plays a card that fits, often the first one it sees; plays 8s too
- *           early now and then, sometimes names a suit at random, and keeps a
- *           drawn card a fifth of the time: it can be beaten.
+ *   medium  plays a card that fits, usually following the suit; plays 8s too
+ *           early now and then, sometimes names its second-best suit, and keeps
+ *           a drawn card a fifth of the time: it can be beaten.
  */
 import { SUITS, points, rankOf, suitOf, type Card, type EightsView, type RandomSource, type Suit } from "./engine.js";
 
@@ -28,20 +28,23 @@ const suitCounts = (hand: readonly Card[]): Record<Suit, number> => {
   for (const c of hand) if (rankOf(c) !== "8") n[suitOf(c)]++;
   return n;
 };
+const secondSuit = (hand: readonly Card[], fallback: Suit): Suit => { const n = suitCounts(hand); const order = [...SUITS].sort((a, b) => n[b] - n[a]); return n[order[1]!] > 0 ? order[1]! : order[0] ?? fallback; };
 const longSuit = (hand: readonly Card[], fallback: Suit): Suit => { const n = suitCounts(hand); return SUITS.reduce((a, b) => (n[b] > n[a] ? b : a), fallback); };
 
 export function chooseMove(v: EightsView, level: BotLevel, random: RandomSource): BotMove {
   const hand = v.hand, playable = hand.filter((c) => fits(v, c));
   const next = (v.you + 1) % v.counts.length;
   const nextLow = v.counts[next]! <= 2;
-  const anyoneLow = v.counts.some((n, s) => s !== v.you && n <= 1);
+  const anyoneLow = v.counts.some((n, s) => s !== v.you && n <= 2);
   if (!playable.length) return v.drawn ? { action: "pass" } : { action: "draw" };
   if (level === "medium") {
     if (v.drawn && random() < 0.2) return { action: "pass" }; // keeps the card it drew
     const plain = playable.filter((c) => rankOf(c) !== "8");
     const pool = plain.length && random() > 0.15 ? plain : playable; // an early 8 now and then
-    const card = random() < 0.6 ? pool[0]! : pool[Math.floor(random() * pool.length)]!;
-    const suit = rankOf(card) === "8" ? (random() < 0.3 ? SUITS[Math.floor(random() * 4)]! : longSuit(hand.filter((c) => c !== card), v.suit)) : undefined;
+    const same = pool.filter((c) => suitOf(c) === v.suit); // people tend to follow the suit before changing it
+    const card = random() < 0.35 && same.length ? same[0]! : pool[Math.floor(random() * pool.length)]!;
+    const rest = hand.filter((c) => c !== card);
+    const suit = rankOf(card) === "8" ? (random() < 0.25 ? secondSuit(rest, v.suit) : longSuit(rest, v.suit)) : undefined; // now and then its second-longest suit, never one it lacks
     return { action: "play", card, ...(suit ? { suit } : {}) };
   }
   // Hard.
@@ -54,6 +57,11 @@ export function chooseMove(v: EightsView, level: BotLevel, random: RandomSource)
     return { action: "play", card: v.drawn, ...(rankOf(v.drawn) === "8" ? { suit: pickSuit(v, rest) } : {}) };
   }
   if (v.owed > 0) return { action: "play", card: playable[0]! }; // answer the 2 with a 2
+  // Two players: a jack is a free turn when another card of ours follows it.
+  if (v.counts.length === 2) {
+    const jack = plain.find((c) => rankOf(c) === "J" && hand.some((x) => x !== c && (suitOf(x) === suitOf(c) || rankOf(x) === "J" || rankOf(x) === "8")));
+    if (jack && hand.length > 2) return { action: "play", card: jack };
+  }
   // Punish a player about to go out: 2s, then Jacks (a jack also works on the player after next, past the one it skips).
   if (nextLow) {
     const hit = plain.find((c) => rankOf(c) === "2") ?? plain.find((c) => rankOf(c) === "J");

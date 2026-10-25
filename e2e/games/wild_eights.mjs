@@ -8,7 +8,7 @@ async function moveIfMine(p) {
   if (await p.locator("#picker:not([hidden])").count()) { await p.locator("#pickGrid button").first().click(); return true; }
   const can = p.locator("#hand .card.can");
   if (await can.count()) {
-    await can.first().click({ position: { x: 8, y: 30 } }); // the index corner: the rest of an overlapped card sits under its neighbour
+    await can.first().click({ position: { x: 8, y: 14 } }); // the index corner: the rest of an overlapped card sits under its neighbour
     if (await p.waitForSelector("#picker:not([hidden])", { timeout: 300 }).then(() => true, () => false)) await p.locator("#pickGrid button").first().click();
     return true;
   }
@@ -75,7 +75,7 @@ adapter.checks = [
       for (const p of [a, b]) {
         if (!nopeSeen && (await myTurn(p)) && (await p.locator("#hand.mine .card:not(.can)").count())) {
           const before = await p.locator("#hand .card").count();
-          await p.locator("#hand.mine .card:not(.can)").first().click({ position: { x: 8, y: 30 } });
+          await p.locator("#hand.mine .card:not(.can)").first().click({ position: { x: 8, y: 14 } });
           await sleep(200);
           assert(/needs|answer|play the card/i.test(await p.locator("#callText").innerText()), "a card that doesn't fit says why");
           assert((await p.locator("#hand .card").count()) === before, "a card that doesn't fit stays in hand");

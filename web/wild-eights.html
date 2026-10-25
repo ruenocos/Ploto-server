@@ -30,7 +30,7 @@
   box-shadow: inset 0 calc(var(--px) * -2) 0 var(--card-lo); --n: var(--px);
   clip-path: polygon(0 var(--n), var(--n) var(--n), var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n), 100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%, var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n))); }
 .card.red { color: var(--card-red); }
-.card.back { background: repeating-conic-gradient(var(--c-accent) 0 25%, #5a41c8 0 50%) 0 0 / 8px 8px; box-shadow: inset 0 0 0 var(--px) var(--c-accent-hi), inset 0 0 0 calc(var(--px) * 2) var(--c-accent-lo); }
+.card.back { background: var(--c-accent-lo) radial-gradient(circle, var(--c-accent) 0 3px, transparent 3.5px) center / 100% 100% no-repeat; /* flat, one mark: the pile is the bright thing on the felt */ box-shadow: inset 0 0 0 var(--px) var(--c-accent-hi), inset 0 0 0 calc(var(--px) * 2) var(--c-accent-lo); }
 .card.back > * { display: none; }
 .card.xs { --w: 16px; --h: 22px; } .card.xs > * { display: none; }
 .card.md { --w: var(--bw, 48px); --h: var(--bh, 68px); }
@@ -59,7 +59,7 @@
 .hud { display: flex; align-items: flex-start; gap: 8px; }
 .rivals { flex: 1; min-width: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
 .seat { position: relative; min-width: 0; display: grid; gap: 4px; padding: 6px 6px 7px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
-.seat.on { box-shadow: inset 0 0 0 var(--px) var(--c-accent); } /* STYLE's Active frame: whose turn */
+.seat.on { background: color-mix(in srgb, var(--c-panel) 82%, var(--c-accent)); box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-accent); } /* STYLE's Active frame: whose turn */
 .seat .top { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .seat .nm { min-width: 0; flex: 1; font: 700 var(--fs-s)/1.1 var(--f-text); color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } /* a player's name: Pixelify, their own case (STYLE) */
 .seat .next { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); }
@@ -67,7 +67,7 @@
 .seat .n { flex: none; font: 700 var(--fs-s)/1 var(--f-text); color: var(--c-text); font-variant-numeric: tabular-nums; }
 .seat .fan { display: flex; height: 22px; }
 .seat .fan .card + .card { margin-left: -10px; }
-.seat .tag { position: absolute; right: 4px; top: -8px; padding: 2px 4px; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; background: var(--c-gold); color: var(--c-ink); }
+.seat .tag { position: absolute; right: 4px; bottom: 5px; padding: 2px 4px; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; background: var(--c-gold); color: var(--c-ink); }
 .seat .tag.away { background: var(--c-raise); color: var(--c-mute); }
 .seat .stampl, .hand .stampl { position: absolute; inset: 0; display: grid; place-items: center; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-ink); background: color-mix(in srgb, var(--c-gold) 92%, transparent); pointer-events: none; }
 .call { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 8px 12px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
@@ -84,7 +84,11 @@
 
 /* The table: felt with a rim that takes the suit's colour after a wild eight. */
 .table { position: relative; flex: 1; min-height: 200px; max-height: min(56vh, 460px); display: grid; place-items: center; background: var(--we-felt) center / 32px 32px; image-rendering: pixelated;
-  border: var(--px) solid var(--c-ink); box-shadow: inset 0 0 0 calc(var(--px) * 3) var(--flood), inset 0 0 0 calc(var(--px) * 4) var(--c-ink); }
+  border: var(--px) solid var(--c-ink); box-shadow: inset 0 0 0 calc(var(--px) * 5) var(--flood), inset 0 0 0 calc(var(--px) * 6) var(--c-ink); }
+.table::before { content: ""; position: absolute; inset: 0; background: var(--wash, transparent); opacity: 0.1; pointer-events: none; } /* the named suit's colour, faintly, over the felt while it's in force */
+.seat .think { display: inline-flex; gap: 2px; } .seat .think i { width: 3px; height: 3px; background: var(--c-mute); animation: we-think 0.6s steps(1) infinite; } .seat .think i:nth-child(2) { animation-delay: 0.2s; } .seat .think i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes we-think { 0%, 66% { opacity: 0.3; } 33% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .seat .think i { animation: none; } }
 .table .mid { display: flex; align-items: center; gap: 22px; }
 .deck { position: relative; padding: 0; border: 0; background: none; box-shadow: none; clip-path: none; min-height: 0; cursor: default; }
 .deck:active { transform: none; }
@@ -95,9 +99,10 @@
 .deck:focus-visible { outline: none; box-shadow: 0 0 0 var(--px) var(--c-cream); }
 .pile { position: relative; width: var(--hw, 64px); height: var(--hh, 90px); }
 .pile .card { position: absolute; left: 0; top: 0; }
-.suit { position: absolute; left: 50%; top: 10px; translate: -50% 0; display: flex; align-items: center; gap: 6px; padding: 4px 8px 4px 6px; background: var(--c-ink); font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; }
+.plate { position: absolute; left: 50%; top: 12px; translate: -50% 0; display: flex; gap: 6px; align-items: stretch; z-index: 4; } /* the table's labels in one place: the suit, and what's owed */
+.suit { display: flex; align-items: center; gap: 6px; padding: 4px 8px 4px 6px; background: var(--c-ink); font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; }
 .suit img { image-rendering: pixelated; display: block; }
-.owed { position: absolute; right: 10px; top: 10px; padding: 4px 8px; background: var(--c-bad); color: var(--c-cream); font: 700 var(--fl-1)/1 var(--f-label); box-shadow: inset 0 var(--px) 0 var(--c-bad-hi), var(--px) var(--px) 0 var(--c-ink); }
+.owed { display: grid; place-items: center; padding: 2px 8px; background: var(--c-bad); color: var(--c-cream); font: 700 var(--fl-1)/1 var(--f-label); box-shadow: inset 0 var(--px) 0 var(--c-bad-hi), var(--px) var(--px) 0 var(--c-ink); }
 .owed[hidden] { display: none; }
 .table .fx { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
 .table .fx > * { position: absolute; image-rendering: pixelated; }
@@ -116,11 +121,13 @@
 .picker .grid4 button:not(.ghost) small { color: var(--c-cream); }
 
 /* your hand: overlapped like a held fan; the cards you can play stand up */
-.hand { position: relative; height: calc(var(--bh, 68px) + 12px); margin: auto 2px 0; } /* the hand and dock sit at the bottom, by the thumb */
+.hand { position: relative; height: calc(var(--bh, 68px) + 12px); margin: 0 2px; }
+.hand.two { height: calc(var(--bh, 68px) + 58px); } /* a big hand in two rows: every card keeps a 44 px slice to tap */
+.table { flex: 0 1 auto; height: clamp(240px, 46vh, 380px); }
 .hand .card { position: absolute; bottom: 0; padding: 0; cursor: default; transition: translate 0.12s steps(2), left 0.16s steps(3); touch-action: manipulation; }
 .hand .card.can { translate: 0 -10px; cursor: pointer; box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-accent-hi), inset 0 calc(var(--px) * -3) 0 var(--card-lo); } /* gold has one job (the eight); what you can play is the accent (inset: the card's clipped corners would cut an outline) */
 .hand .card.can.new { translate: 0 -16px; } /* the card you just drew stands highest */
-.hand.mine .card:not(.can) { opacity: 0.55; } /* on your turn: what can't go sits back, the cream stays cream */
+.hand.mine .card:not(.can) { background: color-mix(in srgb, var(--card) 72%, var(--c-well)); translate: 0 4px; } /* on your turn: what can't go sits back (a duller face, a little lower), its index still full strength */
 .hand .card:focus-visible { outline: none; box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-cream); }
 .dock { display: flex; align-items: center; gap: 10px; min-height: 48px; }
 .dock .me { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
@@ -188,8 +195,7 @@
   </div>
   <div class="call" id="call"><b id="callTitle"></b><span id="callText"></span><div class="clock" id="clock" role="timer" hidden><i></i></div><span class="clock-s" id="clockS" aria-hidden="true"></span></div>
   <div class="table" id="table">
-    <div class="suit" id="suit"></div>
-    <div class="owed" id="owed" hidden></div>
+    <div class="plate"><div class="suit" id="suit"></div><div class="owed" id="owed" hidden></div></div>
     <div class="mid">
       <button type="button" class="deck" id="deck" aria-label="Draw a card"></button>
       <div class="pile" id="pile" role="img"></div>
@@ -232,7 +238,7 @@
   const SUITS = A.SUITS, SUIT = A.SUIT;
   const rankOf = (c) => c.slice(0, -1), suitOf = (c) => c.slice(-1);
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-  const RANK_NAME = { A: "ace", J: "jack", Q: "queen", K: "king" };
+  const RANK_NAME = { A: "ace", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", J: "jack", Q: "queen", K: "king" }; // words, not digits: a pixel 2 can read as an 8
   const cardName = (c) => `${RANK_NAME[rankOf(c)] || rankOf(c)} of ${SUIT[suitOf(c)].name}`;
   const ORD = (n) => ["", "1st", "2nd", "3rd", "4th"][n] || `${n}th`;
 
@@ -269,6 +275,7 @@
     nope: { preset: "headShake", speed: "faster" }, // a card that doesn't fit
     owe: { preset: "shakeX", speed: "fast" },       // a 2 lands on someone
     pop: { preset: "bounceIn", speed: "fast" },     // a badge appears (last card, the suit)
+    feel: { preset: "jello", speed: "faster" },     // the next player feels a wild eight
     win: { preset: "tada" },
   });
 
@@ -337,7 +344,8 @@
     9: [[0, 0], [1, 0], [0, 1 / 3], [1, 1 / 3], [0.5, 0.5], [0, 2 / 3], [1, 2 / 3], [0, 1], [1, 1]],
     10: [[0, 0], [1, 0], [0.5, 1 / 6], [0, 1 / 3], [1, 1 / 3], [0, 2 / 3], [1, 2 / 3], [0.5, 5 / 6], [0, 1], [1, 1]],
   };
-  const FACE = { md: { rank: 1.5, idx: ["p", 1], pip: ["p", 1.25], ace: 3 }, lg: { rank: 2, idx: ["", 1], pip: ["p", 1.5], ace: 4 } };
+  // The full suit glyph in the index: clubs and spades, hearts and diamonds tell apart at hand size.
+  const FACE = { md: { rank: 1.5, idx: ["", 1], pip: ["p", 1.5], ace: 3 }, lg: { rank: 2, idx: ["", 1], pip: ["p", 1.5], ace: 4 } };
   const COURT = { J: "jack", Q: "queen", K: "king" };
   /** A card's HTML: `tag` button for your hand (with its label), div elsewhere; null card = the back. */
   function cardHTML(c, size, { cls = "", tag = "div", attrs = "" } = {}) {
@@ -379,7 +387,7 @@
    * from the fan goes onto the pile; every third beat it's an eight, the rim floods to its suit and
    * the suit's pips burst out. Silent, as banners are.
    */
-  const BANNER_PLAYS = ["7H", "7C", "8S", "KS", "KD", "8H", "3H", "3D", "8C"];
+  const BANNER_PLAYS = ["8H", "7H", "7C", "8S", "KS", "KD", "3D", "8C", "3C"]; // an eight first: the moment shows within one beat
   const banner = P.banner($("hero"), {
     draw(hero, W, H) {
       hero.innerHTML = "";
@@ -390,11 +398,12 @@
       // Deck, pile and fan as one group, centred: 13 + 5 + 13 + 6 + 37 = 74 art px wide.
       const x0 = Math.round((W - 74 * k) / 2), cy = Math.round(H / 2), cx = x0 + 18 * k + Math.round(6.5 * k);
       const deck = el("div", "hs", { left: `${x0}px`, top: `${cy - 9 * k}px`, width: `${13 * k}px`, height: `${18 * k}px`, backgroundImage: `url(${A.mini("", true)})` });
-      const pile = el("div", "hs", { left: `${x0 + 18 * k}px`, top: `${cy - 9 * k}px`, width: `${13 * k}px`, height: `${18 * k}px`, backgroundImage: `url(${A.mini("7S")})` });
+      const pile = el("div", "hs", { left: `${x0 + 18 * k}px`, top: `${cy - 9 * k}px`, width: `${13 * k}px`, height: `${18 * k}px`, backgroundImage: `url(${A.mini(hero._g?.pileCard ?? "7S")})` }); // a repaint keeps the pile's card
       const fx = el("div", "hs", { inset: "0" });
       const fan = el("div", "hs", { left: `${x0 + 37 * k}px`, top: `${cy - 6 * k}px`, width: `${37 * k}px`, height: `${24 * k}px` });
       hero.append(deck, pile, fan, fx);
-      hero._g = { k, pile, fan, fx, rim, step: hero._g?.step ?? 0, W, H, cx, cy }; // a repaint (a resize) keeps the banner's place
+      if (hero._g?.pileCard && rankOf(hero._g.pileCard) === "8") rim.style.boxShadow = `inset 0 0 0 ${k}px ${SUIT[suitOf(hero._g.pileCard)].flood}`;
+      hero._g = { k, pile, fan, fx, rim, step: hero._g?.step ?? 0, pileCard: hero._g?.pileCard, W, H, cx, cy }; // a repaint (a resize) keeps the banner's place
       bannerFan(hero);
     },
     intro(hero) { if (!RM()) P.playPreset(hero._g.fan, "slideInUp", { speed: "fast" }); },
@@ -403,24 +412,31 @@
       if (!g || hero._busy) return;
       hero._busy = true;
       try {
-        const c = BANNER_PLAYS[g.step++ % BANNER_PLAYS.length];
+        const c = BANNER_PLAYS[g.step % BANNER_PLAYS.length]; // the fan's first card is the one played
         const from = g.fan.firstElementChild;
-        if (from && !RM()) await from.animate([{ transform: "translate(0, 0)" }, { transform: `translate(${-(20 * g.k)}px, ${-3 * g.k}px)` }], { duration: 260, easing: "steps(5)", fill: "forwards" }).finished.catch(() => {});
+        if (from && !RM()) await from.animate([{ transform: "translate(0, 0)" }, { transform: `translate(${-19 * g.k}px, ${-3 * g.k - parseFloat(from.style.top)}px)` }], { duration: 260, easing: "steps(5)", fill: "forwards" }).finished.catch(() => {});
+        g.step++;
         g.pile.style.backgroundImage = `url(${A.mini(c)})`;
         if (rankOf(c) === "8") {
           const s = suitOf(c);
-          if (!RM()) { g.pile.animate([{ transform: "scale(1.35)" }, { transform: "scale(0.95)" }, { transform: "scale(1)" }], { duration: 200, easing: "steps(3)" }); sheetAt(g.fx, A.burst(s), g.cx, g.cy, g.k * 0.75, 420); }
+          if (!RM()) { g.pile.animate([{ transform: "scale(1.4) rotate(-4deg)" }, { transform: "scale(0.94)" }, { transform: "scale(1)" }], { duration: 180, easing: "steps(3)" }); sheetAt(g.fx, A.burst(s), g.cx, g.cy, g.k * 0.75, 420); } // the game's slam
           g.rim.style.boxShadow = `inset 0 0 0 ${g.k}px ${SUIT[s].flood}`;
-        }
-        bannerFan(hero);
+        } else g.rim.style.boxShadow = `inset 0 0 0 ${g.k}px ${A.P.rimHi}`; // as in the game: a plain card lets the colour go
+        g.pileCard = c;
+        bannerFan(hero, true);
       } finally { hero._busy = false; }
     },
     every: 3800,
   });
-  function bannerFan(hero) {
-    const g = hero._g, hand = ["9H", "KC", "8D", "4S"].map((c, i) => BANNER_PLAYS[(g.step + i + 1) % BANNER_PLAYS.length]);
+  /** The banner's fan: the next four plays. `slide`: the rest close up and a new card comes in from the right. */
+  function bannerFan(hero, slide = false) {
+    const g = hero._g, hand = [0, 1, 2, 3].map((i) => BANNER_PLAYS[(g.step + i) % BANNER_PLAYS.length]);
     g.fan.innerHTML = "";
-    hand.forEach((c, i) => g.fan.appendChild(el("div", "hs", { left: `${i * 8 * g.k}px`, top: `${(i === 1 || i === 2 ? 0 : 2) * g.k}px`, width: `${13 * g.k}px`, height: `${18 * g.k}px`, backgroundImage: `url(${A.mini(c)})` })));
+    hand.forEach((c, i) => {
+      const card = el("div", "hs", { left: `${i * 8 * g.k}px`, top: `${(i === 1 || i === 2 ? 0 : 2) * g.k}px`, width: `${13 * g.k}px`, height: `${18 * g.k}px`, backgroundImage: `url(${A.mini(c)})` });
+      g.fan.appendChild(card);
+      if (slide && !RM()) card.animate([{ transform: `translateX(${8 * g.k}px)`, opacity: i === 3 ? 0 : 1 }, { transform: "translateX(0)", opacity: 1 }], { duration: 160, easing: "steps(3)" });
+    });
   }
   function el(tag, cls, style = {}) { const e = document.createElement(tag); if (cls) e.className = cls; Object.assign(e.style, style); return e; }
   /** A frame sheet played once, centred on (x, y) CSS px inside `root`, drawn at k CSS px per art pixel. */
@@ -526,10 +542,10 @@
     goHome();
   }
   async function forfeit() {
-    if (!(await P.confirm({ title: "Forfeit this match?", body: twoPlayer() ? "Your rival wins, and it counts as a loss." : "You're placed last; the others play on.", yes: "Forfeit", no: "Keep playing", danger: true }))) return;
+    if (!(await P.confirm(twoPlayer() ? { title: "Forfeit this match?", body: "Your rival wins, and it counts as a loss.", yes: "Forfeit", no: "Keep playing", danger: true } : { title: "Leave the table?", body: "You're placed last; the clock plays your turns and the others play on.", yes: "Leave", no: "Stay", danger: true }))) return;
     req(PREFIX + "forfeit").catch((e) => toast(P.errText(e), 2600));
   }
-  const openMenu = () => kit.menu({ view: S.lobby, items: [{ label: twoPlayer() ? "Forfeit match" : "Leave game", danger: true, run: forfeit }] });
+  const openMenu = () => kit.menu({ view: S.lobby, items: [{ label: twoPlayer() ? "Forfeit match" : "Leave table", danger: true, run: forfeit }] });
   $("menuBtn").onclick = openMenu;
   P.acceptInvitesHere(GAME, (inv) => { if (S.room) { req("lobby:leave").catch(() => {}); drop(); } takeSeat("Taking your seat", "acceptInvite", { inviteId: inv.inviteId }); });
   P.setInviteBusy(() => S.lobby?.phase === "playing");
@@ -565,11 +581,17 @@
     if (g.drawn && c !== g.drawn) return false;
     return rankOf(c) === "8" || suitOf(c) === g.suit || rankOf(c) === rankOf(g.top);
   }
-  const article = (r) => (["A", "8"].includes(r) ? "an" : "a");
+  const article = (r) => (["A", "8"].includes(r) ? "an" : "a"); // "an ace", "an eight"
   /** What to match, in plain words ("Match hearts or a king"; after an eight, just the suit). */
   function matchText(g) {
     const r = rankOf(g.top);
     return r === "8" ? `Match ${SUIT[g.suit].name}, or play an eight` : `Match ${SUIT[g.suit].name} or ${article(r)} ${RANK_NAME[r] || r}`;
+  }
+  /** Your hand in order: by suit (spades, hearts, clubs, diamonds: the colours alternate), ace to king, eights at the right end. */
+  const RANK_ORDER = ["A", "2", "3", "4", "5", "6", "7", "9", "10", "J", "Q", "K"];
+  function sortHand(cards) {
+    const key = (c) => (rankOf(c) === "8" ? 100 + "SHCD".indexOf(suitOf(c)) : "SHCD".indexOf(suitOf(c)) * 20 + RANK_ORDER.indexOf(rankOf(c)));
+    return [...cards].sort((a, b) => key(a) - key(b));
   }
   /** Why card c can't go, in plain words. */
   function whyNot(g, c) {
@@ -582,7 +604,7 @@
   /* ================================================================ drawing the table */
   function layout() {
     const w = Math.min(window.innerWidth, 600) - 20;
-    const bw = Math.max(56, Math.min(84, Math.floor(w / 4.6))), bh = Math.round(bw * 1.4); // your cards: big enough to read at a glance
+    const bw = Math.max(56, Math.min(92, Math.floor(w / 4.2))), bh = Math.round(bw * 1.4); // your cards: big enough to read at a glance
     const hw = Math.max(72, Math.min(112, Math.round(bw * 1.35))), hh = Math.round(hw * 1.4);
     const root = $("scrGame").style;
     root.setProperty("--bw", `${bw}px`); root.setProperty("--bh", `${bh}px`);
@@ -610,13 +632,13 @@
       const n = S.dealt ? S.dealt[p] : g.counts[p], fan = Math.min(n, 5);
       const tag = isGone(p) ? '<span class="tag away">Left</span>' : isAway(p) ? '<span class="tag away">Away</span>' : n === 1 && g.phase === "playing" && !S.dealt ? '<span class="tag">Last card</span>' : "";
       const label = `${nameOf(p)}${i === 0 ? ", plays next after you" : ""}: ${plural(n, "card", "cards")}${isGone(p) ? ", left the table" : isAway(p) ? ", away" : ""}${g.turn === p && g.phase === "playing" ? ", their turn" : ""}`;
-      return `<div class="seat${g.turn === p && g.phase === "playing" ? " on" : ""}" role="listitem" data-p="${p}" aria-label="${esc(label)}"><div class="top"><span class="nm">${esc(nameOf(p))}</span>${i === 0 && others().length > 1 ? '<span class="next">Next</span>' : ""}</div><div class="row2"><div class="fan">${cardHTML(null, "xs")}</div><span class="n">${n}</span></div>${tag}</div>`; // one back and the count (a fan repeated the number as speckle)
+      return `<div class="seat${g.turn === p && g.phase === "playing" ? " on" : ""}" role="listitem" data-p="${p}" aria-label="${esc(label)}"><div class="top"><span class="nm">${esc(nameOf(p))}</span>${i === 0 && others().length > 1 ? '<span class="next">Next</span>' : ""}</div><div class="row2"><span class="n">${plural(n, "card", "cards")}</span>${g.turn === p && g.phase === "playing" && !S.anim ? '<span class="think" aria-hidden="true"><i></i><i></i><i></i></span>' : ""}</div>${tag}</div>`; // one back and the count (a fan repeated the number as speckle)
     }).join("");
   }
   function renderCall() {
     const g = G();
     const mine = g.phase === "playing" && g.turn === me();
-    const ready = isMine(); // the call, the raised cards and the buttons change together
+    const ready = isMine() || (S.turnNow && mine); // the call, the raised cards and the buttons change together (the turn's own beat counts)
     let title = "", text = "";
     if (g.phase === "playing" && g.turn !== null) {
       if (mine && !ready) { title = "Your turn"; text = ""; }
@@ -624,7 +646,7 @@
         title = "Your turn";
         const can = g.hand.filter((c) => fits(g, c));
         const low = others().find((p) => g.counts[p] === 1), stopper = g.hand.find((c) => fits(g, c) && (rankOf(c) === "2" || rankOf(c) === "J"));
-        text = S.callNote || (g.owed ? (can.length ? `Answer with a 2, or draw ${g.owed}` : `Draw ${g.owed}: you have no 2`) : g.drawn ? (fits(g, g.drawn) ? "It fits: play it, or keep it" : "") : low !== undefined && stopper ? `${nameOf(low)} is on one card: a 2 or a jack slows them` : can.length ? matchText(g) : "Nothing fits: tap the deck");
+        text = S.callNote || (g.owed ? (can.length ? `Answer with a 2, or draw ${g.owed}` : `Draw ${g.owed}: you have no 2`) : g.drawn ? (fits(g, g.drawn) ? "It fits: play it, or keep it" : "") : low !== undefined && stopper ? `${nameOf(low)} is on one card: a 2 or a jack slows them` : can.length ? ((S.myTurns ?? 0) < 4 ? matchText(g) : "") : "Nothing fits: draw a card"); // the plain "match" hint only while you're learning: the suit chip says it
       } else {
         title = `${nameOf(g.turn)}'s turn`;
         text = S.callNote || (isGone(g.turn) ? `${nameOf(g.turn)} left. The clock plays for them` : isAway(g.turn) ? `${nameOf(g.turn)} is away. The clock plays for them` : "");
@@ -643,6 +665,7 @@
   function renderTable() {
     const g = G();
     $("table").style.setProperty("--flood", S.flood ? SUIT[g.suit].flood : A.P.rimHi);
+    $("table").style.setProperty("--wash", S.flood ? SUIT[g.suit].flood : "transparent");
     const deckN = g.deckLeft, layers = Math.min(3, Math.max(1, Math.ceil(deckN / 15)));
     const can = isMine() && !g.drawn;
     $("deck").innerHTML = (deckN ? Array.from({ length: layers }, (_, i) => cardHTML(null, "lg", { attrs: `style="translate:${-i * 2}px ${-i * 2}px"` })).join("") : "") + (deckN <= 10 ? `<span class="left">${deckN ? plural(deckN, "card", "cards") : "Empty"}</span>` : ""); // the count only when it's running low (the label always says it)
@@ -659,15 +682,19 @@
   }
   function renderHand() {
     const g = G(), hand = $("hand"), mine = isMine();
-    const cards = S.dealt ? g.hand.slice(0, S.dealt[me()] ?? 0) : g.hand;
+    const cards = sortHand(S.dealt ? g.hand.slice(0, S.dealt[me()] ?? 0) : g.hand);
     const W = hand.clientWidth || Math.min(window.innerWidth, 600) - 20;
     const bw = parseFloat(getComputedStyle($("scrGame")).getPropertyValue("--bw")) || 48;
-    const n = cards.length, step = n > 1 ? Math.min(bw + 4, (W - bw) / (n - 1)) : 0;
-    const x0 = Math.round((W - (bw + step * (n - 1))) / 2);
+    const n = cards.length, one = n > 1 ? (W - bw) / (n - 1) : bw;
+    // A big hand goes in two rows (back row raised) so every card keeps at least a 44 px slice to tap.
+    const rows = one < 44 && n > 1 ? 2 : 1, per = Math.ceil(n / rows);
+    const step = per > 1 ? Math.min(bw + 4, (W - bw) / (per - 1)) : 0;
+    hand.classList.toggle("two", rows === 2);
     S.focus = Math.max(0, Math.min(S.focus, n - 1));
     hand.innerHTML = cards.map((c, i) => {
-      const ok = mine && fits(g, c);
-      return cardHTML(c, "md", { tag: "button", cls: `${ok ? "can" : ""}${S.newCard === c ? " new" : ""}`, attrs: `type="button" style="left:${Math.round(x0 + i * step)}px;z-index:${i + 1}" tabindex="${i === S.focus ? 0 : -1}" aria-label="${cardName(c)}${mine ? (ok ? ", can play" : ", doesn't fit") : ""}"` });
+      const ok = mine && fits(g, c), row = rows === 2 && i < per ? 0 : rows - 1, j = row === 0 ? i : i - (rows === 2 ? per : 0), inRow = rows === 2 ? (row === 0 ? per : n - per) : n;
+      const x0 = Math.round((W - (bw + step * (inRow - 1))) / 2);
+      return cardHTML(c, "md", { tag: "button", cls: `${ok ? "can" : ""}${S.newCard === c ? " new" : ""}`, attrs: `type="button" style="left:${Math.round(x0 + j * step)}px;bottom:${rows === 2 && row === 0 ? 46 : 0}px;z-index:${i + 1}" tabindex="${i === S.focus ? 0 : -1}" aria-label="${cardName(c)}${mine ? (ok ? ", can play" : ", doesn't fit") : ""}"` });
     }).join("");
     hand.classList.toggle("mine", mine);
   }
@@ -696,8 +723,9 @@
   function tickClock() {
     const v = S.view, e = $("clock"), c = v?.clock;
     if (!c || !G() || G().phase !== "playing") { e.hidden = true; $("clockS").textContent = ""; return; }
-    const left = Math.max(0, c.deadline - Date.now()), key = `${c.seat}:${c.deadline}`;
-    if (clockTotal.key !== key) clockTotal = { key, ms: Math.max(left, 1) };
+    const total = Math.max(1, c.deadline - (c.startsAt ?? Date.now())); // the turn's own length: the wait for the animation isn't shown
+    const left = Math.min(total, Math.max(0, c.deadline - Date.now())), key = `${c.seat}:${c.deadline}`;
+    if (clockTotal.key !== key) clockTotal = { key, ms: total };
     e.hidden = false;
     e.firstElementChild.style.width = `${Math.round((100 * left) / clockTotal.ms)}%`;
     const low = left < 5000, secs = Math.ceil(left / 1000);
@@ -739,7 +767,7 @@
     try { await req(method, data); }
     catch (e) { S.sending = false; toast(P.errText(e), 2600); renderGame(); }
   }
-  function drawCard() { const g = G(); if (!g || !isMine() || g.drawn) return; cue("select", { vol: 0.5 }); send(PREFIX + "draw"); }
+  function drawCard() { const g = G(); if (!g || !isMine() || g.drawn) return; send(PREFIX + "draw"); } // the draw cue plays as the card flies
   function keep() { const g = G(); if (!g || !isMine() || !g.drawn) return; send(PREFIX + "pass"); }
 
   /** The suit picker for an eight: your counts of each suit, the longest marked. */
@@ -752,16 +780,18 @@
     const best = SUITS.reduce((a, b) => (n[b] > n[a] ? b : a), SUITS[0]);
     $("pickGrid").innerHTML = SUITS.map((s, i) => `<button type="button" class="${s === best ? "" : "ghost"}" data-suit="${s}" aria-label="${SUIT[s].name}, you hold ${n[s]}">${imgTag(A.pip(s, { flood: true, outline: true }), 9, 9, 4)}<span>${SUIT[s].name}</span><small>${n[s] ? `You hold ${n[s]}` : "None in hand"}</small></button>`).join("");
     $("picker").hidden = false;
+    for (const id of ["hand", "dock", "deck"]) $(id).inert = true; // really modal: nothing behind it can be tapped
     cue("select", { vol: 0.5 });
     $("pickGrid").querySelector(`[data-suit="${best}"]`)?.focus();
-    sayNow("Name the suit for your eight");
+    sayNow(`Name the suit for your eight. ${SUITS.map((x) => `${SUIT[x].name} ${n[x] || "none"}`).join(", ")}`);
   }
-  function closePicker() { const c = picking; $("picker").hidden = true; picking = null; focusHand(); if (c) $("hand").querySelector(`[data-c="${c}"]`)?.focus({ preventScroll: true }); }
+  function uninert() { for (const id of ["hand", "dock", "deck"]) $(id).inert = false; }
+  function closePicker() { const c = picking; $("picker").hidden = true; picking = null; uninert(); focusHand(); if (c) $("hand").querySelector(`[data-c="${c}"]`)?.focus({ preventScroll: true }); }
   $("pickGrid").addEventListener("click", (ev) => {
     const b = ev.target.closest?.("button[data-suit]");
     if (!b || !picking) return;
     const card = picking;
-    $("picker").hidden = true; picking = null;
+    $("picker").hidden = true; picking = null; uninert();
     send(PREFIX + "play", { card, suit: b.dataset.suit });
   });
   $("pickCancel").onclick = closePicker;
@@ -776,12 +806,18 @@
   /* ================================================================ animating what happened */
   /** The wild eight's flood: the rim's four sides fill with the suit's colour one after another (stepped), then it holds. */
   async function floodRim(col) {
-    const t = $("table"), bw = "calc(var(--px) * 3)";
+    const t = $("table"), bw = "calc(var(--px) * 5)";
     const sides = [{ left: 0, right: 0, top: 0, height: bw, o: "50% 0", a: "scaleX" }, { top: 0, bottom: 0, right: 0, width: bw, o: "100% 50%", a: "scaleY" }, { left: 0, right: 0, bottom: 0, height: bw, o: "50% 100%", a: "scaleX" }, { top: 0, bottom: 0, left: 0, width: bw, o: "0 50%", a: "scaleY" }];
     const bars = sides.map((sd) => { const b = el("div", "", { position: "absolute", background: col, transformOrigin: sd.o, pointerEvents: "none", zIndex: 3 }); for (const k of ["left", "right", "top", "bottom", "width", "height"]) if (sd[k] !== undefined) b.style[k] = typeof sd[k] === "number" ? `${sd[k]}px` : sd[k]; t.appendChild(b); return [b, sd.a]; });
-    for (const [b, axis] of bars) await b.animate([{ transform: `${axis}(0)` }, { transform: `${axis}(1)` }], { duration: 60, easing: "steps(2)", fill: "forwards" }).finished.catch(() => {});
+    for (const [b, axis] of bars) await b.animate([{ transform: `${axis}(0)` }, { transform: `${axis}(1)` }], { duration: 110, easing: "steps(4)", fill: "forwards" }).finished.catch(() => {});
     t.style.setProperty("--flood", col);
     bars.forEach(([b]) => b.remove());
+    // The felt takes a wash of the colour: strong for a moment, then faint while the suit holds.
+    const wash = el("div", "", { position: "absolute", inset: "0", background: col, pointerEvents: "none", zIndex: 1 });
+    t.appendChild(wash);
+    await wash.animate([{ opacity: 0.28 }, { opacity: 0.18 }, { opacity: 0.1 }], { duration: 240, easing: "steps(3)", fill: "forwards" }).finished.catch(() => {});
+    t.style.setProperty("--wash", col);
+    wash.remove();
   }
   const speed = () => Q.speed();
   const wait2 = (ms) => (RM() ? Promise.resolve() : sleep(ms * speed()));
@@ -842,7 +878,7 @@
       for (let round = 0; round < most; round++) for (let p = 0; p < e.counts.length; p++) {
         if (round >= e.counts[p]) continue;
         S.dealt[p]++;
-        if (!RM()) { fly(cardHTML(null, "md"), deck, spotOf(p), T.deal * 2); if ((round + p) % 2 === 0) cue("deal", { pitch: 0.9 + 0.05 * p, vol: 0.5, buzz: false }); }
+        if (!RM()) { fly(cardHTML(null, "md"), deck, spotOf(p), T.deal * 2); if ((round + p) % 2 === 0) cue("deal", { pitch: 0.9 + 0.05 * p, buzz: false }); }
         later(() => { renderSeats(); renderHand(); }, RM() ? 0 : T.deal * 2 * speed());
         await wait2(T.deal);
       }
@@ -878,25 +914,30 @@
         await wait2(T.play * 0.3);
       } else {
         // The wild eight: it slams down, a beat of stillness, the rim floods to the named suit and its pips burst out.
-        cue("wild");
+        if (!RM()) await pc?.animate([{ transform: "scale(1)" }, { transform: "translateY(-10px) scale(1.25)" }], { duration: 120, easing: "steps(2)", fill: "forwards" }).finished.catch(() => {}); // it rises: the wind-up
+        const nx0 = (e.by + 1) % g.counts.length;
+        cue("wild", { buzz: mine || nx0 === me() }); // on the impact frame; it buzzes only if it's yours or it lands on you
         if (!RM()) await pc?.animate([{ transform: "scale(1.4) rotate(-4deg)" }, { transform: "scale(0.94)" }, { transform: "scale(1)" }], { duration: 180, easing: "steps(3)" }).finished.catch(() => {});
         g.suit = e.suit;
+        renderTable(); // the chip names the new suit on the impact frame
+        if (!RM()) await sleep(70); // a hit-stop: the table holds its breath
         const k = Math.max(2, Math.round($("pile").offsetWidth / 16));
         if (!RM()) {
           $("table").animate([{ transform: "translateY(2px)" }, { transform: "translateY(0)" }], { duration: 80, easing: "steps(2)" }); // the table thumps
           sheetAt($("fx"), A.burst(e.suit), pileC.x - tr.left, pileC.y - tr.top, k, 480);
           later(() => sheetAt($("fx"), A.burst(e.suit), pileC.x - tr.left, pileC.y - tr.top, Math.round(k * 0.7), 420).style.opacity = "0.5", 120); // a second, smaller ring follows
+          cue("suit", { pitch: { S: 0.9, H: 1.06, D: 1.19, C: 1 }[e.suit] }); // the swirl rises as the colour fills
           await floodRim(SUIT[e.suit].flood); // the rim fills side by side, out from the pile
         }
         S.flood = true;
         renderTable();
         if (!RM()) pose($("suit"), "pop");
-        later(() => cue("suit", { pitch: { S: 0.9, H: 1.06, D: 1.19, C: 1 }[e.suit] }), 60);
+        if (RM()) cue("suit", { pitch: { S: 0.9, H: 1.06, D: 1.19, C: 1 }[e.suit] });
         // The next player feels it: their seat (or your hand) jolts, outlined in the suit's colour for a moment.
         const nx = (e.by + 1) % g.counts.length, tgt = nx === me() ? $("hand") : document.querySelector(`.seat[data-p="${nx}"]`);
-        if (tgt && !RM()) later(() => { pose(tgt, "nope"); if (nx !== me()) { tgt.style.boxShadow = `inset 0 0 0 var(--px) ${SUIT[e.suit].flood}`; later(() => { tgt.style.boxShadow = ""; }, 600); } }, 120);
+        if (tgt && !RM()) later(() => { pose(tgt, "feel"); if (nx !== me()) { tgt.style.boxShadow = `inset 0 0 0 var(--px) ${SUIT[e.suit].flood}`; later(() => { tgt.style.boxShadow = ""; }, 600); } }, 120);
         sayNow(`${nameOf(e.by)} played an eight and named ${SUIT[e.suit].name}`);
-        await wait2(T.wild - 420);
+        await wait2(Math.max(0, T.wild - 1050)); // (wind-up 120, slam 180, hit-stop 70, flood 440, wash 240)
       }
       await hold(400);
     },
@@ -921,15 +962,15 @@
     },
     async pass(e) {
       const g = G();
-      if (e.by !== me() && !S.lastForced) say(`${nameOf(e.by)} passed`);
+      if (e.by !== me()) say(`${nameOf(e.by)} passed`);
       g.drawn = null; S.newCard = null;
     },
     async skip(e) {
       const tgt = e.seat === me() ? null : document.querySelector(`.seat[data-p="${e.seat}"]`);
       cue("skip", { buzz: e.seat === me() });
       if (tgt) { const st = el("div", "stampl"); st.textContent = "Skipped"; tgt.appendChild(st); if (!RM()) P.playPreset(st, "bounceIn", { speed: "fast" }); later(() => st.remove(), T.skip + 600); }
-      else { S.callNote = "You're skipped"; $("callText").textContent = S.callNote; const st = el("div", "stampl"); st.style.zIndex = "40"; st.textContent = "Skipped"; $("hand").appendChild(st); if (!RM()) P.playPreset(st, "bounceIn", { speed: "fast" }); later(() => st.remove(), T.skip + 600); }
-      sayNow(e.seat === me() ? "A jack: you're skipped" : `A jack: ${nameOf(e.seat)} is skipped`);
+      else { S.callNote = twoPlayer() ? `A jack: ${nameOf((e.seat + 1) % G().counts.length)} goes again` : "You're skipped"; $("callText").textContent = S.callNote; const st = el("div", "stampl"); st.style.zIndex = "40"; st.textContent = "Skipped"; $("hand").appendChild(st); if (!RM()) P.playPreset(st, "bounceIn", { speed: "fast" }); later(() => st.remove(), T.skip + 600); }
+      sayNow(twoPlayer() ? (e.seat === me() ? `A jack: ${nameOf((e.seat + 1) % G().counts.length)} goes again` : "A jack: you go again") : e.seat === me() ? "A jack: you're skipped" : `A jack: ${nameOf(e.seat)} is skipped`);
       await wait2(T.skip);
       await hold(600);
     },
@@ -947,10 +988,17 @@
       Object.assign(g, { turn: e.seat, owed: e.owed, suit: e.suit });
       if (e.seat !== me() || !g.drawn) g.drawn = null;
       S.callNote = "";
+      S.turnNow = true; if (e.seat === me()) S.myTurns = (S.myTurns ?? 0) + 1;
       renderGame();
+      S.turnNow = false;
       if (stung) {
         cue("owe", { pitch: 1 + 0.12 * (e.owed / 2 - 1), buzz: e.seat === me() }); // higher with every 2 stacked
-        if (!RM()) { pose($("owed"), "pop"); const tgt = e.seat === me() ? $("hand") : document.querySelector(`.seat[data-p="${e.seat}"]`); if (tgt) pose(tgt, "owe"); }
+        if (!RM()) {
+          pose($("owed"), "pop");
+          const tgt = e.seat === me() ? $("hand") : document.querySelector(`.seat[data-p="${e.seat}"]`);
+          for (let i = 0; i < 2; i++) later(() => fly(cardHTML(null, "md"), centreOf($("deck")), spotOf(e.seat), T.draw * 1.2), i * 90); // what's coming their way
+          if (tgt) later(() => pose(tgt, "owe"), 260);
+        }
       }
       if (e.seat === me()) {
         if (!g.drawn && !stung) { pose($("call"), "call"); cue("yourTurn"); }
@@ -964,7 +1012,7 @@
       renderGame();
       const stamp = el("div", `stamp${won ? "" : " plain"}`);
       stamp.setAttribute("aria-hidden", "true");
-      stamp.innerHTML = `<b>${e.forfeit ? "Game over" : won ? "You're out" : `${esc(nameOf(e.winner))} is out`}</b>`;
+      stamp.innerHTML = `<b>${e.forfeit ? "Game over" : won ? "Last card down" : `${esc(nameOf(e.winner))} went out`}</b>`;
       $("table").appendChild(stamp);
       if (!RM()) { stamp.firstElementChild.animate([{ transform: "scale(1.3)" }, { transform: "scale(0.94)" }, { transform: "scale(1)" }], { duration: 180, easing: "steps(3)", fill: "backwards" }); if (won) later(() => pose(stamp.firstElementChild, "win"), 200); }
       cue(won ? "win" : "lose");
@@ -992,7 +1040,7 @@
     const n = $("hand").children.length;
     if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && n) {
       e.preventDefault();
-      if (!S.keyUses && !P.local.get("wild_eights.keysSeen")) { P.local.set("wild_eights.keysSeen", true); toast("← → card · Enter play · D draw · K keep · I table", 3000); }
+      if (!S.keyUses && !P.local.get("wild_eights.keysSeen")) { P.local.set("wild_eights.keysSeen", true); toast("Arrows pick a card, Enter plays, D draws, K keeps, I reads the table", 3000); }
       S.keyUses = (S.keyUses || 0) + 1;
       S.focus = Math.max(0, Math.min(n - 1, S.focus + (e.key === "ArrowLeft" ? -1 : 1)));
       renderHand();

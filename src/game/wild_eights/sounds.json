@@ -16,7 +16,7 @@
         "p_hpf_freq": 0.2,
         "p_repeat_speed": 0
       },
-      "vol": 0.25,
+      "vol": 0.4,
       "buzz": 0
     },
     "play": {
@@ -45,14 +45,14 @@
         "p_base_freq": 0.22,
         "p_freq_ramp": -0.18,
         "p_env_attack": 0,
-        "p_env_sustain": 0.08,
+        "p_env_sustain": 0.14,
         "p_env_decay": 0.4,
         "p_env_punch": 0.8,
         "p_lpf_freq": 0.55,
         "p_hpf_freq": 0.05,
         "p_repeat_speed": 0
       },
-      "vol": 0.9,
+      "vol": 1.0,
       "buzz": [
         40,
         30,
@@ -90,7 +90,7 @@
         "p_hpf_freq": 0.25,
         "p_repeat_speed": 0
       },
-      "vol": 0.28,
+      "vol": 0.4,
       "buzz": 0
     },
     "owe": {
@@ -250,7 +250,7 @@
       "params": {
         "wave_type": 0,
         "p_base_freq": 0.42,
-        "p_freq_ramp": -0.28,
+        "p_freq_ramp": -0.18,
         "p_env_attack": 0,
         "p_env_sustain": 0.25,
         "p_env_decay": 0.45,
@@ -261,7 +261,7 @@
         "p_repeat_speed": 0,
         "p_arp_mod": 0
       },
-      "vol": 0.45,
+      "vol": 0.6,
       "buzz": [
         120,
         60

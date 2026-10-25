@@ -86,7 +86,7 @@ export class WildEightsRoom extends LobbyRoom<EightsSettings> {
   order: number[] = [];
   private readonly timing: EightsTiming;
   private readonly random: RandomSource;
-  private clock: { player: number; deadline: number; timer: ReturnType<typeof setTimeout> } | null = null;
+  private clock: { player: number; deadline: number; startsAt: number; timer: ReturnType<typeof setTimeout> } | null = null;
   private animUntil = 0;
   /** Players who left mid-game (3–4 players): the clock plays their turns. */
   private readonly gone = new Set<number>();
@@ -190,7 +190,7 @@ export class WildEightsRoom extends LobbyRoom<EightsSettings> {
     }
     if (this.gone.has(p)) { this.setClock(p, wait + this.timing.goneMs, () => this.autoMove(p), false); return; }
     const ms = !this.connected(seat) ? this.timing.awayMs : this.settings.timer ? this.timing.turnMs : 0;
-    if (ms) this.setClock(p, wait + ms, () => this.autoMove(p));
+    if (ms) this.setClock(p, wait + ms, () => this.autoMove(p), true, wait);
   }
 
   private rearm(): void {
@@ -244,7 +244,7 @@ export class WildEightsRoom extends LobbyRoom<EightsSettings> {
       game: game ? { ...game.viewFor(Math.max(0, p)), you: p, ...(p < 0 ? { hand: [], drawn: null } : {}) } : null,
       order: this.order,
       gone: [...this.gone],
-      clock: this.clock?.deadline ? { seat: this.order[this.clock.player], deadline: this.clock.deadline } : null,
+      clock: this.clock?.deadline ? { seat: this.order[this.clock.player], deadline: this.clock.deadline, startsAt: this.clock.startsAt } : null, // startsAt: when the page's animation is done and the turn really starts
       results: this.phase === "over" && game ? this.results() : null,
     };
   }
@@ -270,10 +270,10 @@ export class WildEightsRoom extends LobbyRoom<EightsSettings> {
     if (!this.game) throw new Error("the game hasn't started yet");
     return this.game;
   }
-  private setClock(player: number, ms: number, fn: () => void, shown = true): void {
+  private setClock(player: number, ms: number, fn: () => void, shown = true, wait = 0): void {
     const timer = setTimeout(() => { this.clock = null; fn(); }, ms);
     timer.unref?.();
-    this.clock = { player, deadline: shown ? Date.now() + ms : 0, timer };
+    this.clock = { player, deadline: shown ? Date.now() + ms : 0, startsAt: Date.now() + wait, timer };
   }
   private clearClock(): void {
     if (this.clock) clearTimeout(this.clock.timer);

@@ -211,3 +211,46 @@ cards left, "N points left"; the winner's tile is "Cards drawn"; the result show
 the last card at full size; the pile's label names the suit after an eight;
 sounds: a sine win level with the wild, louder deal and draw ticks, a longer
 tick and turn chime, a riffle for the reshuffle.
+
+## Round 5
+
+| Category | A | B | Round score |
+|---|---|---|---|
+| Game design | 8 | 8 | **8** |
+| Signature moment | 8 | 8 | **8** |
+| Animation | 8 | 8 | **8** |
+| Sound and haptics | 8 | 8 | **8** |
+| Visual design | 7 | 7 | **7** |
+| UX and clarity | 7 | 7 | **7** |
+| Platform consistency | 8 | 8 | **8** |
+| Bots | 7 | 8 | **7** |
+| Implementation | 8 | 8 | **8** |
+| Accessibility | 8 | 8 | **8** |
+
+Clutter (both): under-filled; the strain came from a suit-coloured outline left
+stuck on the call bar and the hand after an eight (a bug), a thick rim that held
+for many turns, the purple deck slab, khaki-dulled cards, and a call bar that
+went blank on every animation.
+
+What both saw: the outline the eight puts on the next player and the call bar
+never came off (its reset ran on a timer the screen's settle cancelled);
+the call bar went blank while your own play, jack or draw animated; the hand
+jumped between one and two rows (it was rebuilt each time); the chip blinked
+when it popped a second time; "You hold 1"; owe and skip quieter than the turn
+chime; keeping a drawn card made no sound.
+
+Fixes built after round 5: outlines and plates end by themselves (Web
+Animations and their own timers; the settle also clears any inline outline);
+the call bar never goes blank: "Your play: the jack of spades", "Drawing four",
+"Eight: hearts named", "A jack: you go again", and "Ben must answer with a two
+or draw four" when a 2 lands on a rival; the hand is keyed by card, so cards
+slide to new places and between rows, new ones go in at their sorted place;
+the chip pops once, on impact; after the flood the rim settles to a thinner,
+softer band (full strength only for the moment); a plain plate names the suit
+over the next player's seat; "You hold one" (numbers in words); the deck smaller
+and darker; the picker's keyboard hint hidden on phones; unplayable cards stay
+cream and sit lower (the raised, outlined ones are what you can play); a crossed
+pip for a missing suit, bigger, with "no" before it; "Eights out N of 4" under
+the deck; a small stack per rival on the felt; louder owe and skip (skip louder
+when it's you), a fuller play, a keep blip, darker draw and deal ticks, a louder
+win.

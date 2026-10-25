@@ -429,12 +429,12 @@ window.PLOTO_SOUNDS = {
   },
   "wild_eights": {
     "deal": {
-      "code": "7BMHBGAc8o7gAkPAx5JKG4ZiML7fCfLDKbHcCJqL16izk7vamee6Uz1fFpuYKTk4QmGbGtb8V6DwULU3Ch3N6k24kmEDPwYYw1Hy914rE7CxssuxTYp3ppRps",
+      "code": "7BMHBGAc8o7gAkPAx5JKG4ZiML7fCfLDKbHcCJqL16izk7vamee6Uz1fFpuYKTk4QmGbGtb8V6DwULU3Ch3N6k24kmEDPxFva6b9ZkC2TZ5D4s9xdMXiF2ETZ",
       "vol": 0.55,
       "buzz": 0
     },
     "play": {
-      "code": "7BMHBGAc9GHhWJka35pSAdaF7X1EukVwzZRuX3wwKyNWrrA4RYCPhzQ5vBoLfLATVVer2LuB7nFju7WN98U1kWSAdoijpT39fJwZkkHM7ofa6yQ2bYRB8j3JX",
+      "code": "7BMHBGAc9GHhWJka3JkeZNfWHuDxKLAg76GLgHZBnByrtxEASAxmFT2bbQ2LX8SMu3xcZBPDog8yFZkcxfWzsiucXNmFfEuAbTuNCxRfkmJoUYscCH81oukPy",
       "vol": 0.45,
       "buzz": 12
     },
@@ -453,13 +453,13 @@ window.PLOTO_SOUNDS = {
       "buzz": 20
     },
     "draw": {
-      "code": "7BMHBGQSJ3xbdyhVTVCVwHkwLgG4hKPyVUTTiCSszWYJpTKMNGZnvyBn2xemGHTbexwChWovxCXNEURst43qEEBvNHQeUZ3Z1tuHrWgA64o5QuSfaksMt8V6f",
+      "code": "7BMHBGQSJ3xbdyhVTVCVwHkwLgG4hKPyVUTTiCSszWYJpTKMNGZnvyBn2xemGHTbexwChWovxCXNEURst43qEEBvNHQeUWuSbpZn4K6LSfNP8SNXYTnQUvqtT",
       "vol": 0.55,
       "buzz": 0
     },
     "owe": {
       "code": "11111Fc13ScxjicvT82T8KGQhLPEV6pgK8b2WC8BsN3pFqy8DXDRBueLgpVZJmXsBuMXMVm18X1SztHqftpnju1DVLNFx7pdZHvSME7X9HRfKaHpbf8nf3qy",
-      "vol": 0.4,
+      "vol": 0.65,
       "buzz": [
         60,
         40,
@@ -468,7 +468,7 @@ window.PLOTO_SOUNDS = {
     },
     "skip": {
       "code": "11111BFZZ5cz8hjudbEkpg8qRYkF7MTc6zxtEsh5Yd7rheqVVoKESG5MKudBuMKBdFgYJmYrkGFBKq11hqvZYAWRt78QsTxMvGNVCyUr8mjCkYBa92bBQtEj",
-      "vol": 0.45,
+      "vol": 0.6,
       "buzz": 20
     },
     "last": {
@@ -506,7 +506,7 @@ window.PLOTO_SOUNDS = {
     },
     "win": {
       "code": "57uBnWdB7rJhiAUkhrVNAJVkb6qhNhrpN8f21rdSnEGx3WQXnWpKKiuPNRy2h3ENDXJS7WA6WYtfie27q8RdnSjYEeusHAdWoD7FDvMgprnjRVDDbKxBPAo8j",
-      "vol": 0.5,
+      "vol": 0.65,
       "buzz": [
         60,
         40,
@@ -525,6 +525,11 @@ window.PLOTO_SOUNDS = {
     },
     "riffle": {
       "code": "7BMHBGQSJ3xgJiwwMa8jcz2rTpRwrcMS6uJKZjw5XPbfVv7bCKuBpi6iSj7rt79wyQJmV8acaZAaaVjcZUezJUPKFaxUuvRv8KhBwdRbUbMnuNQeyd3bvLfH1",
+      "vol": 0.35,
+      "buzz": 0
+    },
+    "keep": {
+      "code": "11111mqnbfG4xmWpke4TGhPXzNcEBKFPrfsQLUhsq83EmjyKRTA3H9LDzFex9KR3YRRCz6P7xfeMzJtTk8G5tc5jVeNpg2bxjMdhJ5Z5F9UuykbsRy6C4j9",
       "vol": 0.35,
       "buzz": 0
     }

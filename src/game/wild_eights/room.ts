@@ -225,13 +225,13 @@ export class WildEightsRoom extends LobbyRoom<EightsSettings> {
 
   // ------------------------------------------------------------ results and views
 
-  results(): { seat: number; name: string; accountId: string | null; isBot: boolean; place: number; left: number; points: number; played: number; eights: number }[] {
+  results(): { seat: number; name: string; accountId: string | null; isBot: boolean; place: number; left: number; points: number; played: number; drawn: number; eights: number }[] {
     const game = this.requireGame();
     const places = game.places();
     return this.order
       .map((seat, p) => {
         const s = this.seats[seat]!;
-        return { seat, name: s.name, accountId: s.accountId, isBot: s.kind === "bot", place: places[p]!, left: game.hands[p]!.length, points: game.handPoints(p), played: game.stats[p]!.played, eights: game.stats[p]!.eights };
+        return { seat, name: s.name, accountId: s.accountId, isBot: s.kind === "bot", place: places[p]!, left: game.hands[p]!.length, points: game.handPoints(p), played: game.stats[p]!.played, drawn: game.stats[p]!.drawn, eights: game.stats[p]!.eights };
       })
       .sort((a, b) => a.place - b.place);
   }

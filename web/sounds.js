@@ -430,7 +430,7 @@ window.PLOTO_SOUNDS = {
   "wild_eights": {
     "deal": {
       "code": "7BMHBGAc8o7gAkPAx5JKG4ZiML7fCfLDKbHcCJqL16izk7vamee6Uz1fFpuYKTk4QmGbGtb8V6DwULU3Ch3N6k24kmEDPwYYw1Hy914rE7CxssuxTYp3ppRps",
-      "vol": 0.4,
+      "vol": 0.55,
       "buzz": 0
     },
     "play": {
@@ -454,7 +454,7 @@ window.PLOTO_SOUNDS = {
     },
     "draw": {
       "code": "7BMHBGQSJ3xbdyhVTVCVwHkwLgG4hKPyVUTTiCSszWYJpTKMNGZnvyBn2xemGHTbexwChWovxCXNEURst43qEEBvNHQeUZ3Z1tuHrWgA64o5QuSfaksMt8V6f",
-      "vol": 0.4,
+      "vol": 0.55,
       "buzz": 0
     },
     "owe": {
@@ -477,8 +477,8 @@ window.PLOTO_SOUNDS = {
       "buzz": 25
     },
     "yourTurn": {
-      "code": "57uBnWSzi74NAi1vrxk268ARLfsc9QMNfY16SeUmL6XQ4Lu8BWR7bnmR3iB1NuUhMH75FfDuwo4nFVfpkgTzqcvYQ6GWgLSzQK1hxGgTniPekDfsCENJQpoZZ",
-      "vol": 0.36,
+      "code": "57uBnWcURsYKtmkuFSr4zAkeHfVsfddiTsBU6Jj5BdC1AGCmW12ectdxUbBSPkGVCGmcFBdBvBBii7KB6yxXjbEwWC7WJKajLYRoTuvK6xX6YG774oYHj8PR1",
+      "vol": 0.45,
       "buzz": [
         30,
         40,
@@ -491,8 +491,8 @@ window.PLOTO_SOUNDS = {
       "buzz": 30
     },
     "tick": {
-      "code": "11111BFZZ5aCLQJUBoU5JdkpFiizxQqwZDmchhT8LFsoGb6jsRR1LvLDhgPAETMchmGosSiJnA27tuKuwyvimAYNzoQH66jsm8hZQYfqaGugCZVMJeXYDxc7",
-      "vol": 0.3,
+      "code": "11111BFZ5uaXrYQKxtYCzBNibaL9rnJmCgvJNMvpg9fcDNJnwLJkpQMbknLqZCpDHgpxG6YFcbKrvu7arpZ7eZxexQGSB5QoGkqxndM5WSjuhR6kTzodYsgB",
+      "vol": 0.45,
       "buzz": 0
     },
     "timeout": {
@@ -505,8 +505,8 @@ window.PLOTO_SOUNDS = {
       ]
     },
     "win": {
-      "code": "11111BxFXqzoXRbN6BW6126kGiyAFdJddXZV8p87YRQS3GpUrVK6AChawrZSUetHLKX9nhGs1Gfs8tffkyWjJzLjEj4Njd4shUWT8Y4R56sgL2h4UJ6rQSzB",
-      "vol": 0.85,
+      "code": "57uBnWdB7rJhiAUkhrVNAJVkb6qhNhrpN8f21rdSnEGx3WQXnWpKKiuPNRy2h3ENDXJS7WA6WYtfie27q8RdnSjYEeusHAdWoD7FDvMgprnjRVDDbKxBPAo8j",
+      "vol": 0.5,
       "buzz": [
         60,
         40,
@@ -522,6 +522,11 @@ window.PLOTO_SOUNDS = {
         120,
         60
       ]
+    },
+    "riffle": {
+      "code": "7BMHBGQSJ3xgJiwwMa8jcz2rTpRwrcMS6uJKZjw5XPbfVv7bCKuBpi6iSj7rt79wyQJmV8acaZAaaVjcZUezJUPKFaxUuvRv8KhBwdRbUbMnuNQeyd3bvLfH1",
+      "vol": 0.35,
+      "buzz": 0
     }
   }
 };

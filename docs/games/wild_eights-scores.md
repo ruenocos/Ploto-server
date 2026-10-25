@@ -165,3 +165,49 @@ little buzz on the suit; a reshuffle makes a riffle. Bots: Medium plays more
 loosely and Hard names a suit the next player lacks with an eight when they're
 close; the bands barely move (Medium about 59%, Hard about 62% against a casual
 player): this game is mostly luck, as the brief says.
+
+## Round 4
+
+| Category | A | B | Round score |
+|---|---|---|---|
+| Game design | 8 | 8 | **8** |
+| Signature moment | 8 | 8 | **8** |
+| Animation | 8 | 8 | **8** |
+| Sound and haptics | 8 | 8 | **8** |
+| Visual design | 7 | 7 | **7** |
+| UX and clarity | 7 | 7 | **7** |
+| Platform consistency | 8 | 8 | **8** |
+| Bots | 7 | 7 | **7** |
+| Implementation | 8 | 8 | **8** |
+| Accessibility | 8 | 8 | **8** |
+
+Clutter (both): under-filled and in places glaring: a big empty felt, a
+saturated purple deck slab, a gold "Skipped" slab over the whole hand, small
+low-contrast labels (the deck count, faded void pips).
+
+What both saw: the body font's 2 still read as 8 in the rules, the picker and
+the timer hint; a rival's eight landed, then rose and slammed again (a double
+landing); the rim filled after the burst, side by side clockwise, not out from
+the pile; the jello skewed your whole hand; "Your turn" lingered about a second
+after your card left; the banner still jumped once; a forced six took 2.4 s; the
+rivals were text tiles, not fans on the table; the void pips unexplained (they
+read as "has hearts"); the deck count at 3.9:1; the winner's "Points left 0".
+
+Fixes built after round 4: numbers in words across the copy and the engine's
+reasons ("Answer with a two, or draw four"); each rival's cards face down on the
+felt in front of them (plays fly from and draws go to them; the one whose turn
+it is raised); a rival's eight flies face down to a hover above the pile, then
+slams once (no second rise); all four sides of the rim fill at once from their
+middles over 200 ms, the band holds, then settles; your cards jolt one after
+another (no skew), the call bar outlined in the suit's colour too; a crossed-out
+pip for a suit a player lacks, explained in How to play and read out in the
+seat's label; "Skipped" and "+2" on a plain panel plate (gold is the eight's);
+"Last card" as an accent tag; the deck a size down, a darker checker; the deck
+count a bare number on ink in the grid font; the clubs and spades pips full size
+on hand cards, and a wider index column; a smaller card in one row before two
+rows; "Your turn" clears the moment your card leaves; a big draw goes twice as
+fast; the banner repaints only when home appears; "points in hand" from three
+cards left, "N points left"; the winner's tile is "Cards drawn"; the result shows
+the last card at full size; the pile's label names the suit after an eight;
+sounds: a sine win level with the wild, louder deal and draw ticks, a longer
+tick and turn chime, a riffle for the reshuffle.

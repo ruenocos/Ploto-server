@@ -124,7 +124,7 @@ export class EightsGame {
     const hand = this.hands[seat]!;
     const i = hand.indexOf(card);
     if (i < 0) return { ok: false, reason: "you don't have that card" };
-    if (!this.canPlay(card)) return { ok: false, reason: this.owed ? `answer with a 2 or draw ${this.owed}` : this.drawn ? "you can only play the card you drew" : "it doesn't match the suit or the number" };
+    if (!this.canPlay(card)) return { ok: false, reason: this.owed ? `answer with a two, or draw ${["", "", "two", "", "four", "", "six", "", "eight"][this.owed] || this.owed}` : this.drawn ? "you can only play the card you drew" : "it doesn't match the suit or the number" };
     const rank = rankOf(card);
     if (rank === "8" && !SUITS.includes(suit as Suit)) return { ok: false, reason: "name a suit for your 8" };
     hand.splice(i, 1);

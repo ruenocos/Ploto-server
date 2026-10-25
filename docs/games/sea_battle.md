@@ -92,3 +92,6 @@ Salvo mode, special weapons, other fleet layouts, 3+ players, in-game chat.
     about 2 in 3, a casual player about 1 in 3** (simulated against a good-human stand-in; test/seaBattleEngine.test.ts
     keeps them in those bands).
 12. **A hit fires again**, as in the original rules, kept from the questionnaire.
+    Reviewed after round 6 (25 October) and kept: it's your questionnaire answer
+    and the rule people know, and the streaks it allows are part of the game.
+    The cost is that game design stays near 8.

@@ -21,7 +21,7 @@
     frame: "#2d4fb8", frameHi: "#5578e0", frameLo: "#1c3487", frameDeep: "#142563",
     gold: "#ffcc33", goldHi: "#fff0a0", goldLo: "#d99a1a", goldRim: "#8a5a08",
     coral: "#ff6b6b", coralHi: "#ffb3a8", coralLo: "#c8424f", coralRim: "#7c1f2c",
-    bomb: "#2c3046", bombHi: "#59607f", bombLo: "#171a28", fuse: "#c9a36b",
+    bomb: "#6b7299", bombHi: "#b3bbdc", bombLo: "#3d4466", bombBand: "#d8364b", fuse: "#c9a36b",
     cream: "#fff4d6", yellow: "#ffcc33", orange: "#ff9d3b", red: "#d8364b", white: "#eef0ff",
     dust: "#8a90a8", dustHi: "#c4c8dc",
   };
@@ -87,9 +87,9 @@
         if (!inRound(x, y)) continue;
         const X = x + 1, Y = y + 2 - 1;
         const edge = !inRound(x - 1, y) || !inRound(x + 1, y) || !inRound(x, y - 1) || !inRound(x, y + 1);
-        p.px(X, Y + 1, edge && outline ? P.ink : x + y >= 9 ? P.bombLo : P.bomb);
+        p.px(X, Y + 1, edge && outline ? P.ink : y === 4 ? P.bombBand : x + y >= 9 ? P.bombLo : P.bomb); // steel with a red band: it reads in a dark hole
       }
-      p.px(3, 4, P.bombHi, 2, 1); p.px(3, 5, P.bombHi, 1, 1); // the shine
+      p.px(3, 3, P.bombHi, 2, 1); p.px(3, 4, P.bombHi, 1, 1); // the shine
       p.px(6, 1, P.ink, 2, 2); p.px(7, 0, P.fuse, 1, 2);       // the cap and the fuse
       if (spark >= 0) {
         const s = spark ? [[8, 0, P.yellow], [9, 1, P.orange], [8, 1, P.cream]] : [[8, 0, P.cream], [9, 0, P.orange], [7, 0, P.yellow]];
@@ -272,7 +272,7 @@
    * How long each moment takes on the page, in ms (web/drop-four.html plays them; the room's
    * animBudget in src/game/drop_four/room.ts covers them: test/drop_four.test.ts checks they agree).
    */
-  const ANIM = { coin: 1700, hover: 220, fallPerRow: 55, land: 160, fuse: 360, blast: 420, fallAfter: 300, lineStep: 120, lineHold: 700, turn: 160 };
+  const ANIM = { coin: 1700, hover: 220, fallPerRow: 45, land: 160, fuse: 360, blast: 420, fallAfter: 300, lineStep: 120, lineHold: 700, turn: 160 };
 
   window.DROP_ART = { P, C, COLS, ROWS, F, DISC, ANIM, disc, discCanvas, bomb, bombCanvas, frame, frameCanvas, backCanvas, gridCanvas, sheet: (name) => SHEETS[name](), card: cardCanvas, pen };
 

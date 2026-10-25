@@ -291,11 +291,12 @@
 
   /**
    * The banner (docs/STYLE.md, Home banners): the card's grid, in play. Intro: the frame slides
-   * up and a few discs are already in. Beats: a disc drops into a column (gold and coral by turns,
-   * with the game's own fall, squash and dust); every fourth beat lines up four and lights them,
-   * and the next beat empties the grid (the discs drop out of the bottom) to start again.
+   * up with a game under way. Beats: a disc drops (coral blocks one side, gold builds the other,
+   * with the game's own fall and squash); the fourth beat lines up gold A1–D1 and lights it disc by
+   * disc, and the next beat empties the grid (the discs drop out of the bottom) to start again.
    */
-  const BANNER_MOVES = [3, 3, 2, 4, 4, 2, 1]; // gold makes B1–C1–D1… the fourth beat lines up four
+  const BANNER_START = [[1, 0], [2, 0], [1, 1], [2, 1]]; // [column, seat]: gold B1 C1, coral B2 C2
+  const BANNER_MOVES = [[4, 1], [3, 0], [3, 1], [0, 0]]; // coral E1, gold D1, coral D2, gold A1: four
   const banner = P.banner($("hero"), {
     draw(hero, W, H) {
       hero.innerHTML = "";
@@ -317,8 +318,7 @@
       hero._busy = true;
       try {
         if (g.done) { await bannerClear(hero); return; }
-        const col = BANNER_MOVES[g.step % BANNER_MOVES.length];
-        const seat = g.step % 2;
+        const [col, seat] = BANNER_MOVES[g.step % BANNER_MOVES.length];
         g.step++;
         const row = g.grid[col].length;
         g.grid[col].push(seat);
@@ -327,7 +327,7 @@
         await fallTo(d, row, g.k, 1); // the banner is silent (docs/STYLE.md)
         const line = bannerLine(g);
         if (line) {
-          for (const [c, r] of line) { const e = g.discs.querySelector(`[data-c="${c}"][data-r="${r}"]`); if (e) e.style.backgroundImage = `url(${A.disc(0, { lit: true })})`; await sleep(RM() ? 0 : 110); }
+          for (const [c, r] of line) { const e = g.discs.querySelector(`[data-c="${c}"][data-r="${r}"]`); if (e) e.style.backgroundImage = `url(${A.disc(seat, { lit: true })})`; await sleep(RM() ? 0 : 110); }
           g.done = true;
         }
       } finally { hero._busy = false; }
@@ -337,8 +337,7 @@
   function bannerReset(hero, preset) {
     const g = hero._g;
     g.discs.innerHTML = ""; g.grid = Array.from({ length: NCOL }, () => []); g.step = 0; g.done = false;
-    if (preset) for (const [c, s] of [[3, 1], [2, 0], [4, 1]]) { const r = g.grid[c].length; g.grid[c].push(s); g.discs.appendChild(discEl(s, c, r, g.k)); }
-    if (preset) g.step = 0;
+    if (preset) for (const [c, s] of BANNER_START) { const r = g.grid[c].length; g.grid[c].push(s); g.discs.appendChild(discEl(s, c, r, g.k)); }
   }
   function bannerLine(g) {
     for (let r = 0; r < NROW; r++) for (let c = 0; c + 3 < NCOL; c++) {
@@ -368,10 +367,10 @@
    */
   async function fallTo(e, row, k, sp) {
     if (RM()) return;
-    const dist = (NROW - row) * CELL * k + 12 * k; // from the lane above the grid
+    const dist = (F + (NROW - 1 - row) * CELL + 1 + 12) * k; // from the hand's place in the lane, exactly
     const rows = NROW - row + 1;
     const frames = [];
-    for (let i = 0; i <= rows; i++) { const t = i / rows; frames.push({ transform: `translateY(${Math.round(-dist + dist * t * t)}px)`, offset: Math.sqrt(t) * 0.86 }); }
+    for (let i = 0; i <= rows; i++) { const t = i / rows; frames.push({ transform: `translateY(${Math.round(-dist + dist * (0.35 * t + 0.65 * t * t))}px)`, offset: t * 0.86 }); } // a push, then gravity
     frames.push({ transform: `translateY(0) scale(1.15, 0.8)`, offset: 0.92 }, { transform: `translateY(${-k}px)`, offset: 0.96 }, { transform: "translateY(0)", offset: 1 });
     const fall = T.fallPerRow * rows + T.land;
     await e.animate(frames, { duration: fall * sp, easing: "linear" }).finished.catch(() => {});
@@ -822,7 +821,7 @@
       if (!RM()) stamp.firstElementChild.animate([{ transform: "scale(1.3)" }, { transform: "scale(0.94)" }, { transform: "scale(1)" }], { duration: 180, easing: "steps(3)", fill: "backwards" });
       cue(e.winner === null ? "draw" : won ? "win" : "lose");
       sayNow(e.forfeit ? (won ? `${rivalName()} forfeited. You win` : "You forfeited") : e.winner === null ? "Draw. The grid is full" : won ? "Four in a row. You win" : `${rivalName()} made four in a row. You lose`);
-      if (won && !RM()) pose($("call"), "win");
+      if (won && !RM()) pose($("call"), "call");
       await sleep(RM() ? 1500 : T.lineHold + 900);
       stamp.remove();
       S.resultReady = true;

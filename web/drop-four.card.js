@@ -18,7 +18,8 @@
 
   const P = {
     ink: "#0a0c14", back: "#10142e", hole: "#181d31",
-    frame: "#26449e", frameHi: "#4666c8", frameLo: "#18306f", frameDeep: "#122253", // a calm cobalt: the lattice doesn't flicker
+    frame: "#213a86", frameHi: "#3a58b0", frameLo: "#162a63", frameDeep: "#101f4b", // a calm cobalt: the lattice doesn't flicker
+    spent: "#2f375c", spentMark: "#4a5486",
     gold: "#ffcc33", goldHi: "#fff0a0", goldLo: "#d99a1a", goldRim: "#8a5a08",
     coral: "#ff6b6b", coralHi: "#ffb3a8", coralLo: "#c8424f", coralRim: "#7c1f2c",
     bomb: "#6b7299", bombHi: "#b3bbdc", bombLo: "#3d4466", bombBand: "#d8364b", fuse: "#c9a36b",
@@ -56,8 +57,8 @@
    * winning line, the disc's own colour with a cream ring and a bright face (it still says who
    * won); `flash`: the one-frame cream flash as it lights; `outline` adds an ink edge (10×10).
    */
-  function discCanvas(seat, { lit = false, flash = false, outline = false } = {}) {
-    return memo(`disc${seat}.${lit}.${flash}.${outline}`, () => {
+  function discCanvas(seat, { lit = false, flash = false, outline = false, spent = false } = {}) {
+    return memo(`disc${seat}.${lit}.${flash}.${outline}.${spent}`, () => {
       const d = DISC[seat], o = outline ? 1 : 0;
       const p = pen(8 + 2 * o, 8 + 2 * o);
       if (outline) for (let y = -1; y <= 8; y++) for (let x = -1; x <= 8; x++) {
@@ -68,7 +69,8 @@
         if (!inRound(x, y)) continue;
         const edge = !inRound(x - 1, y) || !inRound(x + 1, y) || !inRound(x, y - 1) || !inRound(x, y + 1);
         let col = d.base;
-        if (flash) col = edge ? d.hi : P.cream;
+        if (spent) col = edge ? P.ink : P.spent; // out of the game: flat, its mark kept
+        else if (flash) col = edge ? d.hi : P.cream;
         else if (lit) col = edge ? P.cream : x + y <= 4 ? d.hi : d.base; // its own colour, ringed in cream
         else if (edge) col = d.rim;
         else if (x + y >= 10) col = d.lo;          // the shade, bottom right
@@ -76,13 +78,13 @@
         p.px(x + o, y + o, col);
       }
       if (!flash) {
-        if (seat === 0) for (const [x, y] of [[3, 2], [4, 2], [2, 3], [5, 3], [2, 4], [5, 4], [3, 5], [4, 5]]) p.px(x + o, y + o, x + y >= 8 ? d.lo : P.goldLo); // gold: a groove ring
-        else { p.px(3 + o, 3 + o, d.rim, 2, 2); p.px(3 + o, 3 + o, lit ? P.cream : d.lo, 1, 1); } // coral: a centre pip
+        if (seat === 0) for (const [x, y] of [[3, 2], [4, 2], [2, 3], [5, 3], [2, 4], [5, 4], [3, 5], [4, 5]]) p.px(x + o, y + o, spent ? P.spentMark : x + y >= 8 ? d.lo : P.goldLo); // gold: a groove ring
+        else { p.px(3 + o, 3 + o, spent ? P.spentMark : d.rim, 2, 2); p.px(3 + o, 3 + o, spent ? P.spentMark : lit ? P.cream : d.lo, 1, 1); } // coral: a centre pip
       }
       return p.c;
     });
   }
-  const disc = (seat, opts = {}) => memo(`discurl${seat}.${opts.lit}.${opts.flash}.${opts.outline}`, () => discCanvas(seat, opts).toDataURL());
+  const disc = (seat, opts = {}) => memo(`discurl${seat}.${opts.lit}.${opts.flash}.${opts.outline}.${opts.spent}`, () => discCanvas(seat, opts).toDataURL());
 
   /** The bomb, 10×10: a dark round body, a lit spot, a fuse to the top right; `spark` 0/1 (two frames), -1 none. */
   function bombCanvas(spark = 0, outline = true) {
@@ -126,7 +128,7 @@
         const ox = F + c * C + 1, oy = F + r * C + 1;
         for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
           if (inRound(x, y)) p.g.clearRect(ox + x, oy + y, 1, 1);
-          else if (inRound(x, y + 1) || inRound(x + 1, y) || inRound(x - 1, y)) p.px(ox + x, oy + y, y < 4 ? P.frameDeep : P.frameHi); // the hole's lip: dark above, lit below
+          else if (y < 4 && (inRound(x, y + 1) || inRound(x + 1, y) || inRound(x - 1, y))) p.px(ox + x, oy + y, P.frameDeep); // the hole's lip, shaded above only: one surface, not 42 rings
         }
       }
       return p.c;
@@ -159,17 +161,17 @@
     ["............", "..D......D..", ".d.d....d.d.", "............"],
     [".D........D.", "............", "d..........d", "............"],
   ];
-  /** The bomb going off: a flash, a ring of fire, smoke and flying bits (20×20, 6 frames). */
+  /** The bomb going off: a flash, a ring of fire, smoke and flying bits (30×30: three slots wide, 6 frames). */
   function blastFrames() {
-    const N = 6, S = 20, out = [];
+    const N = 6, S = 30, out = [];
     for (let f = 0; f < N; f++) {
       const g = Array.from({ length: S }, () => new Array(S).fill("."));
-      const r = 2 + f * 1.6, cx = 9.5, cy = 9.5;
+      const r = 3 + f * 2.4, cx = 14.5, cy = 14.5;
       for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
         const d = Math.hypot(x - cx, y - cy);
-        if (f === 0 && d < 4) g[y][x] = "c";
-        else if (f <= 3 && d < r && d > r - 2.2) g[y][x] = f < 2 ? "y" : "o";
-        else if (f <= 2 && d < r - 2.2) g[y][x] = f === 0 ? "c" : "y";
+        if (f === 0 && d < 6) g[y][x] = "c";
+        else if (f <= 3 && d < r && d > r - 3) g[y][x] = f < 2 ? "y" : "o";
+        else if (f <= 2 && d < r - 3) g[y][x] = f === 0 ? "c" : "y";
         else if (f >= 3 && d < r - 1 && d > r - 3.5 && (x + y + f) % 2 === 0) g[y][x] = "d";
       }
       // Flying bits: a few pixels thrown out along the diagonals.
@@ -228,7 +230,22 @@
 
   // ------------------------------------------------------------ a whole grid (the result, the card, the banner)
 
-  /** A grid drawn whole: the back, the discs where they are, the frame over them. `lit`: cells of the winning line (the rest are dimmed). */
+  /**
+   * The bar that joins a winning line: 2 art px of cream with an ink edge, stepped from the first
+   * disc's centre to the last (no rotation), on a frame-sized canvas.
+   */
+  function lineCanvas(line) {
+    const W = COLS * C + 2 * F, H = ROWS * C + 2 * F, p = pen(W, H);
+    const pts = line.map(([c, r]) => [F + c * C + 5, F + (ROWS - 1 - r) * C + 5]);
+    const [a, b] = [pts[0], pts[pts.length - 1]];
+    const n = Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]));
+    const dots = [];
+    for (let i = 0; i <= n; i++) dots.push([Math.round(a[0] + ((b[0] - a[0]) * i) / n), Math.round(a[1] + ((b[1] - a[1]) * i) / n)]);
+    for (const [x, y] of dots) p.px(x - 2, y - 2, P.ink, 4, 4);
+    for (const [x, y] of dots) p.px(x - 1, y - 1, P.cream, 2, 2);
+    return p.c;
+  }
+  /** A grid drawn whole: the back, the discs where they are, the frame over them. `lit`: the winning line (the rest are spent, the bar joins it). */
   function gridCanvas(grid, lit = []) {
     const W = COLS * C + 2 * F, H = ROWS * C + 2 * F, p = pen(W, H);
     p.g.drawImage(backCanvas(), 0, 0);
@@ -237,11 +254,10 @@
       const v = grid[c]?.[r];
       if (!v) continue;
       const on = litSet.has(`${c},${r}`);
-      p.g.globalAlpha = lit.length && !on ? 0.4 : 1; // only the line is lit
-      p.g.drawImage(discCanvas(v - 1, { lit: on }), F + c * C + 1, F + (ROWS - 1 - r) * C + 1);
-      p.g.globalAlpha = 1;
+      p.g.drawImage(discCanvas(v - 1, { lit: on, spent: lit.length > 0 && !on }), F + c * C + 1, F + (ROWS - 1 - r) * C + 1); // only the line keeps its colour
     }
     p.g.drawImage(frameCanvas(), 0, 0);
+    if (lit.length) p.g.drawImage(lineCanvas(lit), 0, 0);
     return p.c;
   }
 
@@ -307,7 +323,7 @@
    */
   const ANIM = { coin: 1700, hover: 220, fallPerRow: 45, land: 160, fuse: 360, blast: 420, fallAfter: 300, lineStep: 120, lineHold: 700, turn: 160 };
 
-  window.DROP_ART = { P, C, COLS, ROWS, F, DISC, ANIM, disc, discCanvas, bomb, bombCanvas, frame, frameCanvas, back, backCanvas, gridCanvas, bombDemo, sheet: (name) => SHEETS[name](), card: cardCanvas, pen };
+  window.DROP_ART = { P, C, COLS, ROWS, F, DISC, ANIM, disc, discCanvas, bomb, bombCanvas, frame, frameCanvas, back, backCanvas, gridCanvas, lineCanvas, bombDemo, sheet: (name) => SHEETS[name](), card: cardCanvas, pen };
 
   const style = document.createElement("style");
   style.textContent = `.lc-art[data-art="drop_four"] { background: ${P.back}; }`;

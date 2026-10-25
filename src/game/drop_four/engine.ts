@@ -13,6 +13,8 @@
 export type RandomSource = () => number;
 
 export const COLS = 7;
+/** Discs you drop before your bomb is ready (an early bomb clears nothing worth clearing). */
+export const BOMB_AFTER = 3;
 export const ROWS = 6;
 /** 0 empty, 1 the first seat's disc, 2 the second's. Row 0 is the bottom. */
 export type Cell = 0 | 1 | 2;
@@ -106,6 +108,7 @@ export class DropFourGame {
     const row = height(this.grid, col);
     if (row >= ROWS) return { ok: false, reason: "that column is full" };
     if (bomb && !this.bombs[seat]) return { ok: false, reason: "you've used your bomb" };
+    if (bomb && this.moves[seat]! < BOMB_AFTER) return { ok: false, reason: "your bomb is ready after your third disc" };
     this.moves[seat]!++;
     this.last = { col, row };
     const me = (seat + 1) as Cell, them = (2 - seat) as Cell;
@@ -136,6 +139,7 @@ export class DropFourGame {
       }
     }
     const events: DropEvent[] = [{ type: "drop", by: seat, col, row, bomb: true, ...(auto ? { auto } : {}) }, { type: "blast", by: seat, col, row, cleared, falls }];
+    if (!this.grid[col]![row]) this.last = null; // the bomb's slot is empty now: no disc to mark
     const mine = findLine(this.grid, me), theirs = findLine(this.grid, them);
     if (mine) return { ok: true, events: [...events, this.end(seat, mine)] };
     if (theirs) return { ok: true, events: [...events, this.end(1 - seat, theirs)] };
@@ -144,7 +148,7 @@ export class DropFourGame {
   }
 
   /** The clock's move: the most central column that isn't full (a slow move costs time, not a random blunder). */
-  randomColumn(): number {
+  clockColumn(): number {
     const open = [3, 2, 4, 1, 5, 0, 6].filter((c) => height(this.grid, c) < ROWS);
     return open[0]!;
   }

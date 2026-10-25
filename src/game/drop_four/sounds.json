@@ -1,5 +1,5 @@
 {
-  "about": "Drop Four's sounds, in its own words: a disc drops (drop) and lands (land, a wooden clack pitched by how far it fell), the bomb is armed (arm), its fuse fizzes (fuse) and it goes off (blast), cleared discs pop (pop), each disc of the winning line rings a rising note (line), the coin flip and its landing (coin, coinLand), a full column (nope), your turn and theirs (yourTurn, theirTurn), the clock's last seconds and a timeout (tick, timeout), and win, lose and draw. Ploto's set covers select and ready. jsfxr stock presets with a seed and hand-set parameters; vol is relative (0..1), buzz a vibration pattern in ms. Run npm run sounds after editing.",
+  "about": "Drop Four's sounds, in its own words: a disc drops (drop) and lands (land, a wooden clack pitched by how far it fell), the bomb is armed (arm), its fuse fizzes (fuse) and it goes off (blast), cleared discs pop (pop), each disc of the winning line rings a rising note (line), the coin flip and its landing (coin, coinLand), a full column (nope), your turn (yourTurn; theirTurn is kept for later but unused: their drop says it), the clock's last seconds and a timeout (tick, timeout), and win, lose and draw. Ploto's set covers select and ready. jsfxr stock presets with a seed and hand-set parameters; vol is relative (0..1), buzz a vibration pattern in ms. Run npm run sounds after editing.",
   "set": "drop_four",
   "cues": {
     "drop": {
@@ -61,7 +61,7 @@
         "p_base_freq": 0.75,
         "p_freq_ramp": 0,
         "p_env_attack": 0.05,
-        "p_env_sustain": 0.33,
+        "p_env_sustain": 0.45,
         "p_env_decay": 0.1,
         "p_env_punch": 0,
         "p_lpf_freq": 0.35,
@@ -106,7 +106,7 @@
         "p_repeat_speed": 0
       },
       "vol": 0.45,
-      "buzz": 0
+      "buzz": 12
     },
     "line": {
       "preset": "blipSelect",
@@ -181,7 +181,7 @@
         "p_repeat_speed": 0,
         "p_freq_ramp": 0
       },
-      "vol": 0.4,
+      "vol": 0.28,
       "buzz": 15
     },
     "theirTurn": {
@@ -224,9 +224,9 @@
       "preset": "hitHurt",
       "seed": 54,
       "params": {
-        "p_repeat_speed": 0
+        "p_repeat_speed": 0.5
       },
-      "vol": 0.7,
+      "vol": 1.0,
       "buzz": [
         80,
         40,
@@ -273,7 +273,7 @@
         "p_env_decay": 0.4,
         "p_repeat_speed": 0
       },
-      "vol": 0.55,
+      "vol": 0.4,
       "buzz": [
         60,
         80,

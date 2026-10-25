@@ -46,7 +46,7 @@ describe("drop four rules", () => {
     h.grid[2]![0] = 1; h.grid[2]![1] = 2; h.grid[2]![2] = 1; // column C: three discs
     h.grid[3]![0] = 2; h.grid[3]![1] = 1;                    // column D: two
     h.grid[4]![0] = 1;                                        // column E: one
-    h.turn = 1;
+    h.turn = 1; h.moves = [3, 3]; // the bomb is ready after your third disc
     const r = h.drop(1, 3, true); // lands on D3: clears itself, C3 (left), D2 (below); E3 is empty
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -66,7 +66,7 @@ describe("drop four rules", () => {
     a.grid[0]![1] = 1; a.grid[1]![1] = 1; a.grid[2]![1] = 1;
     a.grid[3]![0] = 2; a.grid[3]![1] = 2; a.grid[3]![2] = 1;
     a.grid[4]![0] = 2;
-    a.turn = 1;
+    a.turn = 1; a.moves = [3, 3];
     expect(a.drop(1, 4, true).ok).toBe(true);
     expect(a).toMatchObject({ phase: "over", winner: 0 });
     // Bomber's line: the same, with seat 1's disc on D3 falling into its own A2–C2.
@@ -76,15 +76,23 @@ describe("drop four rules", () => {
     b.grid[0]![1] = 2; b.grid[1]![1] = 2; b.grid[2]![1] = 2;
     b.grid[3]![0] = 1; b.grid[3]![1] = 1; b.grid[3]![2] = 2;
     b.grid[4]![0] = 1;
-    b.turn = 1;
+    b.turn = 1; b.moves = [3, 3];
     expect(b.drop(1, 4, true).ok).toBe(true);
     expect(b).toMatchObject({ phase: "over", winner: 1 });
     expect(b.line).toHaveLength(4);
   });
+  it("the bomb is ready only after your third disc; after a blast the last-move mark goes", () => {
+    const g = game();
+    expect(g.drop(0, 3, true)).toMatchObject({ ok: false, reason: "your bomb is ready after your third disc" });
+    play(g, [0, 6, 0, 6, 1, 5]); // three each
+    const r = g.drop(0, 6, true); // lands on G4, clears G3 under it
+    expect(r.ok).toBe(true);
+    expect(g.last).toBeNull();
+  });
   it("conceding ends it for the other seat; the clock's column is never full", () => {
     const g = game();
     play(g, [0, 0, 0, 0, 0, 0]);
-    for (let i = 0; i < 50; i++) expect(height(g.grid, g.randomColumn())).toBeLessThan(ROWS);
+    for (let i = 0; i < 50; i++) expect(height(g.grid, g.clockColumn())).toBeLessThan(ROWS);
     expect(g.concede(0)).toMatchObject({ ok: true });
     expect(g).toMatchObject({ winner: 1, forfeit: true, phase: "over" });
   });

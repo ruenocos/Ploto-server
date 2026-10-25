@@ -53,3 +53,49 @@ in shape (groove ring / centre pip); a bomb diagram in How to play; the banner
 cropped close with the bomb, reaching four on its second beat, then the bomb
 going off; the result: the decisive line lit and the rest dimmed, two tiles, the
 win pose.
+
+## Round 2
+
+| Category | A | B | Score |
+|---|---|---|---|
+| Game design | 8 | 8 | **8** |
+| Signature moment | 8 | 8 | **8** |
+| Animation | 8 | 7 | **7** |
+| Sound and haptics | 8 | 8 | **8** |
+| Visual design | 8 | 7 | **7** |
+| UX and clarity | 8 | 8 | **8** |
+| Platform consistency | 9 | 9 | **9** |
+| Bots | 7 | 7 | **7** |
+| Implementation | 8 | 8 | **8** |
+| Accessibility | 8 | 9 | **8** |
+
+Clutter (both): not cluttered; the strain is the bright cobalt lattice (42 lit
+hole lips), a second saturated purple frame on the call, gold text meaning two
+things, and dead bands around the board.
+
+What both saw: in friend and quick games the coin flip played on a hidden
+screen (the page had no model yet, and the game's update beat the lobby's);
+the FOUR stamp could cover the line; the discs that shake loose flew over the
+dock; up to seven blips a move; Hard didn't punish sloppy play (a casual
+stand-in won as often as a good one); Medium spotted every bomb win; columns
+40 px at 1×; a full column gave no visible cue; the last-move pip was tiny and
+marked a fallen disc after a bomb; the result's faded discs turned muddy.
+
+Fixes built after round 2: the coin flip in every room (the model is seeded from
+the first update, the game screen shown at once; the e2e checks the host sees
+it); the stamp placed away from the line, with the win pose; a 120 ms stillness,
+discs held big as they light, a stepped cream bar joining the four; the rest
+drop out through the bottom of the frame (clipped; the e2e checks); a bigger
+blast with a hit-stop and a whole-pixel rattle; two ticks a fall, no sound for
+the rival's turn, a quieter turn chime, a louder timeout, a softer lose, a fuse
+that lasts; the bomb ready after your third disc ("Bomb in N"), hidden once used
+(a chip says so), its reach marked with × and read out in the column labels;
+Hard on 40,000 positions and never leaving a move the rival's bomb can win from
+(a good player wins 14%, a casual one 6%); Medium sees bomb wins half the time
+(a good player wins 59%, a casual one 46%); a visible full-column cue; a bigger
+last-move pip, cleared after a blast; no column tint on touch, the hand drops in
+on your turn; a darker frame with shaded upper lips only; STYLE's Active frame
+on the call; the rival's chip in plain text, "their bomb is ready" said once;
+spent discs on the result (flat, marks kept) with the bar, the line kind as a
+tile, a bigger hero; the clock taller as well as red when low; 4 px gutters at
+360 (45 px columns on 2×); the clock's drop renamed and documented as central.

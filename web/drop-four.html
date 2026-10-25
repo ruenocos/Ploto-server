@@ -26,15 +26,16 @@
 /* ---- the game screen ---- */
 #scrGame { display: flex; flex-direction: column; min-height: 100dvh; padding: calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset-bottom) + 12px); max-width: 600px; margin: 0 auto; gap: 10px; }
 #scrGame[hidden] { display: none; }
+@media (max-width: 399px) { #scrGame { padding-left: 4px; padding-right: 4px; } }
 .hud { display: flex; align-items: center; gap: 8px; }
 .who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
 .who img { image-rendering: pixelated; display: block; flex: none; }
 .who .nm { min-width: 0; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.who .bombchip { flex: none; display: flex; align-items: center; gap: 4px; padding: 3px 6px; background: var(--c-well); font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-gold); text-transform: uppercase; white-space: nowrap; }
+.who .bombchip { flex: none; display: flex; align-items: center; gap: 4px; padding: 3px 6px; background: var(--c-well); font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-text); text-transform: uppercase; white-space: nowrap; } /* not gold: gold is a player */
 .who .bombchip.used { color: var(--c-mute); }
 .away { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; padding: 2px 4px; background: var(--c-raise); color: var(--c-mute); }
 .call { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 8px 12px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
-.call.mine { box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-accent), inset 0 var(--px) 0 var(--c-edge); } /* the Active frame: one saturated mass on screen (the board) */
+.call.mine { background: color-mix(in srgb, var(--c-panel) 82%, var(--c-accent)); box-shadow: inset 0 0 0 var(--px) var(--c-accent); } /* STYLE's Active frame: the board stays the one saturated mass */
 .call .disc { flex: none; image-rendering: pixelated; }
 .call b { font: 700 var(--fl-1)/1.1 var(--f-label); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; }
 .call span { flex: 1; min-width: 0; font: 400 var(--fs-s)/1.25 var(--f-text); color: var(--c-text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -42,6 +43,7 @@
 .clock-s.low { color: var(--c-bad-hi); }
 .clock { flex: none; width: 56px; height: calc(var(--px) * 4); background: var(--c-well); box-shadow: 0 0 0 var(--px) var(--c-ink); }
 .clock i { display: block; height: 100%; background: var(--c-gold); transition: width 0.25s steps(2); }
+.clock.low { height: calc(var(--px) * 6); } /* low time: taller as well as red */
 .clock.low i { background: var(--c-bad); }
 .clock[hidden] { display: none; }
 
@@ -61,11 +63,14 @@
 .board .cols button { --b: transparent; --b-hi: transparent; --b-lo: transparent; border: 0; box-shadow: none; clip-path: none; padding: 0; min-height: 0; height: 100%; background: transparent; cursor: default; }
 .board .cols button:active { transform: none; }
 .board.mine .cols button.open { cursor: pointer; }
-.board.mine .cols button.open:hover, .board.mine .cols button.cur { background: rgba(255, 244, 214, 0.06); }
+.board.mine .cols button.open:hover, .board.mine:not(.touch) .cols button.cur { background: rgba(255, 244, 214, 0.04); } /* on touch the disc in hand marks the column */
 .board .cols button { touch-action: manipulation; }
 .board .cols button:focus-visible { outline: none; box-shadow: inset 0 0 0 var(--px) var(--c-cream); } /* the house focus ring, the column's full height */
-.board .reach { position: absolute; outline: var(--px) dashed var(--c-bad-hi); outline-offset: calc(var(--px) * -1); pointer-events: none; } /* what an armed bomb would clear */
-.board .last { position: absolute; background: var(--c-cream); pointer-events: none; } /* the last move */
+.board .reach { position: absolute; outline: calc(var(--px) * 2) dashed var(--c-bad-hi); outline-offset: calc(var(--px) * -2); pointer-events: none; } /* what an armed bomb would clear */
+.board .reach.x::after { content: "×"; position: absolute; inset: 0; display: grid; place-items: center; font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); }
+.board .grid.clip { overflow: hidden; } /* the discs that shake loose leave through the bottom of the frame */
+.board .bar { position: absolute; inset: 0; background-size: 100% 100%; image-rendering: pixelated; pointer-events: none; }
+.board .last { position: absolute; background: var(--c-cream); box-shadow: 0 0 0 var(--px) var(--c-ink); pointer-events: none; } /* the last move */
 .board .d.dim { opacity: 0.45; }
 .board.stopped .d { animation-play-state: paused; }
 .board .stamp { position: absolute; z-index: 5; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; white-space: nowrap; }
@@ -86,6 +91,7 @@
 .bombBtn img { image-rendering: pixelated; display: block; }
 .bombBtn[aria-pressed="true"] { --b: var(--c-bad); --b-hi: var(--c-bad-hi); }
 .bombBtn[hidden] { display: none; }
+.dock .me .bombchip { flex: none; padding: 3px 6px; background: var(--c-well); font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); text-transform: uppercase; white-space: nowrap; }
 .keys { font: 400 var(--fs-xs)/1.3 var(--f-text); color: var(--c-mute); text-align: center; margin: 0; height: calc(var(--fs-xs) * 1.3); white-space: nowrap; overflow: hidden; }
 @media (pointer: coarse) { .keys { display: none; } }
 .hint { font: 400 var(--fs-s)/1.3 var(--f-text); color: var(--c-mute); margin: 0; }
@@ -191,7 +197,7 @@
 
   /* ================================================================ the platform's lobby, told about this game once */
   const BOT_FIELD = { key: "botStyle", label: "Bot difficulty", kind: "choice", options: [["relaxed", "Medium"], ["sharp", "Hard"]], hint: "Medium misses setups. Hard rarely slips" };
-  const BOMBS_FIELD = { key: "bombs", label: "Bombs", kind: "choice", options: [[true, "On"], [false, "Off"]], hint: "One bomb each: it clears the discs beside and below it" };
+  const BOMBS_FIELD = { key: "bombs", label: "Bombs", kind: "choice", options: [[true, "On"], [false, "Off"]], hint: "One each, after your third disc. Clears the discs beside and below" };
   const SCHEMA = [
     BOMBS_FIELD,
     { key: "timer", label: "Turn timer", kind: "choice", options: [[true, "On"], [false, "Off"]], hint: "15 s a move" },
@@ -209,7 +215,7 @@
       steps: [
         "Tap a column to drop your disc. It falls to the lowest free space.",
         "Four of yours in a row wins: across, down or on a slant.",
-        "Your bomb (one a game, if bombs are on): tap Bomb, then a column. It lands, then clears itself and the discs right beside it and under it. Discs above fall down.",
+        "Your bomb (one a game, if bombs are on, ready after your third disc): tap Bomb, then a column. It lands, then clears itself and the discs right beside it and under it. Discs above fall down.",
         "If the fall makes four for the bomber, the bomber wins. If it makes four only for the other player, they win.",
         "A full grid with no four is a draw. In a rematch, the loser goes first.",
       ],
@@ -314,7 +320,7 @@
       box.appendChild(fx);
       hero.appendChild(box);
       // The bomb, its fuse lit, waiting at the left (the card's piece of interface).
-      const bomb = el("div", "hs", { left: `${x0 - 14 * k}px`, top: `${H - 14 * k}px`, width: `${10 * k}px`, height: `${10 * k}px`, backgroundImage: `url(${A.bomb(1)})` });
+      const bomb = el("div", "hs", { left: `${x0 - 14 * k}px`, top: `${H - 2 - 10 * k}px`, width: `${10 * k}px`, height: `${10 * k}px`, backgroundImage: `url(${A.bomb(1)})` }); // seated on the floor, by the frame
       hero.appendChild(bomb);
       hero._g = { k, box, discs, fx, bomb, grid: Array.from({ length: NCOL }, () => []), step: 0, phase: "build" };
       bannerReset(hero, true);
@@ -402,7 +408,7 @@
   function discEl(seat, col, row, k, bomb = false) {
     const e = el("div", "d", { left: `${(F + col * CELL + 1) * k}px`, top: `${(F + (NROW - 1 - row) * CELL + 1) * k}px`, width: `${8 * k}px`, height: `${8 * k}px`, backgroundImage: `url(${bomb ? A.bomb(-1) : A.disc(seat)})`, position: "absolute", backgroundSize: "100% 100%", imageRendering: "pixelated" });
     if (bomb) Object.assign(e.style, { left: `${(F + col * CELL) * k}px`, top: `${(F + (NROW - 1 - row) * CELL) * k}px`, width: `${10 * k}px`, height: `${10 * k}px` });
-    e.dataset.c = col; e.dataset.r = row;
+    e.dataset.c = col; e.dataset.r = row; e.dataset.seat = seat;
     return e;
   }
   /**
@@ -417,7 +423,7 @@
     for (let i = 0; i <= rows; i++) { const t = i / rows; frames.push({ transform: `translateY(${Math.round(-dist + dist * (0.35 * t + 0.65 * t * t))}px)`, offset: t * 0.86 }); } // a push, then gravity
     frames.push({ transform: `translateY(0) scale(1.15, 0.8)`, offset: 0.9 }, { transform: `translateY(${-3 * k}px)`, offset: 0.94 }, { transform: `translateY(${-k}px)`, offset: 0.97 }, { transform: "translateY(0)", offset: 1 });
     const fall = T.fallPerRow * rows + T.land;
-    if (ticks) for (let i = 1; i < rows; i++) later(() => cue("drop", { pitch: 0.9 + 0.05 * i, vol: 0.5 }), fall * sp * 0.86 * Math.sqrt(i / rows)); // a tick per row, faster and faster
+    if (ticks && rows > 2) for (const f of [1 / 3, 2 / 3]) later(() => cue("drop", { pitch: 1.1 - 0.12 * f * 3, vol: 0.35 }), fall * sp * 0.86 * Math.sqrt(f)); // two ticks on the way down, lower as it falls
     await e.animate(frames, { duration: fall * sp, easing: "linear" }).finished.catch(() => {});
   }
 
@@ -545,7 +551,7 @@
   /* ================================================================ drawing the grid */
   const geo = { k: 4 };
   function layout() {
-    const w = Math.min(window.innerWidth, 600) - 16;
+    const w = Math.min(window.innerWidth, 600) - (window.innerWidth < 400 ? 8 : 16);
     const h = window.innerHeight - 52 - 64 - 64 - 24 - 40; // the HUD, the call, the dock, gaps
     // k in whole device pixels (a 2× phone at 360 wide gets 4.5: 45 px columns).
     const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
@@ -566,17 +572,21 @@
       if (!v) continue;
       const d = discEl(v - 1, c, r, k);
       if (g.phase === "over" && line.size && line.has(`${c},${r}`)) d.style.backgroundImage = `url(${A.disc(v - 1, { lit: true })})`;
-      else if (g.phase === "over" && line.size) d.classList.add("dim");
+      else if (g.phase === "over" && line.size) d.style.backgroundImage = `url(${A.disc(v - 1, { spent: true })})`;
       layer.appendChild(d);
     }
+    $("fx").querySelectorAll(".bar").forEach((b) => b.remove());
+    if (g.phase === "over" && g.line) $("fx").appendChild(el("div", "bar", { backgroundImage: `url(${A.lineCanvas(g.line).toDataURL()})` }));
     // The last move: a cream pip on top of that disc (where the eye goes after the rival moves).
     if (g.last && g.phase === "playing" && g.grid[g.last.col][g.last.row]) {
       const [ax, ay] = slotXY(g.last.col, g.last.row);
-      layer.appendChild(el("div", "last", { left: `${(ax + 4) * k}px`, top: `${(ay + 1) * k}px`, width: `${2 * k}px`, height: `${k}px` }));
+      layer.appendChild(el("div", "last", { left: `${(ax + 3.5) * k}px`, top: `${(ay + 1) * k}px`, width: `${3 * k}px`, height: `${2 * k}px` }));
     }
     // Columns: buttons for keyboard, screen readers and taps.
     const mine = isMine();
     $("board").classList.toggle("mine", mine);
+    $("board").classList.toggle("touch", S.pointer === "touch" || (!S.pointer && matchMedia("(pointer: coarse)").matches));
+    const bombing = mine && S.bomb && g.bombs[you()];
     for (const b of $("cols").children) {
       const c = Number(b.dataset.col), h = heightOf(g, c), open = h < NROW;
       b.classList.toggle("open", open && mine);
@@ -584,10 +594,13 @@
       b.tabIndex = c === S.cursor ? 0 : -1;
       b.setAttribute("aria-disabled", String(!(open && mine)));
       const stack = g.grid[c].slice(0, h).map((v) => (v - 1 === you() ? "yours" : "theirs"));
-      b.setAttribute("aria-label", `Column ${colName(c)}: ${open ? plural(NROW - h, "space", "spaces") + " free" : "full"}${stack.length ? `, from the bottom: ${stack.join(", ")}` : ""}`);
+      const reach = bombing && open ? bombReach(g, c).filter(([x, y]) => x !== c || y !== h).map(([x, y]) => `${colName(x)}${y + 1}`) : null;
+      b.setAttribute("aria-label", `Column ${colName(c)}: ${open ? plural(NROW - h, "space", "spaces") + " free" : "full"}${stack.length ? `, from the bottom: ${stack.join(", ")}` : ""}${reach ? `. The bomb would clear ${reach.length ? reach.join(" and ") : "nothing"}` : ""}`);
     }
     drawLane();
   }
+  /** What an armed bomb in column c would clear: its own slot and the discs beside and below it. */
+  const bombReach = (g, c) => { const r = heightOf(g, c); return [[c, r], [c - 1, r], [c + 1, r], [c, r - 1]].filter(([x, y]) => x >= 0 && x < NCOL && y >= 0 && (x === c && y === r || g.grid[x][y])); };
   /** The disc in hand above the grid, over the column you'd drop in (your turn only). */
   function drawLane() {
     const lane = $("lane"), g = G(), k = geo.k;
@@ -599,12 +612,14 @@
     const hand = el("div", "", { left: `${x}px`, top: `${2 * k}px`, width: `${10 * k}px`, height: `${10 * k}px`, backgroundImage: `url(${bombing ? A.bomb(0) : A.disc(you(), { outline: true })})` });
     lane.appendChild(hand);
     if (heightOf(g, c) >= NROW) hand.style.opacity = "0.35";
+    hand.id = "hand";
     // An armed bomb shows its reach: the slot it lands in and the discs beside and below it.
     if (bombing && heightOf(g, c) < NROW) {
       const r = heightOf(g, c);
-      const cells = [[c, r], [c - 1, r], [c + 1, r], [c, r - 1]].filter(([x, y]) => x >= 0 && x < NCOL && y >= 0 && (x === c && y === r || g.grid[x][y]));
-      for (const [x, y] of cells) { const [ax, ay] = slotXY(x, y); $("fx").appendChild(el("div", "reach", { left: `${(ax + 1) * k}px`, top: `${(ay + 1) * k}px`, width: `${8 * k}px`, height: `${8 * k}px` })); }
+      for (const [x, y] of bombReach(g, c)) { const [ax, ay] = slotXY(x, y); $("fx").appendChild(el("div", `reach${x !== c || y !== r ? " x" : ""}`, { left: `${(ax + 1) * k}px`, top: `${(ay + 1) * k}px`, width: `${8 * k}px`, height: `${8 * k}px` })); }
     }
+    // Your turn just came: the hand drops in.
+    if (S.handIn && !RM()) { S.handIn = false; hand.animate([{ transform: `translateY(${-4 * k}px)` }, { transform: "translateY(0)" }], { duration: 160, easing: "steps(2)" }); }
   }
   function renderGame() {
     const g = G();
@@ -627,18 +642,18 @@
   }
   function renderDock() {
     const g = G(), me = you();
-    $("meBox").innerHTML = `${imgTag(A.disc(me, { outline: true }), 10, 10, 2)}<span class="nm">${esc(nameOf(me))}</span><span class="pl-you">You</span>`;
+    const has = g.bombs[me], wait = Math.max(0, 3 - g.moves[me]);
+    $("meBox").innerHTML = `${imgTag(A.disc(me, { outline: true }), 10, 10, 2)}<span class="nm">${esc(nameOf(me))}</span><span class="pl-you">You</span>${g.bombsOn && !has ? '<span class="bombchip">Bomb used</span>' : ""}`;
     const b = $("bombBtn");
-    b.hidden = !g.bombsOn || g.phase !== "playing";
-    const has = g.bombs[me];
-    b.disabled = !has || !isMine();
+    b.hidden = !g.bombsOn || g.phase !== "playing" || !has; // once it's used, the button goes (a chip says so)
+    b.disabled = !has || !isMine() || wait > 0;
     b.setAttribute("aria-pressed", String(!!(S.bomb && has)));
-    b.innerHTML = `${imgTag(A.bomb(S.bomb && has ? 1 : -1), 10, 10, 3)}<span>${!has ? "Bomb used" : S.bomb ? "Bomb armed" : "Bomb"}</span>`;
+    b.innerHTML = `${imgTag(A.bomb(S.bomb && has ? 1 : -1), 10, 10, 3)}<span>${wait > 0 ? `Bomb in ${wait}` : S.bomb ? "Bomb armed" : "Bomb"}</span>`;
   }
   $("bombBtn").onclick = () => toggleBomb();
   function toggleBomb() {
     const g = G();
-    if (!g || !isMine() || !g.bombs[you()]) return;
+    if (!g || !isMine() || !g.bombs[you()] || g.moves[you()] < 3) return;
     S.bomb = !S.bomb;
     S.armedCol = null;
     cue(S.bomb ? "arm" : "select", { vol: S.bomb ? 1 : 0.5 });
@@ -654,7 +669,7 @@
       const bombing = S.bomb && g.bombs[you()];
       const reachEmpty = bombing && (() => { const c = S.cursor, r = heightOf(g, c); return r < NROW && ![[c - 1, r], [c + 1, r], [c, r - 1]].some(([x, y]) => x >= 0 && x < NCOL && y >= 0 && g.grid[x][y]); })();
       if (mine) { title = "Your turn"; text = S.callNote || (bombing ? (reachEmpty ? "Nothing to clear there" : S.armedCol !== null && S.armedCol !== undefined ? "Tap again to drop the bomb" : "Bomb armed: pick a column") : g.moves[you()] < 2 ? "Tap a column to drop" : ""); }
-      else { title = `${rivalName()}'s turn`; text = rivalAway() ? `${rivalName()} lost connection. The clock moves for them` : S.callNote || (g.bombsOn && g.bombs[1 - you()] && g.moves[1 - you()] > 3 ? "Their bomb is ready" : ""); }
+      else { title = `${rivalName()}'s turn`; text = rivalAway() ? `${rivalName()} lost connection. The clock moves for them` : S.callNote || (g.bombsOn && g.bombs[1 - you()] && g.moves[1 - you()] === 3 ? "Their bomb is ready now" : ""); }
     } else {
       title = g.draw ? "Draw" : g.winner === you() ? "Victory" : "Defeat";
       text = g.forfeit ? (g.winner === you() ? `${rivalName()} forfeited` : "You forfeited") : g.draw ? "The grid is full" : g.winner === you() ? "Four in a row" : `${rivalName()} made four`;
@@ -700,7 +715,7 @@
   setInterval(() => { if (screenNow() === "game" && !$("clock").hidden) tickClock(); }, 250);
 
   /* ================================================================ your move: tap a column (a mouse previews it; the keyboard walks it) */
-  $("cols").addEventListener("pointerdown", (ev) => { S.pointer = ev.pointerType || "mouse"; });
+  $("cols").addEventListener("pointerdown", (ev) => { S.pointer = ev.pointerType || "mouse"; $("board").classList.toggle("touch", S.pointer === "touch"); });
   $("cols").addEventListener("pointermove", (ev) => {
     if (ev.pointerType !== "mouse" || !isMine()) return;
     const b = ev.target.closest?.("button[data-col]");
@@ -716,14 +731,25 @@
   async function dropIn(col, confirmed = false) {
     const g = G();
     if (!g || !isMine()) return;
-    if (heightOf(g, col) >= NROW) { cue("nope"); pose($("cols").children[col], "nope"); say(`Column ${colName(col)} is full`); return; }
+    if (heightOf(g, col) >= NROW) {
+      cue("nope");
+      S.cursor = col; drawGrid();
+      pose($("hand"), "nope");
+      const [ax, ay] = slotXY(col, NROW - 1);
+      const top = el("div", "reach", { left: `${(ax + 1) * geo.k}px`, top: `${(ay + 1) * geo.k}px`, width: `${8 * geo.k}px`, height: `${8 * geo.k}px` });
+      $("fx").appendChild(top); setTimeout(() => top.remove(), 600);
+      $("callText").textContent = `Column ${colName(col)} is full`; setTimeout(() => { if (isMine()) renderCall(); }, 1200);
+      say(`Column ${colName(col)} is full`);
+      return;
+    }
     const bomb = S.bomb && g.bombs[you()];
     // An armed bomb on touch: the first tap shows what it would clear, a second tap on the same column drops it.
     if (bomb && !confirmed && S.pointer === "touch" && S.armedCol !== col) { S.armedCol = col; S.cursor = col; drawGrid(); renderCall(); return; }
     S.armedCol = null;
     S.sending = true;
     drawGrid(); renderDock(); // it's out of your hands now: no second tap, no bomb toggle while it's on its way
-    $("callTitle").textContent = bomb ? "Bomb away" : "Dropping"; $("callText").textContent = "";
+    if (bomb) $("callTitle").textContent = "Bomb away";
+    $("callText").textContent = ""; // the call stays put: no flicker between taps
     // It starts falling now; the server's event confirms it (and plays the rest).
     const row = heightOf(g, col);
     const d = discEl(you(), col, row, geo.k, bomb);
@@ -746,6 +772,12 @@
     a.finished.then(() => e.remove()).catch(() => {});
     return e;
   }
+  /** The grid rattles in whole art pixels (no smooth sub-pixel shaking). */
+  function rattle(amp = 1) {
+    if (RM()) return;
+    const k = geo.k * amp;
+    $("board").animate([{ transform: "translate(0, 0)" }, { transform: `translate(${k}px, ${k / 2}px)` }, { transform: `translate(${-k}px, 0)` }, { transform: `translate(${k / 2}px, ${k / 2}px)` }, { transform: "translate(0, 0)" }], { duration: 260, easing: "steps(4)" });
+  }
   /** Art position of a slot's top-left corner (row 0 is the bottom). */
   const slotXY = (c, r) => [F + c * CELL, F + (NROW - 1 - r) * CELL];
   /** Screen readers: `say` for the play by play (polite), `sayNow` for your turn and the end (assertive). */
@@ -754,8 +786,12 @@
 
   async function play(u) {
     const events = u.events || [];
+    const starting = events.some((e) => e.type === "start");
+    if (!G() && starting && u.view.game) { S.view = u.view; S.M = JSON.parse(JSON.stringify(u.view)); S.M.game.turn = null; } // the coin flip, even before the first state
     const g = G();
-    if (!g || !events.length || (screenNow() !== "game" && !events.some((e) => e.type === "start"))) return settle(u.view);
+    if (!g || !events.length || (screenNow() !== "game" && !starting)) return settle(u.view);
+    // The game's first update can beat the lobby's "it started": show the game screen now, so the coin flip is seen.
+    if (events.some((e) => e.type === "start") && S.lobby && S.lobby.phase === "lobby") { S.lobby = { ...S.lobby, phase: "playing" }; show(); }
     S.anim = true;
     S.final = events.find((e) => e.type === "over") || null;
     try {
@@ -854,12 +890,12 @@
     },
     async blast(e) {
       const g = G(), k = geo.k, fx = $("fx"), layer = $("discs");
-      // A beat of stillness, then the blast: the bomb and its neighbours burst, the grid rattles.
-      await wait2(80);
+      // A beat of stillness, then the blast (three slots wide): the bomb and its neighbours burst, the grid rattles.
+      $("board").classList.add("stopped"); await wait2(120); $("board").classList.remove("stopped");
       const [bx, by] = slotXY(e.col, e.row);
-      if (!RM()) sheetFx(fx, "blast", bx - 5, by - 5, k, T.blast * speed());
-      cue("blast");
-      pose($("board"), "shake");
+      if (!RM()) sheetFx(fx, "blast", bx - 10, by - 10, k, T.blast * speed());
+      cue("blast", { buzz: e.by === you() });
+      rattle(2);
       let i = 0;
       for (const [c, r] of e.cleared) {
         layer.querySelector(`.d[data-c="${c}"][data-r="${r}"]`)?.remove();
@@ -890,8 +926,8 @@
       g.turn = e.seat;
       S.callNote = "";
       renderGame();
-      if (e.seat === you()) { pose($("call"), "call"); cue("yourTurn"); sayNow("Your turn"); }
-      else { cue("theirTurn"); say(`${rivalName()}'s turn`); }
+      if (e.seat === you()) { S.handIn = true; drawLane(); pose($("call"), "call"); cue("yourTurn"); sayNow("Your turn"); }
+      else say(`${rivalName()}'s turn`); // no sound for their turn: their disc's drop says it
       await wait2(T.turn);
     },
     async over(e, v) {
@@ -902,35 +938,44 @@
       layer.querySelectorAll(".last").forEach((x) => x.remove());
       if (e.line && !RM()) {
         // A beat of stillness; then the line lights disc by disc (a cream flash, then its own colour
-        // ringed in cream), a note higher each time; then everything else shakes loose and drops out.
-        await sleep(90);
+        // ringed in cream, held big for a beat), a note higher each time; a bar joins them; then
+        // everything else shakes loose and drops out through the bottom of the frame.
+        $("board").classList.add("stopped"); await sleep(120); $("board").classList.remove("stopped");
         let i = 0;
         for (const [c, r] of e.line) {
           const d = layer.querySelector(`.d[data-c="${c}"][data-r="${r}"]`);
           if (d) {
             d.style.backgroundImage = `url(${A.disc(e.winner, { flash: true })})`;
-            d.animate([{ transform: "scale(1.25)" }, { transform: "scale(1)" }], { duration: 120, easing: "steps(2)" });
+            d.animate([{ transform: "scale(1.25)" }, { transform: "scale(1.1)", offset: 0.4 }, { transform: "scale(1.1)", offset: 0.8 }, { transform: "scale(1)" }], { duration: 160, easing: "steps(4)" });
             later(() => { d.style.backgroundImage = `url(${A.disc(e.winner, { lit: true })})`; }, 110);
           }
           cue("line", { pitch: 1 + 0.12 * i++ });
           await sleep(T.lineStep * speed());
         }
+        const bar = el("div", "bar", { backgroundImage: `url(${A.lineCanvas(e.line).toDataURL()})` });
+        $("fx").appendChild(bar);
+        bar.animate([{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: 160, easing: "steps(4)" });
         const rest = [...layer.querySelectorAll(".d")].filter((d) => !e.line.some(([c, r]) => Number(d.dataset.c) === c && Number(d.dataset.r) === r));
-        $("board").animate([{ transform: "translate(0, 0)" }, { transform: `translate(${k}px, 0)` }, { transform: `translate(${-k}px, 0)` }, { transform: "translate(0, 0)" }], { duration: 200, easing: "steps(3)" });
-        rest.forEach((d) => d.animate([{ transform: "translateY(0)", opacity: 1 }, { transform: `translateY(${-k}px)`, offset: 0.15 }, { transform: `translateY(${70 * k}px)`, opacity: 1 }], { duration: 480, easing: "steps(6)", delay: 30 * Number(d.dataset.c), fill: "forwards" }));
-        if (rest.length) later(() => cue("drop", { pitch: 0.8, vol: 0.6 }), 120);
-      } else if (e.line) for (const d of layer.querySelectorAll(".d")) d.classList.toggle("dim", !e.line.some(([c, r]) => Number(d.dataset.c) === c && Number(d.dataset.r) === r));
+        rattle(1);
+        $("board").querySelector(".grid").classList.add("clip");
+        rest.forEach((d) => d.animate([{ transform: "translateY(0)" }, { transform: `translateY(${-k}px)`, offset: 0.15 }, { transform: `translateY(${70 * k}px)` }], { duration: 480, easing: "steps(6)", delay: 30 * Number(d.dataset.c), fill: "forwards" }));
+        if (rest.length) later(() => cue("land", { pitch: 0.8, vol: 0.6, buzz: false }), 480 + 30 * 6);
+      } else if (e.line) for (const d of layer.querySelectorAll(".d")) if (!e.line.some(([c, r]) => Number(d.dataset.c) === c && Number(d.dataset.r) === r)) d.style.backgroundImage = `url(${A.disc(Number(d.dataset.seat ?? 0), { spent: true })})`;
       renderCall();
       const stamp = el("div", `stamp ${e.winner === null ? "plain" : e.winner === 0 ? "" : "coral"}`);
+      // Never over the line: high in the lane when the line is low, low on the grid when it's high.
+      if (e.line) { const mean = e.line.reduce((a, [, r]) => a + r, 0) / e.line.length; stamp.style.top = mean >= 2 ? `calc(${78 * 0.82} * var(--k))` : `calc(7 * var(--k))`; }
       stamp.setAttribute("aria-hidden", "true");
       stamp.innerHTML = `<span class="stamp-in"><b>${e.forfeit ? "Forfeit" : e.winner === null ? "Draw" : "Four"}</b><small>${e.forfeit ? (won ? `${esc(rivalName())} gave up` : "You gave up") : e.winner === null ? "The grid is full" : won ? "You win" : `${esc(rivalName())} wins`}</small></span>`;
       $("board").appendChild(stamp);
       if (!RM()) stamp.firstElementChild.animate([{ transform: "scale(1.3)" }, { transform: "scale(0.94)" }, { transform: "scale(1)" }], { duration: 180, easing: "steps(3)", fill: "backwards" });
+      if (won && !RM()) later(() => pose(stamp.firstElementChild, "win"), 200);
       cue(e.winner === null ? "draw" : won ? "win" : "lose");
       sayNow(e.forfeit ? (won ? `${rivalName()} forfeited. You win` : "You forfeited") : e.winner === null ? "Draw. The grid is full" : won ? "Four in a row. You win" : `${rivalName()} made four in a row. You lose`);
       if (won && !RM()) pose($("call"), "call");
       await sleep(RM() ? 1500 : T.lineHold + 900);
       stamp.remove();
+      $("board").querySelector(".grid").classList.remove("clip");
       S.resultReady = true;
       void v;
     },
@@ -967,12 +1012,14 @@
   window.addEventListener("resize", () => { if (screenNow() === "game") renderGame(); });
 
   /* ================================================================ the result: Ploto's screen, the game's words and numbers */
+  /** Across, down or slant: which way the winning line runs. */
+  const lineKind = (line) => (line[0][1] === line[line.length - 1][1] ? "Across" : line[0][0] === line[line.length - 1][0] ? "Down" : "Slant");
   function renderResult() {
     const v = S.view, g = v?.game;
     if (!g || g.phase !== "over") return;
     const won = g.winner === you(), me = you();
     const fresh = $("resMain")._resKey !== S.room?.roomId;
-    const km = window.innerWidth - 32 >= 74 * 4 ? 4 : 3;
+    const km = [5, 4, 3].find((kk) => window.innerWidth - 32 >= 74 * kk) ?? 2;
     const hero = `<img src="${A.gridCanvas(g.grid, g.line ?? []).toDataURL()}" alt="The final grid" width="${74 * km}" height="${64 * km}" style="box-shadow:0 0 0 var(--px) var(--c-ink)">`;
     kit.renderResult($("resMain"), {
       hero,
@@ -980,7 +1027,7 @@
       sub: g.forfeit ? (won ? `${rivalName()} forfeited` : "You forfeited") : g.draw ? "The grid filled up with no four" : won ? "Four in a row" : `${rivalName()} made four in a row`,
       win: won,
       tiles: [
-        { label: "Your moves", value: g.moves[me] },
+        g.line ? { label: "Line", value: 4, format: () => lineKind(g.line) } : { label: "Your moves", value: g.moves[me] },
         ...(g.bombsOn ? [{ label: "Bomb", value: g.bombs[me] ? 0 : 1, format: (n) => (n ? "Used" : "Kept") }] : []),
       ],
       view: S.lobby, rematchHint: "Same settings; the loser goes first", actions: $("resFoot"), key: S.room?.roomId,

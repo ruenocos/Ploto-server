@@ -87,8 +87,8 @@ describe("Drop Four room", () => {
 
   it("a bomb blasts, recorded in the events; bombs off refuses it", async () => {
     const { room, a } = await hostedPair({ timer: false });
-    room.handleRequest(mover(room), "dropfour:drop", { col: 3 });
-    room.handleRequest(mover(room), "dropfour:drop", { col: 3, bomb: true });
+    for (const col of [0, 6, 0, 6, 1, 5]) room.handleRequest(mover(room), "dropfour:drop", { col }); // three discs each: bombs ready
+    expect(() => room.handleRequest(mover(room), "dropfour:drop", { col: 3, bomb: true })).not.toThrow();
     const ev = a.last().events;
     expect(ev.map((e: any) => e.type)).toEqual(["drop", "blast", "turn"]);
     expect(a.last().view.game.bombs.filter(Boolean)).toHaveLength(1);

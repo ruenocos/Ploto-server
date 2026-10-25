@@ -52,6 +52,7 @@ adapter.checks = [
     await a.waitForSelector(".pl-codecard b");
     const code = (await a.locator(".pl-codecard b").first().innerText()).trim();
     await home(b); await b.fill("[data-code-form] input", code); await b.locator("[data-code-form] button").click();
+    await a.waitForSelector(".coin-wrap", { timeout: 5000 }).catch(() => assert(false, "the host should see the coin flip"));
     await Promise.all([playing(a), playing(b)]);
     // Whoever goes first plays A B C D along the bottom; the other stacks on G.
     const t0 = Date.now();
@@ -67,30 +68,45 @@ adapter.checks = [
     // The line lights before the result, then the stamp lands.
     await first.waitForSelector("#board .stamp", { timeout: 8000 });
     assert((await discs(first)) === 7, `7 discs on the grid, not ${await discs(first)}`);
+    const inside = await first.evaluate(() => { const g = document.querySelector("#board .grid").getBoundingClientRect(); return [...document.querySelectorAll("#discs .d")].every((d) => { const r = d.getBoundingClientRect(); return r.top >= g.top - 1 || r.height === 0; }); });
+    assert(inside, "no disc should fly out above the grid at the end");
     await first.waitForSelector('[data-res="rematch"]', { timeout: 15000 });
     assert(/victory/i.test(await first.locator(".pl-res-head h2").innerText()), "four in a row: Victory");
     assert(/defeat/i.test(await second.locator(".pl-res-head h2").innerText().catch(() => "")) || true, "the other side sees Defeat");
     await a.close2(); await b.close2();
   }],
-  ["the bomb: arm it, drop it, it clears the discs beside and below it (and practice opens with the coin flip)", async ({ B, home, assert, sleep }) => {
+  ["practice opens with the coin flip; the bomb waits for your third disc, shows its reach, and clears beside and below", async ({ B, home, assert, sleep }) => {
     const p = await B.player({ name: "Bo" });
     await home(p);
     await p.click('[data-mode="practice"]'); await p.click("#practiceBtn");
     await p.waitForSelector(".coin-wrap", { timeout: 5000 }).catch(() => assert(false, "practice should open with the coin flip"));
-    await playing(p);
-    assert(await dropWhenMine(p, 3, 20000), "couldn't drop a disc");
-    await sleep(400);
-    const t0 = Date.now();
-    while (!(await myTurn(p)) && Date.now() - t0 < 15000) await sleep(80);
-    const before = await discs(p);
-    await p.click("#bombBtn");
-    assert((await p.getAttribute("#bombBtn", "aria-pressed")) === "true", "the bomb button arms");
-    assert((await p.locator("#fx .reach").count()) >= 1, "an armed bomb shows what it would clear");
-    await p.locator('#cols button[data-col="3"]').click();
-    await p.waitForFunction(() => /used/i.test(document.getElementById("bombBtn")?.textContent || ""), null, { timeout: 8000 });
-    await sleep(1500);
-    assert((await discs(p)) < before + 1, `the bomb cleared discs (before ${before}, after ${await discs(p)})`);
     await p.close2();
+    // A friend game, so the moves are ours: three discs each, then Ann's bomb.
+    const a = await B.player({ name: "Ann" }), b = await B.player({ name: "Ben" });
+    await home(a);
+    await a.click('[data-mode="host"]'); await a.click('[data-key="timer"][data-val="false"]'); await a.click("#createBtn");
+    await a.waitForSelector(".pl-codecard b");
+    const code = (await a.locator(".pl-codecard b").first().innerText()).trim();
+    await home(b); await b.fill("[data-code-form] input", code); await b.locator("[data-code-form] button").click();
+    await Promise.all([playing(a), playing(b)]);
+    let firstMine = null; const t0 = Date.now();
+    while (!firstMine && Date.now() - t0 < 15000) { if (await myTurn(a)) firstMine = a; else if (await myTurn(b)) firstMine = b; else await sleep(80); }
+    const annFirst = firstMine === a;
+    const plan = annFirst ? [[a, 0], [b, 6], [a, 1], [b, 5], [a, 0], [b, 6]] : [[b, 6], [a, 0], [b, 5], [a, 1], [b, 6], [a, 0]];
+    for (const [pg, col] of plan.slice(0, annFirst ? 6 : 5)) assert(await dropWhenMine(pg, col), `couldn't drop in ${col}`);
+    if (!annFirst) assert(await dropWhenMine(b, 4), "Ben's last disc");
+    const t1 = Date.now(); while (!(await myTurn(a)) && Date.now() - t1 < 15000) await sleep(80);
+    assert(!(await a.isDisabled("#bombBtn")), "after three discs the bomb is ready");
+    const before = await discs(a);
+    await a.click("#bombBtn");
+    assert((await a.getAttribute("#bombBtn", "aria-pressed")) === "true", "the bomb button arms");
+    await a.hover('#cols button[data-col="5"]');
+    assert((await a.locator("#fx .reach").count()) >= 2, "an armed bomb shows what it would clear");
+    await a.locator('#cols button[data-col="5"]').click();
+    await a.waitForSelector("#meBox .bombchip", { timeout: 8000 });
+    await sleep(1500);
+    assert((await discs(a)) < before, `the bomb cleared discs (before ${before}, after ${await discs(a)})`);
+    await a.close2(); await b.close2();
   }],
   ["no screen scrolls sideways at 360, 390 or 430 wide; the board fits above the dock", async ({ B, home, assert }) => {
     for (const width of [360, 390, 430]) {

@@ -4,9 +4,10 @@
  * caps the work, so a move never takes long and is the same on every machine
  * (iterative deepening: the deepest search that finished within the budget wins).
  *
- *   hard    searches up to 8 moves ahead (20,000 positions at most: about 20 ms),
- *           never misses a win or a block, and weighs its bomb: it bombs to win,
- *           or to break a position it would otherwise lose.
+ *   hard    searches up to 8 moves ahead (40,000 positions at most: about 40 ms),
+ *           never misses a win or a block, never leaves a move the rival's bomb
+ *           can win from, and weighs its own bomb: it bombs to win, or to break
+ *           a position it would otherwise lose.
  *   medium  looks one move ahead: it always takes a four it can see and blocks
  *           most threats, but misses setups, and often plays one of its next
  *           few moves instead of the best (never one that hands you a win).
@@ -135,6 +136,7 @@ function scoreColumns(g: Grid, who: number, maxDepth: number, budget: number, na
 function bombResult(view: DropView, col: number, seat: number): { grid: Grid; winner: number | null } | null {
   const game = new DropFourGame({ random: () => 0, bombs: true, first: seat });
   game.grid = view.grid.map((c) => [...c]) as Grid;
+  game.moves = [view.moves[0], view.moves[1]];
   const r = game.drop(seat, col, true);
   if (!r.ok) return null;
   return { grid: game.grid, winner: game.winner };
@@ -145,10 +147,12 @@ function bombResult(view: DropView, col: number, seat: number): { grid: Grid; wi
  * (`win`) or blocks one (`block`), how often it plays a safe move that isn't the best (`slip`), and
  * whether it weighs its bomb when losing (`bombSave`: the chance it does).
  */
-export interface Style { readonly depth: number; readonly budget: number; readonly win: number; readonly block: number; readonly slip: number; readonly bombSave: number }
+export interface Style { readonly depth: number; readonly budget: number; readonly win: number; readonly block: number; readonly slip: number; readonly bombSave: number; readonly bombSee?: number; readonly rivalBomb?: boolean }
 export const LEVELS: Record<BotLevel, Style> = {
-  hard: { depth: 8, budget: 20_000, win: 1, block: 1, slip: 0, bombSave: 1 },
-  medium: { depth: 1, budget: 2_000, win: 1, block: 0.8, slip: 0.4, bombSave: 0.5 },
+  // Hard also never leaves a move the rival's bomb can win from.
+  hard: { depth: 8, budget: 40_000, win: 1, block: 1, slip: 0, bombSave: 1, bombSee: 1, rivalBomb: true },
+  // Medium sees a bomb win half the time (people miss them), blocks most threats, misses setups.
+  medium: { depth: 1, budget: 2_000, win: 1, block: 0.85, slip: 0.45, bombSave: 0.5, bombSee: 0.5 },
 };
 
 export function chooseMove(view: DropView, level: BotLevel | Style, random: RandomSource): BotMove {
@@ -161,7 +165,7 @@ export function chooseMove(view: DropView, level: BotLevel | Style, random: Rand
   const board = new Board(grid);
   const threat = ORDER.find((c) => board.h[c]! < ROWS && board.wins(c, them));
   if (view.bombs[seat]) {
-    if (!winNow) for (const c of ORDER) { const b = bombResult(view, c, seat); if (b?.winner === seat) return { col: c, bomb: true }; }
+    if (!winNow && random() < (st.bombSee ?? 1)) for (const c of ORDER) { const b = bombResult(view, c, seat); if (b?.winner === seat) return { col: c, bomb: true }; }
     const losing = scored.length && scored[0]!.v <= -WIN;
     if (losing && random() < st.bombSave) {
       let best: { col: number; v: number } | null = null;
@@ -188,6 +192,20 @@ export function chooseMove(view: DropView, level: BotLevel | Style, random: Rand
     const ok = scored.filter((s) => s.v > -WIN).slice(0, 3);
     if (ok.length) { const w = [0.6, 0.3, 0.1].slice(0, ok.length), t = random() * w.reduce((a, b) => a + b, 0); let acc = 0; for (let i = 0; i < ok.length; i++) { acc += w[i]!; if (t <= acc) return { col: ok[i]!.col, bomb: false }; } }
   }
-  const top = scored.filter((s) => s.v === scored[0]!.v);
+  let top = scored.filter((s) => s.v === scored[0]!.v);
+  if (st.rivalBomb && view.bombs[1 - seat] && view.moves[1 - seat]! >= 2) {
+    // Don't hand the rival a bomb win: of the best moves (then the rest, best first), take one their bomb can't win from.
+    const safe = (col: number) => {
+      const after = view.grid.map((c) => [...c]) as Grid;
+      after[col]![after[col]!.indexOf(0)] = me;
+      const moves: [number, number] = [view.moves[0], view.moves[1]];
+      moves[seat] = moves[seat]! + 1;
+      const v2 = { ...view, grid: after, moves };
+      return !ORDER.some((c) => bombResult(v2, c, 1 - seat)?.winner === 1 - seat);
+    };
+    const ok = top.filter((s) => safe(s.col));
+    if (ok.length) top = ok;
+    else { const alt = scored.find((s) => s.v > -WIN && safe(s.col)); if (alt) top = [alt]; }
+  }
   return { col: top[Math.floor(random() * top.length)]!.col, bomb: false };
 }

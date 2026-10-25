@@ -73,7 +73,7 @@ export function animBudget(events: readonly DropEvent[]): number {
     if (e.type === "start") ms += ANIM.coin + 300;
     else if (e.type === "drop") ms += ANIM.hover + ANIM.fallPerRow * (7 - e.row) + ANIM.land + (e.bomb ? ANIM.fuse : 0) + (e.ponder !== undefined ? 2 * ANIM.hover : 0) + 60;
     else if (e.type === "blast") ms += ANIM.blast + (e.falls.length ? ANIM.fallAfter : 0) + 100;
-    else if (e.type === "over") ms += e.line ? ANIM.lineStep * e.line.length + ANIM.lineHold : 300;
+    else if (e.type === "over") ms += e.line ? 120 + ANIM.lineStep * e.line.length + 480 + ANIM.lineHold + 900 : 1500; // the stillness, the line, the drop-out, the stamp
     else if (e.type === "turn") ms += ANIM.turn + 40;
   }
   return ms;
@@ -247,11 +247,11 @@ export class DropFourRoom extends LobbyRoom<DropSettings> {
     if (r.ok) this.after(ponder === undefined ? r.events : r.events.map((e, i) => (i === 0 && e.type === "drop" ? { ...e, ponder } : e)));
   }
 
-  /** The clock ran out: a disc in a random open column for the player. */
+  /** The clock ran out: a disc in the most central open column for the player. */
   private autoDrop(seat: number): void {
     const game = this.game;
     if (!game || game.turn !== seat) return;
-    const r = game.drop(seat, game.randomColumn(), false, true);
+    const r = game.drop(seat, game.clockColumn(), false, true);
     if (r.ok) this.after(r.events);
   }
 

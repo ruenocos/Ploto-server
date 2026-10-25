@@ -25,6 +25,123 @@ window.PLOTO_SOUNDS = {
       ]
     }
   },
+  "drop_four": {
+    "drop": {
+      "code": "57uBnWcURQNHSVbZfWMnApZqEJBivY7UQdvituThq7wsRwmGWnQMm5547KKPPdKUiHaq58TEGe6ijnNZ5JzndzqDVjshH5Q64Vpu44wBSQTUJAauKSrGQRSKR",
+      "vol": 0.22,
+      "buzz": 0
+    },
+    "land": {
+      "code": "34T6PktrziJveevtbvhE4Yc6T9xEKe7VUKzRRv6hiPpRf2VwMpqeLVUg44JC62fkszdLoYs6d1gU7xQmf2S1umBMraVf8F6FRdNsfrPXw8vW9TwUQBppB17nw",
+      "vol": 0.5,
+      "buzz": 18
+    },
+    "arm": {
+      "code": "11111mqnbfG4xmWsc1JhjyhR1VucbjzdKLfLC5CJ4ksM7ZPV5TXBgo1JpZVUNXitoSowzWDntZk16HAUvbkzgRcP6ucSCfMR5k98giVdWMd4bpft5sB7GRd",
+      "vol": 0.3,
+      "buzz": 12
+    },
+    "fuse": {
+      "code": "8puhcUQNVjTDpFQD9c3fhZXmNfnwKPABwy21ZFU81H1Ep7H7FhADmqFjFpb9NH4aEpJaifDECDT2n7X9XBL8F3tYAtzhdH1GBcCaw1vMCsCn4tYdWyBug2uPV",
+      "vol": 0.25,
+      "buzz": 0
+    },
+    "blast": {
+      "code": "7BMHBGScWoFHNYJpPiqevH4jQUVu4Z5QiNogcKDU4oMcPXLaQPPvrtEdwj8k8EohGZ2HzFXK8zxP29RvSN1ZQNi9doJtVG7s7aM1Ky9m2jxmpkBSY7PK7JXJf",
+      "vol": 0.75,
+      "buzz": [
+        80,
+        40,
+        160
+      ]
+    },
+    "pop": {
+      "code": "11111mqnbcUGfL5yUzoxuEdAMjhXGA57b7ZJDHQCu6YZRYzcRUv5b5hyDKh3TghKDWJtXEAbZMeSo3Apuv6yop4TrF7nnLZNgAcKtWv9YZ1TG26unaqnRfV",
+      "vol": 0.3,
+      "buzz": 0
+    },
+    "line": {
+      "code": "57uBnWgpsMuKK1uuA9afrcKnShQHog9ju1V5YcFnP81nuGZn3z4VHDS63Z9jJ7XqE1XDs7UUdJava3TGNYi2fv2GoZWrF7fQMEx3qqyyA4TAHt64xQsNCa76F",
+      "vol": 0.4,
+      "buzz": 20
+    },
+    "coin": {
+      "code": "34T6PkogDvp1rJdtbuTncJmPuXbXXoXNRw9Jxhf3nxRdjyq4qCwbLudL3hYjM1SGnCMxBTYag5SiyrzjhQQu2BtM5oNgf6r4aNRUduzkey8X5DzXmu5A3vYoq",
+      "vol": 0.4,
+      "buzz": 0
+    },
+    "coinLand": {
+      "code": "34T6PkyDRjVtjLeL7wprFjNFqCpYXMtSUAVcAPeQcJTnnBTGrtoi1jZFBgubM2qrrVdijmABSMfFodfD4gY9vuuvaVf6tXv269fXh7y2ghixgvv6gMnDt8Jt7",
+      "vol": 0.35,
+      "buzz": 15
+    },
+    "nope": {
+      "code": "34T6PkyDRjVtjLeL7tstjCuCX6g5sjdxSTi7qN474sh5tLpXJTUDciQ4RzeKSLbZwFqaUq7GvAuheStqH8SHaqwvkcFTrWhv3RUcfdJxJ4hRUu13ddHM3TGAj",
+      "vol": 0.3,
+      "buzz": [
+        20,
+        30,
+        20
+      ]
+    },
+    "yourTurn": {
+      "code": "57uBnWSzhdtNWEA2iN9aGSJixy5psH27n7i4bRRNNvEVmUY2VpNTucKEVhdDHcfmQQS7QVvRWrVwVQ37274Czv1u4WfAy98BY53J79Xix2QoT4rxreSnmaEVD",
+      "vol": 0.4,
+      "buzz": [
+        30,
+        40,
+        30
+      ]
+    },
+    "theirTurn": {
+      "code": "57uBnWcURsYKtmkuFSr4zAmQ7pzkgZYV9WRHYkeBfUZU1M9pErnCjEya7wNwtG7qqtQ3fTs6XL9CJJCK1DiTekEhmzxFSzKbwoRDpDkdRhsCzWKMc4CeMKKcT",
+      "vol": 0.22,
+      "buzz": 0
+    },
+    "tick": {
+      "code": "11111BFZ5uaXrYQKxtYCzBpqz3YD6GYNnmLMRXjGLNFYSwGe6DqyNBFTCQ7iv2SBWt547eZaCvHy2zc43YYhTWyYzK6VFpWVpRKpZ1rXhhHNRHFepZnEWi6b",
+      "vol": 0.3,
+      "buzz": 10
+    },
+    "timeout": {
+      "code": "11111B3zhG8pwZVYziHRA8m79R8gUCXL91QHibUKsUacEpxyNktbBb6DB7ZRdnBtaTX8LDve1AqXUh6ce2pqEdDqJw4W1Pk4eWo3Ly9awgTubJVTH9xei8qD",
+      "vol": 0.45,
+      "buzz": [
+        80,
+        40,
+        80
+      ]
+    },
+    "win": {
+      "code": "1111111142kHwdoixXJrwR9iKRQYYuxkm3Geu2si7ynNEhRfh8WSLyy8z1Lne8PWBvSCv3YELQukQ15KquV5YfPEauc3FVv1nqfZ3c3Lq9gdpG1eV3hB3Nf",
+      "vol": 0.85,
+      "buzz": [
+        60,
+        40,
+        60,
+        40,
+        140
+      ]
+    },
+    "lose": {
+      "code": "111118JmEXRtQTnbYrwtWpE9E7s9myqjZh6FMpd5mV3mr4ZArtSvvie2qHBifekEqHe8eesFYKzNam7qauSrPjQ34pMPLr6AbxSKGsxbx1N5j5Z1EXHffpTq",
+      "vol": 0.7,
+      "buzz": [
+        120,
+        60,
+        200
+      ]
+    },
+    "draw": {
+      "code": "57uBnWdB7rJg35u6uwkjSF6uV2YNagcbwz5NMy3qL6xZxkkkmZsuyeKJF7KAAz1dRUdUV1VtDKidHTnrkgJmjx7Khs41idwYiNBVq7hUJr3Aq4UGTjYG3MVaw",
+      "vol": 0.45,
+      "buzz": [
+        60,
+        60,
+        60
+      ]
+    }
+  },
   "holdem": {
     "card": {
       "code": "8Xj11K7DPHfmDfEWkXZHfCeFAjds1f8sW4Hae6iarwoF58HvCiN1BrQwtYkw1rQJXsbMAW4PNQtK81RpRkesaWAcP9dAc1nqm4X7HCRswYoX9oQcXmBX16SZu",

@@ -11,6 +11,7 @@ import type { GameLobby, LobbyContext } from "./platform/lobby.js";
 import { MatchMonstersLobby } from "./game/matchmonsters/lobby.js";
 import { HoldemLobby } from "./game/holdem/lobby.js";
 import { SeaBattleLobby } from "./game/sea_battle/lobby.js";
+import { DropFourLobby } from "./game/drop_four/lobby.js";
 
 export interface GameEntry extends GameInfo {
   /** The game's page in web/. */
@@ -38,6 +39,12 @@ export const GAMES: readonly GameEntry[] = [
     players: "1v1", minSeats: 2, maxSeats: 2, badge: "NEW",
     profile: { played: "Battles", stats: [{ key: "accuracy", label: "Best accuracy %" }, { key: "bestStreak", label: "Longest streak" }] },
     lobby: (ctx) => new SeaBattleLobby(ctx),
+  },
+  {
+    id: "drop_four", title: "Drop Four", path: "/play/drop-four", page: "drop-four.html", card: "drop-four.card.js",
+    players: "1v1", minSeats: 2, maxSeats: 2, badge: "NEW",
+    profile: { played: "Games", stats: [{ key: "longestLine", label: "Longest line" }] },
+    lobby: (ctx) => new DropFourLobby(ctx),
   },
   // new games go above this line (scripts/new-game.mjs adds them here)
 ];

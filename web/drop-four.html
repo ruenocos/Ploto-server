@@ -1,0 +1,901 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Drop Four · Ploto</title>
+<link rel="stylesheet" href="/play/platform.css" />
+<link rel="stylesheet" href="/play/animate.min.css" />
+<style>
+/*
+ * Drop Four's page. Everything outside the game itself is Ploto's: the pl-*
+ * blocks from platform.css and the lobby kit (web/lobbykit.js), including the
+ * in-game menu, How to play and the result. The game screen and the home banner
+ * are Drop Four's own, drawn from its pixel art (web/drop-four.card.js): whole
+ * art pixels (--k CSS px each), Animate.css poses, steps() motion. Its accent is
+ * the frame's cobalt; the discs are gold (the first seat) and coral.
+ */
+:root { --df-back: #10142e; --df-frame: #2d4fb8; --df-frame-hi: #5578e0; --df-gold: #ffcc33; --df-coral: #ff6b6b; }
+.scr[hidden] { display: none; }
+
+/* ---- home ---- */
+.pl-hero.df-hero { background: var(--df-back); }
+.df-hero .hs { position: absolute; image-rendering: pixelated; background-size: 100% 100%; }
+.pl-row .pl-ic img { image-rendering: pixelated; display: block; }
+
+/* ---- the game screen ---- */
+#scrGame { display: flex; flex-direction: column; min-height: 100dvh; padding: calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset-bottom) + 12px); max-width: 600px; margin: 0 auto; gap: 10px; }
+#scrGame[hidden] { display: none; }
+.hud { display: flex; align-items: center; gap: 8px; }
+.who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+.who img { image-rendering: pixelated; display: block; flex: none; }
+.who .nm { min-width: 0; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.who .bombchip { flex: none; display: flex; align-items: center; gap: 4px; font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); text-transform: uppercase; }
+.who .bombchip.used img { opacity: 0.35; }
+.away { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; padding: 2px 4px; background: var(--c-raise); color: var(--c-mute); }
+.call { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 8px 12px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
+.call.mine { background: var(--c-accent-lo); box-shadow: inset 0 var(--px) 0 var(--df-frame-hi), inset 0 calc(var(--px) * -2) 0 rgba(10, 12, 20, 0.45); }
+.call .disc { flex: none; image-rendering: pixelated; }
+.call b { font: 700 var(--fl-1)/1.1 var(--f-label); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; }
+.call span { flex: 1; min-width: 0; font: 400 var(--fs-s)/1.25 var(--f-text); color: var(--c-text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.clock-s { flex: none; min-width: 28px; text-align: right; font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-gold); }
+.clock-s.low { color: var(--c-bad-hi); }
+.clock { flex: none; width: 56px; height: calc(var(--px) * 4); background: var(--c-well); box-shadow: 0 0 0 var(--px) var(--c-ink); }
+.clock i { display: block; height: 100%; background: var(--c-gold); transition: width 0.25s steps(2); }
+.clock.low i { background: var(--c-bad); }
+.clock[hidden] { display: none; }
+
+.stage { display: flex; flex-direction: column; align-items: center; }
+/* The board: a row for the disc in hand above it, then the grid (discs behind the frame). */
+.board { position: relative; width: calc(74 * var(--k)); height: calc((64 + 14) * var(--k)); }
+.board > div { position: absolute; left: 0; width: 100%; }
+.board .lane { top: 0; height: calc(14 * var(--k)); pointer-events: none; }
+.board .grid { top: calc(14 * var(--k)); height: calc(64 * var(--k)); }
+.board .grid > div { position: absolute; inset: 0; }
+.board .back { background-size: 100% 100%; image-rendering: pixelated; }
+.board .frame { background-size: 100% 100%; image-rendering: pixelated; pointer-events: none; filter: drop-shadow(var(--px) var(--px) 0 rgba(10, 12, 20, 0.5)); }
+.board .discs, .board .fx { pointer-events: none; }
+.board .fx { overflow: visible; }
+.board .d, .board .fx > *, .board .lane > * { position: absolute; background-size: 100% 100%; image-rendering: pixelated; }
+.board .cols { display: grid; grid-template-columns: repeat(7, 1fr); top: 0 !important; height: calc((64 + 14) * var(--k)) !important; inset: auto 0 auto 0; }
+.board .cols button { --b: transparent; --b-hi: transparent; --b-lo: transparent; border: 0; box-shadow: none; clip-path: none; padding: 0; min-height: 0; height: 100%; background: transparent; cursor: default; }
+.board .cols button:active { transform: none; }
+.board.mine .cols button.open { cursor: pointer; }
+.board.mine .cols button.open:hover, .board.mine .cols button.cur { background: rgba(255, 244, 214, 0.06); }
+.board .cols button:focus-visible { outline: var(--px) dashed var(--c-cream); outline-offset: calc(var(--px) * -2); }
+.board .d.dim { opacity: 0.45; }
+.board.stopped .d { animation-play-state: paused; }
+.board .stamp { position: absolute; z-index: 5; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; white-space: nowrap; }
+.board .stamp-in { display: block; }
+.board .stamp b { display: inline-block; padding: 8px 14px 10px; font: 700 var(--fl-3)/1 var(--f-label); text-transform: uppercase; color: var(--c-ink); background: var(--df-gold); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 #fff0a0, inset 0 calc(var(--px) * -2) 0 #d99a1a, var(--px) var(--px) 0 var(--c-ink); }
+.board .stamp.coral b { background: var(--df-coral); box-shadow: inset 0 var(--px) 0 #ffb3a8, inset 0 calc(var(--px) * -2) 0 #c8424f, var(--px) var(--px) 0 var(--c-ink); }
+.board .stamp.plain b { background: var(--c-panel); color: var(--c-cream); box-shadow: inset 0 var(--px) 0 var(--c-edge), var(--px) var(--px) 0 var(--c-ink); }
+.board .stamp small { display: block; margin-top: 6px; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); }
+.coin-wrap { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 12px; background: rgba(10, 12, 20, 0.6); pointer-events: none; z-index: 6; }
+.coin-wrap .coin { image-rendering: pixelated; }
+.coin-wrap b { font: 700 var(--fl-2)/1.2 var(--f-label); text-transform: uppercase; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); text-align: center; padding: 0 12px; }
+
+.dock { display: flex; align-items: center; gap: 12px; }
+.dock .me { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+.dock .me img { image-rendering: pixelated; display: block; flex: none; }
+.dock .me .nm { min-width: 0; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bombBtn { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; }
+.bombBtn img { image-rendering: pixelated; display: block; }
+.bombBtn[aria-pressed="true"] { --b: var(--c-bad); --b-hi: var(--c-bad-hi); }
+.bombBtn[hidden] { display: none; }
+.keys { font: 400 var(--fs-xs)/1.3 var(--f-text); color: var(--c-mute); text-align: center; margin: 0; min-height: calc(var(--fs-xs) * 1.3); }
+@media (pointer: coarse) { .keys { display: none; } }
+.hint { font: 400 var(--fs-s)/1.3 var(--f-text); color: var(--c-mute); margin: 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.pl-res-hero img { image-rendering: pixelated; }
+</style>
+</head>
+<body>
+
+<header class="pl-bar" id="bar">
+  <div class="pl-bar-in">
+    <button id="barBack" class="ghost icon-btn" aria-label="Back" title="Back"></button>
+    <h1 class="pl-title" id="barTitle" tabindex="-1">Drop Four</h1>
+    <div id="barAct"></div>
+  </div>
+</header>
+
+<!-- Home: Ploto's blocks, the game's banner -->
+<section class="scr" id="scrHome" hidden>
+  <main class="pl-view">
+    <div class="pl-hero pl-frame df-hero" id="hero" aria-hidden="true"></div>
+    <button class="pl-row" data-mode="quick"><span class="pl-ic" data-ic="quick"></span><span><b>Quick game</b><small>Play anyone online</small></span><span class="pl-go" data-chev></span></button>
+    <button class="pl-row" data-mode="host"><span class="pl-ic" data-ic="host"></span><span><b>Play a friend</b><small>Invite them or share a code</small></span><span class="pl-go" data-chev></span></button>
+    <button class="pl-row" data-mode="practice"><span class="pl-ic" data-ic="practice"></span><span><b>Practice</b><small>You vs a bot</small></span><span class="pl-go" data-chev></span></button>
+    <p class="pl-label">Have a code?</p>
+    <form class="pl-form" data-code-form autocomplete="off">
+      <input class="pl-code" type="text" placeholder="Game code" maxlength="8" autocapitalize="characters" spellcheck="false" aria-label="Game code" />
+      <button class="ghost small" type="submit">Join</button>
+    </form>
+  </main>
+</section>
+
+<!-- Play a friend: the game's settings, drawn by the kit from SCHEMA -->
+<section class="scr pl-flow" id="scrHost" hidden>
+  <main class="pl-view"><div class="fields" id="hostFields"></div></main>
+  <div class="pl-foot"><div class="pl-foot-in"><button class="big" id="createBtn">Create game</button></div></div>
+</section>
+
+<!-- Practice: bombs and the bot -->
+<section class="scr pl-flow" id="scrPractice" hidden>
+  <main class="pl-view"><div class="fields" id="practiceFields"></div></main>
+  <div class="pl-foot"><div class="pl-foot-in"><button class="big" id="practiceBtn">Start practice</button></div></div>
+</section>
+
+<!-- Room lobby: Ploto's (kit.renderRoom) -->
+<section class="scr pl-flow" id="scrLobby" hidden>
+  <main class="pl-view" id="lobbyMain"></main>
+  <div class="pl-foot"><div class="pl-foot-in" id="lobbyFoot"></div></div>
+</section>
+
+<!-- Waiting for a seat -->
+<section class="scr" id="scrWait" hidden>
+  <main class="pl-view"><div class="pl-waitline"><span class="pl-dots"><i></i><i></i><i></i></span><span id="waitText">Finding a seat</span></div></main>
+</section>
+
+<!-- The game: all its own, plus Ploto's menu button (kit.menu) -->
+<section class="scr" id="scrGame" hidden>
+  <div class="hud">
+    <div class="who" id="rivalBox"></div>
+    <button id="menuBtn" class="ghost icon-btn" aria-label="Menu" title="Menu"></button>
+  </div>
+  <div class="call" id="call"><img class="disc" id="callDisc" alt="" /><b id="callTitle"></b><span id="callText"></span><div class="clock" id="clock" role="timer" hidden><i></i></div><span class="clock-s" id="clockS" aria-hidden="true"></span></div>
+  <div class="stage">
+    <div class="board" id="board">
+      <div class="lane" id="lane"></div>
+      <div class="grid"><div class="back" id="back"></div><div class="discs" id="discs"></div><div class="frame" id="frame"></div><div class="fx" id="fx"></div></div>
+      <div class="cols" id="cols" role="group" aria-label="Columns"></div>
+    </div>
+  </div>
+  <p class="keys" id="keys"></p>
+  <div class="dock" id="dock"><div class="me" id="meBox"></div><button class="ghost bombBtn" id="bombBtn" aria-pressed="false" hidden></button></div>
+  <p class="sr-only" id="announce" aria-live="polite"></p>
+  <p class="sr-only" id="announceNow" aria-live="assertive"></p>
+</section>
+
+<!-- Result: Ploto's (kit.renderResult), the game's art and stats inside -->
+<section class="scr pl-flow" id="scrResult" hidden>
+  <main class="pl-view" id="resMain"></main>
+  <div class="pl-foot"><div class="pl-foot-in" id="resFoot"></div></div>
+</section>
+
+<script src="/play/riffwave.js"></script>
+<script src="/play/sfxr.js"></script>
+<script src="/play/sounds.js"></script>
+<script src="/play/feedback.js"></script>
+<script src="/play/icons.js"></script>
+<script src="/play/platform.js"></script>
+<script src="/play/motion.js"></script>
+<script src="/play/lobbykit.js"></script>
+<script src="/play/card/drop_four.js"></script>
+<script>
+(() => {
+  "use strict";
+  const P = window.Ploto, A = window.DROP_ART;
+  const { $, esc, toast, cue, sleep } = P;
+  const RM = () => P.reduceMotion();
+  const GAME = "drop_four", PREFIX = "dropfour:";
+  const T = A.ANIM; // how long each moment takes (the room's animBudget covers these)
+  const NCOL = A.COLS, NROW = A.ROWS, CELL = A.C, F = A.F;
+  const COLN = "ABCDEFG";
+  const colName = (c) => COLN[c];
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+  /* ================================================================ the platform's lobby, told about this game once */
+  const BOT_FIELD = { key: "botStyle", label: "Bot difficulty", kind: "choice", options: [["relaxed", "Medium"], ["sharp", "Hard"]], hint: "Medium is a fair fight. Hard looks 8 moves ahead" };
+  const BOMBS_FIELD = { key: "bombs", label: "Bombs", kind: "choice", options: [[true, "On"], [false, "Off"]], hint: "One bomb each: it clears the discs beside and below it" };
+  const SCHEMA = [
+    BOMBS_FIELD,
+    { key: "timer", label: "Turn timer", kind: "choice", options: [[true, "On"], [false, "Off"]], hint: "15 s a move" },
+    { ...BOT_FIELD, hint: "Used if a bot takes the other seat. " + BOT_FIELD.hint },
+  ];
+  const kit = P.lobbyKit({
+    gameId: GAME, prefix: PREFIX, path: "/play/drop-four", title: "Drop Four",
+    nouns: { code: "Game code", room: "game", quick: "Quick game", yours: "Your game" },
+    schema: SCHEMA, defaults: { bombs: true, timer: true, botStyle: "relaxed" },
+    summary: (s) => [s.bombs ? "Bombs on" : "No bombs", s.timer ? "timer on" : "no timer"].join(" · "),
+    shareText: (code) => `Play me at Drop Four on Ploto. Code ${code}`,
+    quickNote: "A bot steps in if nobody comes",
+    fullText: "Starts as soon as your friend joins",
+    rules: () => ({
+      steps: [
+        "Tap a column to drop your disc. It falls to the lowest free space.",
+        "Four of yours in a row wins: across, down or on a slant.",
+        "Your bomb (one a game, if bombs are on): tap Bomb, then a column. It lands, then clears itself and the discs right beside it and under it. Discs above fall down.",
+        "If the fall makes four for the bomber, the bomber wins. If it makes four only for the other player, they win.",
+        "A full grid with no four is a draw. In a rematch, the loser goes first.",
+      ],
+      extra: `<p class="pl-label">Good to know</p><p class="hint">With the turn timer on you get 15 s a move; when it runs out a disc drops in a random column for you. On a keyboard: arrows pick a column, Enter drops, B arms your bomb, I reads the grid.</p>`,
+    }),
+  });
+
+  /* ================================================================ the game's body language (Animate.css presets: the same moment plays the same everywhere) */
+  const pose = P.poses({
+    call: { preset: "pulse", speed: "faster" },      // the turn call
+    nope: { preset: "headShake", speed: "faster" },  // a full column
+    shake: { preset: "shakeX", speed: "fast" },      // the bomb rattles the grid
+    win: { preset: "tada" },
+  });
+
+  /* ================================================================ screens: a small stack; the room's phase picks lobby, game or result */
+  const S = { room: null, sock: null, lobby: null, view: null, M: null, anim: false, resultReady: false, cursor: 3, bomb: false, retry: 0, leaving: false, timers: new Set(), keyUses: 0, sending: false, final: null };
+  const nav = { stack: ["home"] };
+  const SCREENS = { home: "scrHome", host: "scrHost", practice: "scrPractice", lobby: "scrLobby", wait: "scrWait", game: "scrGame", result: "scrResult" };
+  const cur = () => nav.stack[nav.stack.length - 1];
+  function roomScreen() {
+    const v = S.lobby;
+    if (!v) return "wait";
+    if (v.phase === "lobby") return v.mode === "practice" ? "wait" : "lobby";
+    if (v.phase === "over" && S.resultReady && !S.anim) return "result";
+    return "game";
+  }
+  const screenNow = () => (cur() === "room" ? roomScreen() : cur());
+  let shown = null;
+  function show() {
+    const name = screenNow();
+    const changed = name !== shown;
+    shown = name;
+    for (const [n, id] of Object.entries(SCREENS)) $(id).hidden = n !== name;
+    $("bar").hidden = name === "game";
+    $("barTitle").textContent = { home: "Drop Four", host: "Play a friend", practice: "Practice", wait: "Drop Four", result: "Drop Four" }[name] || kit.title(S.lobby);
+    $("barBack").innerHTML = px("back");
+    $("barAct").innerHTML = name === "home" ? `<button class="ghost small" id="rulesBtn">Rules</button>` : "";
+    if (name === "home") { $("rulesBtn").onclick = kit.rules; renderHome(); }
+    if (name === "host") { $("hostFields").innerHTML = kit.fieldsHTML(kit.settings); kit.wireFields($("hostFields"), kit.settings, kit.saveSettings); }
+    if (name === "practice") renderPractice();
+    if (name === "lobby") kit.renderRoom(S.lobby, { main: $("lobbyMain"), foot: $("lobbyFoot"), req });
+    if (name === "game") renderGame();
+    if (name === "result") renderResult();
+    if (changed) { window.scrollTo(0, 0); P.setActivity(GAME, cur() === "room" ? "In a game of Drop Four" : "In Drop Four"); }
+    syncBack();
+  }
+  const go = (name) => { nav.stack.push(name); show(); };
+  const goHome = () => { nav.stack = ["home"]; show(); };
+  function back() {
+    if (screenNow() === "game") return openMenu(); // in a game, back opens the menu: never a silent exit
+    if (cur() === "room" && !S.room) { kit.cancelSeat(); return goHome(); }
+    if (cur() === "room") return leave();
+    if (nav.stack.length > 1) { nav.stack.pop(); show(); }
+  }
+  const syncBack = P.backGuard({ canGoBack: () => nav.stack.length > 1, onBack: back });
+  $("barBack").onclick = () => (cur() === "home" ? (location.href = "/play") : back());
+
+  /** Ploto's pixel icons (web/icons.js). */
+  const px = (name, scale = 2) => window.MM_ICONS.icon(name, scale);
+  $("menuBtn").innerHTML = px("menu");
+  const imgTag = (url, w, h, k, cls = "") => `<img src="${url}" alt="" width="${w * k}" height="${h * k}"${cls ? ` class="${cls}"` : ""}>`;
+
+  /* ================================================================ home */
+  const ICON = {
+    quick: () => imgTag(A.disc(0, { outline: true }), 10, 10, 4),
+    host: () => `<span style="display:flex;gap:2px">${imgTag(A.disc(0, { outline: true }), 10, 10, 2)}${imgTag(A.disc(1, { outline: true }), 10, 10, 2)}</span>`,
+    practice: () => imgTag(A.bomb(1), 10, 10, 4),
+  };
+  function renderHome() {
+    for (const s of document.querySelectorAll("[data-chev]")) s.innerHTML = px("chev");
+    for (const s of document.querySelectorAll("[data-ic]")) if (!s.firstChild) s.innerHTML = ICON[s.dataset.ic]();
+    banner.paint();
+  }
+  kit.home($("scrHome"), {
+    onMode: (m) => (m === "host" ? go("host") : m === "practice" ? go("practice") : takeSeat("Finding a seat", "quick")),
+    onCode: async (code) => {
+      try { const r = await kit.join(code, { wait: () => wait(`Joining ${code}`) }); if (r) enter(r); else goHome(); }
+      catch (e) { toast(P.errText(e), 2600); goHome(); }
+    },
+  });
+
+  /**
+   * The banner (docs/STYLE.md, Home banners): the card's grid, in play. Intro: the frame slides
+   * up and a few discs are already in. Beats: a disc drops into a column (gold and coral by turns,
+   * with the game's own fall, squash and dust); every fourth beat lines up four and lights them,
+   * and the next beat empties the grid (the discs drop out of the bottom) to start again.
+   */
+  const BANNER_MOVES = [3, 3, 2, 4, 4, 2, 1]; // gold makes B1–C1–D1… the fourth beat lines up four
+  const banner = P.banner($("hero"), {
+    draw(hero, W, H) {
+      hero.innerHTML = "";
+      const k = Math.max(2, Math.floor(Math.min(W / 90, (H - 8) / 64)));
+      const x0 = Math.round((W - 74 * k) / 2), y0 = H - 64 * k - 4;
+      const box = el("div", "hs", { left: `${x0}px`, top: `${y0}px`, width: `${74 * k}px`, height: `${64 * k}px` });
+      box.appendChild(el("div", "hs", { inset: "0", backgroundImage: `url(${A.backCanvas().toDataURL()})` }));
+      const discs = el("div", "hs", { inset: "0" });
+      box.appendChild(discs);
+      box.appendChild(el("div", "hs", { inset: "0", backgroundImage: `url(${A.frame()})` }));
+      hero.appendChild(box);
+      hero._g = { k, box, discs, grid: Array.from({ length: NCOL }, () => []), turn: 0, step: 0 };
+      bannerReset(hero, true);
+    },
+    intro(hero) { if (!RM()) P.playPreset(hero._g.box, "slideInUp", { speed: "fast" }); },
+    async beat(hero) {
+      const g = hero._g;
+      if (!g || hero._busy) return;
+      hero._busy = true;
+      try {
+        if (g.done) { await bannerClear(hero); return; }
+        const col = BANNER_MOVES[g.step % BANNER_MOVES.length];
+        const seat = g.step % 2;
+        g.step++;
+        const row = g.grid[col].length;
+        g.grid[col].push(seat);
+        const d = discEl(seat, col, row, g.k);
+        g.discs.appendChild(d);
+        await fallTo(d, row, g.k, 1); // the banner is silent (docs/STYLE.md)
+        const line = bannerLine(g);
+        if (line) {
+          for (const [c, r] of line) { const e = g.discs.querySelector(`[data-c="${c}"][data-r="${r}"]`); if (e) e.style.backgroundImage = `url(${A.disc(0, { lit: true })})`; await sleep(RM() ? 0 : 110); }
+          g.done = true;
+        }
+      } finally { hero._busy = false; }
+    },
+    every: 3800,
+  });
+  function bannerReset(hero, preset) {
+    const g = hero._g;
+    g.discs.innerHTML = ""; g.grid = Array.from({ length: NCOL }, () => []); g.step = 0; g.done = false;
+    if (preset) for (const [c, s] of [[3, 1], [2, 0], [4, 1]]) { const r = g.grid[c].length; g.grid[c].push(s); g.discs.appendChild(discEl(s, c, r, g.k)); }
+    if (preset) g.step = 0;
+  }
+  function bannerLine(g) {
+    for (let r = 0; r < NROW; r++) for (let c = 0; c + 3 < NCOL; c++) {
+      const s = g.grid[c][r];
+      if (s === undefined) continue;
+      if ([1, 2, 3].every((i) => g.grid[c + i][r] === s)) return [0, 1, 2, 3].map((i) => [c + i, r]);
+    }
+    return null;
+  }
+  async function bannerClear(hero) {
+    const g = hero._g;
+    if (!RM()) await Promise.all([...g.discs.children].map((d) => d.animate([{ transform: "translateY(0)" }, { transform: `translateY(${70 * g.k}px)` }], { duration: 420, easing: "steps(6)", fill: "forwards" }).finished.catch(() => {})));
+    bannerReset(hero, true);
+  }
+
+  function el(tag, cls, style = {}) { const e = document.createElement(tag); e.className = cls; Object.assign(e.style, style); return e; }
+  /** A disc element at (col, row) of a grid drawn at k CSS px per art pixel (row 0 is the bottom). */
+  function discEl(seat, col, row, k, bomb = false) {
+    const e = el("div", "d", { left: `${(F + col * CELL + 1) * k}px`, top: `${(F + (NROW - 1 - row) * CELL + 1) * k}px`, width: `${8 * k}px`, height: `${8 * k}px`, backgroundImage: `url(${bomb ? A.bomb(-1) : A.disc(seat)})`, position: "absolute", backgroundSize: "100% 100%", imageRendering: "pixelated" });
+    if (bomb) Object.assign(e.style, { left: `${(F + col * CELL) * k}px`, top: `${(F + (NROW - 1 - row) * CELL) * k}px`, width: `${10 * k}px`, height: `${10 * k}px` });
+    e.dataset.c = col; e.dataset.r = row;
+    return e;
+  }
+  /**
+   * The fall: from above the grid down to its row, faster and faster (one stepped frame per row,
+   * each shorter than the last), then a one-frame squash and a pixel of bounce. `sp`: speed scale.
+   */
+  async function fallTo(e, row, k, sp) {
+    if (RM()) return;
+    const dist = (NROW - row) * CELL * k + 12 * k; // from the lane above the grid
+    const rows = NROW - row + 1;
+    const frames = [];
+    for (let i = 0; i <= rows; i++) { const t = i / rows; frames.push({ transform: `translateY(${Math.round(-dist + dist * t * t)}px)`, offset: Math.sqrt(t) * 0.86 }); }
+    frames.push({ transform: `translateY(0) scale(1.15, 0.8)`, offset: 0.92 }, { transform: `translateY(${-k}px)`, offset: 0.96 }, { transform: "translateY(0)", offset: 1 });
+    const fall = T.fallPerRow * rows + T.land;
+    await e.animate(frames, { duration: fall * sp, easing: "linear" }).finished.catch(() => {});
+  }
+
+  /* ================================================================ settings screens */
+  const PRACTICE_SCHEMA = [BOMBS_FIELD, BOT_FIELD];
+  const practiceSettings = { bombs: true, botStyle: "relaxed", ...(P.local.get("drop_four.practice") || {}) };
+  function renderPractice() {
+    $("practiceFields").innerHTML = kit.fieldsHTML(practiceSettings, { schema: PRACTICE_SCHEMA });
+    kit.wireFields($("practiceFields"), practiceSettings, () => P.local.set("drop_four.practice", practiceSettings));
+  }
+  $("practiceBtn").onclick = () => takeSeat("Starting practice", "practice", { settings: { ...practiceSettings } });
+  let inviteFriend = null; // ?inviteFriend=ID from the launcher: invite them once the room exists
+  $("createBtn").onclick = async () => {
+    if (!(await P.ensureName())) return;
+    try {
+      const r = await kit.seat("host", { settings: { ...kit.settings } });
+      if (!r) return;
+      await enter(r);
+      if (inviteFriend) { const id = inviteFriend; inviteFriend = null; kit.invite(id, r.roomId).catch((e) => toast(P.errText(e), 2600)); }
+    } catch (e) { toast(P.errText(e), 2600); }
+  };
+  function wait(text) { $("waitText").textContent = text; nav.stack = ["home", "room"]; S.lobby = null; show(); }
+  async function takeSeat(label, method, data = {}) {
+    if (!(await P.ensureName())) return;
+    wait(label);
+    try {
+      const r = await kit.seat(method, data);
+      if (!r) return;
+      if (cur() !== "room") return kit.abandon(r); // backed out meanwhile
+      enter(r);
+    } catch (e) { toast(P.errText(e), 2600); goHome(); }
+  }
+
+  /* ================================================================ the room connection (it reconnects on its own) */
+  const Q = P.playQueue({
+    run: (u) => play(u),
+    onError: (e, u) => { console.error(e); S.anim = false; settle(u.view); },
+    onReturn: (items) => [{ view: items[items.length - 1].view, events: [] }],
+  });
+  async function enter({ roomId, code }) {
+    closeSock();
+    Q.clear();
+    Object.assign(S, { room: { roomId, code }, lobby: null, view: null, M: null, anim: false, resultReady: false, bomb: false, retry: 0, leaving: false, sending: false, final: null });
+    P.saveRoom(GAME, S.room);
+    nav.stack = ["home", "room"];
+    show();
+    try { await openSock(); }
+    catch (e) { toast(P.errText(e), 2600); drop(); goHome(); }
+  }
+  async function openSock() {
+    const room = S.room;
+    if (!room) return;
+    const sock = (S.sock = P.connect(room.roomId));
+    let ready = false;
+    sock.on("lobby:update", (d) => { if (S.sock === sock) { S.lobby = d.view; if (!S.anim) show(); } });
+    sock.on(PREFIX + "update", (d) => { if (S.sock === sock && ready) Q.add(d); });
+    sock.addEventListener("close", () => {
+      if (S.sock !== sock) return;
+      S.sock = null;
+      if (S.room && !S.leaving) {
+        if (screenNow() === "game") { $("callTitle").textContent = "Reconnecting"; $("callText").textContent = "Hold on, finding the game again"; }
+        clearTimeout(S.retryTimer);
+        S.retryTimer = setTimeout(() => openSock().catch(() => {}), Math.min(8000, 600 * 2 ** S.retry++));
+      }
+    });
+    await P.waitOpen(sock);
+    const [lob, v] = await Promise.all([sock.request("lobby:getView"), sock.request(PREFIX + "getState")]);
+    S.lobby = lob;
+    S.retry = 0;
+    S.resultReady = v.phase === "over";
+    Q.clear();
+    ready = true;
+    S.anim = false;
+    settle(v);
+  }
+  function closeSock() { const s = S.sock; S.sock = null; clearTimeout(S.retryTimer); s?.close(); }
+  const req = (method, data) => (S.sock?.readyState === 1 ? S.sock.request(method, data) : Promise.reject(new Error("not connected")));
+  function drop() { S.leaving = true; closeSock(); S.room = null; S.lobby = null; S.view = null; S.M = null; Q.clear(); P.forgetRoom(GAME); }
+  async function leave() {
+    if (S.lobby?.phase === "playing" && !(await P.confirm({ title: "Leave the game?", body: "Leaving now counts as a forfeit: your rival wins.", yes: "Leave", no: "Stay", danger: true }))) return;
+    req("lobby:leave").catch(() => {});
+    drop();
+    goHome();
+  }
+  async function forfeit() {
+    if (!(await P.confirm({ title: "Forfeit this game?", body: "Your rival wins, and it counts as a loss.", yes: "Forfeit", no: "Keep playing", danger: true }))) return;
+    req(PREFIX + "forfeit").catch((e) => toast(P.errText(e), 2600));
+  }
+  const openMenu = () => kit.menu({ view: S.lobby, items: [{ label: "Forfeit game", danger: true, run: forfeit }] });
+  $("menuBtn").onclick = openMenu;
+
+  /* ---- invites: Ploto's card; a Drop Four invite seats you here ---- */
+  P.acceptInvitesHere(GAME, (inv) => { if (S.room) { req("lobby:leave").catch(() => {}); drop(); } takeSeat("Taking your seat", "acceptInvite", { inviteId: inv.inviteId }); });
+  P.setInviteBusy(() => S.lobby?.phase === "playing");
+
+  /* ================================================================ the model on screen */
+  const G = () => S.M?.game;
+  const you = () => S.view?.you ?? 0;
+  const nameOf = (seat) => S.lobby?.seats?.[seat]?.name || (seat === you() ? "You" : "Rival");
+  const rivalName = () => nameOf(1 - you());
+  const rivalAway = () => S.lobby?.phase === "playing" && S.lobby?.seats?.[1 - you()]?.connected === false;
+  const heightOf = (g, c) => g.grid[c].findIndex((v) => v === 0) === -1 ? NROW : g.grid[c].findIndex((v) => v === 0);
+  /** A timeout that belongs to an animation: dropped when the screen settles. */
+  function later(fn, ms) { const t = setTimeout(() => { S.timers.delete(t); fn(); }, ms); S.timers.add(t); return t; }
+  function settle(v) {
+    for (const t of S.timers) clearTimeout(t);
+    S.timers.clear();
+    const wasMine = isMine();
+    S.view = v;
+    S.M = JSON.parse(JSON.stringify(v));
+    if (v.phase === "over") S.resultReady = true;
+    if (!isMine()) S.sending = false;
+    if (G() && !G().bombs[you()]) S.bomb = false;
+    show();
+    if (!wasMine && isMine()) focusCursor();
+  }
+  const isMine = () => { const g = G(); return !!g && g.phase === "playing" && g.turn === you() && !S.anim && !S.sending; };
+
+  /* ================================================================ drawing the grid */
+  const geo = { k: 4 };
+  function layout() {
+    const w = Math.min(window.innerWidth, 600) - 16;
+    const h = window.innerHeight - 52 - 64 - 64 - 24 - 40; // the HUD, the call, the dock, gaps
+    const k = Math.max(2, Math.min(7, Math.floor(Math.min(w / 74, h / 78))));
+    geo.k = k;
+    $("board").style.setProperty("--k", `${k}px`);
+    $("back").style.backgroundImage = `url(${A.backCanvas().toDataURL()})`;
+    $("frame").style.backgroundImage = `url(${A.frame()})`;
+    if ($("cols").children.length !== NCOL) $("cols").innerHTML = Array.from({ length: NCOL }, (_, c) => `<button type="button" data-col="${c}" tabindex="-1"></button>`).join("");
+  }
+  function drawGrid() {
+    const g = G(), k = geo.k, layer = $("discs");
+    layer.innerHTML = "";
+    if (!g) return;
+    const line = new Set((g.line ?? []).map(([c, r]) => `${c},${r}`));
+    for (let c = 0; c < NCOL; c++) for (let r = 0; r < NROW; r++) {
+      const v = g.grid[c][r];
+      if (!v) continue;
+      const d = discEl(v - 1, c, r, k);
+      if (g.phase === "over" && line.size && line.has(`${c},${r}`)) d.style.backgroundImage = `url(${A.disc(v - 1, { lit: true })})`;
+      else if (g.phase === "over" && line.size) d.classList.add("dim");
+      layer.appendChild(d);
+    }
+    // Columns: buttons for keyboard, screen readers and taps.
+    const mine = isMine();
+    $("board").classList.toggle("mine", mine);
+    for (const b of $("cols").children) {
+      const c = Number(b.dataset.col), h = heightOf(g, c), open = h < NROW;
+      b.classList.toggle("open", open && mine);
+      b.classList.toggle("cur", mine && c === S.cursor);
+      b.tabIndex = c === S.cursor ? 0 : -1;
+      b.setAttribute("aria-disabled", String(!(open && mine)));
+      const stack = g.grid[c].slice(0, h).map((v) => (v - 1 === you() ? "yours" : "theirs"));
+      b.setAttribute("aria-label", `Column ${colName(c)}: ${open ? plural(NROW - h, "space", "spaces") + " free" : "full"}${stack.length ? `, from the bottom: ${stack.join(", ")}` : ""}`);
+    }
+    drawLane();
+  }
+  /** The disc in hand above the grid, over the column you'd drop in (your turn only). */
+  function drawLane() {
+    const lane = $("lane"), g = G(), k = geo.k;
+    lane.innerHTML = "";
+    if (!g || !isMine()) return;
+    const c = S.cursor, x = (F + c * CELL) * k;
+    const bombing = S.bomb && g.bombs[you()];
+    const hand = el("div", "", { left: `${x}px`, top: `${2 * k}px`, width: `${10 * k}px`, height: `${10 * k}px`, backgroundImage: `url(${bombing ? A.bomb(0) : A.disc(you(), { outline: true })})` });
+    lane.appendChild(hand);
+    if (heightOf(g, c) >= NROW) hand.style.opacity = "0.35";
+  }
+  function renderGame() {
+    const g = G();
+    if (!g) return;
+    layout();
+    drawGrid();
+    renderHud();
+    renderCall();
+    renderDock();
+    const keysOn = S.pointer !== "touch" && !matchMedia("(pointer: coarse)").matches && S.keyUses < 6 && !P.local.get("drop_four.keysSeen");
+    if (S.keyUses >= 6) P.local.set("drop_four.keysSeen", true);
+    $("keys").textContent = keysOn && isMine() ? `Arrows pick a column · Enter drops${g.bombs[you()] ? " · B arms the bomb" : ""} · I reads the grid` : "";
+  }
+  function renderHud() {
+    const g = G(), r = 1 - you();
+    const bombs = g.bombsOn ? `<span class="bombchip${g.bombs[r] ? "" : " used"}" title="${g.bombs[r] ? "Bomb ready" : "Bomb used"}">${imgTag(A.bomb(-1), 10, 10, 2)}${g.bombs[r] ? "" : "Used"}</span>` : "";
+    $("rivalBox").innerHTML = `${imgTag(A.disc(r, { outline: true }), 10, 10, 2)}<span class="nm">${esc(rivalName())}</span>${rivalAway() ? '<span class="away">Away</span>' : ""}${bombs}`;
+    $("rivalBox").setAttribute("aria-label", `${rivalName()}, ${A.DISC[r].name}${g.bombsOn ? (g.bombs[r] ? ", bomb ready" : ", bomb used") : ""}`);
+  }
+  function renderDock() {
+    const g = G(), me = you();
+    $("meBox").innerHTML = `${imgTag(A.disc(me, { outline: true }), 10, 10, 2)}<span class="nm">${esc(nameOf(me))}</span><span class="pl-you">You</span>`;
+    const b = $("bombBtn");
+    b.hidden = !g.bombsOn || g.phase !== "playing";
+    const has = g.bombs[me];
+    b.disabled = !has || !isMine();
+    b.setAttribute("aria-pressed", String(!!(S.bomb && has)));
+    b.innerHTML = `${imgTag(A.bomb(S.bomb && has ? 1 : -1), 10, 10, 3)}<span>${!has ? "Bomb used" : S.bomb ? "Bomb armed" : "Bomb"}</span>`;
+  }
+  $("bombBtn").onclick = () => toggleBomb();
+  function toggleBomb() {
+    const g = G();
+    if (!g || !isMine() || !g.bombs[you()]) return;
+    S.bomb = !S.bomb;
+    cue(S.bomb ? "arm" : "select", { vol: S.bomb ? 1 : 0.5 });
+    say(S.bomb ? "Bomb armed: pick a column" : "Bomb put away");
+    renderGame();
+  }
+  function renderCall() {
+    const g = G();
+    const mine = g.phase === "playing" && g.turn === you();
+    let title = "", text = "", seat = null;
+    if (g.phase === "playing") {
+      seat = g.turn;
+      if (mine) { title = "Your turn"; text = S.callNote || (S.bomb ? "Bomb armed: tap a column" : "Tap a column to drop"); }
+      else { title = `${rivalName()}'s turn`; text = rivalAway() ? `${rivalName()} lost connection. The clock moves for them` : S.callNote || "Thinking"; }
+    } else {
+      title = g.draw ? "Draw" : g.winner === you() ? "Victory" : "Defeat";
+      text = g.forfeit ? (g.winner === you() ? `${rivalName()} forfeited` : "You forfeited") : g.draw ? "The grid is full" : g.winner === you() ? "Four in a row" : `${rivalName()} made four`;
+      seat = g.winner;
+    }
+    $("callTitle").textContent = title;
+    $("callText").textContent = text;
+    const disc = $("callDisc");
+    disc.hidden = seat === null || seat === undefined;
+    if (!disc.hidden) { disc.src = A.disc(seat, { outline: true }); disc.width = 20; disc.height = 20; }
+    $("call").classList.toggle("mine", mine);
+    tickClock();
+  }
+  function focusCursor() {
+    if (P.sheetOpen()) return;
+    const a = document.activeElement;
+    if (a && a !== document.body && !a.closest?.("#scrGame")) return;
+    $("cols").children[S.cursor]?.focus({ preventScroll: true });
+  }
+
+  /** The clock bar: whose clock it is and how much is left. */
+  let clockTotal = { key: "", ms: 1 };
+  let lastTick = 0;
+  function tickClock() {
+    const v = S.view, e = $("clock"), c = v?.clock;
+    if (!c || !G() || G().phase !== "playing") { e.hidden = true; $("clockS").textContent = ""; return; }
+    const left = Math.max(0, c.deadline - Date.now());
+    const key = `${c.seat}:${c.deadline}`;
+    if (clockTotal.key !== key) clockTotal = { key, ms: Math.max(left, 1) };
+    e.hidden = false;
+    e.firstElementChild.style.width = `${Math.round((100 * left) / clockTotal.ms)}%`;
+    const low = left < 5000;
+    e.classList.toggle("low", low);
+    const secs = Math.ceil(left / 1000);
+    $("clockS").textContent = `${secs} s`;
+    $("clockS").classList.toggle("low", low);
+    if (secs % 5 === 0 || low) e.setAttribute("aria-label", `${secs} seconds left`);
+    if (c.seat === you() && secs !== lastTick && secs > 0) {
+      if (low && secs <= 3) { cue("tick"); if (secs === 3) sayNow("3 seconds left"); }
+      lastTick = secs;
+    }
+  }
+  setInterval(() => { if (screenNow() === "game" && !$("clock").hidden) tickClock(); }, 250);
+
+  /* ================================================================ your move: tap a column (a mouse previews it; the keyboard walks it) */
+  $("cols").addEventListener("pointerdown", (ev) => { S.pointer = ev.pointerType || "mouse"; });
+  $("cols").addEventListener("pointermove", (ev) => {
+    if (ev.pointerType !== "mouse" || !isMine()) return;
+    const b = ev.target.closest?.("button[data-col]");
+    if (b && Number(b.dataset.col) !== S.cursor) { S.cursor = Number(b.dataset.col); drawGrid(); }
+  });
+  $("cols").addEventListener("click", (ev) => {
+    const b = ev.target.closest?.("button[data-col]");
+    if (!b) return;
+    S.cursor = Number(b.dataset.col);
+    dropIn(S.cursor);
+  });
+  async function dropIn(col) {
+    const g = G();
+    if (!g || !isMine()) return;
+    if (heightOf(g, col) >= NROW) { cue("nope"); pose($("cols").children[col], "nope"); say(`Column ${colName(col)} is full`); return; }
+    S.sending = true;
+    const bomb = S.bomb && g.bombs[you()];
+    drawGrid(); renderDock(); // it's out of your hands now: no second tap, no bomb toggle while it's on its way
+    try { await req(PREFIX + "drop", { col, bomb }); S.bomb = false; }
+    catch (e) { S.sending = false; toast(P.errText(e), 2600); renderGame(); }
+  }
+
+  /* ================================================================ animating what happened */
+  const speed = () => Q.speed();
+  const wait2 = (ms) => (RM() ? Promise.resolve() : sleep(ms * speed()));
+  const hold = (ms) => (RM() ? sleep(ms) : Promise.resolve());
+  function sheetFx(root, name, ax, ay, k, ms) {
+    const s = A.sheet(name);
+    const e = el("div", "", { left: `${ax * k}px`, top: `${ay * k}px`, width: `${s.w * k}px`, height: `${s.h * k}px`, backgroundImage: `url(${s.url})`, backgroundSize: `${s.w * s.n * k}px ${s.h * k}px`, backgroundPosition: "0 0", position: "absolute", imageRendering: "pixelated", pointerEvents: "none" });
+    root.appendChild(e);
+    const a = e.animate([{ backgroundPosition: "0 0" }, { backgroundPosition: `${-s.w * s.n * k}px 0` }], { duration: ms, easing: `steps(${s.n})`, fill: "forwards" });
+    a.finished.then(() => e.remove()).catch(() => {});
+    return e;
+  }
+  /** Art position of a slot's top-left corner (row 0 is the bottom). */
+  const slotXY = (c, r) => [F + c * CELL, F + (NROW - 1 - r) * CELL];
+  /** Screen readers: `say` for the play by play (polite), `sayNow` for your turn and the end (assertive). */
+  function say(text, id = "announce") { $(id).textContent = ""; requestAnimationFrame(() => { $(id).textContent = text; }); }
+  const sayNow = (text) => say(text, "announceNow");
+
+  async function play(u) {
+    const events = u.events || [];
+    const g = G();
+    if (!g || !events.length || (screenNow() !== "game" && !events.some((e) => e.type === "start"))) return settle(u.view);
+    S.anim = true;
+    S.final = events.find((e) => e.type === "over") || null;
+    try {
+      for (const e of events) {
+        const fn = EV[e.type];
+        if (fn) await fn(e, u.view);
+      }
+    } finally {
+      S.anim = false;
+      S.sending = false;
+      S.callNote = "";
+      settle(u.view);
+    }
+  }
+
+  const EV = {
+    async start(e) {
+      const g = G();
+      Object.assign(g, { phase: "playing", first: e.first, turn: null });
+      renderGame();
+      $("lane").innerHTML = "";
+      const s = A.sheet("coin"), k = Math.max(4, geo.k + 1);
+      const wrap = el("div", "coin-wrap");
+      wrap.innerHTML = `<div class="coin" style="width:${s.w * k}px;height:${s.h * k}px;background:url(${s.url}) 0 0/${s.w * s.n * k}px ${s.h * k}px"></div><b></b>`;
+      $("board").appendChild(wrap);
+      // The coin is a disc turning over, gold side, coral side; it lands on whoever drops first.
+      const coin = wrap.querySelector(".coin");
+      cue("coin");
+      if (!RM()) {
+        const flips = 3, perFlip = T.coin * 0.55 / flips;
+        const spin = coin.animate([{ backgroundPosition: "0 0" }, { backgroundPosition: `${-s.w * s.n * k}px 0` }], { duration: perFlip, easing: `steps(${s.n})`, iterations: flips });
+        await coin.animate([{ transform: "translateY(0)" }, { transform: `translateY(${-10 * k}px)`, offset: 0.45 }, { transform: "translateY(0) scale(1)", offset: 0.9 }, { transform: "translateY(0) scale(1.15, 0.85)" }], { duration: perFlip * flips, easing: "steps(9)" }).finished.catch(() => {});
+        spin.cancel();
+      }
+      coin.style.backgroundPosition = e.first === 0 ? "0 0" : `${-s.w * 7 * k}px 0`;
+      cue("coinLand");
+      const label = wrap.querySelector("b");
+      const who = e.first === you() ? "You" : rivalName();
+      label.textContent = e.rematch ? (e.first === you() ? "You lost last time: you go first" : `${rivalName()} lost last time: they go first`) : `${who} ${e.first === you() ? "go" : "goes"} first`;
+      P.playPreset(label, "bounceIn", { speed: "fast" });
+      sayNow(label.textContent);
+      await (RM() ? sleep(1200) : sleep(T.coin * 0.45 * speed()));
+      wrap.remove();
+    },
+    async drop(e) {
+      const g = G(), k = geo.k, mine = e.by === you();
+      g.turn = e.by;
+      $("lane").innerHTML = "";
+      const [ax] = slotXY(e.col, e.row);
+      // The disc in hand over its column (the rival's moves from the edge, so you see where it goes).
+      const hand = el("div", "", { left: `${ax * k}px`, top: `${2 * k}px`, width: `${10 * k}px`, height: `${10 * k}px`, backgroundImage: `url(${e.bomb ? A.bomb(0) : A.disc(e.by, { outline: true })})` });
+      $("lane").appendChild(hand);
+      if (!mine && !RM()) {
+        const from = S.lastCol ?? 3;
+        hand.style.left = `${(F + from * CELL) * k}px`;
+        await hand.animate([{ left: `${(F + from * CELL) * k}px` }, { left: `${ax * k}px` }], { duration: T.hover * speed(), easing: `steps(${Math.max(1, Math.abs(e.col - from))})`, fill: "forwards" }).finished.catch(() => {});
+      } else await wait2(T.hover / 2);
+      if (e.auto) { cue("timeout"); S.callNote = mine ? `The clock dropped for you in ${colName(e.col)}` : `The clock dropped for ${rivalName()} in ${colName(e.col)}`; $("callText").textContent = S.callNote; }
+      hand.remove();
+      // The fall, behind the frame.
+      const d = discEl(e.by, e.col, e.row, k, !!e.bomb);
+      $("discs").appendChild(d);
+      cue("drop", { pitch: 0.9 + 0.04 * (NROW - e.row) });
+      await fallTo(d, e.row, k, speed());
+      g.grid[e.col][e.row] = e.by + 1;
+      S.lastCol = e.col;
+      cue("land", { pitch: 1.25 - 0.06 * (NROW - e.row) });
+      if (!RM()) {
+        const [sx, sy] = slotXY(e.col, e.row);
+        sheetFx($("fx"), "dust", sx - 1, sy + 7, k, 260 * speed());
+      }
+      g.moves[e.by]++;
+      say(`${mine ? "You" : rivalName()} ${e.bomb ? "dropped the bomb" : "dropped"} in ${colName(e.col)}${e.bomb ? "" : `, row ${e.row + 1}`}`);
+      if (e.bomb) {
+        g.bombs[e.by] = false;
+        renderHud(); renderDock();
+        // The fuse fizzes.
+        cue("fuse");
+        if (!RM()) { const t0 = performance.now(); let f = 0; while (performance.now() - t0 < T.fuse * speed()) { d.style.backgroundImage = `url(${A.bomb(f++ % 2)})`; await sleep(90); } }
+      }
+      await hold(500);
+    },
+    async blast(e) {
+      const g = G(), k = geo.k, fx = $("fx"), layer = $("discs");
+      // A beat of stillness, then the blast: the bomb and its neighbours burst, the grid rattles.
+      await wait2(80);
+      const [bx, by] = slotXY(e.col, e.row);
+      if (!RM()) sheetFx(fx, "blast", bx - 5, by - 5, k, T.blast * speed());
+      cue("blast");
+      if (!RM()) $("board").animate([{ transform: "translate(0, 0)" }, { transform: `translate(${2 * k}px, ${k}px)` }, { transform: `translate(${-2 * k}px, 0)` }, { transform: `translate(${k}px, ${k}px)` }, { transform: "translate(0, 0)" }], { duration: 260, easing: "steps(4)" });
+      for (const [c, r] of e.cleared) {
+        layer.querySelector(`.d[data-c="${c}"][data-r="${r}"]`)?.remove();
+        g.grid[c][r] = 0;
+        if (!RM() && (c !== e.col || r !== e.row)) { const [x, y] = slotXY(c, r); sheetFx(fx, "pop", x, y, k, 240 * speed()); }
+      }
+      if (e.cleared.length > 1) later(() => cue("pop", { pitch: 1.1 }), 120);
+      say(`Boom: ${plural(e.cleared.length - 1, "disc", "discs")} cleared${e.falls.length ? ", the rest fall" : ""}`);
+      await wait2(T.blast * 0.6);
+      // Discs above fall into the gap.
+      const moves = e.falls.map((f) => ({ f, d: layer.querySelector(`.d[data-c="${f.col}"][data-r="${f.from}"]`) })).filter((m) => m.d);
+      await Promise.all(moves.map(async ({ f, d }) => {
+        const v = g.grid[f.col][f.from];
+        g.grid[f.col][f.from] = 0; g.grid[f.col][f.to] = v;
+        d.dataset.r = f.to;
+        const [, y] = slotXY(f.col, f.to);
+        if (!RM()) await d.animate([{ top: d.style.top }, { top: `${(y + 1) * k}px` }], { duration: T.fallAfter * speed(), easing: `steps(${(f.from - f.to) * 2})`, fill: "forwards" }).finished.catch(() => {});
+        d.style.top = `${(y + 1) * k}px`;
+      }));
+      if (moves.length) cue("land", { pitch: 1.05 });
+      await hold(700);
+    },
+    async turn(e) {
+      const g = G();
+      g.turn = e.seat;
+      S.callNote = "";
+      renderGame();
+      pose($("call"), "call");
+      if (e.seat === you()) { cue("yourTurn"); sayNow("Your turn"); }
+      else { cue("theirTurn"); say(`${rivalName()}'s turn`); }
+      await wait2(T.turn);
+    },
+    async over(e, v) {
+      const g = G(), k = geo.k, layer = $("discs");
+      Object.assign(g, { phase: "over", winner: e.winner, draw: e.winner === null && !e.forfeit, forfeit: !!e.forfeit, turn: null, line: e.line ?? null });
+      $("lane").innerHTML = "";
+      const won = e.winner === you();
+      if (e.line && !RM()) {
+        // The line lights up disc by disc, a note higher each time; the rest of the grid steps back.
+        for (const d of layer.querySelectorAll(".d")) if (!e.line.some(([c, r]) => Number(d.dataset.c) === c && Number(d.dataset.r) === r)) d.classList.add("dim");
+        let i = 0;
+        for (const [c, r] of e.line) {
+          const d = layer.querySelector(`.d[data-c="${c}"][data-r="${r}"]`);
+          if (d) { d.style.backgroundImage = `url(${A.disc(e.winner, { lit: true })})`; d.animate([{ transform: "scale(1.25)" }, { transform: "scale(1)" }], { duration: 120, easing: "steps(2)" }); }
+          cue("line", { pitch: 1 + 0.12 * i++ });
+          await sleep(T.lineStep * speed());
+        }
+      }
+      renderCall();
+      const stamp = el("div", `stamp ${e.winner === null ? "plain" : e.winner === 0 ? "" : "coral"}`);
+      stamp.setAttribute("aria-hidden", "true");
+      stamp.innerHTML = `<span class="stamp-in"><b>${e.forfeit ? "Forfeit" : e.winner === null ? "Draw" : "Four"}</b><small>${e.forfeit ? (won ? `${esc(rivalName())} gave up` : "You gave up") : e.winner === null ? "The grid is full" : won ? "You win" : `${esc(rivalName())} wins`}</small></span>`;
+      $("board").appendChild(stamp);
+      if (!RM()) stamp.firstElementChild.animate([{ transform: "scale(1.3)" }, { transform: "scale(0.94)" }, { transform: "scale(1)" }], { duration: 180, easing: "steps(3)", fill: "backwards" });
+      cue(e.winner === null ? "draw" : won ? "win" : "lose");
+      sayNow(e.forfeit ? (won ? `${rivalName()} forfeited. You win` : "You forfeited") : e.winner === null ? "Draw. The grid is full" : won ? "Four in a row. You win" : `${rivalName()} made four in a row. You lose`);
+      if (won && !RM()) pose($("call"), "win");
+      await sleep(RM() ? 1500 : T.lineHold + 900);
+      stamp.remove();
+      S.resultReady = true;
+      void v;
+    },
+  };
+
+  /* ================================================================ keyboard */
+  document.addEventListener("keydown", (e) => {
+    if (screenNow() !== "game" || P.sheetOpen() || e.target.matches?.("input")) return;
+    if (e.key === "Escape" && !e.defaultPrevented) { openMenu(); return; }
+    const g = G();
+    if (!g) return;
+    if ((e.key === "i" || e.key === "I") && g.phase === "playing") { e.preventDefault(); sayNow(gridSummary(g)); return; }
+    if (!isMine()) return;
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      S.keyUses++;
+      S.cursor = Math.max(0, Math.min(NCOL - 1, S.cursor + (e.key === "ArrowLeft" ? -1 : 1)));
+      drawGrid();
+      $("cols").children[S.cursor]?.focus({ preventScroll: true });
+      return;
+    }
+    if (e.key === "b" || e.key === "B") { e.preventDefault(); toggleBomb(); return; }
+    if ((e.key === "Enter" || e.key === " ") && (document.activeElement?.closest?.("#cols") || document.activeElement === document.body)) { e.preventDefault(); S.keyUses++; dropIn(S.cursor); }
+  });
+  /** I on the keyboard: the grid, column by column, for screen readers. */
+  function gridSummary(g) {
+    const cols = Array.from({ length: NCOL }, (_, c) => {
+      const h = heightOf(g, c);
+      if (!h) return `${colName(c)} empty`;
+      return `${colName(c)}: ${g.grid[c].slice(0, h).map((v) => (v - 1 === you() ? "you" : "them")).join(" ")}`;
+    });
+    return `From the bottom. ${cols.join(". ")}. ${g.bombsOn ? `Your bomb ${g.bombs[you()] ? "is ready" : "is used"}; theirs ${g.bombs[1 - you()] ? "is ready" : "is used"}.` : ""}`;
+  }
+  window.addEventListener("resize", () => { if (screenNow() === "game") renderGame(); });
+
+  /* ================================================================ the result: Ploto's screen, the game's words and numbers */
+  function renderResult() {
+    const v = S.view, g = v?.game;
+    if (!g || g.phase !== "over") return;
+    const won = g.winner === you(), me = you();
+    const km = window.innerWidth - 32 >= 74 * 4 ? 4 : 3;
+    const hero = `<img src="${A.gridCanvas(g.grid, g.line ?? []).toDataURL()}" alt="The final grid" width="${74 * km}" height="${64 * km}" style="box-shadow:0 0 0 var(--px) var(--c-ink)">`;
+    kit.renderResult($("resMain"), {
+      hero,
+      title: g.draw ? "Draw" : won ? "Victory" : "Defeat",
+      sub: g.forfeit ? (won ? `${rivalName()} forfeited` : "You forfeited") : g.draw ? "The grid filled up with no four" : won ? `Four in a row in ${plural(g.moves[me], "move", "moves")}` : `${rivalName()} made four in a row`,
+      win: won,
+      tiles: [
+        { label: "Your moves", value: g.moves[me] },
+        { label: "Longest line", value: won && g.line ? g.line.length : 0 },
+        ...(g.bombsOn ? [{ label: "Bomb", value: g.bombs[me] ? 0 : 1, format: (n) => (n ? "Used" : "Kept") }] : []),
+      ],
+      view: S.lobby, rematchHint: "Same settings; the loser goes first", actions: $("resFoot"), key: S.room?.roomId,
+      onRematch: async () => { try { enter(await req("lobby:rematch")); } catch (e) { toast(P.errText(e), 2600); } },
+      onLeave: () => { drop(); goHome(); },
+    });
+    kit.countResult($("resMain"));
+  }
+
+  /* ================================================================ boot: a link (?code=, ?invite=, ?inviteFriend=), or the room this tab was in */
+  P.restoreAccount();
+  const q = new URLSearchParams(location.search);
+  const code = q.get("code"), invite = q.get("invite"), friend = q.get("inviteFriend");
+  if (code || invite || friend) history.replaceState(null, "", location.pathname);
+  show();
+  const saved = P.savedRoom(GAME);
+  if (invite) takeSeat("Taking your seat", "acceptInvite", { inviteId: invite });
+  else if (code) kit.join(code.toUpperCase(), { wait: () => wait(`Joining ${code}`) }).then((r) => (r ? enter(r) : goHome())).catch((e) => { toast(P.errText(e), 2600); goHome(); });
+  else if (friend) { inviteFriend = friend; go("host"); }
+  else if (saved) enter(saved);
+})();
+</script>
+</body>
+</html>

@@ -25,7 +25,7 @@ function fakeCtx() {
   return { ctx, rooms, recorded };
 }
 const peer = (id: string) => ({ id, notes: [] as { method: string; data: any }[], notify(method: string, data: unknown) { this.notes.push({ method, data }); }, last() { return this.notes.filter((x) => x.method === "seabattle:update").at(-1)?.data; } });
-const FAST = { placeMs: 60, turnMs: 40, awayMs: 30, botMs: [1, 2] as const, botPlaceMs: [1, 3] as const, quickStartMs: 30, animScale: 0 };
+const FAST = { placeMs: 60, turnMs: 40, awayMs: 30, botMs: [1, 2] as const, botFollowMs: [1, 2] as const, botAfterSinkMs: [1, 2] as const, botPlaceMs: [1, 3] as const, quickStartMs: 30, animScale: 0 };
 const until = async (cond: () => boolean, ms = 8000) => {
   const t0 = Date.now();
   while (!cond()) {
@@ -121,6 +121,35 @@ describe("Sea Battle room", () => {
     expect(a.last().view.clock).toMatchObject({ seat: room.game.turn });
     await until(() => room.phase === "over", 15000);
     expect(a.notes.some((n) => n.data?.events?.some((e: any) => e.type === "shot" && e.auto))).toBe(true);
+    room.dispose();
+  });
+
+  it("a player who drops gets the away clock (timer off): it fires for them, and they come back to the same game", async () => {
+    const { room, a, b } = await hostedPair();
+    room.handleRequest("a", "seabattle:ready", { fleet: ROWS });
+    room.handleRequest("b", "seabattle:ready", { fleet: ROWS });
+    const seat = room.game.turn as number;
+    const [gone, stays] = seat === 0 ? [a, b] : [b, a];
+    room.leave(gone); // the socket closed
+    expect(stays.last().view.clock).toMatchObject({ seat }); // no timer, but a disconnected player gets the away clock
+    await until(() => room.game.sides[seat].stats.shots > 0);
+    expect(stays.notes.some((n) => n.data?.events?.some((e: any) => e.type === "shot" && e.auto && e.by === seat))).toBe(true);
+    room.join(gone); // back
+    const v = room.handleRequest(gone.id, "seabattle:getState", {}) as any;
+    expect(v.game.phase).toBe("firing");
+    expect(v.game.fleet).toHaveLength(5);
+    expect(v.game.stats[seat].shots).toBeGreaterThan(0);
+    room.dispose();
+  });
+
+  it("reconnecting while placing gives you back the fleet you were working on", async () => {
+    const { room, a } = await hostedPair();
+    const moved = [...ROWS.slice(0, 4), { kind: "destroyer", x: 5, y: 9, dir: "h" }];
+    room.handleRequest("a", "seabattle:draft", { fleet: moved });
+    expect(() => room.handleRequest("a", "seabattle:draft", { fleet: ROWS.slice(1) })).toThrow(/fleet/);
+    room.leave(a);
+    room.join(a);
+    expect((room.handleRequest("a", "seabattle:getState", {}) as any).draft).toEqual(moved);
     room.dispose();
   });
 

@@ -12,30 +12,30 @@
  * blocks from platform.css and the lobby kit (web/lobbykit.js), including the
  * in-game menu, How to play and the result. The game screen and the home banner
  * are Sea Battle's own, drawn from its pixel art (web/sea-battle.card.js): whole
- * art pixels (--k CSS px each), Animate.css poses, steps() motion.
+ * art pixels (--k CSS px each), Animate.css poses, steps() motion. Its accent is
+ * the sea's teal (--sea-hi); Ploto's purple stays on buttons and your turn.
  */
 :root { --sea-back: #0c3346; --sea-hi: #2bb3c0; --sea-hit: var(--c-bad); }
 .scr[hidden] { display: none; }
 
 /* ---- home ---- */
 .pl-hero.sea-hero { background: var(--sea-back); }
-.sea-hero canvas { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); image-rendering: pixelated; }
 .sea-hero .hs { position: absolute; image-rendering: pixelated; background-size: 100% 100%; }
 .pl-row .pl-ic img { image-rendering: pixelated; display: block; }
 
 /* ---- the game screen ---- */
-#scrGame { display: flex; flex-direction: column; min-height: 100dvh; padding: calc(env(safe-area-inset-top) + 8px) 16px calc(env(safe-area-inset-bottom) + 12px); max-width: 600px; margin: 0 auto; gap: 8px; }
+#scrGame { display: flex; flex-direction: column; min-height: 100dvh; padding: calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset-bottom) + 12px); max-width: 600px; margin: 0 auto; gap: 8px; }
 #scrGame[hidden] { display: none; }
 .hud { display: flex; align-items: center; gap: 8px; }
-.who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.who .nm { display: flex; align-items: center; gap: 6px; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; letter-spacing: 1px; color: var(--c-cream); }
+.who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.who .nm { display: flex; align-items: center; gap: 6px; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); }
 .who .nm .ell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fleet { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; min-height: 10px; }
+.away { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; padding: 2px 4px; background: var(--c-raise); color: var(--c-mute); }
+.fleet { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; min-height: 10px; }
 .fleet img { image-rendering: pixelated; display: block; }
-.fleet img.gone { opacity: 0.85; }
-.call { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 8px 12px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
-.call.mine { background: var(--c-accent-lo); box-shadow: inset 0 var(--px) 0 var(--c-accent); }
-.call b { font: 700 var(--fl-1)/1.1 var(--f-label); text-transform: uppercase; letter-spacing: 1px; color: var(--c-cream); white-space: nowrap; }
+.call { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 12px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
+.call.mine { background: var(--c-accent-lo); box-shadow: inset 0 var(--px) 0 var(--sea-hi), inset 0 calc(var(--px) * -2) 0 rgba(10, 12, 20, 0.45); }
+.call b { font: 700 var(--fl-1)/1.1 var(--f-label); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; }
 .call span { flex: 1; min-width: 0; font: 400 var(--fs-s)/1.25 var(--f-text); color: var(--c-text); }
 .clock { flex: none; width: 56px; height: calc(var(--px) * 4); background: var(--c-well); box-shadow: 0 0 0 var(--px) var(--c-ink); }
 .clock i { display: block; height: 100%; background: var(--c-gold); transition: width 0.25s steps(2); }
@@ -43,46 +43,57 @@
 .clock[hidden] { display: none; }
 
 .stage { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.sea-label { align-self: stretch; display: flex; justify-content: space-between; font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-mute); }
+.sea-label { align-self: stretch; display: flex; justify-content: space-between; gap: 8px; font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-mute); }
 .sea-label b { color: var(--c-cream); font-weight: 700; }
 .board { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; }
-.coords { display: grid; font: 700 10px/1 var(--f-label); color: var(--c-mute); text-align: center; align-items: center; }
-.coords.top { grid-column: 2; grid-template-columns: repeat(var(--n), var(--cell)); padding-left: var(--k); height: 14px; }
-.coords.left { grid-row: 2; grid-template-rows: repeat(var(--n), var(--cell)); padding-top: var(--k); width: 14px; }
+.board.swap-out { transform: translateY(24px) scale(0.94); opacity: 0; transition: transform 0.16s steps(4), opacity 0.16s steps(4); }
+.board.swap-in { animation: seaIn 0.16s steps(4); }
+@keyframes seaIn { from { transform: translateY(-24px) scale(0.94); opacity: 0; } }
+.coords { display: grid; font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-mute); text-align: center; align-items: center; }
+.coords.top { grid-column: 2; grid-template-columns: repeat(var(--n), var(--cell)); padding-left: var(--k); height: 16px; }
+.coords.left { grid-row: 2; grid-template-rows: repeat(var(--n), var(--cell)); padding-top: var(--k); width: 26px; text-align: right; padding-right: 8px; }
 .sea { position: relative; width: calc(var(--n) * var(--cell) + var(--k)); height: calc(var(--n) * var(--cell) + var(--k)); background-size: 100% 100%; image-rendering: pixelated; box-shadow: 0 0 0 var(--px) var(--c-ink), var(--px) var(--px) 0 var(--px) rgba(10, 12, 20, 0.5); }
+.sea.aiming { box-shadow: 0 0 0 var(--px) var(--c-ink), 0 0 0 calc(var(--px) * 2) var(--sea-hi), var(--px) var(--px) 0 calc(var(--px) * 2) rgba(10, 12, 20, 0.5); }
 .sea > div { position: absolute; inset: 0; }
+.sea .layer-fx { overflow: hidden; }
 .sea .layer-fx, .sea .layer-ships, .sea .layer-marks { pointer-events: none; }
 .sea .ship, .sea .mark, .sea .fx { position: absolute; background-size: 100% 100%; image-rendering: pixelated; }
+.sea .mark.water { opacity: 0.8; }
 .sea .ship.sel { filter: drop-shadow(var(--k) 0 0 var(--c-cream)) drop-shadow(calc(var(--k) * -1) 0 0 var(--c-cream)) drop-shadow(0 var(--k) 0 var(--c-cream)) drop-shadow(0 calc(var(--k) * -1) 0 var(--c-cream)); }
 .sea .ship.ghost { opacity: 0.6; }
 .sea .ship.bad { filter: drop-shadow(var(--k) 0 0 var(--c-bad)) drop-shadow(calc(var(--k) * -1) 0 0 var(--c-bad)) drop-shadow(0 var(--k) 0 var(--c-bad)) drop-shadow(0 calc(var(--k) * -1) 0 var(--c-bad)); }
 .sea .ship.fade { opacity: 0.55; }
 .sea .cells { display: grid; grid-template-columns: repeat(var(--n), var(--cell)); grid-template-rows: repeat(var(--n), var(--cell)); }
+.sea .cells .row { display: contents; }
 .sea .cells button { --b: transparent; --b-hi: transparent; --b-lo: transparent; border: 0; box-shadow: none; clip-path: none; padding: 0; min-height: 0; background: transparent; cursor: default; }
 .sea .cells button:active { transform: none; }
 .sea.aiming .cells button.open { cursor: crosshair; }
-.sea.aiming .cells button.open:hover { background: rgba(255, 244, 214, 0.14); }
+.sea.aiming .cells button.open:hover { background: rgba(43, 179, 192, 0.18); }
 .sea .cells button:focus-visible { outline: var(--px) solid var(--c-cream); outline-offset: calc(var(--px) * -1); }
 .sea.placing .cells button { cursor: pointer; touch-action: none; }
 .sea .fire-loop { animation: fireLoop 0.45s steps(3) infinite; }
 @keyframes fireLoop { to { background-position: -300% 0; } }
-.sea .stamp { position: absolute; left: 0; right: 0; top: 38%; text-align: center; pointer-events: none; }
-.sea .stamp b { display: inline-block; padding: 8px 14px 10px; font: 700 var(--fl-3)/1 var(--f-label); color: var(--c-cream); background: var(--sea-hit); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-bad-hi), var(--px) var(--px) 0 var(--c-ink); letter-spacing: 2px; transform: rotate(-4deg); }
-.sea .stamp small { display: block; margin-top: 6px; font: 700 var(--fl-1)/1 var(--f-label); letter-spacing: 1px; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); }
-.sea .pop { position: absolute; pointer-events: none; font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); letter-spacing: 1px; transform: translate(-50%, -100%); white-space: nowrap; }
+.sea .stamp { position: absolute; transform: translate(-50%, -50%); text-align: center; pointer-events: none; white-space: nowrap; }
+.sea .stamp b { display: inline-block; padding: 8px 14px 10px; font: 700 var(--fl-3)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); background: var(--sea-hit); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-bad-hi), inset 0 calc(var(--px) * -2) 0 #7c1626, var(--px) var(--px) 0 var(--c-ink); }
+.sea .stamp small { display: block; margin-top: 6px; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); }
+.sea .spot { position: absolute; box-shadow: 0 0 0 9999px rgba(10, 12, 20, 0.45); pointer-events: none; }
+.sea .pop { position: absolute; pointer-events: none; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); white-space: nowrap; }
 .sea .pop.hit { color: var(--c-bad-hi); }
 .sea .flash { position: absolute; background: var(--c-cream); }
 .coin-wrap { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 12px; background: rgba(10, 12, 20, 0.55); pointer-events: none; }
-.coin-wrap .coin { background-size: 700% 100%; image-rendering: pixelated; }
-.coin-wrap b { font: 700 var(--fl-2)/1.2 var(--f-label); text-transform: uppercase; letter-spacing: 1px; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); text-align: center; padding: 0 12px; }
-.swap-out { opacity: 0; transform: translateY(6px); transition: opacity 0.12s steps(2), transform 0.12s steps(2); }
+.coin-wrap .coin { image-rendering: pixelated; }
+.coin-wrap b { font: 700 var(--fl-2)/1.2 var(--f-label); text-transform: uppercase; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); text-align: center; padding: 0 12px; }
 
 .dock { display: flex; gap: 12px; align-items: flex-start; }
 .dock .mini { flex: none; image-rendering: pixelated; box-shadow: 0 0 0 var(--px) var(--c-ink); background-size: 100% 100%; }
-.dock .side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.dock .side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .tools .big { grid-column: 1 / -1; }
-.hint { font: 400 var(--fs-s)/1.3 var(--f-text); color: var(--c-mute); text-align: center; margin: 0; }
+.hint { font: 400 var(--fs-s)/1.3 var(--f-text); color: var(--c-mute); margin: 0; }
+.hide-meter { display: flex; align-items: center; gap: 8px; font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-mute); }
+.hide-meter i { display: block; width: 18px; height: calc(var(--px) * 4); background: var(--c-well); box-shadow: 0 0 0 var(--px) var(--c-ink); }
+.hide-meter i.on { background: var(--sea-hi); }
+.hide-meter b { color: var(--c-cream); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .pl-res-hero img { image-rendering: pixelated; }
 </style>
@@ -138,16 +149,16 @@
 <!-- The game: all its own, plus Ploto's menu button (kit.menu) -->
 <section class="scr" id="scrGame" hidden>
   <div class="hud">
-    <div class="who" id="rivalBox"><div class="nm"><span class="ell" id="rivalName">Rival</span></div><div class="fleet" id="rivalFleet" aria-label="Their fleet"></div></div>
+    <div class="who" id="rivalBox"><div class="nm"><span class="ell" id="rivalName">Rival</span><span class="away" id="rivalAway" hidden>Away</span></div><div class="fleet" id="rivalFleet" role="img" aria-label="Their fleet"></div></div>
     <button id="menuBtn" class="ghost icon-btn" aria-label="Menu" title="Menu"></button>
   </div>
-  <div class="call" id="call" role="status" aria-live="polite"><b id="callTitle"></b><span id="callText"></span><div class="clock" id="clock" hidden><i></i></div></div>
+  <div class="call" id="call"><b id="callTitle"></b><span id="callText"></span><div class="clock" id="clock" hidden><i></i></div></div>
   <div class="stage">
     <div class="sea-label"><span id="seaName">Your sea</span><b id="seaAim"></b></div>
     <div class="board" id="board">
       <div class="coords top" id="coordsTop" aria-hidden="true"></div>
       <div class="coords left" id="coordsLeft" aria-hidden="true"></div>
-      <div class="sea" id="sea"><div class="layer-ships"></div><div class="layer-marks"></div><div class="cells" role="grid"></div><div class="layer-fx"></div></div>
+      <div class="sea" id="sea"><div class="layer-ships"></div><div class="layer-marks"></div><div class="cells" role="grid" aria-label="Your sea"></div><div class="layer-fx"></div></div>
     </div>
   </div>
   <div class="dock" id="dock"></div>
@@ -177,12 +188,13 @@
   const RM = () => P.reduceMotion();
   const GAME = "sea_battle", PREFIX = "seabattle:";
 
-  /* ================================================================ the game's rules, as the page needs them */
+  /* ================================================================ the game's rules, as the page needs them (the engine is src/game/sea_battle/engine.ts) */
   const SHIPS = { carrier: { name: "Carrier", length: 5 }, battleship: { name: "Battleship", length: 4 }, cruiser: { name: "Cruiser", length: 3 }, submarine: { name: "Submarine", length: 3 }, destroyer: { name: "Destroyer", length: 2 } };
   const BOARDS = { classic: { size: 10, fleet: ["carrier", "battleship", "cruiser", "submarine", "destroyer"] }, quick: { size: 8, fleet: ["battleship", "cruiser", "submarine", "destroyer"] } };
   const MARK = { unknown: 0, miss: 1, hit: 2, water: 3 };
   const COLS = "ABCDEFGHIJ";
   const cellName = (x, y) => `${COLS[x]}${y + 1}`;
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
   const cellsOf = (p) => Array.from({ length: SHIPS[p.kind].length }, (_, i) => (p.dir === "h" ? [p.x + i, p.y] : [p.x, p.y + i]));
   /** Whether ship `p` fits with the rest of `fleet` (in bounds, not overlapping or touching). */
   function fits(n, fleet, p) {
@@ -212,11 +224,27 @@
     }
     return null;
   }
+  /** How hard a fleet is to find, 0..1: hunters look first where ships fit most often (the bots' hiding score). */
+  function hiding(board, fleet) {
+    const { size: n, fleet: kinds } = BOARDS[board];
+    const d = new Array(n * n).fill(0);
+    for (const k of kinds) {
+      const len = SHIPS[k].length;
+      for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+        if (x + len <= n) for (let i = 0; i < len; i++) d[y * n + x + i]++;
+        if (y + len <= n) for (let i = 0; i < len; i++) d[(y + i) * n + x]++;
+      }
+    }
+    const max = Math.max(...d), min = Math.min(...d);
+    const cells = fleet.flatMap((p) => cellsOf(p).map(([x, y]) => d[y * n + x]));
+    return Math.max(0, Math.min(1, (max - cells.reduce((a, b) => a + b, 0) / cells.length) / (max - min)));
+  }
 
   /* ================================================================ the platform's lobby, told about this game once */
   const BOT_FIELD = { key: "botStyle", label: "Bot difficulty", kind: "choice", options: [["relaxed", "Medium"], ["sharp", "Hard"]], hint: "Medium bots aim loosely and miss chances. Hard bots hunt like a pro" };
+  const BOARD_FIELD = { key: "board", label: "Board", kind: "choice", options: [["classic", "Classic"], ["quick", "Quick"]], hint: "Classic: 10×10, five ships. Quick: 8×8, four ships, shorter games" };
   const SCHEMA = [
-    { key: "board", label: "Board", kind: "choice", options: [["classic", "Classic 10×10"], ["quick", "Quick 8×8"]], hint: "Quick: four ships, shorter games" },
+    BOARD_FIELD,
     { key: "timer", label: "Turn timer", kind: "choice", options: [[true, "On"], [false, "Off"]], hint: "20 s a shot and 60 s to place your fleet" },
     { ...BOT_FIELD, hint: "If you add a bot to the other seat. " + BOT_FIELD.hint },
   ];
@@ -231,10 +259,10 @@
     rules: () => ({
       steps: [
         "Place your fleet. It starts placed at random: tap a ship, then a cell to move it, or drag it. Rotate turns it, Shuffle deals a new layout. Ships can't touch, not even at the corners.",
-        "A coin flip picks who fires first. Tap a cell of their sea to fire.",
+        "A coin flip picks who fires first. Tap a cell of their sea to aim, then tap it again (or Fire) to fire.",
         "A miss is a splash, and the turn passes. A hit fires again.",
         "Hit every cell of a ship to sink it. The ship shows, and the water around it is marked: nothing else can be there. You fire again.",
-        "Sink their whole fleet to win.",
+        "Sink their whole fleet to win. Tip: ships along the edges are harder to find.",
       ],
       extra: `<p class="pl-label">The fleet</p><div class="pl-seats">${Object.entries(SHIPS).map(([k, s]) => `<div class="pl-seat pl-frame"><img src="${A.ship(k)}" alt="" width="${s.length * 20}" height="20" style="image-rendering:pixelated"><div class="pl-seat-t"><span class="nm">${s.name}</span><span class="note">${s.length} cells${k === "carrier" ? " · classic board only" : ""}</span></div></div>`).join("")}</div>`,
     }),
@@ -244,16 +272,18 @@
   const pose = P.poses({
     hit: { preset: "headShake", speed: "faster" },  // the sea flinches
     sink: { preset: "shakeX", speed: "fast" },       // the sea shakes
+    sinkBig: { preset: "wobble", speed: "fast" },    // a big ship goes down
     stamp: { preset: "bounceIn", speed: "fast" },    // SUNK lands
-    cross: { preset: "headShake", speed: "faster" }, // a ship's icon crossed out
+    cross: { preset: "headShake", speed: "faster" }, // a ship's icon struck through
     call: { preset: "pulse", speed: "faster" },      // the turn call
     place: { preset: "pulse", speed: "faster" },     // a ship settles
     nope: { preset: "shakeX", speed: "faster" },     // it doesn't fit there
+    enter: { preset: "backInLeft", speed: "fast" },  // a ship sails in (the banner)
     win: { preset: "tada" },
   });
 
   /* ================================================================ screens: a small stack; the room's phase picks lobby, game or result */
-  const S = { room: null, sock: null, lobby: null, view: null, M: null, place: null, aim: null, firing: false, anim: false, resultReady: false, cursor: [0, 0] };
+  const S = { room: null, sock: null, lobby: null, view: null, M: null, place: null, firing: false, anim: false, resultReady: false, cursor: [0, 0], pending: null, pointer: "mouse", streak: 0, retry: 0, leaving: false, dirty: false };
   const nav = { stack: ["home"] };
   const SCREENS = { home: "scrHome", host: "scrHost", practice: "scrPractice", lobby: "scrLobby", wait: "scrWait", game: "scrGame", result: "scrResult" };
   const cur = () => nav.stack[nav.stack.length - 1];
@@ -295,7 +325,7 @@
   const syncBack = P.backGuard({ canGoBack: () => nav.stack.length > 1, onBack: back });
   $("barBack").onclick = () => (cur() === "home" ? (location.href = "/play") : back());
 
-  /** The game's own little icons (ASCII, one UI pixel per cell). */
+  /** The game's own little icons (ASCII, one UI pixel per cell), like Hold'em's. */
   const GRIDS = {
     back: ["...X", "..XX", ".XXX", "XXXX", ".XXX", "..XX", "...X"],
     chev: ["X...", "XX..", "XXX.", "XXXX", "XXX.", "XX..", "X..."],
@@ -312,13 +342,9 @@
   const ICON = {
     quick: () => imgTag(A.sprite("cross").url, 14, 14, 3),
     host: () => `<span style="display:grid;gap:4px">${imgTag(A.mini("destroyer"), 9, 5, 3)}${imgTag(A.mini("destroyer"), 9, 5, 3)}</span>`,
-    practice: () => imgTag(A.sheet("fire").url, 10, 10, 4, true),
+    practice: () => `<span style="display:block;width:40px;height:40px;background:url(${A.sheet("fire").url}) 0 0/120px 40px;image-rendering:pixelated"></span>`,
   };
-  function imgTag(url, w, h, k, firstFrame = false) {
-    return firstFrame
-      ? `<span style="display:block;width:${w * k}px;height:${h * k}px;background:url(${url}) 0 0/${w * k * 3}px ${h * k}px;image-rendering:pixelated"></span>`
-      : `<img src="${url}" alt="" width="${w * k}" height="${h * k}">`;
-  }
+  const imgTag = (url, w, h, k) => `<img src="${url}" alt="" width="${w * k}" height="${h * k}">`;
   function renderHome() {
     for (const s of document.querySelectorAll("[data-chev]")) s.innerHTML = px("chev");
     for (const s of document.querySelectorAll("[data-ic]")) if (!s.firstChild) s.innerHTML = ICON[s.dataset.ic]();
@@ -332,60 +358,86 @@
     },
   });
 
-  /** The banner (docs/STYLE.md, Home banners): the card's sea, the battleship crossing it, the crosshair locking on; then a shell lands, splash and hit by turns. */
+  /**
+   * The banner (docs/STYLE.md, Home banners): the card's sea and battleship. Intro: the ship
+   * sails in and the crosshair locks on. Beats: a shell flies in and lands, by turns a splash,
+   * a hit (it keeps burning), and every third beat a short sink: the ship breaks in two and
+   * goes down, and a new one sails in.
+   */
   const banner = P.banner($("hero"), {
     draw(hero, W, H) {
-      const k = Math.max(2, Math.round(Math.max(W / 160, H / 72)));
-      const cols = Math.ceil(W / (10 * k)) + 1, rows = Math.ceil(H / (10 * k)) + 1;
+      const k = Math.max(3, Math.round(Math.max(W / 120, H / 60)));
+      const cols = Math.ceil(W / (10 * k)) + 1, rows = Math.ceil(H / (10 * k)) + 1, n = Math.max(cols, rows);
       hero.innerHTML = "";
-      const sea = document.createElement("div");
-      sea.className = "hs";
-      Object.assign(sea.style, { left: "0", top: "0", width: `${cols * 10 * k}px`, height: `${rows * 10 * k}px`, backgroundImage: `url(${A.water(Math.max(cols, rows), 0)})`, backgroundSize: `${(Math.max(cols, rows) * 10 + 1) * k}px` });
+      const sea = el("div", "hs", { left: "0", top: "0", width: `${cols * 10 * k}px`, height: `${rows * 10 * k}px`, backgroundImage: `url(${A.water(n, 0)})`, backgroundSize: `${(n * 10 + 1) * k}px` });
       hero.appendChild(sea);
-      const cx = (c) => c * 10 * k, size = (w, h) => ({ width: `${w * k}px`, height: `${h * k}px` });
-      const ship = document.createElement("div");
-      ship.className = "hs hs-ship";
-      const sx = Math.max(1, Math.floor(cols / 2) - 4), sy = Math.floor(rows / 2);
-      Object.assign(ship.style, { left: `${cx(sx)}px`, top: `${cx(sy)}px`, backgroundImage: `url(${A.ship("battleship")})`, ...size(40, 10) });
-      hero.appendChild(ship);
-      const cross = document.createElement("div");
-      cross.className = "hs hs-cross";
-      const tx = Math.min(cols - 2, sx + 6), ty = Math.max(0, sy - 2);
-      Object.assign(cross.style, { left: `${cx(tx) - 2 * k}px`, top: `${cx(ty) - 2 * k}px`, backgroundImage: `url(${A.sprite("cross").url})`, ...size(14, 14) });
-      hero.appendChild(cross);
+      const sx = Math.max(0, Math.floor(cols / 2) - 3), sy = Math.max(1, Math.floor(rows / 2));
+      const tx = Math.min(cols - 2, sx + 5), ty = Math.max(0, sy - 2);
+      hero.appendChild(shipBanner(sx, sy, k));
+      hero.appendChild(el("div", "hs hs-cross", { left: `${(tx * 10 - 2) * k}px`, top: `${(ty * 10 - 2) * k}px`, width: `${14 * k}px`, height: `${14 * k}px`, backgroundImage: `url(${A.sprite("cross").url})` }));
       hero._geo = { k, sx, sy, tx, ty, cols, rows };
       if (RM()) { // the still end state: a burning hit on the ship and a miss by the crosshair
-        mark(hero, "fire", sx * 10 + 10, sy * 10 - 2, k);
-        mark(hero, "miss", tx * 10, ty * 10, k);
+        markBanner(hero, "fire", sx * 10 + 10, sy * 10, k);
+        markBanner(hero, "miss", tx * 10, ty * 10, k);
       }
     },
     intro(hero) {
-      P.playPreset(hero.querySelector(".hs-ship"), "backInLeft", { speed: "fast" });
+      pose(hero.querySelector(".hs-ship"), "enter");
       sleep(450).then(() => P.playPreset(hero.querySelector(".hs-cross"), "zoomIn", { speed: "faster" }));
     },
-    beat(hero, n) {
+    async beat(hero, n) {
       const g = hero._geo;
-      if (!g) return;
-      // Odd beats hit the ship, even beats splash near the crosshair: the game's own impacts.
-      const onShip = n % 2 === 1;
-      const x = onShip ? (g.sx + 1 + (n % 3)) * 10 : g.tx * 10, y = onShip ? g.sy * 10 : g.ty * 10;
-      const fx = sheetFx(hero, onShip ? "boom" : "splash", x - 3, y - 3, g.k, onShip ? 420 : 520);
-      fx.classList.add("hs");
-      if (onShip) P.playPreset(hero.querySelector(".hs-ship"), "headShake", { speed: "faster" });
+      if (!g || hero._busy) return;
+      hero._busy = true;
+      try {
+        const kind = n % 3; // 0 splash, 1 hit, 2 sink
+        const ship = hero.querySelector(".hs-ship");
+        const [ax, ay] = kind === 0 ? [g.tx * 10, g.ty * 10] : [(g.sx + 1 + (n % 2)) * 10, g.sy * 10];
+        await shellBanner(hero, ax, ay, g);
+        if (kind === 0) { sheetFx(hero, "splash", ax - 3, ay - 3, g.k, 480); return; }
+        sheetFx(hero, "boom", ax - 3, ay - 3, g.k, 420);
+        if (kind === 1) { P.playPreset(ship, "headShake", { speed: "faster" }); markBanner(hero, "fire", ax, ay, g.k).classList.add("fire-loop", "hs-burn"); return; }
+        // The short sink: two halves tilt apart and go down in bubbles; a new ship sails in.
+        hero.querySelectorAll(".hs-burn").forEach((e) => e.remove());
+        ship.remove();
+        const halves = [0, 1].map((i) => {
+          const h = shipBanner(g.sx, g.sy, g.k, true);
+          h.style.clipPath = i ? "inset(0 0 0 50%)" : "inset(0 50% 0 0)";
+          hero.appendChild(h);
+          return h.animate([{ transform: "rotate(0)", opacity: 1 }, { transform: `rotate(${i ? 12 : -12}deg) translate(${i ? 3 : -3}px, ${4 * g.k}px)`, opacity: 0 }], { duration: 800, easing: "steps(5)", fill: "forwards" }).finished.then(() => h.remove());
+        });
+        for (let i = 0; i < 4; i++) setTimeout(() => sheetFx(hero, "bubbles", (g.sx + i) * 10, g.sy * 10, g.k, 640), i * 80);
+        await Promise.all(halves);
+        await sleep(500);
+        const next = shipBanner(g.sx, g.sy, g.k);
+        hero.appendChild(next);
+        pose(next, "enter");
+      } finally { hero._busy = false; }
     },
     every: 3900,
   });
-  function mark(root, name, ax, ay, k) {
-    const el = document.createElement("div");
-    el.className = "hs";
+  function el(tag, cls, style = {}) { const e = document.createElement(tag); e.className = cls; Object.assign(e.style, style); return e; }
+  function shipBanner(sx, sy, k, wreck = false) {
+    return el("div", `hs${wreck ? "" : " hs-ship"}`, { left: `${sx * 10 * k}px`, top: `${sy * 10 * k}px`, width: `${40 * k}px`, height: `${10 * k}px`, backgroundImage: `url(${A.ship("battleship", "h", wreck)})` });
+  }
+  function markBanner(root, name, ax, ay, k) {
     const s = name === "fire" ? { url: A.sheet("fire").url, w: 10, h: 10, n: 3 } : { ...A.sprite(name), n: 1 };
-    Object.assign(el.style, { left: `${ax * k}px`, top: `${ay * k}px`, width: `${s.w * k}px`, height: `${s.h * k}px`, backgroundImage: `url(${s.url})`, backgroundSize: `${s.w * s.n * k}px ${s.h * k}px` });
-    root.appendChild(el);
-    return el;
+    const e = el("div", "hs", { left: `${ax * k}px`, top: `${ay * k}px`, width: `${s.w * k}px`, height: `${s.h * k}px`, backgroundImage: `url(${s.url})`, backgroundSize: `${s.w * s.n * k}px ${s.h * k}px` });
+    root.appendChild(e);
+    return e;
+  }
+  async function shellBanner(hero, ax, ay, g) {
+    const sh = A.sprite("shell");
+    const sx = g.cols * 5, sy = g.rows * 10 + 4;
+    const e = el("div", "hs", { left: `${sx * g.k}px`, top: `${sy * g.k}px`, width: `${sh.w * g.k}px`, height: `${sh.h * g.k}px`, backgroundImage: `url(${sh.url})` });
+    hero.appendChild(e);
+    const tx = (ax + 3 - sx) * g.k, ty = (ay + 3 - sy) * g.k;
+    await e.animate([{ transform: "translate(0,0) scale(1)" }, { transform: `translate(${tx / 2}px, ${ty / 2 - 14 * g.k}px) scale(1.6)` }, { transform: `translate(${tx}px, ${ty}px) scale(1)` }], { duration: 320, easing: "steps(6)" }).finished.catch(() => {});
+    e.remove();
   }
 
   /* ================================================================ settings screens */
-  const PRACTICE_SCHEMA = [SCHEMA[0], BOT_FIELD];
+  const PRACTICE_SCHEMA = [BOARD_FIELD, BOT_FIELD];
   const practiceSettings = { board: "classic", botStyle: "relaxed", ...(P.local.get("sea_battle.practice") || {}) };
   function renderPractice() {
     $("practiceFields").innerHTML = kit.fieldsHTML(practiceSettings, { schema: PRACTICE_SCHEMA });
@@ -414,7 +466,7 @@
     } catch (e) { toast(P.errText(e), 2600); goHome(); }
   }
 
-  /* ================================================================ the room connection */
+  /* ================================================================ the room connection (it reconnects on its own, like Hold'em's) */
   // Updates play one after another (Ploto's play queue): each animates its events from what's on screen, then settles.
   const Q = P.playQueue({
     run: (u) => play(u),
@@ -422,37 +474,55 @@
     onReturn: (items) => [{ view: items[items.length - 1].view, events: [] }],
   });
   async function enter({ roomId, code }) {
-    S.sock?.close();
+    closeSock();
     Q.clear();
-    Object.assign(S, { room: { roomId, code }, lobby: null, view: null, M: null, place: null, aim: null, firing: false, anim: false, resultReady: false });
+    Object.assign(S, { room: { roomId, code }, lobby: null, view: null, M: null, place: null, firing: false, anim: false, resultReady: false, pending: null, streak: 0, retry: 0, leaving: false });
     P.saveRoom(GAME, S.room);
     nav.stack = ["home", "room"];
-    const sock = (S.sock = P.connect(roomId));
-    sock.on("lobby:update", (d) => { if (S.sock === sock) { S.lobby = d.view; if (!S.anim) show(); } });
-    sock.on(PREFIX + "update", (d) => { if (S.sock === sock) Q.add(d); });
     show();
-    try {
-      await P.waitOpen(sock);
-      const [lob, v] = await Promise.all([sock.request("lobby:getView"), sock.request(PREFIX + "getState")]);
-      S.lobby = lob;
-      S.resultReady = v.phase === "over";
-      Q.clear();
-      settle(v);
-    } catch (e) { toast(P.errText(e), 2600); drop(); goHome(); }
+    try { await openSock(); }
+    catch (e) { toast(P.errText(e), 2600); drop(); goHome(); }
   }
+  async function openSock() {
+    const room = S.room;
+    if (!room) return;
+    const sock = (S.sock = P.connect(room.roomId));
+    let ready = false;
+    sock.on("lobby:update", (d) => { if (S.sock === sock) { S.lobby = d.view; if (!S.anim) show(); } });
+    sock.on(PREFIX + "update", (d) => { if (S.sock === sock && ready) Q.add(d); });
+    sock.addEventListener("close", () => {
+      if (S.sock !== sock) return;
+      S.sock = null;
+      if (S.room && !S.leaving) {
+        if (screenNow() === "game") { $("callTitle").textContent = "Reconnecting"; $("callText").textContent = "Hold on, finding the game again"; }
+        clearTimeout(S.retryTimer);
+        S.retryTimer = setTimeout(() => openSock().catch(() => {}), Math.min(8000, 600 * 2 ** S.retry++));
+      }
+    });
+    await P.waitOpen(sock);
+    const [lob, v] = await Promise.all([sock.request("lobby:getView"), sock.request(PREFIX + "getState")]);
+    S.lobby = lob;
+    S.retry = 0;
+    S.resultReady = v.phase === "over";
+    Q.clear();
+    ready = true;
+    S.anim = false;
+    settle(v);
+  }
+  function closeSock() { const s = S.sock; S.sock = null; clearTimeout(S.retryTimer); s?.close(); }
   const req = (method, data) => (S.sock?.readyState === 1 ? S.sock.request(method, data) : Promise.reject(new Error("not connected")));
-  function drop() { S.sock?.close(); S.sock = null; S.room = null; S.lobby = null; S.view = null; S.M = null; Q.clear(); P.forgetRoom(GAME); }
+  function drop() { S.leaving = true; closeSock(); S.room = null; S.lobby = null; S.view = null; S.M = null; Q.clear(); P.forgetRoom(GAME); }
   async function leave() {
-    if (S.lobby?.phase === "playing" && !(await P.confirm({ title: "Leave the battle?", body: "Leaving now counts as giving up.", yes: "Leave", no: "Stay", danger: true }))) return;
+    if (S.lobby?.phase === "playing" && !(await P.confirm({ title: "Leave the battle?", body: "Leaving now counts as a forfeit: your rival wins.", yes: "Leave", no: "Stay", danger: true }))) return;
     req("lobby:leave").catch(() => {});
     drop();
     goHome();
   }
   async function forfeit() {
-    if (!(await P.confirm({ title: "Give up?", body: "Your rival wins this battle.", yes: "Give up", no: "Keep fighting", danger: true }))) return;
+    if (!(await P.confirm({ title: "Forfeit this match?", body: "Your rival wins, and it counts as a loss.", yes: "Forfeit", no: "Keep playing", danger: true }))) return;
     req(PREFIX + "forfeit").catch((e) => toast(P.errText(e), 2600));
   }
-  const openMenu = () => kit.menu({ view: S.lobby, items: [{ label: "Give up", danger: true, run: forfeit }] });
+  const openMenu = () => kit.menu({ view: S.lobby, items: [{ label: "Forfeit match", danger: true, run: forfeit }] });
   $("menuBtn").onclick = openMenu;
 
   /* ---- invites: Ploto's card; a Sea Battle invite seats you here ---- */
@@ -464,6 +534,7 @@
   const you = () => S.view?.you ?? 0;
   const nameOf = (seat) => S.lobby?.seats?.[seat]?.name || (seat === you() ? "You" : "Rival");
   const rivalName = () => nameOf(1 - you());
+  const rivalAway = () => S.lobby?.phase === "playing" && S.lobby?.seats?.[1 - you()]?.connected === false;
   /** Which sea fills the screen: yours while placing and when they fire, theirs when you fire (and at the end). */
   function bigSide() {
     const g = G();
@@ -473,34 +544,40 @@
   }
   /** Settle on a view: it becomes what the screen shows. */
   function settle(v) {
+    const wasAiming = isAiming();
     S.view = v;
     S.M = JSON.parse(JSON.stringify(v));
     const g = v.game;
     if (g?.phase === "placing" && v.draft && !S.place) S.place = { fleet: v.draft.map((p) => ({ ...p })), sel: null };
     if (g?.phase !== "placing") S.place = null;
     if (v.phase === "over") S.resultReady = true;
+    if (!isAiming()) S.pending = null;
     show();
+    if (!wasAiming && isAiming()) focusCursor();
   }
+  const isAiming = () => { const g = G(); return !!g && g.phase === "firing" && g.turn === you() && !S.anim && !S.firing; };
 
   /* ================================================================ drawing a sea */
-  const geo = { n: 10, k: 3 };
+  const geo = { n: 10, k: 3, side: "mine" };
   function layout() {
     const g = G();
     const n = g?.size ?? 10;
-    const w = Math.min(window.innerWidth, 600) - 32 - 14;
-    const h = window.innerHeight - 64 - 48 - 22 - (g?.phase === "placing" ? 170 : 128) - 24;
+    const w = Math.min(window.innerWidth, 600) - 16 - 26;
+    const h = window.innerHeight - 70 - 52 - 22 - (g?.phase === "placing" ? 190 : 110) - 24;
     const k = Math.max(2, Math.min(5, Math.floor(Math.min(w, h) / (n * 10 + 1))));
-    geo.n = n; geo.k = k;
     const board = $("board");
     board.style.setProperty("--n", n);
     board.style.setProperty("--k", `${k}px`);
     board.style.setProperty("--cell", `${10 * k}px`);
-    $("coordsTop").innerHTML = Array.from({ length: n }, (_, i) => `<span>${COLS[i]}</span>`).join("");
-    $("coordsLeft").innerHTML = Array.from({ length: n }, (_, i) => `<span>${i + 1}</span>`).join("");
+    if (geo.n !== n || !$("coordsTop").firstChild) {
+      $("coordsTop").innerHTML = Array.from({ length: n }, (_, i) => `<span>${COLS[i]}</span>`).join("");
+      $("coordsLeft").innerHTML = Array.from({ length: n }, (_, i) => `<span>${i + 1}</span>`).join("");
+    }
+    geo.n = n; geo.k = k;
     $("sea").style.backgroundImage = `url(${A.water(n, waterFrame)})`;
     const cells = $("sea").querySelector(".cells");
-    if (cells.childElementCount !== n * n) {
-      cells.innerHTML = Array.from({ length: n * n }, (_, c) => `<button type="button" role="gridcell" data-c="${c}" tabindex="-1"></button>`).join("");
+    if (cells.querySelectorAll("button").length !== n * n) {
+      cells.innerHTML = Array.from({ length: n }, (_, y) => `<div class="row" role="row">${Array.from({ length: n }, (_, x) => `<button type="button" role="gridcell" data-c="${y * n + x}" tabindex="-1"></button>`).join("")}</div>`).join("");
     }
   }
   let waterFrame = 0;
@@ -512,95 +589,95 @@
 
   const at = (ax, ay) => ({ left: `${ax * geo.k}px`, top: `${ay * geo.k}px` });
   function shipEl(p, { wreck = false, cls = "" } = {}) {
-    const el = document.createElement("div");
-    el.className = `ship ${cls}`;
-    el.dataset.kind = p.kind;
+    const e = el("div", `ship ${cls}`);
+    e.dataset.kind = p.kind;
     const len = SHIPS[p.kind].length;
-    Object.assign(el.style, at(p.x * 10, p.y * 10), { width: `${(p.dir === "h" ? len * 10 : 10) * geo.k}px`, height: `${(p.dir === "v" ? len * 10 : 10) * geo.k}px`, backgroundImage: `url(${A.ship(p.kind, p.dir, wreck)})` });
-    return el;
+    Object.assign(e.style, at(p.x * 10, p.y * 10), { width: `${(p.dir === "h" ? len * 10 : 10) * geo.k}px`, height: `${(p.dir === "v" ? len * 10 : 10) * geo.k}px`, backgroundImage: `url(${A.ship(p.kind, p.dir, wreck)})` });
+    return e;
   }
   function markEl(kind, x, y) {
-    const el = document.createElement("div");
-    el.className = "mark";
-    el.dataset.c = y * geo.n + x;
+    const e = el("div", `mark ${kind}`);
+    e.dataset.c = y * geo.n + x;
     if (kind === "fire") {
-      Object.assign(el.style, at(x * 10, y * 10), { width: `${10 * geo.k}px`, height: `${10 * geo.k}px`, backgroundImage: `url(${A.sheet("fire").url})`, backgroundSize: `${30 * geo.k}px ${10 * geo.k}px` });
-      if (!RM()) el.classList.add("fire-loop");
+      Object.assign(e.style, at(x * 10, y * 10), { width: `${10 * geo.k}px`, height: `${10 * geo.k}px`, backgroundImage: `url(${A.sheet("fire").url})`, backgroundSize: `${30 * geo.k}px ${10 * geo.k}px` });
+      if (!RM()) e.classList.add("fire-loop");
     } else {
       const s = A.sprite(kind);
-      Object.assign(el.style, at(x * 10, y * 10), { width: `${s.w * geo.k}px`, height: `${s.h * geo.k}px`, backgroundImage: `url(${s.url})` });
+      Object.assign(e.style, at(x * 10, y * 10), { width: `${s.w * geo.k}px`, height: `${s.h * geo.k}px`, backgroundImage: `url(${s.url})` });
     }
-    return el;
+    return e;
   }
-  const sunkCells = (ships) => new Set(ships.flatMap((p) => cellsOf(p).map(([x, y]) => y * geo.n + x)));
+  const shipCells = (ships) => new Map(ships.flatMap((p) => cellsOf(p).map(([x, y]) => [y * geo.n + x, p])));
+  const clearFx = () => fxLayer().querySelectorAll(".pop, .cross, .stamp, .spot, .flash").forEach((e) => e.remove());
   /** Draw a whole sea from the model: `side` "mine" (your fleet, their shots) or "target" (your shots, their sunk ships). */
   function drawSea(side) {
     const g = G(), n = geo.n, sea = $("sea");
+    geo.side = side;
     const ships = sea.querySelector(".layer-ships"), marks = sea.querySelector(".layer-marks");
     ships.innerHTML = ""; marks.innerHTML = "";
-    sea.classList.toggle("placing", g.phase === "placing" && !g.ready[you()]);
-    if (side === "mine") {
-      const fleet = S.place?.fleet ?? g.fleet ?? [];
-      const sunk = new Set(g.yourSunk);
-      for (const p of fleet) ships.appendChild(shipEl(p, { wreck: sunk.has(p.kind), cls: S.place?.sel === p.kind ? "sel" : "" }));
-      const wrecks = sunkCells(fleet.filter((p) => sunk.has(p.kind)));
-      g.incoming.forEach((m, c) => {
-        const x = c % n, y = Math.floor(c / n);
-        if (m === MARK.hit && !wrecks.has(c)) marks.appendChild(markEl("fire", x, y));
-        else if (m === MARK.miss) marks.appendChild(markEl("miss", x, y));
-        else if (m === MARK.water) marks.appendChild(markEl("water", x, y));
-      });
-    } else {
-      const over = g.phase === "over";
-      const sunk = new Set(g.rivalSunk);
-      for (const p of g.rivalShips) ships.appendChild(shipEl(p, { wreck: sunk.has(p.kind), cls: over && !sunk.has(p.kind) ? "fade" : "" }));
-      const wrecks = sunkCells(g.rivalShips.filter((p) => sunk.has(p.kind)));
-      g.outgoing.forEach((m, c) => {
-        const x = c % n, y = Math.floor(c / n);
-        if (m === MARK.hit && !wrecks.has(c)) marks.appendChild(markEl("fire", x, y));
-        else if (m === MARK.miss) marks.appendChild(markEl("miss", x, y));
-        else if (m === MARK.water) marks.appendChild(markEl("water", x, y));
-      });
-    }
-    // Cells: what each one is, for screen readers; open cells are buttons on your turn.
-    const aiming = side === "target" && g.phase === "firing" && g.turn === you() && !S.anim && !S.firing;
-    sea.classList.toggle("aiming", aiming);
+    const placing = g.phase === "placing" && !g.ready[you()];
+    sea.classList.toggle("placing", placing);
+    const fleet = side === "mine" ? (S.place?.fleet ?? g.fleet ?? []) : g.rivalShips;
+    const sunk = new Set(side === "mine" ? g.yourSunk : g.rivalSunk);
+    const over = g.phase === "over";
+    for (const p of fleet) ships.appendChild(shipEl(p, { wreck: sunk.has(p.kind), cls: side === "mine" ? (S.place?.sel === p.kind ? "sel" : "") : over && !sunk.has(p.kind) ? "fade" : "" }));
+    const at2 = shipCells(fleet);
     const list = side === "mine" ? g.incoming : g.outgoing;
+    list.forEach((m, c) => {
+      const x = c % n, y = Math.floor(c / n);
+      const wreck = at2.has(c) && sunk.has(at2.get(c).kind);
+      if (m === MARK.hit && !wreck) marks.appendChild(markEl("fire", x, y));
+      else if (m === MARK.miss) marks.appendChild(markEl("miss", x, y));
+      else if (m === MARK.water) marks.appendChild(markEl("water", x, y));
+    });
+    // Cells: what each one is, for screen readers; open cells are buttons on your turn.
+    const aiming = side === "target" && isAiming();
+    sea.classList.toggle("aiming", aiming);
+    sea.querySelector(".cells").setAttribute("aria-label", side === "mine" ? "Your sea" : `${rivalName()}'s sea`);
     for (const b of sea.querySelectorAll(".cells button")) {
-      const c = Number(b.dataset.c), m = list[c];
+      const c = Number(b.dataset.c), m = list[c], p = at2.get(c);
       const open = side === "target" && m === MARK.unknown;
       b.classList.toggle("open", open);
-      b.disabled = !(aiming && open) && !(sea.classList.contains("placing"));
-      b.setAttribute("aria-label", `${cellName(c % n, Math.floor(c / n))}, ${["unknown", "miss", "hit", "water"][m] || "unknown"}`);
+      b.disabled = !(aiming && open) && !placing;
+      let what;
+      if (side === "mine" && p) what = `your ${SHIPS[p.kind].name.toLowerCase()}${sunk.has(p.kind) ? ", sunk" : m === MARK.hit ? ", hit" : ""}`;
+      else if (side === "target" && p && sunk.has(p.kind)) what = `sunk ${SHIPS[p.kind].name.toLowerCase()}`;
+      else what = ["open", "miss", "hit", "water, nothing here"][m] ?? "open";
+      if (side === "mine" && !p) what = ["water", "their miss", "hit", "water, nothing here"][m] ?? "water";
+      b.setAttribute("aria-label", `${cellName(c % n, Math.floor(c / n))}, ${what}`);
     }
-    if (aiming || sea.classList.contains("placing")) rovingFocus();
+    if (aiming || placing) rovingFocus();
+    if (aiming && S.pending) crossAt(...S.pending);
   }
   function rovingFocus() {
     const [x, y] = S.cursor;
     for (const b of $("sea").querySelectorAll(".cells button")) b.tabIndex = Number(b.dataset.c) === y * geo.n + x ? 0 : -1;
   }
+  /** Your turn: keyboard focus goes to the cursor cell (unless you're elsewhere on purpose, like a sheet). */
+  function focusCursor() {
+    if (P.sheetOpen()) return;
+    const a = document.activeElement;
+    if (a && a !== document.body && !a.closest?.("#scrGame")) return;
+    $("sea").querySelector(`.cells button[data-c="${S.cursor[1] * geo.n + S.cursor[0]}"]`)?.focus({ preventScroll: true });
+  }
 
-  /** The other sea, small, under the big one (a 1-art-pixel-per-pixel overview). */
+  /** The other sea, small, under the big one: the same sprites at one art pixel per pixel. */
   function drawMini(side) {
     const g = G(), n = g.size;
     const c = document.createElement("canvas");
     c.width = n * 10 + 1; c.height = n * 10 + 1;
     const x2 = c.getContext("2d");
-    const img = new Image();
-    const P2 = A.P;
-    const fill = (col, x, y, w, h) => { x2.fillStyle = col; x2.fillRect(x, y, w, h); };
-    fill(P2.sea, 0, 0, c.width, c.height);
-    for (let i = 0; i <= n; i++) { fill(P2.deep, i * 10, 0, 1, c.height); fill(P2.deep, 0, i * 10, c.width, 1); }
+    x2.drawImage(A.waterCanvas(n, 0), 0, 0);
     const ships = side === "mine" ? (g.fleet ?? []) : g.rivalShips;
     const sunk = new Set(side === "mine" ? g.yourSunk : g.rivalSunk);
-    for (const p of ships) for (const [x, y] of cellsOf(p)) fill(sunk.has(p.kind) ? P2.wreckHi : P2.hull, x * 10 + 1, y * 10 + 1, 9, 9);
+    for (const p of ships) x2.drawImage(A.shipCanvas(p.kind, p.dir, sunk.has(p.kind)), p.x * 10, p.y * 10);
+    const fire = A.sheet("fire"), sunkAt = shipCells(ships.filter((p) => sunk.has(p.kind)));
     (side === "mine" ? g.incoming : g.outgoing).forEach((m, cc) => {
       const x = (cc % n) * 10, y = Math.floor(cc / n) * 10;
-      if (m === MARK.hit) { fill(P2.red, x + 2, y + 2, 7, 7); fill(P2.yellow, x + 4, y + 4, 3, 3); }
-      else if (m === MARK.miss) { fill(P2.foam, x + 3, y + 3, 5, 5); fill(P2.sea, x + 4, y + 4, 3, 3); }
-      else if (m === MARK.water) fill(P2.lite, x + 4, y + 4, 2, 2);
+      if (m === MARK.hit && !sunkAt.has(cc)) x2.drawImage(fire.c, 0, 0, 10, 10, x, y, 10, 10);
+      else if (m === MARK.miss) x2.drawImage(A.sprite("miss").c, x, y);
+      else if (m === MARK.water) x2.drawImage(A.sprite("water").c, x, y);
     });
-    void img;
     return c.toDataURL();
   }
 
@@ -608,10 +685,17 @@
   function renderGame() {
     const g = G();
     if (!g) return;
+    if (S.anim) { S.dirty = true; return; } // a resize mid-animation redraws once it's done
+    renderGameAs(bigSide());
+  }
+  function renderGameAs(side) {
+    const g = G();
     layout();
+    clearFx();
     $("rivalName").textContent = rivalName();
+    $("rivalAway").hidden = !rivalAway();
     $("rivalFleet").innerHTML = fleetIcons(g.fleetKinds, g.rivalSunk);
-    const side = bigSide();
+    $("rivalFleet").setAttribute("aria-label", `${rivalName()}'s fleet: ${plural(g.fleetKinds.length - g.rivalSunk.length, "ship", "ships")} afloat${g.rivalSunk.length ? `, sunk: ${g.rivalSunk.map((k) => SHIPS[k].name.toLowerCase()).join(", ")}` : ""}`);
     $("seaName").textContent = side === "target" ? `${rivalName()}'s sea` : "Your sea";
     drawSea(side);
     renderCall();
@@ -623,14 +707,16 @@
       const i = left.indexOf(k);
       const gone = i >= 0;
       if (gone) left.splice(i, 1);
-      const len = SHIPS[k].length;
-      return `<img src="${A.mini(k, gone)}" alt="${SHIPS[k].name}${gone ? ", sunk" : ""}" data-kind="${k}" class="${gone ? "gone" : ""}" width="${(len * 4 + 1) * 2}" height="10">`;
+      return `<img src="${A.shipIcon(k, gone)}" alt="" data-kind="${k}" width="${SHIPS[k].length * 10}" height="10">`;
     }).join("");
   }
   function renderDock(side) {
     const g = G(), dock = $("dock");
     if (g.phase === "placing" && !g.ready[you()]) {
+      const h = S.place ? hiding(g.size === 8 ? "quick" : "classic", S.place.fleet) : 0;
+      const band = h < 0.34 ? 1 : h < 0.6 ? 2 : 3;
       dock.innerHTML = `<div class="side"><div class="tools"><button class="ghost" id="rotBtn">Rotate</button><button class="ghost" id="shufBtn">Shuffle</button><button class="big" id="readyBtn">Ready</button></div>` +
+        `<div class="hide-meter" title="Ships along the edges are harder to find"><span>Hiding</span>${[1, 2, 3].map((i) => `<i class="${i <= band ? "on" : ""}"></i>`).join("")}<b>${["", "Easy to find", "Fair", "Hard to find"][band]}</b></div>` +
         `<p class="hint" id="placeHint">${S.place?.sel ? `${SHIPS[S.place.sel].name}: tap a cell to move it, or Rotate` : "Tap or drag a ship to move it. Ready when you are"}</p></div>`;
       $("rotBtn").onclick = rotate;
       $("shufBtn").onclick = shuffle;
@@ -644,31 +730,34 @@
     }
     const other = side === "target" ? "mine" : "target";
     const n = g.size;
-    // The overview doubles when the screen has the room for it (tall phones, desktops).
+    // The overview grows with the room under the board (tall phones, desktops), leaving the side panel at least 150 px.
     const spare = window.innerHeight - $("board").getBoundingClientRect().bottom - 32;
-    const k = spare >= (n * 10 + 1) * 2 ? 2 : 1;
-    dock.innerHTML = `<div class="mini" style="width:${(n * 10 + 1) * k}px;height:${(n * 10 + 1) * k}px;background-image:url(${drawMini(other)})" role="img" aria-label="${other === "mine" ? "Your sea" : `${esc(rivalName())}'s sea`}"></div>` +
-      `<div class="side"><div class="sea-label"><span>${other === "mine" ? "Your sea" : `${esc(rivalName())}'s sea`}</span></div>` +
-      `<div class="who"><div class="nm">You<span class="pl-you">You</span></div><div class="fleet" aria-label="Your fleet">${fleetIcons(g.fleetKinds, g.yourSunk)}</div></div>` +
-      `<p class="hint" style="text-align:left">${statLine(g)}</p></div>`;
-  }
-  function statLine(g) {
+    const room = Math.min(window.innerWidth, 600) - 16 - 150;
+    const k = [3, 2, 1].find((kk) => (n * 10 + 1) * kk <= Math.min(spare, room)) ?? 1;
     const st = g.stats[you()];
-    return st.shots ? `${st.hits} hits from ${st.shots} shots` : "No shots yet";
+    const label = other === "mine" ? "Your sea" : `${esc(rivalName())}'s sea`;
+    const taken = g.incoming.filter((m) => m === MARK.hit).length;
+    const miniLabel = other === "mine" ? `Your sea: ${plural(taken, "hit", "hits")} taken, ${plural(g.fleetKinds.length - g.yourSunk.length, "ship", "ships")} afloat` : `${esc(rivalName())}'s sea: ${plural(st.hits, "hit", "hits")}, ${plural(g.rivalSunk.length, "ship", "ships")} sunk`;
+    const fireBtn = S.pending && isAiming() ? `<button class="big" id="fireBtn">Fire at ${cellName(...S.pending)}</button>` : "";
+    dock.innerHTML = `<div class="mini" style="width:${(n * 10 + 1) * k}px;height:${(n * 10 + 1) * k}px;background-image:url(${drawMini(other)})" role="img" aria-label="${miniLabel}"></div>` +
+      `<div class="side"><div class="sea-label"><span>${label}</span></div>` +
+      `<div class="who"><div class="nm"><span class="ell">${esc(nameOf(you()))}</span><span class="pl-you">You</span></div><div class="fleet" role="img" aria-label="Your fleet: ${plural(g.fleetKinds.length - g.yourSunk.length, "ship", "ships")} afloat">${fleetIcons(g.fleetKinds, g.yourSunk)}</div></div>` +
+      `<p class="hint">Your shots: ${st.shots ? `${plural(st.hits, "hit", "hits")} from ${st.shots}` : "none yet"}</p>${fireBtn}</div>`;
+    if (fireBtn) $("fireBtn").onclick = () => fire(...S.pending);
   }
   function renderCall() {
-    const g = G(), v = S.view;
+    const g = G();
     const mine = g.phase === "firing" && g.turn === you();
     let title = "", text = "";
     if (g.phase === "placing") {
       if (!g.ready[you()]) { title = "Place your fleet"; text = g.ready[1 - you()] ? `${rivalName()} is ready` : "Ships can't touch"; }
       else { title = "Ready"; text = `Waiting for ${rivalName()}`; }
     } else if (g.phase === "firing") {
-      if (mine) { title = "Your turn"; text = `Fire at ${rivalName()}'s sea`; }
-      else { title = `${rivalName()}'s turn`; text = `${rivalName()} is aiming at your sea`; }
+      if (mine) { title = "Your turn"; text = S.pending ? `Tap ${cellName(...S.pending)} again, or Fire` : `Fire at ${rivalName()}'s sea`; }
+      else { title = `${rivalName()}'s turn`; text = rivalAway() ? `${rivalName()} lost connection. The clock fires for them` : `${rivalName()} is aiming at your sea`; }
     } else {
       title = g.winner === you() ? "Victory" : "Defeat";
-      text = g.forfeit ? (g.winner === you() ? `${rivalName()} gave up` : "You gave up") : g.winner === you() ? "Their whole fleet is down" : "Your fleet is down";
+      text = g.forfeit ? (g.winner === you() ? `${rivalName()} forfeited` : "You forfeited") : g.winner === you() ? "Their whole fleet is down" : "Your fleet is down";
     }
     $("callTitle").textContent = title;
     $("callText").textContent = text;
@@ -679,21 +768,19 @@
   let clockTotal = { key: "", ms: 1 };
   let lastTick = 0;
   function tickClock() {
-    const v = S.view, el = $("clock");
-    const c = v?.clock;
-    const g = G();
+    const v = S.view, e = $("clock"), c = v?.clock, g = G();
     const shownFor = c && g && (c.seat === null ? !g.ready[you()] : true);
-    if (!shownFor) { el.hidden = true; return; }
+    if (!shownFor) { e.hidden = true; return; }
     const left = Math.max(0, c.deadline - Date.now());
     const key = `${c.seat}:${c.deadline}`;
     if (clockTotal.key !== key) clockTotal = { key, ms: Math.max(left, 1) };
-    el.hidden = false;
-    el.firstElementChild.style.width = `${Math.round((100 * left) / clockTotal.ms)}%`;
+    e.hidden = false;
+    e.firstElementChild.style.width = `${Math.round((100 * left) / clockTotal.ms)}%`;
     const low = left < 5000;
-    el.classList.toggle("low", low);
+    e.classList.toggle("low", low);
     const secs = Math.ceil(left / 1000);
     const mineClock = c.seat === you() || c.seat === null;
-    if (low && mineClock && secs !== lastTick && secs > 0 && secs <= 3) { lastTick = secs; cue("tick"); }
+    if (low && mineClock && secs !== lastTick && secs > 0 && secs <= 3) { lastTick = secs; cue("tick"); if (secs === 3) say("3 seconds left"); }
   }
   setInterval(() => { if (screenNow() === "game" && !$("clock").hidden) tickClock(); }, 250);
 
@@ -708,13 +795,12 @@
     S.place.fleet[i] = p;
     saveDraft();
   }
-  function shipAt(x, y) {
-    return S.place?.fleet.find((p) => cellsOf(p).some(([cx, cy]) => cx === x && cy === y)) || null;
-  }
+  const shipAt = (x, y) => S.place?.fleet.find((p) => cellsOf(p).some(([cx, cy]) => cx === x && cy === y)) || null;
+  const shipNode = (kind) => $("sea").querySelector(`.layer-ships .ship[data-kind="${kind}"]`);
   function select(kind) {
     S.place.sel = kind;
     renderGame();
-    if (kind) cue("place", { vol: 0.5 });
+    if (kind) { cue("place", { vol: 0.5 }); say(`${SHIPS[kind].name} selected. Arrow keys move it, R turns it`); }
   }
   function moveTo(kind, x, y) {
     const p = S.place.fleet.find((q) => q.kind === kind);
@@ -723,13 +809,15 @@
     setShip(next);
     renderGame();
     cue("place");
-    pose($("sea").querySelector(`.ship[data-kind="${kind}"]`), "place");
+    pose(shipNode(kind), "place");
+    say(`${SHIPS[kind].name} moved to ${cellName(x, y)}, ${next.dir === "h" ? "across" : "down"}`);
     return true;
   }
   function nope(kind) {
     cue("nope");
-    pose($("sea").querySelector(`.ship[data-kind="${kind}"]`) || $("sea"), "nope");
-    $("placeHint") && ($("placeHint").textContent = "It doesn't fit there: ships can't touch");
+    pose(shipNode(kind) || $("sea"), "nope");
+    if ($("placeHint")) $("placeHint").textContent = "It doesn't fit there: ships can't touch";
+    say("It doesn't fit there");
     return false;
   }
   function rotate() {
@@ -741,19 +829,24 @@
     // Same top-left first; if it doesn't fit, slide it back along the new direction.
     for (let s = 0; s < len; s++) {
       const next = { ...p, dir, x: dir === "h" ? p.x - s : p.x, y: dir === "v" ? p.y - s : p.y };
-      if (fits(geo.n, S.place.fleet, next)) { setShip(next); renderGame(); cue("rotate"); pose($("sea").querySelector(`.ship[data-kind="${kind}"]`), "place"); return; }
+      if (fits(geo.n, S.place.fleet, next)) {
+        setShip(next); renderGame(); cue("rotate"); pose(shipNode(kind), "place");
+        say(`${SHIPS[kind].name} turned ${dir === "h" ? "across" : "down"}, at ${cellName(next.x, next.y)}`);
+        return;
+      }
     }
     nope(kind);
   }
   function shuffle() {
-    const f = randomFleet(S.view.game.size === 8 ? "quick" : "classic");
+    const f = randomFleet(G().size === 8 ? "quick" : "classic");
     if (!f) return;
     S.place.fleet = f;
     S.place.sel = null;
     saveDraft();
     renderGame();
     cue("rotate");
-    for (const el of $("sea").querySelectorAll(".ship")) pose(el, "place");
+    for (const e of $("sea").querySelectorAll(".layer-ships .ship")) pose(e, "place");
+    say("New layout");
   }
   async function ready() {
     const btn = $("readyBtn");
@@ -772,6 +865,7 @@
     return [Math.floor((ev.clientX - r.left) / cell), Math.floor((ev.clientY - r.top) / cell)];
   };
   $("sea").addEventListener("pointerdown", (ev) => {
+    S.pointer = ev.pointerType || "mouse";
     if (!S.place || G()?.phase !== "placing" || G().ready[you()]) return;
     const [x, y] = cellFromPoint(ev);
     const p = shipAt(x, y);
@@ -796,13 +890,13 @@
     if (!drag || ev.pointerId !== drag.id) return;
     const d = drag;
     drag = null;
-    if (d.moved && d.ghost) { if (!moveTo(d.kind, d.ghost.x, d.ghost.y)) renderGame(); S.place.sel = d.kind; renderDock(bigSide()); return; }
+    if (d.moved && d.ghost) { S.place.sel = d.kind; if (!moveTo(d.kind, d.ghost.x, d.ghost.y)) renderGame(); return; }
     select(S.place.sel === d.kind ? null : d.kind);
   };
   $("sea").addEventListener("pointerup", endDrag);
   $("sea").addEventListener("pointercancel", (ev) => { if (drag && ev.pointerId === drag.id) { drag = null; renderGame(); } });
 
-  /* ================================================================ firing */
+  /* ================================================================ firing: tap to aim, tap again (or Fire) to fire on small touch cells; one click with a mouse, Enter on the keyboard */
   $("sea").querySelector(".cells").addEventListener("click", (ev) => {
     const b = ev.target.closest("button");
     if (!b || b.disabled) return;
@@ -815,70 +909,76 @@
       if (S.place.sel) moveTo(S.place.sel, x, y);
       return;
     }
+    const twoStep = S.pointer !== "mouse" && ev.detail !== 0 && 10 * geo.k < 44;
+    if (twoStep && !(S.pending && S.pending[0] === x && S.pending[1] === y)) return aim(x, y);
     fire(x, y);
   });
+  /** Aim without firing (touch, small cells): the crosshair locks on, Fire shows in the dock. */
+  function aim(x, y) {
+    if (!isAiming()) return;
+    S.pending = [x, y];
+    crossAt(x, y);
+    $("seaAim").textContent = cellName(x, y);
+    cue("aim", { vol: 0.6 });
+    renderCall();
+    renderDock("target");
+    say(`Aiming at ${cellName(x, y)}. Tap again to fire`);
+  }
   async function fire(x, y) {
     const g = G();
-    if (!g || g.phase !== "firing" || g.turn !== you() || S.anim || S.firing || g.outgoing[y * geo.n + x] !== MARK.unknown) return;
+    if (!isAiming() || g.outgoing[y * geo.n + x] !== MARK.unknown) return;
     S.firing = true;
-    S.aim = [x, y];
+    S.pending = null;
     drawSea("target");
+    renderDock("target");
     $("seaAim").textContent = cellName(x, y);
     const cross = crossAt(x, y);
     cue("aim");
     try { await req(PREFIX + "fire", { x, y }); }
-    catch (e) { toast(P.errText(e), 2600); cross.remove(); S.firing = false; S.aim = null; renderGame(); }
+    catch (e) { toast(P.errText(e), 2600); cross.remove(); S.firing = false; renderGame(); }
   }
   function crossAt(x, y) {
-    const fx = $("sea").querySelector(".layer-fx");
+    const fx = fxLayer();
     fx.querySelector(".cross")?.remove();
     const s = A.sprite("cross");
-    const el = document.createElement("div");
-    el.className = "fx cross";
-    Object.assign(el.style, at(x * 10 - 2, y * 10 - 2), { width: `${s.w * geo.k}px`, height: `${s.h * geo.k}px`, backgroundImage: `url(${s.url})` });
-    fx.appendChild(el);
-    if (!RM()) el.animate([{ transform: "scale(1.8)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 160, easing: "steps(3)" });
-    return el;
+    const e = el("div", "fx cross");
+    Object.assign(e.style, at(x * 10 - 2, y * 10 - 2), { width: `${s.w * geo.k}px`, height: `${s.h * geo.k}px`, backgroundImage: `url(${s.url})` });
+    fx.appendChild(e);
+    if (!RM()) e.animate([{ transform: "scale(1.8)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 160, easing: "steps(3)" });
+    return e;
   }
 
   /* ================================================================ animating what happened */
   const speed = () => Q.speed();
+  /** A pause in an animation (none with reduced motion: those hold results with `hold` instead). */
   const wait2 = (ms) => (RM() ? Promise.resolve() : sleep(ms * speed()));
-  /** Play a frame sheet at art position (ax, ay) on `root`; resolves when it ends (it's removed unless `keep`). */
-  function sheetFx(root, name, ax, ay, k, ms, keep = false) {
+  /** With reduced motion, results still stay on screen long enough to read. */
+  const hold = (ms) => (RM() ? sleep(ms) : Promise.resolve());
+  /** Play a frame sheet at art position (ax, ay) on `root`; it's removed when it ends. */
+  function sheetFx(root, name, ax, ay, k, ms) {
     const s = A.sheet(name);
-    const el = document.createElement("div");
-    el.className = "fx";
-    Object.assign(el.style, { left: `${ax * k}px`, top: `${ay * k}px`, width: `${s.w * k}px`, height: `${s.h * k}px`, backgroundImage: `url(${s.url})`, backgroundSize: `${s.w * s.n * k}px ${s.h * k}px`, backgroundPosition: "0 0", position: "absolute", imageRendering: "pixelated", pointerEvents: "none" });
-    root.appendChild(el);
-    const a = el.animate([{ backgroundPosition: "0 0" }, { backgroundPosition: `${-s.w * s.n * k}px 0` }], { duration: ms, easing: `steps(${s.n})`, fill: "forwards" });
-    a.finished.then(() => { if (!keep) el.remove(); }).catch(() => {});
-    return el;
+    const e = el("div", "fx", { left: `${ax * k}px`, top: `${ay * k}px`, width: `${s.w * k}px`, height: `${s.h * k}px`, backgroundImage: `url(${s.url})`, backgroundSize: `${s.w * s.n * k}px ${s.h * k}px`, backgroundPosition: "0 0", position: "absolute", imageRendering: "pixelated", pointerEvents: "none" });
+    root.appendChild(e);
+    const a = e.animate([{ backgroundPosition: "0 0" }, { backgroundPosition: `${-s.w * s.n * k}px 0` }], { duration: ms, easing: `steps(${s.n})`, fill: "forwards" });
+    a.finished.then(() => e.remove()).catch(() => {});
+    return e;
   }
   const fxLayer = () => $("sea").querySelector(".layer-fx");
-  /** Make sure the sea that's being fired at fills the screen (the seas swap places). */
+  /** Make sure the sea that's being fired at fills the screen: the seas trade places (the big one drops away, the other comes up). */
   async function showSide(side) {
-    if (bigSide() === side && $("seaName").dataset.side === side) return;
-    const stage = $("board");
-    if (!RM()) { stage.classList.add("swap-out"); await sleep(130); }
+    if (geo.side === side && $("seaName").dataset.side === side) return;
+    const board = $("board");
+    if (!RM()) { board.classList.add("swap-out"); await sleep(160); }
     $("seaName").dataset.side = side;
     renderGameAs(side);
-    if (!RM()) { stage.classList.remove("swap-out"); await sleep(130); }
-  }
-  function renderGameAs(side) {
-    const g = G();
-    layout();
-    $("seaName").textContent = side === "target" ? `${rivalName()}'s sea` : "Your sea";
-    $("seaName").dataset.side = side;
-    drawSea(side);
-    renderCall();
-    renderDock(side);
+    board.classList.remove("swap-out");
+    if (!RM()) { board.classList.add("swap-in"); await sleep(160); board.classList.remove("swap-in"); }
   }
 
   async function play(u) {
     const events = u.events || [];
     const g = G();
-    if (!g || !events.length || screenNow() !== "game" && !events.some((e) => e.type === "start" || e.type === "ready")) return settle(u.view);
+    if (!g || !events.length || (screenNow() !== "game" && !events.some((e) => e.type === "start" || e.type === "ready"))) return settle(u.view);
     S.anim = true;
     try {
       for (const e of events) {
@@ -888,7 +988,7 @@
     } finally {
       S.anim = false;
       S.firing = false;
-      S.aim = null;
+      S.dirty = false;
       $("seaAim").textContent = "";
       settle(u.view);
     }
@@ -898,45 +998,51 @@
     async ready(e) {
       const g = G();
       g.ready[e.seat] = true;
-      if (e.seat === you()) { S.place = null; renderGame(); return; }
+      if (e.seat === you()) { S.place = null; renderGameAs("mine"); return; }
       renderCall();
-      if (!g.ready[you()]) toast(`${rivalName()} is ready`, 1600);
+      say(`${rivalName()} is ready`);
     },
-    async start(e, v) {
+    async start(e) {
       const g = G();
-      Object.assign(g, { phase: "firing", turn: e.first, first: e.first });
+      Object.assign(g, { phase: "firing", turn: null, first: e.first });
       S.place = null;
+      S.streak = 0;
       if (screenNow() !== "game") return;
-      renderGameAs(e.first === you() ? "target" : "mine");
-      // The coin flip: who fires first.
-      const wrap = document.createElement("div");
-      wrap.className = "coin-wrap";
-      const s = A.sheet("coin");
-      const k = geo.k + 2;
+      renderGameAs("mine");
+      // The coin flip: who fires first (the call doesn't give it away).
+      $("callTitle").textContent = "Coin flip";
+      $("callText").textContent = "Who fires first?";
+      $("call").classList.remove("mine");
+      const wrap = el("div", "coin-wrap");
+      const s = A.sheet("coin"), k = geo.k + 2;
       wrap.innerHTML = `<div class="coin" style="width:${s.w * k}px;height:${s.h * k}px;background-image:url(${s.url});background-size:${s.w * s.n * k}px ${s.h * k}px"></div><b></b>`;
-      $("sea").appendChild(wrap);
+      fxLayer().appendChild(wrap);
       cue("coin");
-      const coin = wrap.querySelector(".coin");
-      if (!RM()) await coin.animate([{ backgroundPosition: "0 0" }, { backgroundPosition: `${-s.w * s.n * k}px 0` }], { duration: 700, easing: `steps(${s.n})`, iterations: 2 }).finished.catch(() => {});
+      if (!RM()) await wrap.querySelector(".coin").animate([{ backgroundPosition: "0 0" }, { backgroundPosition: `${-s.w * s.n * k}px 0` }], { duration: 700, easing: `steps(${s.n})`, iterations: 2 }).finished.catch(() => {});
+      cue("coin", { vol: 0.6 });
       const label = wrap.querySelector("b");
       label.textContent = e.first === you() ? "You fire first" : `${rivalName()} fires first`;
+      say(label.textContent);
       P.playPreset(label, "bounceIn", { speed: "fast" });
-      if (e.first === you()) cue("turn");
-      await wait2(800);
+      cue(e.first === you() ? "turn" : "select");
+      await sleep(900);
       wrap.remove();
-      void v;
+      g.turn = e.first;
+      await showSide(e.first === you() ? "target" : "mine");
+      renderCall();
     },
     async shot(e) {
       const g = G(), n = g.size, mine = e.by === you();
-      const side = mine ? "target" : "mine";
-      await showSide(side);
+      await showSide(mine ? "target" : "mine");
       const k = geo.k, fx = fxLayer();
-      // Their aim: the crosshair hunts a little, then locks (suspense).
+      // Their aim: the crosshair hunts a little (more when hunting blind, one hop when finishing a ship), then locks.
       if (!mine) {
         $("callText").textContent = `${rivalName()} is aiming`;
-        if (!RM()) {
-          for (const [dx, dy] of [[1, -1], [-1, 1]].slice(0, e.auto ? 0 : 2)) {
-            const ax = Math.max(0, Math.min(n - 1, e.x + dx)), ay = Math.max(0, Math.min(n - 1, e.y + dy));
+        if (!RM() && !e.auto) {
+          const finishing = g.incoming.some((m, c) => m === MARK.hit && !shipCells((g.fleet ?? []).filter((p) => g.yourSunk.includes(p.kind))).has(c));
+          const hops = finishing ? 1 : 1 + Math.floor(Math.random() * 3);
+          for (let i = 0; i < hops; i++) {
+            const ax = Math.max(0, Math.min(n - 1, e.x + Math.round((Math.random() - 0.5) * 4))), ay = Math.max(0, Math.min(n - 1, e.y + Math.round((Math.random() - 0.5) * 4)));
             crossAt(ax, ay);
             await sleep(170 * speed());
           }
@@ -945,15 +1051,16 @@
         cue("aim", { vol: 0.5 });
         await wait2(220);
       } else if (!fx.querySelector(".cross")) crossAt(e.x, e.y);
-      if (e.auto) $("callText").textContent = "The clock fired";
+      if (e.auto) {
+        cue("timeout");
+        $("callText").textContent = mine ? `The clock fired for you at ${cellName(e.x, e.y)}` : `The clock fired for ${rivalName()} at ${cellName(e.x, e.y)}`;
+      }
       // The shell: up from your side for your shots, down from theirs for incoming.
-      cue("fire");
+      cue("fire", { pitch: 0.96 + Math.random() * 0.08 });
       if (!RM()) {
         const sh = A.sprite("shell");
-        const shell = document.createElement("div");
-        shell.className = "fx";
         const sx = (n * 10) / 2, sy = mine ? n * 10 + 8 : -8;
-        Object.assign(shell.style, at(sx, sy), { width: `${sh.w * k}px`, height: `${sh.h * k}px`, backgroundImage: `url(${sh.url})` });
+        const shell = el("div", "fx", { ...at(sx, sy), width: `${sh.w * k}px`, height: `${sh.h * k}px`, backgroundImage: `url(${sh.url})` });
         fx.appendChild(shell);
         const tx = (e.x * 10 + 3 - sx) * k, ty = (e.y * 10 + 3 - sy) * k;
         await shell.animate([
@@ -967,54 +1074,65 @@
       const list = mine ? g.outgoing : g.incoming;
       const c = e.y * n + e.x;
       const marks = $("sea").querySelector(".layer-marks");
+      g.stats[e.by].shots++;
       if (e.result === "miss") {
-        cue("splash");
+        cue("splash", { pitch: 0.96 + Math.random() * 0.08 });
         if (!RM()) await new Promise((res) => { sheetFx(fx, "splash", e.x * 10 - 3, e.y * 10 - 3, k, 420 * speed()); setTimeout(res, 300 * speed()); });
         list[c] = MARK.miss;
         marks.appendChild(markEl("miss", e.x, e.y));
         popAt(e.x, e.y, "Miss", "");
         say(`${mine ? "You" : rivalName()} missed at ${cellName(e.x, e.y)}`);
         await wait2(280);
+        await hold(mine ? 450 : 700);
         return;
       }
       // A hit: a beat of stillness, a flash, then the burst; it keeps burning.
-      await hitStop(e.x, e.y, e.result === "sunk" ? 150 : 90);
-      cue(e.result === "sunk" ? "hit" : "hit");
+      S.streak++;
+      const len = e.ship ? SHIPS[e.ship.kind].length : 0;
+      await hitStop(e.x, e.y, e.result === "sunk" ? 150 + 30 * len : 90);
+      if (e.result === "hit") cue(mine ? "hit" : "struck", { pitch: Math.min(1.3, 1 + 0.06 * (S.streak - 1)) });
       if (!RM()) sheetFx(fx, "boom", e.x * 10 - 3, e.y * 10 - 3, k, 420 * speed());
-      pose($("sea"), "hit");
+      if (e.result === "hit") pose($("sea"), "hit");
       list[c] = MARK.hit;
       marks.appendChild(markEl("fire", e.x, e.y));
       g.stats[e.by].hits++;
       if (e.result === "hit") {
-        popAt(e.x, e.y, mine ? "Hit. Again" : "Hit", "hit");
-        say(`${mine ? "You hit" : `${rivalName()} hit`} at ${cellName(e.x, e.y)}`);
+        popAt(e.x, e.y, "Hit", "hit");
+        $("callText").textContent = mine ? (S.streak > 1 ? `Hit, ${S.streak} in a row. Fire again` : "Hit. Fire again") : S.streak > 1 ? `${rivalName()} hit you, ${S.streak} in a row` : `${rivalName()} hit your ship`;
+        say(`${mine ? "You hit" : `${rivalName()} hit your ship`} at ${cellName(e.x, e.y)}`);
         await wait2(520);
+        await hold(mine ? 450 : 700);
         return;
       }
-      await wait2(260);
+      await wait2(200);
       await sink(e, mine);
+      await hold(mine ? 450 : 700);
     },
     async turn(e) {
       const g = G();
       g.turn = e.seat;
+      S.streak = 0;
       await showSide(e.seat === you() ? "target" : "mine");
-      const call = $("call");
-      pose(call, "call");
+      pose($("call"), "call");
       if (e.seat === you()) { cue("turn"); say("Your turn"); }
+      else say(`${rivalName()}'s turn`);
       await wait2(200);
     },
     async over(e, v) {
       const g = G();
-      Object.assign(g, { phase: "over", winner: e.winner, forfeit: !!e.forfeit, turn: null });
+      Object.assign(g, { phase: "over", winner: e.winner, forfeit: !!e.forfeit, turn: null, rivalShips: v.game.rivalShips });
       const won = e.winner === you();
       if (screenNow() === "game") {
-        // Show the rival's sea with what was left of their fleet.
-        Object.assign(g, { rivalShips: v.game.rivalShips });
         await showSide("target");
         renderGameAs("target");
         cue(won ? "win" : "lose");
-        say(won ? "Victory" : "Defeat");
-        await wait2(won ? 1400 : 1700);
+        say(won ? (e.forfeit ? `${rivalName()} forfeited. Victory` : "Victory. Their whole fleet is down") : e.forfeit ? "You forfeited" : "Defeat. Your fleet is down");
+        if (!RM()) {
+          // The finale: whatever was left of their fleet flashes up where it hid.
+          for (const s of $("sea").querySelectorAll(".layer-ships .ship.fade")) s.animate([{ filter: "brightness(2.2)", opacity: 1 }, { filter: "brightness(1)", opacity: 0.55 }], { duration: 480, easing: "steps(3)" });
+          if (won) pose($("call"), "win");
+        }
+        await sleep(won ? 1500 : 1800);
       }
       S.resultReady = true;
     },
@@ -1023,100 +1141,124 @@
   /** A frozen beat and a flash on the cell before an impact (hit-stop). */
   async function hitStop(x, y, ms) {
     if (RM()) return;
-    const f = document.createElement("div");
-    f.className = "flash";
-    Object.assign(f.style, at(x * 10 + 1, y * 10 + 1), { width: `${9 * geo.k}px`, height: `${9 * geo.k}px` });
+    const f = el("div", "flash", { ...at(x * 10 + 1, y * 10 + 1), width: `${9 * geo.k}px`, height: `${9 * geo.k}px` });
     fxLayer().appendChild(f);
     await sleep(ms * speed());
     f.remove();
   }
+  /** A word over a cell (Miss / Hit), kept inside the sea; with reduced motion it just shows for a moment. */
   function popAt(x, y, text, cls) {
-    if (RM()) return;
-    const el = document.createElement("div");
-    el.className = `pop ${cls}`;
-    el.textContent = text;
-    Object.assign(el.style, at(x * 10 + 5, y * 10));
-    fxLayer().appendChild(el);
-    el.animate([{ transform: "translate(-50%, -60%)", opacity: 1 }, { transform: "translate(-50%, -160%)", opacity: 1, offset: 0.7 }, { transform: "translate(-50%, -180%)", opacity: 0 }], { duration: 760 * speed(), easing: "steps(6)", fill: "forwards" }).finished.then(() => el.remove()).catch(() => {});
+    const fx = fxLayer();
+    const e = el("div", `pop ${cls}`);
+    e.textContent = text;
+    fx.appendChild(e);
+    const W = fx.clientWidth, w = e.offsetWidth, h = e.offsetHeight, m = 2 * geo.k;
+    e.style.left = `${Math.max(m, Math.min(W - w - m, (x * 10 + 5) * geo.k - w / 2))}px`;
+    e.style.top = `${Math.max(m, y * 10 * geo.k - h)}px`;
+    if (RM()) { setTimeout(() => e.remove(), 600); return; }
+    e.animate([{ transform: "translateY(4px)", opacity: 1 }, { transform: `translateY(-${3 * geo.k}px)`, opacity: 1, offset: 0.7 }, { transform: `translateY(-${4 * geo.k}px)`, opacity: 0 }], { duration: 760 * speed(), easing: "steps(6)", fill: "forwards" }).finished.then(() => e.remove()).catch(() => {});
   }
-  function say(text) { $("announce").textContent = text; }
+  function say(text) { $("announce").textContent = ""; requestAnimationFrame(() => { $("announce").textContent = text; }); }
 
   /**
-   * The signature moment: a sink. The whole ship shows plate by plate, cracks with one
-   * flash, breaks in two and goes down in stepped bubbles under a column of smoke; the
-   * sea shakes; SUNK lands with the ship's name; the water around it is marked ring by
-   * ring; its icon is crossed out. Bigger ships sink bigger.
+   * The signature moment: a sink. A beat of stillness; a burst on every plate; the whole
+   * ship shows plate by plate and cracks with one flash; it breaks in two, the halves tilt
+   * apart and go down in bubbles under columns of smoke; the sea shakes (a big ship wobbles
+   * the board); the board dims around the wreck and SUNK lands beside it with the ship's
+   * name; the water around it is marked ring by ring; its icon is struck through. Bigger
+   * ships sink bigger: longer, more bursts, more smoke, a harder shake.
    */
   async function sink(e, mine) {
     const g = G(), n = g.size, k = geo.k, fx = fxLayer();
-    const p = e.ship, len = SHIPS[p.kind].length;
+    const p = e.ship, len = SHIPS[p.kind].length, sp = speed();
+    const cells = cellsOf(p), mid = cells[Math.floor((len - 1) / 2)];
     const sunkList = mine ? g.rivalSunk : g.yourSunk;
     if (mine) g.rivalShips = [...g.rivalShips.filter((q) => q.kind !== p.kind), p];
-    // 1. The ship shows (theirs is revealed plate by plate; yours is already there).
+    cue(mine ? "sunk" : "lost", { vol: Math.min(1, 0.8 + len * 0.04) });
     const layer = $("sea").querySelector(".layer-ships");
     layer.querySelector(`.ship[data-kind="${p.kind}"]`)?.remove();
-    const whole = shipEl(p);
-    layer.appendChild(whole);
-    $("sea").querySelector(".layer-marks").querySelectorAll(".mark").forEach((m) => { if (cellsOf(p).some(([x, y]) => Number(m.dataset.c) === y * n + x)) m.remove(); });
-    if (!RM()) {
-      const horiz = p.dir === "h";
-      await whole.animate([{ clipPath: horiz ? "inset(0 100% 0 0)" : "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: 90 * len * speed(), easing: `steps(${len})` }).finished.catch(() => {});
-      // 2. The crack: one flash.
-      whole.animate([{ filter: "brightness(3)" }, { filter: "brightness(1)" }], { duration: 120, easing: "steps(2)" });
-    }
-    cue("sunk", { vol: 0.75 + len * 0.05 });
-    pose($("sea"), "sink");
-    // 3. It breaks in two and goes down; smoke rises; bubbles.
+    $("sea").querySelectorAll(".layer-marks .mark").forEach((m) => { if (cells.some(([x, y]) => Number(m.dataset.c) === y * n + x)) m.remove(); });
     const wreck = shipEl(p, { wreck: true });
+    // The ship's box on the sea (for the spotlight and the stamp).
+    const box = { x: p.x * 10 * k, y: p.y * 10 * k, w: (p.dir === "h" ? len * 10 : 10) * k, h: (p.dir === "v" ? len * 10 : 10) * k };
     if (!RM()) {
+      cells.forEach(([x, y], i) => setTimeout(() => sheetFx(fx, "boom", x * 10 - 3, y * 10 - 3, k, 420 * sp), i * 60 * sp));
+      // 1. The whole ship shows, plate by plate, then cracks with one flash.
+      const whole = shipEl(p);
+      layer.appendChild(whole);
+      const horiz = p.dir === "h";
+      await whole.animate([{ clipPath: horiz ? "inset(0 100% 0 0)" : "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: 140 * len * sp, easing: `steps(${len})` }).finished.catch(() => {});
+      await whole.animate([{ filter: "brightness(3)" }, { filter: "brightness(1)" }], { duration: 120, easing: "steps(2)" }).finished.catch(() => {});
+      pose($("sea"), len >= 4 ? "sink" : len === 3 ? "sink" : "hit");
+      if (len >= 4) pose($("board"), "sinkBig");
+      // 2. It breaks in two: the halves part, tilt and go down; bubbles and smoke.
+      whole.remove();
+      const gap = 3 * k, rot = 8 + 2 * len, dur = (700 + 40 * len) * sp;
       const half = (first) => {
         const h = shipEl(p, { wreck: true });
-        h.style.clipPath = p.dir === "h" ? (first ? "inset(0 50% 0 0)" : "inset(0 0 0 50%)") : first ? "inset(0 0 50% 0)" : "inset(50% 0 0 0)";
+        h.style.clipPath = horiz ? (first ? "inset(0 50% 0 0)" : "inset(0 0 0 50%)") : first ? "inset(0 0 50% 0)" : "inset(50% 0 0 0)";
         layer.appendChild(h);
-        const rot = (first ? -1 : 1) * (6 + len);
-        return h.animate([{ transform: "rotate(0) translate(0, 0)", opacity: 1 }, { transform: `rotate(${rot}deg) translate(0, ${2 * k}px)`, opacity: 0.85 }, { transform: `rotate(${rot}deg) translate(0, ${4 * k}px)`, opacity: 0 }], { duration: 760 * speed(), easing: "steps(5)", fill: "forwards" }).finished.then(() => h.remove()).catch(() => {});
+        const s = first ? -1 : 1;
+        const apart = horiz ? `translate(${s * gap}px, 0)` : `translate(0, ${s * gap}px)`;
+        return h.animate([
+          { transform: "translate(0, 0) rotate(0)", opacity: 1 },
+          { transform: `${apart} rotate(${s * rot * 0.5}deg)`, opacity: 1, offset: 0.35 },
+          { transform: `${apart} translate(0, ${2 * k}px) rotate(${s * rot}deg)`, opacity: 0.8, offset: 0.7 },
+          { transform: `${apart} translate(0, ${5 * k}px) rotate(${s * rot}deg)`, opacity: 0 },
+        ], { duration: dur, easing: "steps(6)", fill: "forwards" }).finished.then(() => h.remove()).catch(() => {});
       };
-      whole.remove();
-      const cells = cellsOf(p);
-      const mid = cells[Math.floor(len / 2)];
-      sheetFx(fx, "boom", mid[0] * 10 - 3, mid[1] * 10 - 3, k, 480 * speed());
       const sinking = [half(true), half(false)];
-      cells.forEach(([x, y], i) => setTimeout(() => sheetFx(fx, "bubbles", x * 10, y * 10, k, 640 * speed()), i * 70 * speed()));
-      setTimeout(() => sheetFx(fx, "smoke", mid[0] * 10 - 1, mid[1] * 10 - 12, k, 900 * speed()), 120 * speed());
-      // 4. SUNK lands with the ship's name.
-      const stamp = document.createElement("div");
-      stamp.className = "stamp";
-      stamp.innerHTML = `<b>Sunk</b><small>${mine ? `Their ${SHIPS[p.kind].name.toLowerCase()}` : `Your ${SHIPS[p.kind].name.toLowerCase()}`}</small>`;
-      setTimeout(() => { fx.appendChild(stamp); pose(stamp, "stamp"); }, 240 * speed());
+      for (let i = 0; i < len * 2; i++) { const [x, y] = cells[i % len]; setTimeout(() => sheetFx(fx, "bubbles", x * 10, y * 10, k, (640 + 80 * len) * sp), i * 70 * sp); }
+      for (let i = 0; i < Math.ceil(len / 2); i++) { const [x, y] = cells[Math.min(len - 1, i * 2)]; setTimeout(() => sheetFx(fx, "column", x * 10 - 1, y * 10 - 20, k, 1200 * sp), 100 + i * 140 * sp); }
       await Promise.all(sinking);
       layer.appendChild(wreck);
-      P.playPreset(wreck, "fadeIn", { speed: "faster" });
-      // 5. The water around it, ring by ring.
-      const water = e.water || [];
-      const cx = p.x + (p.dir === "h" ? len / 2 : 0.5), cy = p.y + (p.dir === "v" ? len / 2 : 0.5);
-      const byRing = [...water].sort((a, b) => Math.hypot(a[0] + 0.5 - cx, a[1] + 0.5 - cy) - Math.hypot(b[0] + 0.5 - cx, b[1] + 0.5 - cy));
-      const marks = $("sea").querySelector(".layer-marks");
-      const list = mine ? g.outgoing : g.incoming;
-      for (const [i, [x, y]] of byRing.entries()) {
-        setTimeout(() => { list[y * n + x] = MARK.water; const m = markEl("water", x, y); marks.appendChild(m); m.animate([{ opacity: 0, transform: "scale(2)" }, { opacity: 1, transform: "scale(1)" }], { duration: 160, easing: "steps(2)" }); }, i * 28 * speed());
-      }
-      await sleep((byRing.length * 28 + 380) * speed());
-      stamp.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: "steps(2)", fill: "forwards" }).finished.then(() => stamp.remove()).catch(() => {});
+      wreck.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: "steps(2)" });
     } else {
-      whole.remove();
       layer.appendChild(wreck);
-      for (const [x, y] of e.water || []) mine ? (g.outgoing[y * n + x] = MARK.water) : (g.incoming[y * n + x] = MARK.water);
     }
-    // 6. Its icon is crossed out.
+    // 3. The board dims around the wreck; SUNK lands beside it with the ship's name; the water is marked ring by ring.
+    const spot = el("div", "spot", { left: `${box.x}px`, top: `${box.y}px`, width: `${box.w}px`, height: `${box.h}px` });
+    fx.appendChild(spot);
+    const stamp = el("div", "stamp");
+    stamp.innerHTML = `<b>Sunk</b><small>${mine ? "Their" : "Your"} ${SHIPS[p.kind].name.toLowerCase()}</small>`;
+    fx.appendChild(stamp);
+    const W = fx.clientWidth, H = fx.clientHeight, sw = stamp.offsetWidth, sh = stamp.offsetHeight;
+    const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+    // Beside the ship, on the side with more room, kept inside the sea.
+    let sx = cx, sy = cy;
+    if (p.dir === "h") sy = cy + (cy < H / 2 ? 1 : -1) * (box.h / 2 + sh / 2 + 2 * k);
+    else sx = cx + (cx < W / 2 ? 1 : -1) * (box.w / 2 + sw / 2 + 2 * k);
+    stamp.style.left = `${Math.max(sw / 2 + 2, Math.min(W - sw / 2 - 2, sx))}px`;
+    stamp.style.top = `${Math.max(sh / 2 + 2, Math.min(H - sh / 2 - 2, sy))}px`;
+    pose(stamp, "stamp");
+    const water = e.water || [];
+    const list = mine ? g.outgoing : g.incoming;
+    const marks = $("sea").querySelector(".layer-marks");
+    // Rings spread from the ship's middle out to its ends.
+    const ring = ([x, y]) => Math.max(Math.abs(x - mid[0]), Math.abs(y - mid[1]));
+    const rings = [...new Set(water.map(ring))].sort((a, b) => a - b);
+    for (const r of rings) {
+      for (const [x, y] of water.filter((w) => ring(w) === r)) {
+        list[y * n + x] = MARK.water;
+        if (!RM()) sheetFx(fx, "ripple", x * 10, y * 10, k, 330 * sp);
+        setTimeout(() => marks.appendChild(markEl("water", x, y)), RM() ? 0 : 300 * sp);
+      }
+      await wait2(110);
+    }
+    await sleep(RM() ? 900 : Math.max(0, 900 - rings.length * 110) * sp);
+    spot.remove();
+    stamp.remove();
+    // 4. Its icon is struck through.
     sunkList.push(p.kind);
     g.stats[e.by].sunk++;
     if (mine) {
       $("rivalFleet").innerHTML = fleetIcons(g.fleetKinds, g.rivalSunk);
       const icons = [...$("rivalFleet").querySelectorAll(`img[data-kind="${p.kind}"]`)];
       pose(icons[icons.length - 1], "cross");
-    } else renderDock(bigSide());
+    } else renderDock(geo.side);
+    $("callText").textContent = mine ? `You sank their ${SHIPS[p.kind].name.toLowerCase()}. Fire again` : `${rivalName()} sank your ${SHIPS[p.kind].name.toLowerCase()}`;
     say(`${mine ? "You sank their" : `${rivalName()} sank your`} ${SHIPS[p.kind].name.toLowerCase()}`);
-    await wait2(300);
+    await wait2(200);
   }
 
   /* ================================================================ keyboard */
@@ -1126,7 +1268,7 @@
     const g = G();
     if (!g) return;
     const placing = g.phase === "placing" && S.place && !g.ready[you()];
-    const aiming = g.phase === "firing" && g.turn === you() && !S.anim && !S.firing;
+    const aiming = isAiming();
     const moves = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
     if (moves[e.key] && (placing || aiming)) {
       e.preventDefault();
@@ -1169,7 +1311,7 @@
     kit.renderResult($("resMain"), {
       hero,
       title: won ? "Victory" : "Defeat",
-      sub: g.forfeit ? (won ? `${rivalName()} gave up` : "You gave up") : won ? `You sank ${rivalName()}'s fleet in ${st.shots} shots` : `${rivalName()} sank your fleet`,
+      sub: g.forfeit ? (won ? `${rivalName()} forfeited` : "You forfeited") : won ? `You sank ${rivalName()}'s fleet in ${st.shots} shots` : `${rivalName()} sank your fleet`,
       win: won,
       tiles: [
         { label: "Accuracy", value: st.shots ? Math.round((100 * st.hits) / st.shots) : 0, format: (n) => `${n}%` },

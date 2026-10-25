@@ -14,8 +14,10 @@
  */
 import { LobbyRoom, type LobbyRoomOptions, type LobbyRules, type Seat } from "../../platform/lobbyRoom.js";
 import type { PeerLike } from "../../platform/peer.js";
-import { BOARDS, SeaBattleGame, fleetProblem, randomFleet, type BoardKind, type Fleet, type RandomSource, type SeaEvent } from "./engine.js";
-import { chooseShot, type BotLevel } from "./bot.js";
+import { SHIPS, SeaBattleGame, fleetProblem, randomFleet, type BoardKind, type Fleet, type RandomSource, type SeaEvent, type ShipKind } from "./engine.js";
+
+const SHIP_LEN = Object.fromEntries(Object.entries(SHIPS).map(([k, s]) => [k, s.length])) as Record<ShipKind, number>;
+import { botFleet, chooseShot, type BotLevel } from "./bot.js";
 
 export const GAME_ID = "sea_battle";
 
@@ -54,7 +56,10 @@ export interface SeaTiming {
   readonly turnMs: number;
   /** A disconnected player's clock (any timer setting). */
   readonly awayMs: number;
+  /** A bot's thinking: hunting blind, following up a hit, the shot after a sink (a human rhythm). */
   readonly botMs: readonly [number, number];
+  readonly botFollowMs: readonly [number, number];
+  readonly botAfterSinkMs: readonly [number, number];
   readonly botPlaceMs: readonly [number, number];
   readonly quickStartMs: number;
   /** Scale on the time given to clients to animate events (0 in tests). */
@@ -65,7 +70,9 @@ export const DEFAULT_TIMING: SeaTiming = {
   placeMs: 60_000,
   turnMs: 20_000,
   awayMs: 30_000,
-  botMs: [650, 1400],
+  botMs: [800, 1600],
+  botFollowMs: [450, 900],
+  botAfterSinkMs: [1100, 1900],
   botPlaceMs: [1200, 3200],
   quickStartMs: 20_000,
   animScale: 1,
@@ -89,6 +96,8 @@ export class SeaBattleRoom extends LobbyRoom<SeaSettings> {
   private animUntil = 0;
   /** When placing ends with the timer on (one deadline for the whole phase). */
   private placeEnds = 0;
+  /** The current shooter's last result this turn (bots pace themselves by it). */
+  private lastShot: "miss" | "hit" | "sunk" | null = null;
 
   constructor(options: SeaRoomOptions) {
     const timing = { ...DEFAULT_TIMING, ...options.timing };
@@ -148,7 +157,7 @@ export class SeaBattleRoom extends LobbyRoom<SeaSettings> {
     const game = (this.game = new SeaBattleGame({ board: this.settings.board, random: this.random }));
     this.placeEnds = Date.now() + this.timing.placeMs;
     for (const seat of [0, 1]) {
-      this.drafts[seat] = randomFleet(game.spec, this.random);
+      this.drafts[seat] = this.seats[seat]!.kind === "bot" ? botFleet(this.settings.board, BOT_LEVEL[this.settings.botStyle], this.random) : randomFleet(game.spec, this.random);
       if (this.seats[seat]!.kind === "bot") {
         const [lo, hi] = this.timing.botPlaceMs;
         this.later(lo + this.random() * (hi - lo), () => this.lockIn(seat, this.drafts[seat]!));
@@ -214,6 +223,8 @@ export class SeaBattleRoom extends LobbyRoom<SeaSettings> {
   /** Send what happened, then line up what comes next (a clock, a bot's move, or the end). */
   private after(events: readonly SeaEvent[]): void {
     this.animUntil = Date.now() + this.animMs(events);
+    for (const e of events) if (e.type === "shot") this.lastShot = e.result;
+    if (events.some((e) => e.type === "turn")) this.lastShot = null;
     this.clearClock();
     if (this.game?.phase !== "over") this.arm(); // first, so the update carries the new clock
     this.broadcast(events);
@@ -240,7 +251,8 @@ export class SeaBattleRoom extends LobbyRoom<SeaSettings> {
     if (game.phase !== "firing" || game.turn === null) return;
     const seat = game.turn;
     if (this.seats[seat]!.kind === "bot") {
-      const [lo, hi] = this.timing.botMs;
+      // A human rhythm: quick when finishing a ship, slower hunting blind, a breath after a sink.
+      const [lo, hi] = this.lastShot === "hit" ? this.timing.botFollowMs : this.lastShot === "sunk" ? this.timing.botAfterSinkMs : this.timing.botMs;
       this.setClock(seat, wait + lo + this.random() * (hi - lo), () => this.botFire(seat), false);
       return;
     }
@@ -280,13 +292,17 @@ export class SeaBattleRoom extends LobbyRoom<SeaSettings> {
     return s.kind === "bot" || this.peers.has(s.peerId ?? "");
   }
 
-  /** Rough time the client needs to animate these events, so clocks and bots wait for it. */
+  /**
+   * The time the client takes to animate these events (web/sea-battle.html), so clocks
+   * and bots wait for it: aiming and the shell (~1.1 s for an incoming shot), then the
+   * splash, the hit, or the sink (longer for longer ships).
+   */
   private animMs(events: readonly SeaEvent[]): number {
     let ms = 0;
     for (const e of events) {
-      if (e.type === "start") ms += 1800; // the coin flip
-      else if (e.type === "shot") ms += e.result === "sunk" ? 2600 : e.result === "hit" ? 1250 : 1100;
-      else if (e.type === "turn") ms += 700; // the seas swap
+      if (e.type === "start") ms += 2500; // the coin spins, then names who fires first
+      else if (e.type === "shot") ms += e.result === "sunk" ? 1150 + 2100 + 140 * (e.ship ? SHIP_LEN[e.ship.kind] : 3) : e.result === "hit" ? 1550 : 1500;
+      else if (e.type === "turn") ms += 700; // the seas swap places
     }
     return ms * this.timing.animScale;
   }

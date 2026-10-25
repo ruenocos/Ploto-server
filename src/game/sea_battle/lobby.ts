@@ -4,7 +4,7 @@
  * standard `seabattle:quick/host/practice/info/join/invite/acceptInvite` lobby
  * methods and the room's `lobby:*` methods come from the platform.
  *
- *   quick     classic board, timer on; a bot takes the seat if nobody comes in 20 s
+ *   quick     the quick 8×8 board (short games), timer on; a bot takes the seat if nobody comes in 20 s
  *   host      a game for a friend, behind a code, with your board and timer
  *   practice  you and a bot (board and difficulty from the practice setup), no timer
  */
@@ -12,7 +12,7 @@ import { GameKit } from "../../platform/kit.js";
 import type { LobbyContext } from "../../platform/lobby.js";
 import { DEFAULT_SETTINGS, GAME_ID, SeaBattleRoom, parseSettings, type SeaRoomOptions, type SeaSettings } from "./room.js";
 
-export const QUICK_SETTINGS: SeaSettings = { ...DEFAULT_SETTINGS, bots: true };
+export const QUICK_SETTINGS: SeaSettings = { ...DEFAULT_SETTINGS, board: "quick", bots: true };
 
 export class SeaBattleLobby extends GameKit<SeaSettings, SeaBattleRoom> {
   constructor(

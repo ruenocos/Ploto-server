@@ -4,14 +4,16 @@
  * still afloat.
  *
  *   hard    counts every way each remaining ship could still lie and fires
- *           where ships fit most often; once it has a hit it only counts the
- *           ways that pass through it, so it finishes ships fast. It knows
- *           that the corners around a hit are water (ships can't touch).
- *   medium  hunts on a checkerboard with some randomness, follows up a hit
- *           around it (and along the line once it has two), but now and then
- *           wanders off or tries a corner, so it can be beaten.
+ *           where ships fit most often (now and then its second or third
+ *           choice, so a good player can win); once it has a hit it only
+ *           counts the ways that pass through it, so it finishes ships fast.
+ *           It knows the corners around a hit are water (ships can't touch),
+ *           and hides its own fleet where ships are least likely to be.
+ *   medium  hunts half the time like Hard and otherwise on a checkerboard,
+ *           follows up a hit around it (and along the line once it has two),
+ *           but now and then wanders off or tries a corner, so it can be beaten.
  */
-import { Mark, SHIPS, type RandomSource, type SeaView } from "./engine.js";
+import { BOARDS, Mark, SHIPS, randomFleet, type BoardSpec, type Fleet, type RandomSource, type SeaView, cellsOf } from "./engine.js";
 
 export type BotLevel = "medium" | "hard";
 
@@ -44,6 +46,46 @@ function pickMax(scores: Float64Array, ok: (c: number) => boolean, random: Rando
     else if (Math.abs(s - best) <= 1e-9) ties.push(c);
   }
   return ties[Math.floor(random() * ties.length)]!;
+}
+
+/** One of the `n` best cells, at random. */
+function pickTop(scores: Float64Array, ok: (c: number) => boolean, n: number, random: RandomSource): number | undefined {
+  const cells = [...scores.keys()].filter(ok).sort((a, b) => scores[b]! - scores[a]!).slice(0, n);
+  return cells[Math.floor(random() * cells.length)];
+}
+
+/** How often a ship could cover each cell of an empty board (the density a hunter starts from). */
+function emptyDensity(spec: BoardSpec): Float64Array {
+  const n = spec.size, d = new Float64Array(n * n);
+  for (const kind of spec.fleet) {
+    const len = SHIPS[kind].length;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      if (x + len <= n) for (let i = 0; i < len; i++) d[y * n + x + i]! += 1;
+      if (y + len <= n) for (let i = 0; i < len; i++) d[(y + i) * n + x]! += 1;
+    }
+  }
+  return d;
+}
+
+/** How hard a fleet is to find: 0 (where hunters look first) to 1 (where they look last). */
+export function hiding(spec: BoardSpec, fleet: Fleet): number {
+  const d = emptyDensity(spec);
+  const max = Math.max(...d), min = Math.min(...d);
+  const cells = fleet.flatMap((p) => cellsOf(p).map(([x, y]) => d[y * spec.size + x]!));
+  const avg = cells.reduce((a, b) => a + b, 0) / cells.length;
+  return Math.max(0, Math.min(1, (max - avg) / (max - min)));
+}
+
+/** A bot's fleet. Hard tries a few and keeps the hardest to find; Medium takes any. */
+export function botFleet(board: keyof typeof BOARDS, level: BotLevel, random: RandomSource): Fleet {
+  const spec = BOARDS[board];
+  if (level !== "hard") return randomFleet(spec, random);
+  let best = randomFleet(spec, random), score = hiding(spec, best);
+  for (let i = 0; i < 30; i++) {
+    const f = randomFleet(spec, random), s = hiding(spec, f);
+    if (s > score) { best = f; score = s; }
+  }
+  return best;
 }
 
 function hardShot(view: SeaView, random: RandomSource): [number, number] {
@@ -81,7 +123,9 @@ function hardShot(view: SeaView, random: RandomSource): [number, number] {
       }
     }
   }
-  const c = pickMax(scores, (k) => marks[k] === Mark.Unknown, random);
+  const open = (k: number) => marks[k] === Mark.Unknown;
+  // Hunting, it sometimes takes its second or third choice (finishing a ship, never).
+  const c = !hits.length && random() < 0.1 ? pickTop(scores, open, 3, random) : pickMax(scores, open, random);
   if (c === undefined) return anyOpen(view, random);
   return [c % n, Math.floor(c / n)];
 }
@@ -90,7 +134,8 @@ function mediumShot(view: SeaView, random: RandomSource): [number, number] {
   const n = view.size;
   const open = (x: number, y: number) => x >= 0 && y >= 0 && x < n && y < n && view.outgoing[y * n + x] === Mark.Unknown;
   const hits = openHits(view);
-  if (hits.length && random() < 0.85) {
+  if (!hits.length && random() < 0.5) return hardShot(view, random); // half its hunting is as sharp as Hard's
+  if (hits.length && random() < 0.92) {
     const pts = hits.map((c) => [c % n, Math.floor(c / n)] as const);
     const candidates: [number, number][] = [];
     if (pts.length >= 2 && (pts.every((p) => p[1] === pts[0]![1]) || pts.every((p) => p[0] === pts[0]![0]))) {

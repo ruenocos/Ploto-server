@@ -19,7 +19,7 @@
     ink: "#0a0c14", deep: "#0a2a3d", sea: "#114560", sea2: "#13506e", lite: "#2a7f9e", foam: "#bfe8f2", white: "#eef0ff",
     hull: "#7c86ad", hullHi: "#b3bbdc", hullLo: "#4a5486", deck: "#5d678f", red: "#d8364b", redHi: "#ff8080",
     orange: "#ff9d3b", yellow: "#ffcc33", cream: "#fff4d6", smoke: "#4b5170", smokeHi: "#8a90a8",
-    wreck: "#2c3150", wreckHi: "#474d70", rust: "#7a3b2e", back: "#0c3346",
+    wreck: "#6b6f8a", wreckHi: "#8d91ab", rust: "#7a3b2e", back: "#0c3346",
   };
   /** ASCII palette for the hand-drawn sprites. */
   const KEY = { k: P.ink, w: P.white, f: P.foam, l: P.lite, d: P.deep, s: P.sea, r: P.red, R: P.redHi, o: P.orange, y: P.yellow, c: P.cream, m: P.smoke, M: P.smokeHi, u: P.rust, h: P.hullHi, g: P.hull };
@@ -42,7 +42,8 @@
   // ------------------------------------------------------------ the sea
 
   /** The sea for an n×n board: water, a grid line between cells, wave dashes (two frames for the swell). */
-  function water(n, frame = 0) {
+  const water = (n, frame = 0) => memo(`waterurl${n}.${frame}`, () => waterCanvas(n, frame).toDataURL());
+  function waterCanvas(n, frame = 0) {
     return memo(`water${n}.${frame}`, () => {
       const p = pen(n * C + 1, n * C + 1);
       p.px(0, 0, P.sea, n * C + 1, n * C + 1);
@@ -57,7 +58,7 @@
         }
       }
       for (let i = 0; i <= n; i++) { p.px(i * C, 0, P.deep, 1, n * C + 1); p.px(0, i * C, P.deep, n * C + 1, 1); }
-      return p.c.toDataURL();
+      return p.c;
     });
   }
 
@@ -114,21 +115,33 @@
     if (wreck) {
       // A crack down the middle and rust where it burned.
       const m = Math.floor(W / 2);
-      [[m, 2], [m + 1, 3], [m, 4], [m - 1, 5], [m, 6], [m + 1, 7]].forEach(([x, y]) => q.px(x, y, P.ink, 1, 1));
+      [[m, 2], [m + 1, 3], [m, 4], [m - 1, 5], [m, 6], [m + 1, 7]].forEach(([x, y]) => { q.px(x, y, P.ink, 1, 1); q.px(x + 1, y, P.redHi, 1, 1); });
       q.px(3, 5, P.rust, 2, 1); q.px(W - 7, 3, P.rust, 2, 1); q.px(m - 4, 6, P.rust, 1, 1);
     }
   }
 
-  /** Data URL of a ship ("h": bow right; "v": bow down), 1× art pixels. */
-  function ship(kind, dir = "h", wreck = false) {
-    return memo(`ship.${kind}.${dir}.${wreck}`, () => {
+  /** A ship's canvas ("h": bow right; "v": bow down), 1× art pixels. */
+  function shipCanvas(kind, dir = "h", wreck = false) {
+    return memo(`shipc.${kind}.${dir}.${wreck}`, () => {
       const L = LEN[kind];
       const h = pen(L * C, C);
       drawShip(h, kind, 0, 0, wreck);
-      if (dir === "h") return h.c.toDataURL();
+      if (dir === "h") return h.c;
       const v = pen(C, L * C);
       v.g.translate(C, 0); v.g.rotate(Math.PI / 2); v.g.drawImage(h.c, 0, 0);
-      return v.c.toDataURL();
+      return v.c;
+    });
+  }
+  /** Data URL of a ship. */
+  const ship = (kind, dir = "h", wreck = false) => memo(`ship.${kind}.${dir}.${wreck}`, () => shipCanvas(kind, dir, wreck).toDataURL());
+  /** The fleet tracker's icon: the ship itself; sunk, its wreck struck through in red. */
+  function shipIcon(kind, sunk = false) {
+    return memo(`icon.${kind}.${sunk}`, () => {
+      const L = LEN[kind];
+      const p = pen(L * C, C);
+      drawShip(p, kind, 0, 0, sunk);
+      if (sunk) { p.px(1, 4, P.red, L * C - 2, 2); p.px(1, 4, P.redHi, L * C - 2, 1); }
+      return p.c.toDataURL();
     });
   }
 
@@ -152,7 +165,7 @@
       const w = frames[0][0].length, h = frames[0].length;
       const p = pen(w * frames.length, h);
       frames.forEach((f, i) => ascii(p, f, i * w));
-      return { url: p.c.toDataURL(), n: frames.length, w, h };
+      return { url: p.c.toDataURL(), n: frames.length, w, h, c: p.c };
     });
   }
 
@@ -160,7 +173,17 @@
     "..........", "..........", "...ffff...", "..f....f..", "..f.dd.f..", "..f.dd.f..", "..f....f..", "...ffff...", "..........", "..........",
   ];
   const WATER_MARK = [
-    "..........", "..........", "..........", "..........", "....ll....", "....ll....", "..........", "..........", "..........", "..........",
+    "..........", "..........", "..........", "....f.....", "...fff....", "....f.....", "....k.....", "..........", "..........", "..........",
+  ];
+  /** The foam ring that ripples out before a "nothing here" mark settles. */
+  const RIPPLE = [
+    ["..........", "..........", "..........", "....ff....", "...f..f...", "...f..f...", "....ff....", "..........", "..........", ".........."],
+    ["..........", "..........", "...ffff...", "..f....f..", "..f....f..", "..f....f..", "..f....f..", "...ffff...", "..........", ".........."],
+    ["..........", ".f......f.", "f........f", "..........", "..........", "..........", "..........", "f........f", ".f......f.", ".........."],
+  ];
+  /** A splash, still: the ring on the water and droplets around it (the card's). */
+  const SPLASH_STILL = [
+    "................", "......f...f.....", "..f..........f..", "................", ".....fwwwwf.....", "....fwffffwf....", "..f.wf....fw.f..", "....wf....fw....", ".....wffffw.....", "..f...wwww...f..", "......f..f......", "................",
   ];
   const FIRE = [
     [
@@ -223,7 +246,29 @@
     });
   }
 
+  /** A tall column of smoke over a sinking ship: 12×24, 6 frames, puffs rising and spreading. */
+  function smokeColumn() {
+    return memo("sheet.column", () => {
+      const W = 12, H = 24, N = 6;
+      const p = pen(W * N, H);
+      for (let f = 0; f < N; f++) {
+        for (let i = 0; i < 4; i++) {
+          const y = H - 4 - (f * 3 + i * 6);
+          if (y < 0 || y > H - 3) continue;
+          const r = 1 + Math.min(3, Math.floor((H - y) / 7));
+          const x = f * W + 6 + ((i % 2) ? 1 : -1) * Math.floor(f / 2);
+          p.px(x - r, y - r + 1, P.smoke, r * 2, r * 2 - 1);
+          p.px(x - r + 1, y - r, P.smoke, r * 2 - 2, r * 2 + 1);
+          p.px(x - r + 1, y - r + 1, P.smokeHi, Math.max(1, r - 1), Math.max(1, r - 1));
+        }
+      }
+      return { url: p.c.toDataURL(), n: N, w: W, h: H };
+    });
+  }
+
   const SHEETS = {
+    column: () => smokeColumn(),
+    ripple: () => sheet("ripple", RIPPLE),
     fire: () => sheet("fire", FIRE),
     splash: () => sheet("splash", SPLASH),
     boom: () => sheet("boom", BOOM),
@@ -231,14 +276,14 @@
     bubbles: () => sheet("bubbles", BUBBLES),
     coin: () => sheet("coin", coinFrames()),
   };
-  const SINGLE = { miss: MISS, water: WATER_MARK, cross: CROSS, shell: SHELL };
+  const SINGLE = { miss: MISS, water: WATER_MARK, cross: CROSS, shell: SHELL, splash: SPLASH_STILL };
   /** A one-frame sprite: {url, w, h}. */
   function sprite(name) {
     return memo(`sprite.${name}`, () => {
       const rows = SINGLE[name];
       const p = pen(rows[0].length, rows.length);
       ascii(p, rows);
-      return { url: p.c.toDataURL(), w: rows[0].length, h: rows.length };
+      return { url: p.c.toDataURL(), w: rows[0].length, h: rows.length, c: p.c };
     });
   }
 
@@ -254,41 +299,44 @@
     }
     return `<img src="${src.toDataURL()}" alt="" width="${src.width * k}" height="${src.height * k}" style="image-rendering:pixelated;display:block">`;
   }
-  /** The card: 80×50 art pixels. */
+  /** The card: 80×50 art pixels. A framed corner of the sea on the deep backdrop, the battleship crossing its edge. */
   function cardCanvas() {
     return memo("card", () => {
       const p = pen(80, 50);
-      // Water and grid, offset so the grid doesn't line up with the frame.
-      p.px(0, 0, P.sea, 80, 50);
-      for (let y = 0; y < 6; y++) for (let x = 0; x < 9; x++) {
-        const cx = x * C - 4, cy = y * C - 2;
-        if ((x + y) % 2) p.px(cx + 1, cy + 1, P.sea2, C - 1, C - 1);
-        if (hash(x, y) > 0.5) p.px(cx + 3 + Math.floor(hash(y, x) * 3), cy + 3 + Math.floor(hash(x + 9, y) * 5), P.lite, 3, 1);
+      p.px(0, 0, P.back, 80, 50);
+      // The sea: 5×3 cells framed on the right, clear of the NEW badge (top right 20×10).
+      const gx = 28, gy = 14, cols = 5, rows = 3, gw = cols * C + 1, gh = rows * C + 1;
+      p.px(gx - 2, gy - 2, P.ink, gw + 4, gh + 4);
+      p.px(gx - 1, gy - 1, P.lite, gw + 2, 1); // the frame's lit top row
+      p.px(gx, gy, P.sea, gw, gh);
+      for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+        if ((x + y) % 2) p.px(gx + x * C + 1, gy + y * C + 1, P.sea2, C - 1, C - 1);
+        if (hash(x + 3, y) > 0.55) p.px(gx + x * C + 3 + Math.floor(hash(y, x) * 3), gy + y * C + 3 + Math.floor(hash(x + 9, y) * 5), P.lite, 3, 1);
       }
-      for (let i = 0; i < 9; i++) p.px(i * C - 4, 0, P.deep, 1, 50);
-      for (let i = 0; i < 6; i++) p.px(0, i * C - 2, P.deep, 80, 1);
-      // The star: a battleship crossing the sea, with its hard shadow, burning at the stern.
+      for (let i = 0; i <= cols; i++) p.px(gx + i * C, gy, P.deep, 1, gh);
+      for (let i = 0; i <= rows; i++) p.px(gx, gy + i * C, P.deep, gw, 1);
+      // What you play with: a miss and a splash on the sea.
+      ascii(p, MISS, gx + 3 * C, gy);
+      ascii(p, SPLASH_STILL, gx + 2 * C - 3, gy + 2 * C - 2);
+      // The interface only it has: the crosshair locked on a cell.
+      ascii(p, CROSS, gx + 4 * C - 2, gy + C - 2);
+      // The star: the battleship crossing the sea's edge, with its hard shadow, burning amidships.
       const shadow = pen(40, 10);
       drawShip(shadow, "battleship");
-      p.g.globalAlpha = 0.14; p.g.filter = "brightness(0)"; p.g.drawImage(shadow.c, 7, 29); p.g.filter = "none"; p.g.globalAlpha = 1;
-      drawShip(p, "battleship", 6, 28);
-      ascii(p, FIRE[2], 6, 26);
-      // Its pieces: a miss and a splash.
-      ascii(p, MISS, 56, 38);
-      ascii(p, SPLASH[2], 60, 20);
-      // The interface only it has: the crosshair locked on a cell.
-      ascii(p, CROSS, 44, 12);
+      p.g.globalAlpha = 0.14; p.g.filter = "brightness(0)"; p.g.drawImage(shadow.c, 5, 30); p.g.filter = "none"; p.g.globalAlpha = 1;
+      drawShip(p, "battleship", 4, 29);
+      ascii(p, FIRE[2], 14, 27);
       return p.c;
     });
   }
 
-  window.SEA_ART = { P, C, LEN, water, ship, mini, sprite, sheet: (name) => SHEETS[name](), card: cardCanvas, drawShip, pen, ascii, FRAMES: { FIRE, SPLASH, MISS, CROSS } };
+  window.SEA_ART = { P, C, LEN, water, waterCanvas, ship, shipCanvas, shipIcon, mini, sprite, sheet: (name) => SHEETS[name](), card: cardCanvas, drawShip, pen, ascii, FRAMES: { FIRE, SPLASH, MISS, CROSS } };
 
   const style = document.createElement("style");
   style.textContent = `.lc-art[data-art="sea_battle"] { background: ${P.back}; }`;
   document.head.appendChild(style);
   window.Ploto?.gameCard?.("sea_battle", {
     art: (W, H) => imgOf(cardCanvas(), Math.max(1, Math.round(Math.max(W / 80, H / 50)))),
-    icon: () => imgOf(cardCanvas(), 2, [8, 21, 24, 24]), // a crop on the star
+    icon: () => imgOf(cardCanvas(), 2, [6, 19, 24, 24]), // a crop on the star
   });
 })();

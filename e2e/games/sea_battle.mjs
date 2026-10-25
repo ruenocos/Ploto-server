@@ -23,7 +23,7 @@ export default {
   async finish(a) {
     await a.waitForSelector("#readyBtn", { timeout: 10000 });
     await a.click("#menuBtn");
-    await a.locator(".pl-sheet button", { hasText: /give up/i }).click();
+    await a.locator(".pl-sheet button", { hasText: /forfeit/i }).click();
     await a.click('.pl-sheet [data-a="yes"]');
   },
   finishMs: 20000,

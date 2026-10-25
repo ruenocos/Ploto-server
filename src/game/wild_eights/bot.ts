@@ -3,15 +3,18 @@
  * pile, the suit to follow, how many cards each player holds, and the cards that
  * have been played.
  *
- *   hard    holds its 8s back until they matter (nothing else fits, it's down to
- *           its last cards, or someone is about to go out); plays 2s and Jacks
- *           when the next player is close to going out; otherwise plays the card
- *           that leaves its hand the most ways to follow, changing to its long
- *           suit; names the suit it holds most of, and one the next player has
- *           shown they're out of when it can.
- *   medium  plays a card that fits, usually following the suit; plays 8s too
- *           early now and then, sometimes names its second-best suit, and keeps
- *           a drawn card a fifth of the time: it can be beaten.
+ *   hard    counts cards: it knows how many of each suit are still unseen (not
+ *           on the pile, not in its hand) and steers to suits the others are
+ *           likely out of. It holds its 8s until nothing else fits (an 8 is the
+ *           one last card nobody can block), plays 2s and Jacks when the next
+ *           player is close to going out, and otherwise plays the card that
+ *           leaves its hand the most ways to follow; it names the suit it holds
+ *           most of and the others hold least of, or one the next player has
+ *           shown they're out of.
+ *   medium  plays a random card that fits; plays 8s too early now and then,
+ *           names its second-best suit or a random one now and then, keeps a
+ *           drawn card a fifth of the time, and plays a 2 or Jack at the wrong
+ *           moment as often as the right one: it can be beaten.
  */
 import { SUITS, points, rankOf, suitOf, type Card, type EightsView, type RandomSource, type Suit } from "./engine.js";
 
@@ -30,6 +33,12 @@ const suitCounts = (hand: readonly Card[]): Record<Suit, number> => {
 };
 const secondSuit = (hand: readonly Card[], fallback: Suit): Suit => { const n = suitCounts(hand); const order = [...SUITS].sort((a, b) => n[b] - n[a]); return n[order[1]!] > 0 ? order[1]! : order[0] ?? fallback; };
 const longSuit = (hand: readonly Card[], fallback: Suit): Suit => { const n = suitCounts(hand); return SUITS.reduce((a, b) => (n[b] > n[a] ? b : a), fallback); };
+/** Cards of each suit nobody has shown yet: not on the pile, not in this hand (8s left out: they're wild). */
+const unseen = (v: EightsView): Record<Suit, number> => {
+  const n: Record<Suit, number> = { S: 12, H: 12, D: 12, C: 12 };
+  for (const c of [...v.seen, ...v.hand]) if (rankOf(c) !== "8") n[suitOf(c)]--;
+  return n;
+};
 
 export function chooseMove(v: EightsView, level: BotLevel, random: RandomSource): BotMove {
   const hand = v.hand, playable = hand.filter((c) => fits(v, c));
@@ -42,9 +51,11 @@ export function chooseMove(v: EightsView, level: BotLevel, random: RandomSource)
     const plain = playable.filter((c) => rankOf(c) !== "8");
     const pool = plain.length && random() > 0.3 ? plain : playable; // an early 8 now and then
     const same = pool.filter((c) => suitOf(c) === v.suit); // people tend to follow the suit before changing it
+    // Whatever fits, at random: a 2 or Jack goes out whenever, not when it would hurt.
     const card = random() < 0.2 && same.length ? same[0]! : pool[Math.floor(random() * pool.length)]!;
     const rest = hand.filter((c) => c !== card);
-    const suit = rankOf(card) === "8" ? (random() < 0.4 ? secondSuit(rest, v.suit) : longSuit(rest, v.suit)) : undefined; // now and then its second-longest suit, never one it lacks
+    const roll = random();
+    const suit = rankOf(card) === "8" ? (roll < 0.15 ? SUITS[Math.floor(random() * 4)]! : roll < 0.5 ? secondSuit(rest, v.suit) : longSuit(rest, v.suit)) : undefined; // now and then its second-longest suit, or any
     return { action: "play", card, ...(suit ? { suit } : {}) };
   }
   // Hard.
@@ -77,14 +88,17 @@ export function chooseMove(v: EightsView, level: BotLevel, random: RandomSource)
     const dear = plain.reduce((a, b) => (points(b) > points(a) ? b : a));
     if (points(dear) >= 9) return { action: "play", card: dear };
   }
-  if (plain.length && !(hand.length <= 2 && eights.length)) {
-    // The card that leaves the most ways to follow: cards of the suit it sets, plus cards of its rank.
+  if (plain.length) {
+    // The card that leaves the most ways to follow: cards of the suit it sets, plus cards of its rank;
+    // better still a suit the others are likely out of (few unseen), best of all one the next player lacks.
+    const left = unseen(v), others = v.counts.reduce((a, n, s) => (s === v.you ? a : a + n), 0);
     const score = (c: Card) => {
       const rest = hand.filter((x) => x !== c);
       const follow = rest.filter((x) => rankOf(x) === "8" || suitOf(x) === suitOf(c) || rankOf(x) === rankOf(c)).length;
       const special = rankOf(c) === "2" || rankOf(c) === "J" ? -0.5 : 0; // save them for when they bite
       const steer = v.voids[next]?.includes(suitOf(c)) ? 1.5 : 0; // a suit the next player can't follow
-      return follow + special + steer + (rankOf(c) === "A" ? 0.1 : 0) + random() * 0.01;
+      const scarce = others ? 1 - Math.min(1, left[suitOf(c)] / 12) : 0; // 0 to 1: how few of the suit are still out there
+      return follow + special + steer + scarce + (rankOf(c) === "A" ? 0.1 : 0) + random() * 0.01;
     };
     const card = plain.reduce((a, b) => (score(b) > score(a) ? b : a));
     return { action: "play", card };
@@ -93,12 +107,11 @@ export function chooseMove(v: EightsView, level: BotLevel, random: RandomSource)
   return { action: "play", card, ...(rankOf(card) === "8" ? { suit: pickSuit(v, hand.filter((c) => c !== card)) } : {}) };
 }
 
-/** Its long suit, or nearly as long a suit the next player has shown they're out of. */
+/** Its long suit, or nearly as long a suit the next player has shown they're out of; ties go to the suit the others hold least of. */
 function pickSuit(v: EightsView, rest: readonly Card[]): Suit {
-  const n = suitCounts(rest), next = (v.you + 1) % v.counts.length;
+  const n = suitCounts(rest), next = (v.you + 1) % v.counts.length, left = unseen(v);
   const best = Math.max(...SUITS.map((s) => n[s]));
   const steer = SUITS.find((s) => v.voids[next]?.includes(s) && n[s] >= Math.max(1, best - 1));
   if (steer) return steer;
-  const ties = SUITS.filter((s) => n[s] === best);
-  return ties.includes(v.suit) ? v.suit : ties[0]!;
+  return SUITS.filter((s) => n[s] === best).reduce((a, b) => (left[b] < left[a] ? b : a));
 }

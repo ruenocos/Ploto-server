@@ -56,6 +56,8 @@ export interface EightsView {
   readonly order: number; // 1 clockwise, -1 not used (no reverse in v1)
   /** Suits each player has shown they're out of (they drew instead of following it; it clears when they play that suit). Public: everyone saw it. */
   readonly voids: readonly (readonly Suit[])[];
+  /** The pile since its last reshuffle, top last: every card on it was played in front of everyone. */
+  readonly seen: readonly Card[];
   readonly stats: readonly { played: number; drawn: number; eights: number; twos: number }[];
 }
 
@@ -245,6 +247,7 @@ export class EightsGame {
       hands: this.phase === "over" ? this.hands.map((h) => [...h]) : null,
       order: 1,
       voids: this.voids.map((v) => [...v]),
+      seen: [...this.pile],
       stats: this.stats.map((s) => ({ ...s })),
     };
   }

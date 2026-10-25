@@ -68,15 +68,20 @@ Reverse cards, multi-round scoring to a target, 5–6 players, house-rule toggle
 5. **Public information:** when a player draws instead of playing, everyone saw
    they couldn't follow the suit; the bots (and the page, for screen readers)
    use it. Hidden hands are never sent to anyone else.
-6. **Bots:** Medium plays any card that fits, sometimes an 8 too early, and keeps
-   a drawn card a fifth of the time; Hard holds 8s back, saves 2s and jacks for
-   when the next player is close to going out, sheds its dearest cards when
-   someone is down to their last ones, and steers the suit towards one the next
-   player has shown they lack. Luck is a big part of this game (bots.txt in each
-   round has the numbers): in two-player games Hard beats a casual player about
-   3 in 5 and Medium about 11 in 20; with four players Hard wins about 31%
-   against a 25% fair share. Pushing Hard further barely moved these, so it was
-   left there.
+6. **Bots:** Medium plays any card that fits at random, sometimes an 8 too
+   early, names its second suit or a random one now and then, and keeps a drawn
+   card a fifth of the time. Hard counts cards (how many of each suit are still
+   unseen: not on the pile, not in its hand) and steers to suits the others are
+   likely out of; it holds 8s until nothing else fits (an 8 is the one last card
+   nobody can block), saves 2s and jacks for when the next player is close to
+   going out, sheds its dearest cards when someone is down to their last ones,
+   and names a suit the next player has shown they lack. Card counting and the
+   sloppier Medium came after round 6 (your call, 25 October). Luck is still a
+   big part of this game: in two-player games Hard beats a casual player about
+   63%, Medium about 55%, and Hard beats Medium about 56%; with three players
+   Hard wins about 39% against Medium for a 33% fair share. Weighting the count
+   more heavily changed nothing; rollouts (Hard playing a few hands ahead) are
+   the next lever.
 7. **Ploto's deck:** the cards are Hold'em's faces (the same glyphs and court
    portraits), so a card reads the same in every Ploto card game; Wild Eights
    adds a gold frame inside every eight (wild).

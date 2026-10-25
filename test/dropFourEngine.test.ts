@@ -12,10 +12,18 @@ const play = (g: DropFourGame, cols: number[]) => { for (const c of cols) { cons
 describe("drop four rules", () => {
   it("discs fall to the lowest free spot and turns alternate", () => {
     const g = game();
-    play(g, [3, 3, 3]);
-    expect(g.grid[3]!.slice(0, 4)).toEqual([1, 2, 1, 0]);
-    expect(g.turn).toBe(1);
-    expect(g.drop(0, 2).ok).toBe(false); // not your turn
+    play(g, [2, 3, 3, 3]);
+    expect(g.grid[3]!.slice(0, 4)).toEqual([2, 1, 2, 0]);
+    expect(g.turn).toBe(0);
+    expect(g.drop(1, 2).ok).toBe(false); // not your turn
+  });
+  it("the game's first disc can't go in the middle column; after that it's open, and the clock skips it too", () => {
+    const g = game();
+    expect(g.drop(0, 3)).toMatchObject({ ok: false, reason: "the first disc can't go in the middle column" });
+    expect(g.clockColumn()).toBe(2);
+    play(g, [2]);
+    expect(g.clockColumn()).toBe(3);
+    expect(g.drop(1, 3).ok).toBe(true);
   });
   it("four in a row wins across, down and on both diagonals", () => {
     const across = game(); play(across, [0, 0, 1, 1, 2, 2, 3]);
@@ -25,7 +33,7 @@ describe("drop four rules", () => {
     expect(down.winner).toBe(0);
     const diag = game(); play(diag, [0, 1, 1, 2, 2, 3, 2, 3, 3, 6, 3]);
     expect(diag.winner).toBe(0);
-    const anti = game(); play(anti, [6, 5, 5, 4, 4, 3, 4, 3, 3, 0, 3]);
+    const anti = game(); play(anti, [6, 5, 5, 4, 4, 3, 4, 3, 3, 0, 3]); // (the first disc is in G, not the middle)
     expect(anti.winner).toBe(0);
   });
   it("a full column is refused; a full grid with no line is a draw", () => {
@@ -83,7 +91,7 @@ describe("drop four rules", () => {
   });
   it("the bomb is ready only after your third disc; after a blast the last-move mark goes", () => {
     const g = game();
-    expect(g.drop(0, 3, true)).toMatchObject({ ok: false, reason: "your bomb is ready after your third disc" });
+    expect(g.drop(0, 2, true)).toMatchObject({ ok: false, reason: "your bomb is ready after your third disc" });
     play(g, [0, 6, 0, 6, 1, 5]); // three each
     const r = g.drop(0, 6, true); // lands on G4, clears G3 under it
     expect(r.ok).toBe(true);
@@ -116,6 +124,16 @@ function botGame(levels: [BotLevel | Style, BotLevel | Style], seed: number, bom
 }
 
 describe("drop four simulation (bots)", () => {
+  it("going first is an edge, not a win: with the middle closed to the opening, the first player wins under 62% of Medium-vs-Medium games", () => {
+    let first = 0, decided = 0;
+    for (let i = 0; i < 600; i++) {
+      const g = new DropFourGame({ random: seeded(7000 + i), bombs: true });
+      const random = seeded(9000 + i);
+      while (g.phase === "playing") { const s = g.turn!, m = chooseMove(g.viewFor(s), "medium", random); g.drop(s, m.col, m.bomb); }
+      if (g.winner !== null) { decided++; if (g.winner === g.first) first++; }
+    }
+    expect(first / decided).toBeLessThan(0.62);
+  });
   it("1,000 bot games end legally, with gravity intact after every move; Hard beats Medium", () => {
     for (let i = 0; i < 1000; i++) botGame(["medium", "medium"], 100 + i, i % 5 !== 0); // a fifth with bombs off
     let hard = 0;

@@ -1,5 +1,5 @@
 {
-  "about": "Drop Four's sounds, in its own words: a disc drops (drop) and lands (land, a wooden clack pitched by how far it fell), the bomb is armed (arm), its fuse fizzes (fuse) and it goes off (blast), cleared discs pop (pop), each disc of the winning line rings a rising note (line), the coin flip and its landing (coin, coinLand), a full column (nope), your turn (yourTurn; theirTurn is kept for later but unused: their drop says it), the clock's last seconds and a timeout (tick, timeout), and win, lose and draw. Ploto's set covers select and ready. jsfxr stock presets with a seed and hand-set parameters; vol is relative (0..1), buzz a vibration pattern in ms. Run npm run sounds after editing.",
+  "about": "Drop Four's sounds, in its own words: a disc drops (drop) and lands (land, a wooden clack pitched by how far it fell), the bomb becomes ready after your third disc (bombReady), it's armed (arm), its fuse fizzes (fuse) and it goes off (blast), cleared discs pop (pop), each disc of the winning line rings a rising note (line), the coin flip and its landing (coin, coinLand), a full column (nope), your turn (yourTurn; theirTurn is kept for later but unused: their drop says it), the clock's last seconds and a timeout (tick, timeout), and win, lose and draw. Ploto's set covers select and ready. jsfxr stock presets with a seed and hand-set parameters; vol is relative (0..1), buzz a vibration pattern in ms. Run npm run sounds after editing.",
   "set": "drop_four",
   "cues": {
     "drop": {
@@ -29,11 +29,11 @@
         "p_env_sustain": 0.03,
         "p_env_decay": 0.24,
         "p_env_punch": 0.7,
-        "p_lpf_freq": 0.45,
+        "p_lpf_freq": 0.35,
         "p_hpf_freq": 0,
         "p_repeat_speed": 0
       },
-      "vol": 0.5,
+      "vol": 0.4,
       "buzz": 18
     },
     "arm": {
@@ -237,20 +237,20 @@
       "preset": "powerUp",
       "seed": 55,
       "params": {
-        "wave_type": 0,
+        "wave_type": 2,
         "p_base_freq": 0.4,
         "p_freq_ramp": 0.06,
         "p_arp_mod": 0.45,
         "p_arp_speed": 0.55,
         "p_env_attack": 0,
-        "p_env_sustain": 0.5,
-        "p_env_decay": 0.5,
+        "p_env_sustain": 0.36,
+        "p_env_decay": 0.42,
         "p_env_punch": 0.5,
         "p_duty": 0.5,
         "p_repeat_speed": 0,
         "p_vib_strength": 0
       },
-      "vol": 0.85,
+      "vol": 0.6,
       "buzz": [
         60,
         40,
@@ -260,23 +260,24 @@
       ]
     },
     "lose": {
-      "preset": "powerUp",
+      "preset": "hitHurt",
       "seed": 56,
       "params": {
         "wave_type": 2,
-        "p_base_freq": 0.3,
-        "p_freq_ramp": -0.15,
-        "p_arp_mod": -0.3,
-        "p_arp_speed": 0.5,
+        "p_base_freq": 0.32,
+        "p_freq_ramp": -0.3,
         "p_env_attack": 0,
-        "p_env_sustain": 0.35,
-        "p_env_decay": 0.4,
-        "p_repeat_speed": 0
+        "p_env_sustain": 0.3,
+        "p_env_decay": 0.32,
+        "p_env_punch": 0,
+        "p_lpf_freq": 1,
+        "p_hpf_freq": 0,
+        "p_repeat_speed": 0,
+        "p_arp_mod": 0
       },
       "vol": 0.4,
       "buzz": [
-        60,
-        80,
+        120,
         60
       ]
     },
@@ -299,6 +300,23 @@
         60,
         60
       ]
+    },
+    "bombReady": {
+      "preset": "blipSelect",
+      "seed": 57,
+      "params": {
+        "wave_type": 0,
+        "p_base_freq": 0.42,
+        "p_arp_mod": 0.3,
+        "p_arp_speed": 0.65,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.12,
+        "p_env_decay": 0.18,
+        "p_duty": 0.4,
+        "p_repeat_speed": 0
+      },
+      "vol": 0.35,
+      "buzz": 15
     }
   }
 }

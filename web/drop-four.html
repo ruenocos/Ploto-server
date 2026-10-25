@@ -32,10 +32,11 @@
 .who img { image-rendering: pixelated; display: block; flex: none; }
 .who .nm { min-width: 0; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .who .bombchip { flex: none; display: flex; align-items: center; gap: 4px; padding: 3px 6px; background: var(--c-well); font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-text); text-transform: uppercase; white-space: nowrap; } /* not gold: gold is a player */
-.who .bombchip.used { color: var(--c-mute); }
+.who .bombchip.used, .who .bombchip.wait { color: var(--c-mute); }
+.who .bombchip.wait img { opacity: 0.45; }
 .away { flex: none; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; padding: 2px 4px; background: var(--c-raise); color: var(--c-mute); }
 .call { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 8px 12px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
-.call.mine { background: color-mix(in srgb, var(--c-panel) 82%, var(--c-accent)); box-shadow: inset 0 0 0 var(--px) var(--c-accent); } /* STYLE's Active frame: the board stays the one saturated mass */
+.call.mine { box-shadow: inset 0 0 0 var(--px) var(--c-accent); } /* STYLE's Active frame, the outline only: the board stays the one saturated mass */
 .call .disc { flex: none; image-rendering: pixelated; }
 .call b { font: 700 var(--fl-1)/1.1 var(--f-label); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; }
 .call span { flex: 1; min-width: 0; font: 400 var(--fs-s)/1.25 var(--f-text); color: var(--c-text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -47,7 +48,7 @@
 .clock.low i { background: var(--c-bad); }
 .clock[hidden] { display: none; }
 
-.stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; } /* the board sits low, by the thumb and the dock */
 /* The board: a row for the disc in hand above it, then the grid (discs behind the frame). */
 .board { position: relative; width: calc(74 * var(--k)); height: calc((64 + 14) * var(--k)); }
 .board > div { position: absolute; left: 0; width: 100%; }
@@ -70,7 +71,9 @@
 .board .reach.x::after { content: "×"; position: absolute; inset: 0; display: grid; place-items: center; font: 700 var(--fl-1)/1 var(--f-label); color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); }
 .board .grid.clip { overflow: hidden; } /* the discs that shake loose leave through the bottom of the frame */
 .board .bar { position: absolute; inset: 0; background-size: 100% 100%; image-rendering: pixelated; pointer-events: none; }
-.board .last { position: absolute; background: var(--c-cream); box-shadow: 0 0 0 var(--px) var(--c-ink); pointer-events: none; } /* the last move */
+.board .last { position: absolute; background: var(--c-cream); box-shadow: 0 0 0 var(--px) var(--c-ink); pointer-events: none; animation: last-fade 0.24s steps(2) 1.5s forwards; } /* the last move: cream, then quiet */
+@keyframes last-fade { to { background: var(--c-edge); } }
+.board .closed { position: absolute; background: rgba(10, 12, 20, 0.45); pointer-events: none; } /* the middle column, closed to the first disc */
 .board .d.dim { opacity: 0.45; }
 .board.stopped .d { animation-play-state: paused; }
 .board .stamp { position: absolute; z-index: 5; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; white-space: nowrap; }
@@ -83,7 +86,7 @@
 .coin-wrap .coin { image-rendering: pixelated; }
 .coin-wrap b { font: 700 var(--fl-2)/1.2 var(--f-label); text-transform: uppercase; color: var(--c-cream); text-shadow: var(--px) var(--px) 0 var(--c-ink); text-align: center; padding: 0 12px; }
 
-.dock { display: flex; align-items: center; gap: 12px; margin-top: auto; }
+.dock { display: flex; align-items: center; gap: 12px; min-height: 48px; }
 .dock .me { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
 .dock .me img { image-rendering: pixelated; display: block; flex: none; }
 .dock .me .nm { min-width: 0; font: 700 var(--fl-1)/1 var(--f-label); text-transform: uppercase; color: var(--c-cream); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -91,9 +94,8 @@
 .bombBtn img { image-rendering: pixelated; display: block; }
 .bombBtn[aria-pressed="true"] { --b: var(--c-bad); --b-hi: var(--c-bad-hi); }
 .bombBtn[hidden] { display: none; }
-.dock .me .bombchip { flex: none; padding: 3px 6px; background: var(--c-well); font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-mute); text-transform: uppercase; white-space: nowrap; }
-.keys { font: 400 var(--fs-xs)/1.3 var(--f-text); color: var(--c-mute); text-align: center; margin: 0; height: calc(var(--fs-xs) * 1.3); white-space: nowrap; overflow: hidden; }
-@media (pointer: coarse) { .keys { display: none; } }
+.bombBtn:disabled { color: var(--c-mute); }
+.bombBtn:disabled img { opacity: 0.45; }
 .hint { font: 400 var(--fs-s)/1.3 var(--f-text); color: var(--c-mute); margin: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .pl-res-hero img { image-rendering: pixelated; }
@@ -161,7 +163,6 @@
       <div class="cols" id="cols" role="group" aria-label="Columns"></div>
     </div>
   </div>
-  <p class="keys" id="keys"></p>
   <div class="dock" id="dock"><div class="me" id="meBox"></div><button class="ghost bombBtn" id="bombBtn" aria-pressed="false" hidden></button></div>
   <p class="sr-only" id="announce" aria-live="polite"></p>
   <p class="sr-only" id="announceNow" aria-live="assertive"></p>
@@ -213,13 +214,13 @@
     fullText: "Starts as soon as your friend joins",
     rules: () => ({
       steps: [
-        "Tap a column to drop your disc. It falls to the lowest free space.",
+        "Tap a column to drop your disc. It falls to the lowest free space. The game's first disc can't go in the middle column (going first is a big edge).",
         "Four of yours in a row wins: across, down or on a slant.",
         "Your bomb (one a game, if bombs are on, ready after your third disc): tap Bomb, then a column. It lands, then clears itself and the discs right beside it and under it. Discs above fall down.",
         "If the fall makes four for the bomber, the bomber wins. If it makes four only for the other player, they win.",
         "A full grid with no four is a draw. In a rematch, the loser goes first.",
       ],
-      extra: `<p class="pl-label">The bomb</p><div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">${A.bombDemo().map((u, i) => `<figure style="margin:0;display:grid;gap:4px;justify-items:center"><img src="${u}" alt="${i ? "After: the discs above fall down" : "The bomb lands on C3: it clears C3, B3 beside it and C2 under it"}" width="150" height="138" style="image-rendering:pixelated"><figcaption class="hint">${i ? "Then the discs above fall" : "It clears beside and below"}</figcaption></figure>`).join("")}</div><p class="pl-label">Good to know</p><p class="hint">With the turn timer on you get 15 s a move; when it runs out a disc drops in the most central free column for you. On a keyboard: arrows pick a column, Enter drops, B arms your bomb, I reads the grid.</p>`,
+      extra: `<p class="pl-label">The bomb</p><div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">${A.bombDemo().map((u, i) => `<figure style="margin:0;display:grid;gap:4px;justify-items:center"><img src="${u}" alt="${i ? "After: the discs above fall down" : "The bomb lands on C3: it clears C3, B3 beside it and C2 under it"}" width="129" height="126" style="image-rendering:pixelated"><figcaption class="hint">${i ? "Then the discs above fall" : "It clears beside and below"}</figcaption></figure>`).join("")}</div><p class="pl-label">Good to know</p><p class="hint">With the turn timer on you get 15 s a move; when it runs out a disc drops in the most central free column for you. On a keyboard: arrows pick a column, Enter drops, B arms your bomb, I reads the grid.</p>`,
     }),
   });
 
@@ -466,7 +467,7 @@
   async function enter({ roomId, code }) {
     closeSock();
     Q.clear();
-    Object.assign(S, { room: { roomId, code }, lobby: null, view: null, M: null, anim: false, resultReady: false, bomb: false, retry: 0, leaving: false, sending: false, final: null });
+    Object.assign(S, { room: { roomId, code }, lobby: null, view: null, M: null, anim: false, resultReady: false, bomb: false, retry: 0, leaving: false, sending: false, final: null, seenRival: false });
     P.saveRoom(GAME, S.room);
     nav.stack = ["home", "room"];
     show();
@@ -479,8 +480,14 @@
     const sock = (S.sock = P.connect(room.roomId));
     let ready = false;
     const early = []; // updates that arrive before the first state (practice starts the moment you connect: its coin flip comes first)
-    sock.on("lobby:update", (d) => { if (S.sock === sock) { S.lobby = d.view; if (!S.anim) show(); } });
-    sock.on(PREFIX + "update", (d) => { if (S.sock !== sock) return; if (ready) Q.add(d); else early.push(d); });
+    sock.on("lobby:update", (d) => { if (S.sock === sock) { S.lobby = d.view; noteRival(); if (!S.anim) show(); } });
+    sock.on(PREFIX + "update", (d) => {
+      if (S.sock !== sock) return;
+      if (!ready) return early.push(d);
+      // An update with no events only carries the latest state: keep one of those waiting, so they never speed up the queue.
+      if (!d.events?.length && Q.backlog) return Q.collapse((items) => [...items.filter((x) => x.events?.length), d]);
+      Q.add(d);
+    });
     sock.addEventListener("close", () => {
       if (S.sock !== sock) return;
       S.sock = null;
@@ -493,6 +500,7 @@
     await P.waitOpen(sock);
     const [lob, v] = await Promise.all([sock.request("lobby:getView"), sock.request(PREFIX + "getState")]);
     S.lobby = lob;
+    noteRival();
     S.retry = 0;
     S.resultReady = v.phase === "over";
     Q.clear();
@@ -505,6 +513,8 @@
       for (const d of early.slice(startAt)) Q.add(d);
     } else settle(v);
   }
+  /** Seen the rival connected once: from then on a drop-out reads as away. */
+  function noteRival() { const sv = S.lobby?.seats?.[1 - (S.view?.you ?? S.lobby?.you ?? 0)]; if (sv?.connected || sv?.kind === "bot") S.seenRival = true; }
   function closeSock() { const s = S.sock; S.sock = null; clearTimeout(S.retryTimer); s?.close(); }
   const req = (method, data) => (S.sock?.readyState === 1 ? S.sock.request(method, data) : Promise.reject(new Error("not connected")));
   function drop() { S.leaving = true; closeSock(); S.room = null; S.lobby = null; S.view = null; S.M = null; Q.clear(); P.forgetRoom(GAME); }
@@ -515,10 +525,10 @@
     goHome();
   }
   async function forfeit() {
-    if (!(await P.confirm({ title: "Forfeit this game?", body: "Your rival wins, and it counts as a loss.", yes: "Forfeit", no: "Keep playing", danger: true }))) return;
+    if (!(await P.confirm({ title: "Forfeit this match?", body: "Your rival wins, and it counts as a loss.", yes: "Forfeit", no: "Keep playing", danger: true }))) return;
     req(PREFIX + "forfeit").catch((e) => toast(P.errText(e), 2600));
   }
-  const openMenu = () => kit.menu({ view: S.lobby, items: [{ label: "Forfeit game", danger: true, run: forfeit }] });
+  const openMenu = () => kit.menu({ view: S.lobby, items: [{ label: "Forfeit match", danger: true, run: forfeit }] });
   $("menuBtn").onclick = openMenu;
 
   /* ---- invites: Ploto's card; a Drop Four invite seats you here ---- */
@@ -530,7 +540,9 @@
   const you = () => S.view?.you ?? 0;
   const nameOf = (seat) => S.lobby?.seats?.[seat]?.name || (seat === you() ? "You" : "Rival");
   const rivalName = () => nameOf(1 - you());
-  const rivalAway = () => S.lobby?.phase === "playing" && S.lobby?.seats?.[1 - you()]?.connected === false;
+  /** Away: the rival was here and lost connection (not yet arrived at the start isn't away: their page is still opening). */
+  const rivalAway = () => S.lobby?.phase === "playing" && S.lobby?.seats?.[1 - you()]?.connected === false && !!S.seenRival;
+  const rivalArriving = () => S.lobby?.phase === "playing" && S.lobby?.seats?.[1 - you()]?.connected === false && !S.seenRival;
   const heightOf = (g, c) => g.grid[c].findIndex((v) => v === 0) === -1 ? NROW : g.grid[c].findIndex((v) => v === 0);
   /** A timeout that belongs to an animation: dropped when the screen settles. */
   function later(fn, ms) { const t = setTimeout(() => { S.timers.delete(t); fn(); }, ms); S.timers.add(t); return t; }
@@ -582,20 +594,24 @@
       const [ax, ay] = slotXY(g.last.col, g.last.row);
       layer.appendChild(el("div", "last", { left: `${(ax + 3.5) * k}px`, top: `${(ay + 1) * k}px`, width: `${3 * k}px`, height: `${2 * k}px` }));
     }
+    // The middle column is closed to the game's first disc.
+    const closed = (c) => g.phase === "playing" && c === 3 && g.moves[0] + g.moves[1] === 0;
+    if (closed(3)) { const [ax] = slotXY(3, 0); layer.appendChild(el("div", "closed", { left: `${ax * k}px`, top: `${F * k}px`, width: `${CELL * k}px`, height: `${NROW * CELL * k}px` })); }
+    if (closed(S.cursor)) S.cursor = 2;
     // Columns: buttons for keyboard, screen readers and taps.
     const mine = isMine();
     $("board").classList.toggle("mine", mine);
     $("board").classList.toggle("touch", S.pointer === "touch" || (!S.pointer && matchMedia("(pointer: coarse)").matches));
     const bombing = mine && S.bomb && g.bombs[you()];
     for (const b of $("cols").children) {
-      const c = Number(b.dataset.col), h = heightOf(g, c), open = h < NROW;
+      const c = Number(b.dataset.col), h = heightOf(g, c), open = h < NROW && !closed(c);
       b.classList.toggle("open", open && mine);
       b.classList.toggle("cur", mine && c === S.cursor);
       b.tabIndex = c === S.cursor ? 0 : -1;
       b.setAttribute("aria-disabled", String(!(open && mine)));
       const stack = g.grid[c].slice(0, h).map((v) => (v - 1 === you() ? "yours" : "theirs"));
       const reach = bombing && open ? bombReach(g, c).filter(([x, y]) => x !== c || y !== h).map(([x, y]) => `${colName(x)}${y + 1}`) : null;
-      b.setAttribute("aria-label", `Column ${colName(c)}: ${open ? plural(NROW - h, "space", "spaces") + " free" : "full"}${stack.length ? `, from the bottom: ${stack.join(", ")}` : ""}${reach ? `. The bomb would clear ${reach.length ? reach.join(" and ") : "nothing"}` : ""}`);
+      b.setAttribute("aria-label", `Column ${colName(c)}: ${closed(c) ? "closed to the first disc" : open ? plural(NROW - h, "space", "spaces") + " free" : "full"}${stack.length ? `, from the bottom: ${stack.join(", ")}` : ""}${reach ? `. The bomb would clear ${reach.length ? reach.join(" and ") : "nothing"}` : ""}`);
     }
     drawLane();
   }
@@ -629,31 +645,38 @@
     renderHud();
     renderCall();
     renderDock();
-    const keysOn = S.pointer !== "touch" && !matchMedia("(pointer: coarse)").matches && S.keyUses < 6 && !P.local.get("drop_four.keysSeen");
-    if (S.keyUses >= 6) P.local.set("drop_four.keysSeen", true);
-    $("keys").textContent = keysOn ? `← → column · Enter drop${g.bombsOn ? " · B bomb" : ""} · I grid` : ""; // on both turns, one line: the dock never jumps
   }
   function renderHud() {
     const g = G(), r = 1 - you();
-    const bombs = g.bombsOn ? `<span class="bombchip${g.bombs[r] ? "" : " used"}">${g.bombs[r] ? imgTag(A.bomb(-1), 10, 10, 2) : ""}${g.bombs[r] ? "Bomb ready" : "Bomb used"}</span>` : "";
+    const st = bombState(r);
+    const bombs = st ? `<span class="bombchip ${st.cls}">${st.cls !== "used" ? imgTag(A.bomb(-1), 10, 10, 2) : ""}${st.text}</span>` : "";
     $("rivalBox").innerHTML = `${imgTag(A.disc(r, { outline: true }), 10, 10, 2)}<span class="nm">${esc(rivalName())}</span>${rivalAway() ? '<span class="away">Away</span>' : ""}${bombs}`;
     $("rivalBox").setAttribute("role", "group");
-    $("rivalBox").setAttribute("aria-label", `${rivalName()}, ${A.DISC[r].name}${g.bombsOn ? (g.bombs[r] ? ", bomb ready" : ", bomb used") : ""}`);
+    $("rivalBox").setAttribute("aria-label", `${rivalName()}, ${A.DISC[r].name}${st ? `, ${st.say}` : ""}`);
+  }
+  /** A seat's bomb: counting down (its first discs), ready, or used; null with bombs off. */
+  function bombState(seat) {
+    const g = G();
+    if (!g?.bombsOn) return null;
+    const left = Math.max(0, (g.bombAfter ?? 3) - g.moves[seat]);
+    if (!g.bombs[seat]) return { cls: "used", text: "Bomb used", say: "bomb used" };
+    if (left) return { cls: "wait", text: `Bomb in ${left}`, say: `bomb ready in ${plural(left, "disc", "discs")}` };
+    return { cls: "", text: "Bomb ready", say: "bomb ready" };
   }
   function renderDock() {
     const g = G(), me = you();
-    const has = g.bombs[me], wait = Math.max(0, 3 - g.moves[me]);
-    $("meBox").innerHTML = `${imgTag(A.disc(me, { outline: true }), 10, 10, 2)}<span class="nm">${esc(nameOf(me))}</span><span class="pl-you">You</span>${g.bombsOn && !has ? '<span class="bombchip">Bomb used</span>' : ""}`;
+    const has = g.bombs[me], wait = Math.max(0, (g.bombAfter ?? 3) - g.moves[me]);
+    $("meBox").innerHTML = `${imgTag(A.disc(me, { outline: true }), 10, 10, 2)}<span class="nm">${esc(nameOf(me))}</span><span class="pl-you">You</span>`;
     const b = $("bombBtn");
-    b.hidden = !g.bombsOn || g.phase !== "playing" || !has; // once it's used, the button goes (a chip says so)
-    b.disabled = !has || !isMine() || wait > 0;
+    b.hidden = !g.bombsOn; // it stays put all game (used, it says so): the dock never jumps
+    b.disabled = !has || !isMine() || wait > 0 || g.phase !== "playing";
     b.setAttribute("aria-pressed", String(!!(S.bomb && has)));
-    b.innerHTML = `${imgTag(A.bomb(S.bomb && has ? 1 : -1), 10, 10, 3)}<span>${wait > 0 ? `Bomb in ${wait}` : S.bomb ? "Bomb armed" : "Bomb"}</span>`;
+    b.innerHTML = `${imgTag(A.bomb(S.bomb && has ? 1 : -1), 10, 10, 3)}<span>${!has ? "Bomb used" : wait > 0 ? `Bomb in ${wait}` : S.bomb ? "Bomb armed" : "Bomb"}</span>`;
   }
   $("bombBtn").onclick = () => toggleBomb();
   function toggleBomb() {
     const g = G();
-    if (!g || !isMine() || !g.bombs[you()] || g.moves[you()] < 3) return;
+    if (!g || !isMine() || !g.bombs[you()] || g.moves[you()] < (g.bombAfter ?? 3)) return;
     S.bomb = !S.bomb;
     S.armedCol = null;
     cue(S.bomb ? "arm" : "select", { vol: S.bomb ? 1 : 0.5 });
@@ -664,12 +687,15 @@
     const g = G();
     const mine = g.phase === "playing" && g.turn === you();
     let title = "", text = "", seat = null;
-    if (g.phase === "playing") {
+    if (g.phase === "playing" && g.turn === null) {
+      title = "Coin flip"; text = rivalArriving() ? `Waiting for ${rivalName()} to arrive` : "Who goes first?"; // the coin is in the air
+    } else if (g.phase === "playing") {
       seat = g.turn;
       const bombing = S.bomb && g.bombs[you()];
       const reachEmpty = bombing && (() => { const c = S.cursor, r = heightOf(g, c); return r < NROW && ![[c - 1, r], [c + 1, r], [c, r - 1]].some(([x, y]) => x >= 0 && x < NCOL && y >= 0 && g.grid[x][y]); })();
-      if (mine) { title = "Your turn"; text = S.callNote || (bombing ? (reachEmpty ? "Nothing to clear there" : S.armedCol !== null && S.armedCol !== undefined ? "Tap again to drop the bomb" : "Bomb armed: pick a column") : g.moves[you()] < 2 ? "Tap a column to drop" : ""); }
-      else { title = `${rivalName()}'s turn`; text = rivalAway() ? `${rivalName()} lost connection. The clock moves for them` : S.callNote || (g.bombsOn && g.bombs[1 - you()] && g.moves[1 - you()] === 3 ? "Their bomb is ready now" : ""); }
+      const opening = g.moves[0] + g.moves[1] === 0;
+      if (mine) { title = "Your turn"; text = S.callNote || (bombing ? (reachEmpty ? "Nothing to clear there" : S.armedCol !== null && S.armedCol !== undefined ? "Tap again to drop the bomb" : "Bomb armed: pick a column") : opening ? "First disc: any column but the middle" : g.moves[you()] < 2 ? "Tap a column to drop" : ""); }
+      else { title = `${rivalName()}'s turn`; text = rivalAway() ? `${rivalName()} is away. The clock plays for them` : rivalArriving() ? `Waiting for ${rivalName()} to arrive` : S.callNote || (g.bombsOn && g.bombs[1 - you()] && g.moves[1 - you()] === (g.bombAfter ?? 3) ? "Their bomb is ready now" : ""); }
     } else {
       title = g.draw ? "Draw" : g.winner === you() ? "Victory" : "Defeat";
       text = g.forfeit ? (g.winner === you() ? `${rivalName()} forfeited` : "You forfeited") : g.draw ? "The grid is full" : g.winner === you() ? "Four in a row" : `${rivalName()} made four`;
@@ -731,6 +757,13 @@
   async function dropIn(col, confirmed = false) {
     const g = G();
     if (!g || !isMine()) return;
+    if (col === 3 && g.moves[0] + g.moves[1] === 0) {
+      cue("nope");
+      S.cursor = col; drawGrid(); pose($("hand"), "nope");
+      $("callText").textContent = "The first disc can't go in the middle"; setTimeout(() => { if (isMine()) renderCall(); }, 1400);
+      say("The first disc can't go in the middle column");
+      return;
+    }
     if (heightOf(g, col) >= NROW) {
       cue("nope");
       S.cursor = col; drawGrid();
@@ -833,7 +866,7 @@
       label.textContent = e.rematch ? (e.first === you() ? "You lost last time: you go first" : `${rivalName()} lost last time: they go first`) : `${who} ${e.first === you() ? "go" : "goes"} first`;
       P.playPreset(label, "bounceIn", { speed: "fast" });
       sayNow(label.textContent);
-      await (RM() ? sleep(1200) : sleep(T.coin * 0.45 * speed()));
+      await sleep(RM() ? 1200 : Math.max(900, T.coin * 0.45 * speed())); // long enough to read, however far behind
       wrap.remove();
     },
     async drop(e) {
@@ -841,7 +874,7 @@
       g.turn = e.by;
       $("lane").innerHTML = "";
       const [ax] = slotXY(e.col, e.row);
-      if (e.auto) { cue("timeout"); S.callNote = mine ? `The clock dropped for you in ${colName(e.col)}` : `The clock dropped for ${rivalName()} in ${colName(e.col)}`; $("callText").textContent = S.callNote; }
+      if (e.auto) { cue("timeout"); S.callNote = mine ? `Time's up: the clock dropped for you in ${colName(e.col)}` : `The clock dropped for ${rivalName()} in ${colName(e.col)}`; $("callText").textContent = S.callNote; sayNow(S.callNote); }
       let d;
       const opt = S.optimistic;
       S.optimistic = null;
@@ -867,7 +900,7 @@
         d = discEl(e.by, e.col, e.row, k, !!e.bomb);
         $("discs").appendChild(d);
         cue("drop", { pitch: 0.9 + 0.04 * (NROW - e.row) });
-        await fallTo(d, e.row, k, speed(), true);
+        await fallTo(d, e.row, k, speed(), mine); // the ticks on the way down are for your own disc
       }
       g.grid[e.col][e.row] = e.by + 1;
       S.lastCol = e.col;
@@ -877,7 +910,16 @@
         sheetFx($("fx"), "dust", sx - 1, sy + 7, k, 260 * speed());
       }
       g.moves[e.by]++;
-      say(`${mine ? "You" : rivalName()} ${e.bomb ? "dropped the bomb" : "dropped"} in ${colName(e.col)}${e.bomb ? "" : `, row ${e.row + 1}`}`);
+      if (!e.auto) say(`${mine ? "You" : rivalName()} ${e.bomb ? "dropped the bomb" : "dropped"} in ${colName(e.col)}${e.bomb ? "" : `, row ${e.row + 1}`}`);
+      // Your bomb is ready: the button wakes up (a spark, a pulse, a blip).
+      if (mine && g.bombsOn && g.bombs[e.by] && g.moves[e.by] === (g.bombAfter ?? 3) && !S.final) {
+        renderDock();
+        cue("bombReady");
+        later(() => { pose($("bombBtn"), "call"); sayNow("Your bomb is ready. Tap Bomb, or press B"); }, 200);
+      }
+      if (!mine && g.bombsOn && g.bombs[e.by] && g.moves[e.by] === (g.bombAfter ?? 3) && !S.final) { renderHud(); say(`${rivalName()}'s bomb is ready`); }
+      // The winning disc lands harder: a deeper squash and a rattle.
+      if (S.final?.line && !RM()) { d.animate([{ transform: "scale(1.25, 0.7)" }, { transform: "scale(1)" }], { duration: 140, easing: "steps(2)" }); rattle(1); }
       if (e.bomb) {
         g.bombs[e.by] = false;
         renderHud(); renderDock();
@@ -940,7 +982,7 @@
         // A beat of stillness; then the line lights disc by disc (a cream flash, then its own colour
         // ringed in cream, held big for a beat), a note higher each time; a bar joins them; then
         // everything else shakes loose and drops out through the bottom of the frame.
-        $("board").classList.add("stopped"); await sleep(120); $("board").classList.remove("stopped");
+        $("board").classList.add("stopped"); await sleep(T.winHit); $("board").classList.remove("stopped"); // the hit-stop
         let i = 0;
         for (const [c, r] of e.line) {
           const d = layer.querySelector(`.d[data-c="${c}"][data-r="${r}"]`);
@@ -966,7 +1008,7 @@
       // Never over the line: high in the lane when the line is low, low on the grid when it's high.
       if (e.line) { const mean = e.line.reduce((a, [, r]) => a + r, 0) / e.line.length; stamp.style.top = mean >= 2 ? `calc(${78 * 0.82} * var(--k))` : `calc(7 * var(--k))`; }
       stamp.setAttribute("aria-hidden", "true");
-      stamp.innerHTML = `<span class="stamp-in"><b>${e.forfeit ? "Forfeit" : e.winner === null ? "Draw" : "Four"}</b><small>${e.forfeit ? (won ? `${esc(rivalName())} gave up` : "You gave up") : e.winner === null ? "The grid is full" : won ? "You win" : `${esc(rivalName())} wins`}</small></span>`;
+      stamp.innerHTML = `<span class="stamp-in"><b>${e.forfeit ? "Forfeit" : e.winner === null ? "Draw" : "Four"}</b></span>`; // the call says who
       $("board").appendChild(stamp);
       if (!RM()) stamp.firstElementChild.animate([{ transform: "scale(1.3)" }, { transform: "scale(0.94)" }, { transform: "scale(1)" }], { duration: 180, easing: "steps(3)", fill: "backwards" });
       if (won && !RM()) later(() => pose(stamp.firstElementChild, "win"), 200);
@@ -991,7 +1033,7 @@
     if (!isMine()) return;
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
       e.preventDefault();
-      S.keyUses++;
+      if (!S.keyUses++ && !P.local.get("drop_four.keysSeen")) { P.local.set("drop_four.keysSeen", true); toast(`← → column · Enter drop${g.bombsOn ? " · B bomb" : ""} · I grid`, 3000); }
       S.cursor = Math.max(0, Math.min(NCOL - 1, S.cursor + (e.key === "ArrowLeft" ? -1 : 1)));
       drawGrid();
       $("cols").children[S.cursor]?.focus({ preventScroll: true });
@@ -1007,12 +1049,21 @@
       if (!h) return `${colName(c)} empty`;
       return `${colName(c)}: ${g.grid[c].slice(0, h).map((v) => (v - 1 === you() ? "you" : "them")).join(" ")}`;
     });
-    return `From the bottom. ${cols.join(". ")}. ${g.bombsOn ? `Your bomb ${g.bombs[you()] ? "is ready" : "is used"}; theirs ${g.bombs[1 - you()] ? "is ready" : "is used"}.` : ""}`;
+    return `From the bottom. ${cols.join(". ")}. ${g.bombsOn ? `Your ${bombState(you()).say}; theirs: ${bombState(1 - you()).say}.` : ""}`;
   }
   window.addEventListener("resize", () => { if (screenNow() === "game") renderGame(); });
 
   /* ================================================================ the result: Ploto's screen, the game's words and numbers */
   /** Across, down or slant: which way the winning line runs. */
+  /** Your longest run on the final grid, any direction. */
+  function longestRun(grid, v) {
+    let best = 0;
+    for (let c = 0; c < NCOL; c++) for (let r = 0; r < NROW; r++) {
+      if (grid[c][r] !== v) continue;
+      for (const [dc, dr] of [[1, 0], [0, 1], [1, 1], [1, -1]]) { let n = 1; while (grid[c + dc * n]?.[r + dr * n] === v) n++; best = Math.max(best, n); }
+    }
+    return best;
+  }
   const lineKind = (line) => (line[0][1] === line[line.length - 1][1] ? "Across" : line[0][0] === line[line.length - 1][0] ? "Down" : "Slant");
   function renderResult() {
     const v = S.view, g = v?.game;
@@ -1024,10 +1075,11 @@
     kit.renderResult($("resMain"), {
       hero,
       title: g.draw ? "Draw" : won ? "Victory" : "Defeat",
-      sub: g.forfeit ? (won ? `${rivalName()} forfeited` : "You forfeited") : g.draw ? "The grid filled up with no four" : won ? "Four in a row" : `${rivalName()} made four in a row`,
+      sub: g.forfeit ? (won ? `${rivalName()} forfeited` : "You forfeited") : g.draw ? "The grid filled up with no four" : `${won ? "Four in a row" : `${rivalName()} made four in a row`}${g.line ? `, ${lineKind(g.line).toLowerCase()}` : ""}`,
       win: won,
       tiles: [
-        g.line ? { label: "Line", value: 4, format: () => lineKind(g.line) } : { label: "Your moves", value: g.moves[me] },
+        { label: "Discs", value: g.moves[me] },
+        { label: "Longest line", value: longestRun(g.grid, me + 1) },
         ...(g.bombsOn ? [{ label: "Bomb", value: g.bombs[me] ? 0 : 1, format: (n) => (n ? "Used" : "Kept") }] : []),
       ],
       view: S.lobby, rematchHint: "Same settings; the loser goes first", actions: $("resFoot"), key: S.room?.roomId,

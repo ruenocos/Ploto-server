@@ -94,7 +94,7 @@ describe("Drop Four room", () => {
     expect(a.last().view.game.bombs.filter(Boolean)).toHaveLength(1);
     room.dispose();
     const off = await hostedPair({ timer: false, bombs: false });
-    expect(() => off.room.handleRequest(mover(off.room), "dropfour:drop", { col: 3, bomb: true })).toThrow(/bomb/);
+    expect(() => off.room.handleRequest(mover(off.room), "dropfour:drop", { col: 2, bomb: true })).toThrow(/bomb/);
     off.room.dispose();
   });
 

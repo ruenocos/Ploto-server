@@ -99,3 +99,57 @@ on the call; the rival's chip in plain text, "their bomb is ready" said once;
 spent discs on the result (flat, marks kept) with the bar, the line kind as a
 tile, a bigger hero; the clock taller as well as red when low; 4 px gutters at
 360 (45 px columns on 2×); the clock's drop renamed and documented as central.
+
+## Round 3
+
+| Category | A | B | Round score |
+|---|---|---|---|
+| Game design | 8 | 8 | **8** |
+| Signature moment | 8 | 8 | **8** |
+| Animation | 8 | 8 | **8** |
+| Sound and haptics | 8 | 8 | **8** |
+| Visual design | 8 | 8 | **8** |
+| UX and clarity | 7 | 7 | **7** |
+| Platform consistency | 8 | 9 | **8** |
+| Bots | 8 | 8 | **8** |
+| Implementation | 7 | 7 | **7** |
+| Accessibility | 8 | 8 | **8** |
+
+Clutter (both): calm shell, but the board's lattice (42 near-black holes on
+bright cobalt) is the strain; a second saturated block (the purple call on your
+turn), labels said twice (the call and the stamp, the chip and the button), a
+keyboard hint line and spent discs on the result add noise.
+
+What both saw: the rival's chip said "Bomb ready" from the first move; during
+the coin flip the call already named a turn, and a rival whose page was still
+opening read as away; the browser suite had a failing bomb test (its move plan
+gave Ben Ann's turn) and an assert that could never fail; the dock jumped when
+the bomb was used; the cream bar covered the lit discs, and the result brought
+back the discs that had just fallen out; the fourth disc landed like any other;
+empty updates sped the coin label past reading; Medium's block rate was dead
+code (it always blocked); bots never bombed to attack.
+
+A design finding: in simulation the first player won about three games in four,
+casual and Medium players alike.
+
+Fixes built after round 3: the game's first disc can't go in the middle column
+(first-player wins 55–59%; a test holds it under 62%), shown as a dimmed column
+with its own line in the call; the bomb counts down on both sides ("Bomb in 2"),
+read out in labels and the I summary, with a cue, a pulse and an announcement
+when yours is ready; "Coin flip / Who goes first?" during the flip, "Waiting for
+Ben to arrive" until the rival connects, "Ben is away. The clock plays for
+them" after; the e2e fixed and tightened (the countdown and the ready chip are
+checked); the bomb button stays put all game (disabled, "Bomb used"); the bar
+runs between the lit discs, never over them, and the result shows only the line;
+a 160 ms hit-stop and a deeper squash and rattle for the winning disc, 150 ms a
+lit disc; empty updates collapse in the queue and the coin label holds 900 ms;
+Medium misses one threat in five for real and now and then bombs to clear two
+of your discs, Hard bombs when a blast clearly helps (and checks your bomb from
+your third disc, not your second); the call on your turn is an outline only;
+holes lighter (#1c2240) and the frame a step darker; the keyboard hint is a
+one-time toast; the board sits low by the dock; the last-move pip quiets after
+1.5 s; the stamp says only FOUR (the call says who); result tiles Discs, Longest
+line and Bomb, the line's direction in the subtitle; the How to play diagrams
+cut at cell edges; "Forfeit match"; the rival's disc falls without ticks, the
+land clack softer, a sine win (still the loudest) and a falling lose, a shorter
+haptic for a loss; a timeout is announced as one.

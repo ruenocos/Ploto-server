@@ -205,3 +205,68 @@ Practice opens on Quick; Medium never fires where no ship fits and forgets a lon
 hit now and then (good player 65%, casual 31–37%); I reads the board aloud; a
 dashed focus cursor; one pose map for game and banner; a room-level redaction
 test and a test that Medium never fires into dimmed cells; copy fixes.
+
+## Round 6 (the last: the process stops after 6)
+
+| Category | A | B | Score |
+|---|---|---|---|
+| Game design | 8 | 8 | **8** |
+| Signature moment | 8 | 8 | **8** |
+| Animation | 8 | 8 | **8** |
+| Sound and haptics | 8 | 8 | **8** |
+| Visual design | 7 | 7 | **7** |
+| UX and clarity | 8 | 7 | **7** |
+| Platform consistency | 9 | 9 | **9** |
+| Bots | 8 | 8 | **8** |
+| Implementation | 8 | 9 | **8** |
+| Accessibility | 8 | 8 | **8** |
+
+Clutter verdict (both): early and mid game it's calm now (flat dark surfaces, one
+teal sea, fires and the swell come to rest). What still tires the eye: the grid
+lines were near-black (a lattice across 64–100 cells), late boards filled with
+bright "+" marks because a duplicate CSS rule undid their half strength, two
+near-equal grids on screen at 390 (the overview at 3×), and the same fleet
+information twice.
+
+Real defects found: the final roll call never played (wrecks had no `.wreck`
+class); the duplicate water-mark rule; the "no ship fits" dot at about 1.5:1;
+the shake slid the sea over the row numbers; at 390 the row numbers touched the
+sea's outline; the call said SUNK before the reveal; sunk was louder than win.
+
+Fixes built after round 6 (not re-scored): wrecks get their class so the roll
+call plays; the duplicate rule gone; the dot in --c-mute; the shake moves the
+board with its labels; a 10 px gutter for the row numbers; SUNK and "Smallest
+left: N" land in the call with the stamp; quiet dark-teal grid lines; the
+overview capped at 2× so the main sea leads; no water marks on the overview or
+the result; the rival's tracker hidden while placing ("Placing" / "Ready");
+"Where bots look" instead of "Hunter view"; "Starting practice"; the keyboard
+hint shown in a first game only; three-line call clamp for large text; sounds
+re-tiered (win −11.6 dB loudest, sunk −15.7, lost −16.6; a darker splash; no
+buzz on aim).
+
+## Where it stands
+
+Sea Battle stopped at the 6-round limit with every category at 7–9 and none
+below 7: Platform 9; Game design, Signature moment, Animation, Sound, Bots,
+Implementation and Accessibility 8; Visual design and UX 7 (both lifted by the
+round-6 fixes above, not yet re-scored). The scores rose from an average of 6.6
+in round 1 to 8.0 in round 6. What keeps the rest under 9, in the reviewers'
+words:
+
+- **Game design (8):** Battleship has few decisions by nature, and "a hit fires
+  again" (the product owner's rule) lets streaks snowball. Ideas: a clearer race
+  readout, 12 s turns on Quick.
+- **Signature moment (8):** small ships still sink small; smoke reads as a
+  dithered blob more than smoke.
+- **Animation (8):** your shot waits for the server before the shell leaves; the
+  rival's thinking time has nothing moving.
+- **Sound (8):** reviewers can't listen; "fire" is a zap more than a cannon.
+- **Visual design / UX (7):** the 30 px Classic cells on phones (aim-then-fire
+  covers it), the empty band under the dock at 390/430, the header tracker
+  unlabelled, How to play long.
+- **Bots (8):** Medium's mistakes look mechanical to some reviewers (forgets a
+  lone hit, random-ish hunting); bot names don't say the level.
+- **Implementation (8):** timings copied by hand between the page and the room;
+  layout() uses fixed offsets.
+- **Accessibility (8):** 30 px cells; no nudge buttons for aim; the board swap
+  could announce more.

@@ -28,7 +28,7 @@
 #scrGame[hidden] { display: none; }
 @media (max-width: 399px) { /* a narrow phone: a slimmer gutter, so the Quick board gets 40 px cells at 360 */
   #scrGame { padding-left: 4px; padding-right: 4px; }
-  .coords.left { width: 22px !important; padding-right: 6px !important; }
+  .coords.left { width: 26px !important; padding-right: 10px !important; } /* clear of the sea's outline */
 }
 .hud { display: flex; align-items: center; gap: 8px; }
 .who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -41,7 +41,7 @@
 .call { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 8px 12px; background: var(--c-panel); border: var(--px) solid var(--c-ink); box-shadow: inset 0 var(--px) 0 var(--c-edge); }
 .call.mine { background: var(--c-accent-lo); box-shadow: inset 0 var(--px) 0 var(--sea-hi), inset 0 calc(var(--px) * -2) 0 rgba(10, 12, 20, 0.45); }
 .call b { font: 700 var(--fl-1)/1.1 var(--f-label); text-transform: uppercase; color: var(--c-cream); white-space: nowrap; }
-.call span { flex: 1; min-width: 0; font: 400 var(--fs-s)/1.25 var(--f-text); color: var(--c-text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } /* every line is written to fit two at 360 */
+.call span { flex: 1; min-width: 0; font: 400 var(--fs-s)/1.25 var(--f-text); color: var(--c-text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; } /* every line is written to fit two at 360 */
 .clock-s { flex: none; min-width: 28px; text-align: right; font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-gold); }
 .clock-s.low { color: var(--c-bad-hi); }
 .clock { flex: none; width: 56px; height: calc(var(--px) * 4); background: var(--c-well); box-shadow: 0 0 0 var(--px) var(--c-ink); }
@@ -50,7 +50,7 @@
 .clock[hidden] { display: none; }
 
 .stage { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.sea-label { align-self: stretch; display: flex; justify-content: space-between; gap: 8px; font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-mute); }
+.sea-label { margin-bottom: 6px; align-self: stretch; display: flex; justify-content: space-between; gap: 8px; font: 700 var(--fs-xs)/1 var(--f-text); letter-spacing: 1px; text-transform: uppercase; color: var(--c-mute); }
 .sea-label b { color: var(--c-cream); font-weight: 700; }
 .board { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; }
 .board.swap-out { transform: translateY(48px); opacity: 0.35; transition: transform 0.18s steps(6), opacity 0.18s steps(6); }
@@ -66,7 +66,6 @@
 .sea .layer-fx, .sea .layer-ships, .sea .layer-marks { pointer-events: none; }
 .sea .mark.water { opacity: 0.5; } /* a sunk ship's ring is background, not a field of glyphs */
 .sea .ship, .sea .mark, .sea .fx { position: absolute; background-size: 100% 100%; image-rendering: pixelated; }
-.sea .mark.water { opacity: 0.8; }
 .sea .ship.sel { filter: drop-shadow(var(--k) 0 0 var(--c-cream)) drop-shadow(calc(var(--k) * -1) 0 0 var(--c-cream)) drop-shadow(0 var(--k) 0 var(--c-cream)) drop-shadow(0 calc(var(--k) * -1) 0 var(--c-cream)); }
 .sea .ship.ghost { opacity: 0.6; }
 .sea .ship.bad { filter: drop-shadow(var(--k) 0 0 var(--c-bad)) drop-shadow(calc(var(--k) * -1) 0 0 var(--c-bad)) drop-shadow(0 var(--k) 0 var(--c-bad)) drop-shadow(0 calc(var(--k) * -1) 0 var(--c-bad)); }
@@ -92,8 +91,8 @@
 .sea .pop.hit { color: var(--c-bad-hi); }
 .sea.stopped .fire-loop { animation-play-state: paused; } /* the hit-stop: everything holds still */
 .sea .halo { position: absolute; outline: var(--px) dashed var(--c-bad-hi); outline-offset: calc(var(--px) * -1); pointer-events: none; }
-.sea .dead { position: absolute; background: rgba(10, 12, 20, 0.25); pointer-events: none; } /* no ship still afloat fits here: a quiet tint and a dot (not only darker) */
-.sea .dead::after { content: ""; position: absolute; left: calc(50% - var(--k)); top: calc(50% - var(--k)); width: calc(var(--k) * 2); height: calc(var(--k) * 2); background: var(--c-edge); }
+.sea .dead { position: absolute; background: rgba(10, 12, 20, 0.3); pointer-events: none; } /* no ship still afloat fits here: a quiet tint and a dot (not only darker) */
+.sea .dead::after { content: ""; position: absolute; left: calc(50% - var(--k)); top: calc(50% - var(--k)); width: calc(var(--k) * 2); height: calc(var(--k) * 2); background: var(--c-mute); }
 .sea .stamp.small b { font-size: var(--fl-2); }
 .sea .hunt { position: absolute; inset: 0; image-rendering: pixelated; background-size: 100% 100%; opacity: 0.3; pointer-events: none; }
 .coin-wrap { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 12px; background: rgba(10, 12, 20, 0.55); pointer-events: none; }
@@ -430,7 +429,7 @@
     $("practiceFields").innerHTML = kit.fieldsHTML(practiceSettings, { schema: PRACTICE_SCHEMA });
     kit.wireFields($("practiceFields"), practiceSettings, () => P.local.set("sea_battle.practice", practiceSettings));
   }
-  $("practiceBtn").onclick = () => takeSeat("Launching", "practice", { settings: { ...practiceSettings } });
+  $("practiceBtn").onclick = () => takeSeat("Starting practice", "practice", { settings: { ...practiceSettings } });
   let inviteFriend = null; // ?inviteFriend=ID from the launcher: invite them once the room exists
   $("createBtn").onclick = async () => {
     if (!(await P.ensureName())) return;
@@ -554,7 +553,7 @@
     const g = G();
     const n = g?.size ?? 10;
     const narrow = window.innerWidth < 400; // matches the narrow-phone gutter in the CSS
-    const w = Math.min(window.innerWidth, 600) - (narrow ? 8 : 16) - (narrow ? 22 : 30);
+    const w = Math.min(window.innerWidth, 600) - (narrow ? 8 : 16) - (narrow ? 26 : 30);
     const h = window.innerHeight - 70 - 52 - 22 - (g?.phase === "placing" ? 190 : 110) - 24;
     const k = Math.max(2, Math.min(5, Math.floor(Math.min(w, h) / (n * 10 + 1))));
     const board = $("board");
@@ -581,7 +580,7 @@
 
   const at = (ax, ay) => ({ left: `${ax * geo.k}px`, top: `${ay * geo.k}px` });
   function shipEl(p, { wreck = false, cls = "" } = {}) {
-    const e = el("div", `ship ${cls}`);
+    const e = el("div", `ship${wreck ? " wreck" : ""} ${cls}`);
     e.dataset.kind = p.kind;
     const len = SHIPS[p.kind].length;
     Object.assign(e.style, at(p.x * 10, p.y * 10), { width: `${(p.dir === "h" ? len * 10 : 10) * geo.k}px`, height: `${(p.dir === "v" ? len * 10 : 10) * geo.k}px`, backgroundImage: `url(${A.ship(p.kind, p.dir, wreck)})` });
@@ -695,7 +694,6 @@
       const x = (cc % n) * 10, y = Math.floor(cc / n) * 10;
       if (m === MARK.hit && !sunkAt.has(cc)) x2.drawImage(fire.c, 0, 0, 10, 10, x, y, 10, 10);
       else if (m === MARK.miss) x2.drawImage(A.sprite("miss").c, x, y);
-      else if (m === MARK.water) x2.drawImage(A.sprite("water").c, x, y);
     });
     return c.toDataURL();
   }
@@ -713,7 +711,7 @@
     clearFx();
     $("rivalName").textContent = rivalName();
     $("rivalAway").hidden = !rivalAway();
-    $("rivalFleet").innerHTML = fleetIcons(g.fleetKinds, g.rivalSunk, true);
+    $("rivalFleet").innerHTML = g.phase === "placing" ? `<span class="hint">${g.ready[1 - you()] ? "Ready" : "Placing"}</span>` : fleetIcons(g.fleetKinds, g.rivalSunk, true);
     $("rivalFleet").setAttribute("aria-label", `${rivalName()}'s fleet: ${plural(g.fleetKinds.length - g.rivalSunk.length, "ship", "ships")} afloat${g.rivalSunk.length ? `, sunk: ${g.rivalSunk.map((k) => SHIPS[k].name.toLowerCase()).join(", ")}. ${smallestLeft(g)}` : ""}`);
     $("seaName").textContent = side === "target" ? `${rivalName()}'s sea` : "Your sea";
     drawSea(side);
@@ -721,7 +719,8 @@
     renderDock(side);
     renderBar();
     const placing = g.phase === "placing" && !g.ready[you()];
-    const keysHint = S.pointer !== "touch" && !matchMedia("(pointer: coarse)").matches && S.keyUses < 6;
+    const keysHint = S.pointer !== "touch" && !matchMedia("(pointer: coarse)").matches && S.keyUses < 6 && !P.local.get("sea_battle.keysSeen");
+    if (S.keyUses >= 6) P.local.set("sea_battle.keysSeen", true);
     $("keys").textContent = !keysHint ? "" : placing ? "1-5 picks a ship · arrows move it · R turns · S shuffles · Enter: ready" : isAiming() ? "Arrows move · Enter fires · I reads the board" : "";
   }
   /** On your turn with tap-to-aim, a Fire bar sits in the thumb zone. */
@@ -789,7 +788,7 @@
       const band = h < 0.34 ? 1 : h < 0.6 ? 2 : 3;
       dock.innerHTML = `<div class="side"><div class="tools"><button class="ghost" id="rotBtn">Rotate</button><button class="ghost" id="shufBtn">Shuffle</button><button class="big" id="readyBtn">Ready</button></div>` +
         `<div class="hunt-row"><div class="hide-meter" title="Bots look in the middle first"><span>Hiding</span>${[1, 2, 3].map((i) => `<i class="${i <= band ? "on" : ""}"></i>`).join("")}<b>${["", "Easy to find", "Fair", "Hard to find"][band]}</b></div>` +
-        `<button class="ghost small" id="huntBtn" aria-pressed="${!!S.hunt}">${S.hunt ? "Hide hunter view" : "Hunter view"}</button></div>` +
+        `<button class="ghost small" id="huntBtn" aria-pressed="${!!S.hunt}">${S.hunt ? "Hide where bots look" : "Where bots look"}</button></div>` +
         `<p class="hint" id="placeHint">${S.hunt ? "Darker red and dots: where bots look first" : S.place?.sel ? `${SHIPS[S.place.sel].name}: tap a cell to move it, or Rotate. Nothing else can go inside the dashed line` : S.place?.moved ? "" : "Tap a ship, then a cell. Or drag it"}</p></div>`;
       $("huntBtn").onclick = () => { S.hunt = !S.hunt; renderGame(); };
       $("rotBtn").onclick = rotate;
@@ -807,7 +806,7 @@
     // The overview grows with the room under the board (tall phones, desktops), leaving the side panel at least 150 px.
     const spare = window.innerHeight - $("board").getBoundingClientRect().bottom - 40 - (isAiming() && twoStepMode() ? 76 : 0);
     const room = Math.min(window.innerWidth, 600) - 16 - 130;
-    const k = [3, 2, 1].find((kk) => (n * 10 + 1) * kk <= Math.min(spare, room)) ?? 1;
+    const k = [2, 1].find((kk) => (n * 10 + 1) * kk <= Math.min(spare, room)) ?? 1; // never as big as the main sea
     const st = g.stats[you()];
     const label = other === "mine" ? "Your sea" : `${esc(rivalName())}'s sea`;
     const taken = g.incoming.filter((m) => m === MARK.hit).length;
@@ -1200,11 +1199,7 @@
         await hold(mine ? 450 : 700);
         return;
       }
-      // The call names the sink as it happens, never "Hit. Fire again" under a SUNK stamp.
-      const what = SHIPS[e.ship.kind].name.toLowerCase();
-      $("callTitle").textContent = "Sunk";
-      S.callNote = S.final ? (mine ? "Their last ship" : "Your last ship") : mine ? `${SHIPS[e.ship.kind].name} sunk. Fire again` : `They sank your ${what}`;
-      $("callText").textContent = S.callNote;
+      $("callText").textContent = mine ? "Hit" : "They hit your ship"; // SUNK comes with the stamp, in sink()
       await sink(e, mine);
       await hold(mine ? 450 : 700);
     },
@@ -1362,6 +1357,11 @@
     }
     fires.forEach((m) => m.remove());
     cue(mine ? "sunk" : "lost", { pitch: 1.15 - 0.07 * len });
+    // The call names the sink on the same beat as the stamp (the verdict waits for the over event).
+    $("callTitle").textContent = "Sunk";
+    const left = g.fleetKinds.filter((k) => !(mine ? g.rivalSunk : g.yourSunk).includes(k) && k !== p.kind);
+    S.callNote = S.final ? (mine ? "Their last ship" : "Your last ship") : mine ? `${SHIPS[p.kind].name} sunk. Smallest left: ${Math.min(...left.map((k) => SHIPS[k].length))}` : `They sank your ${SHIPS[p.kind].name.toLowerCase()}`;
+    $("callText").textContent = S.callNote;
     // 2. SUNK lands beside the ship, the board dims around it, its icon is struck through.
     const spot = el("div", "spot", { left: `${box.x}px`, top: `${box.y}px`, width: `${box.w}px`, height: `${box.h}px` });
     fx.appendChild(spot);
@@ -1383,8 +1383,7 @@
     } else renderDock(geo.side);
     sayNow(`${mine ? "You sank their" : `${rivalName()} sank your`} ${SHIPS[p.kind].name.toLowerCase()}`);
     // 3. It breaks in two and goes down while the water around it is marked ring by ring; the sea shakes.
-    pose($("sea"), "sink");
-    if (len >= 4 || S.final) bigShake();
+    if (len >= 4 || S.final) bigShake(); else pose($("board"), "sink"); // the board, labels and all: nothing slides under the sea
     later(() => cue("groan", { pitch: 1.1 - 0.05 * len, vol: 0.7 }), RM() ? 0 : 220 * sp); // on the halves' first dip
     whole.remove();
     const water = e.water || [];

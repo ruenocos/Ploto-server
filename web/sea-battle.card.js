@@ -16,7 +16,7 @@
   const C = 10; // art pixels per cell
 
   const P = {
-    ink: "#0a0c14", deep: "#0a2a3d", sea: "#114560", sea2: "#13506e", swell: "#165a78", lite: "#2a7f9e", foam: "#bfe8f2", white: "#eef0ff",
+    ink: "#0a0c14", deep: "#0a2a3d", sea: "#114560", sea2: "#13506e", swell: "#165a78", line: "#092636", lite: "#2a7f9e", foam: "#bfe8f2", white: "#eef0ff",
     hull: "#7c86ad", hullHi: "#b3bbdc", hullLo: "#4a5486", deck: "#5d678f", red: "#d8364b", redHi: "#ff8080",
     orange: "#ff9d3b", yellow: "#ffcc33", cream: "#fff4d6", smoke: "#4b5170", smokeHi: "#8a90a8",
     wreck: "#6b6f8a", wreckHi: "#8d91ab", rust: "#7a3b2e", back: "#0c3346",
@@ -56,7 +56,7 @@
         p.px(wx, wy, P.swell, 3, 1);
         p.px(wx + 1, wy - 1, P.swell, 1, 1);
       }
-      for (let i = 0; i <= n; i++) { p.px(i * C, 0, P.deep, 1, n * C + 1); p.px(0, i * C, P.deep, n * C + 1, 1); }
+      for (let i = 0; i <= n; i++) { p.px(i * C, 0, P.line, 1, n * C + 1); p.px(0, i * C, P.line, n * C + 1, 1); } // quiet lines: a lattice that doesn't shimmer
       return p.c;
     });
   }

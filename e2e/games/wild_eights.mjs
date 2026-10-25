@@ -36,7 +36,7 @@ const adapter = {
   /** A hosted table, its lobby showing: two seats (a friend fills the other). */
   async host(p) {
     await p.click('[data-mode="host"]');
-    await p.click('[data-key="seats"][data-val="2"]');
+    await p.click('#practiceFields [data-key="seats"][data-val="2"]');
     await p.click("#createBtn");
     await p.waitForSelector("#scrLobby:not([hidden]) .pl-codecard b");
   },
@@ -95,7 +95,7 @@ adapter.checks = [
   ["practice with three bots: four seats, five cards each, the bots play round to you", async ({ B, home, assert, sleep }) => {
     const p = await B.player({ name: "Bo" });
     await home(p);
-    await p.click('[data-mode="practice"]'); await p.click('[data-key="seats"][data-val="4"]'); await p.click("#practiceBtn");
+    await p.click('[data-mode="practice"]'); await p.click('#practiceFields [data-key="seats"][data-val="4"]'); await p.click("#practiceBtn");
     await playing(p);
     await p.waitForFunction(() => document.querySelectorAll("#rivals .seat").length === 3, null, { timeout: 8000 });
     await p.waitForFunction(() => document.querySelectorAll("#hand .card").length === 5, null, { timeout: 10000 });
@@ -121,7 +121,7 @@ adapter.checks = [
   ["keyboard only, reduced motion: arrows, Enter and D play against a bot", async ({ B, home, assert, sleep }) => {
     const p = await B.player({ reducedMotion: "reduce" });
     await home(p);
-    await p.click('[data-mode="practice"]'); await p.click('[data-key="seats"][data-val="2"]'); await p.click("#practiceBtn"); await playing(p);
+    await p.click('[data-mode="practice"]'); await p.click('#practiceFields [data-key="seats"][data-val="2"]'); await p.click("#practiceBtn"); await playing(p);
     let moves = 0;
     const t0 = Date.now();
     while (moves < 4 && Date.now() - t0 < 60000) {

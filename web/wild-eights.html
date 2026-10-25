@@ -83,13 +83,13 @@
 .clock[hidden] { display: none; }
 
 /* The table: felt with a rim that takes the suit's colour after a wild eight. */
-.table { position: relative; flex: 1; min-height: 200px; max-height: min(46vh, 360px); display: grid; place-items: center; background: var(--we-felt) center / 32px 32px; image-rendering: pixelated;
+.table { position: relative; flex: 1; min-height: 200px; max-height: min(56vh, 460px); display: grid; place-items: center; background: var(--we-felt) center / 32px 32px; image-rendering: pixelated;
   border: var(--px) solid var(--c-ink); box-shadow: inset 0 0 0 calc(var(--px) * 3) var(--flood), inset 0 0 0 calc(var(--px) * 4) var(--c-ink); }
 .table .mid { display: flex; align-items: center; gap: 22px; }
 .deck { position: relative; padding: 0; border: 0; background: none; box-shadow: none; clip-path: none; min-height: 0; cursor: default; }
 .deck:active { transform: none; }
 .deck.can { cursor: pointer; }
-.deck.can .card { outline: calc(var(--px) * 2) solid var(--c-accent-hi); }
+.deck.can .card { box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-accent-hi); }
 .deck .card + .card { position: absolute; left: 0; top: 0; }
 .deck .left { position: absolute; left: 50%; bottom: -20px; translate: -50% 0; font: 700 var(--fs-xs)/1 var(--f-text); color: var(--c-text); white-space: nowrap; }
 .deck:focus-visible { outline: none; box-shadow: 0 0 0 var(--px) var(--c-cream); }
@@ -118,9 +118,9 @@
 /* your hand: overlapped like a held fan; the cards you can play stand up */
 .hand { position: relative; height: calc(var(--bh, 68px) + 12px); margin: auto 2px 0; } /* the hand and dock sit at the bottom, by the thumb */
 .hand .card { position: absolute; bottom: 0; padding: 0; cursor: default; transition: translate 0.12s steps(2), left 0.16s steps(3); touch-action: manipulation; }
-.hand .card.can { translate: 0 -10px; cursor: pointer; outline: calc(var(--px) * 2) solid var(--c-accent-hi); outline-offset: 0; } /* gold has one job (the eight); what you can play is the accent */
+.hand .card.can { translate: 0 -10px; cursor: pointer; box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-accent-hi), inset 0 calc(var(--px) * -3) 0 var(--card-lo); } /* gold has one job (the eight); what you can play is the accent (inset: the card's clipped corners would cut an outline) */
+.hand .card.can.new { translate: 0 -16px; } /* the card you just drew stands highest */
 .hand.mine .card:not(.can) { opacity: 0.55; } /* on your turn: what can't go sits back, the cream stays cream */
-.hand .card.new::after { content: "New"; position: absolute; left: 50%; top: -1px; translate: -50% -100%; padding: 2px 4px; font: 700 var(--fs-xs)/1 var(--f-text); text-transform: uppercase; background: var(--c-cream); color: var(--c-ink); }
 .hand .card:focus-visible { outline: none; box-shadow: inset 0 0 0 calc(var(--px) * 2) var(--c-cream); }
 .dock { display: flex; align-items: center; gap: 10px; min-height: 48px; }
 .dock .me { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
@@ -583,7 +583,7 @@
   function layout() {
     const w = Math.min(window.innerWidth, 600) - 20;
     const bw = Math.max(56, Math.min(84, Math.floor(w / 4.6))), bh = Math.round(bw * 1.4); // your cards: big enough to read at a glance
-    const hw = Math.max(68, Math.min(96, Math.round(bw * 1.3))), hh = Math.round(hw * 1.4);
+    const hw = Math.max(72, Math.min(112, Math.round(bw * 1.35))), hh = Math.round(hw * 1.4);
     const root = $("scrGame").style;
     root.setProperty("--bw", `${bw}px`); root.setProperty("--bh", `${bh}px`);
     root.setProperty("--hw", `${hw}px`); root.setProperty("--hh", `${hh}px`);
@@ -735,7 +735,7 @@
   }
   async function send(method, data) {
     S.sending = true;
-    renderHand(); renderDock(); renderTable();
+    renderHand(); renderDock(); renderTable(); renderCall();
     try { await req(method, data); }
     catch (e) { S.sending = false; toast(P.errText(e), 2600); renderGame(); }
   }
@@ -1020,7 +1020,7 @@
     const standings = res.map((r) => ({ place: r.place, name: r.name, you: r.seat === v.order[me()], bot: r.isBot, note: r.place === 1 && !g.forfeit ? "Out" : `${r.points} pts left` }));
     // The hero: the last card that went down, close up on the felt, the named suit's burst behind an eight.
     const last = g.top, hk = 5;
-    const hero = `<div style="position:relative;display:grid;place-items:center;width:${40 * hk}px;height:${24 * hk}px;background:url(${A.felt()}) 0 0/${16 * hk}px ${16 * hk}px;image-rendering:pixelated;box-shadow:0 0 0 var(--px) var(--c-ink),inset 0 0 0 ${hk}px ${rankOf(last) === "8" ? SUIT[g.suit].flood : A.P.rimHi}">${imgTag(A.mini(last), 13, 18, hk >> 1)}</div>`;
+    const hero = `<div style="position:relative;display:grid;place-items:center;width:${40 * hk}px;height:${24 * hk}px;background:url(${A.felt()}) 0 0/${16 * hk}px ${16 * hk}px;image-rendering:pixelated;box-shadow:0 0 0 var(--px) var(--c-ink),inset 0 0 0 ${hk}px ${rankOf(last) === "8" ? SUIT[g.suit].flood : A.P.rimHi}">${imgTag(A.mini(last), 13, 18, 4)}</div>`;
     kit.renderResult($("resMain"), {
       hero, standings,
       title: won ? "Victory" : `${ORD(mine.place)} place`,

@@ -189,8 +189,9 @@ export class EightsGame {
 
   /** The clock's move: play the first card that fits (an 8 names your strongest suit), else draw. */
   autoMove(seat: number): Result {
-    // A player who left only draws and passes: someone who isn't at the table can't win it.
-    if (this.out.has(seat)) return this.drawn ? this.pass(seat) : this.draw(seat);
+    // A player who left just passes: they can't win a table they're not at, and they don't draw,
+    // so they can't soak up the deck either (a 2 played on them lapses).
+    if (this.out.has(seat)) { this.owed = 0; return { ok: true, events: this.advance(seat) }; }
     const fits = this.playable(seat);
     if (this.drawn) return fits.length ? this.play(seat, this.drawn, rankOf(this.drawn) === "8" ? this.bestSuit(seat) : undefined, true) : this.pass(seat);
     const nonEight = fits.find((c) => rankOf(c) !== "8");

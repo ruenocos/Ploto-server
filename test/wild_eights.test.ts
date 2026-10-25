@@ -151,7 +151,7 @@ describe("Wild Eights room", () => {
     room.dispose();
   });
 
-  it("a player who left never wins: the clock only draws and passes for them", async () => {
+  it("a player who left never wins: the clock only passes for them", async () => {
     const { room } = await hostedTable(3);
     room.handleRequest("cy", "lobby:leave", {});
     const g = room.game;

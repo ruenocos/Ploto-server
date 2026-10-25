@@ -84,8 +84,8 @@ Reverse cards, multi-round scoring to a target, 5–6 players, house-rule toggle
    takes the named suit's colour (spades cyan-grey, hearts red, diamonds
    orange, clubs green) and keeps it while that suit is in force; the next
    plain card lets it go.
-9. **Leaving a 3–4 player game:** you're placed last, the clock plays your
-   turns and the others play on (a forfeit with two players ends the game).
+9. **Leaving a 3–4 player game:** you're placed last, the clock passes your
+   turns (no draws, no plays) and the others play on (a forfeit with two players ends the game).
 10. **A draw by choice marks nothing:** only a draw with nothing to play shows
     the table you're out of a suit (bots use it; so can people).
 11. **Profile tile:** Games, and Most eights in a game.

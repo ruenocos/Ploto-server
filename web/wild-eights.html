@@ -602,7 +602,7 @@
   }
   const cardPoints = (c) => { const r = rankOf(c); return r === "8" ? 50 : r === "A" ? 1 : ["J", "Q", "K"].includes(r) ? 10 : Number(r); };
   /** The suits a player has shown they're out of (they drew with nothing to play): small faded pips on their seat. */
-  const voidsHTML = (p) => (G()?.voids?.[p] ?? []).map((x) => `<img src="${A.pip(x, { big: false })}" alt="" width="10" height="${(A.GRIDS["p" + x].length) * 2}" title="Out of ${SUIT[x].name}">`).join("") ? `<span class="voids" aria-label="Out of ${(G().voids[p]).map((x) => SUIT[x].name).join(" and ")}">${(G().voids[p]).map((x) => `<img src="${A.pip(x, { big: false })}" alt="" width="10" height="${A.GRIDS["p" + x].length * 2}">`).join("")}</span>` : "";
+  const voidsHTML = (p) => (G()?.voids?.[p] ?? []).map((x) => `<img src="${A.pip(x, { big: false, flood: true })}" alt="" width="10" height="${(A.GRIDS["p" + x].length) * 2}" title="Out of ${SUIT[x].name}">`).join("") ? `<span class="voids" aria-label="Out of ${(G().voids[p]).map((x) => SUIT[x].name).join(" and ")}">${(G().voids[p]).map((x) => `<img src="${A.pip(x, { big: false, flood: true })}" alt="" width="10" height="${A.GRIDS["p" + x].length * 2}">`).join("")}</span>` : "";
   /** Why card c can't go, in plain words. */
   function whyNot(g, c) {
     if (g.owed > 0) return `Answer with a 2, or draw ${g.owed}`;

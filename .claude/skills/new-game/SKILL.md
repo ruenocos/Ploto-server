@@ -79,6 +79,8 @@ After the art milestone, score every category with two fresh reviewer agents
 lower score per category, build the fixes for everything under 9, and repeat
 with fresh reviewers until every category is 9/10 or better (stop after 6
 rounds and say what's left). Log each round in `docs/games/<id>-scores.md`.
+Every reviewer also answers the standing question in the rubric: does it feel
+cluttered, and can we reduce eye strain? (a verdict and at least four fixes).
 
 ## 5. Checks before every push
 

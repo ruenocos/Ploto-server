@@ -20,6 +20,17 @@ get built, and the game is scored again.
 | 9 | **Implementation** | A pure, seeded engine with unit tests and a simulation of thousands of games; views redact everything a seat mustn't know; reconnects, timeouts, leaving and rematches all work; zero console errors; the browser suite passes. |
 | 10 | **Accessibility** | Reduced motion, keyboard play, contrast (WCAG AA for text), labels for screen readers, no meaning carried by colour alone, no flashing above 3 per second. |
 
+### Standing question: clutter and eye strain
+
+Every round, each reviewer also answers: **does it feel cluttered, and can we
+reduce eye strain?** Look at the screens a player stares at longest (the game
+screen mid-game, the setup, the result): visual noise (textures, speckle, grid
+lines, labels, trackers, accents competing with each other), the brightness and
+contrast of large areas, text density, motion that never rests, and anything
+that could be removed, merged or calmed without losing information. It feeds
+visual design, UX and accessibility; a cluttered or tiring screen can't score 9
+in any of them. Reviewers return a verdict and at least four concrete fixes.
+
 ## Anchors
 
 - **10**: as good as the best mobile games of its kind; nothing to add.
